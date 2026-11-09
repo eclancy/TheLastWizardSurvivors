@@ -51,6 +51,8 @@ public static partial class RegressionChecks
 		HudBand.Validate(warnings);
 		ValidateWorldMap(warnings);
 		ValidateBossRush(warnings);
+		// Endless (RegressionChecks.Endless.cs, .ai/endless-mode.md).
+		ValidateEndless(warnings);
 		ValidateHazardPlacement(warnings);
 		ValidateFamiliar(warnings);
 		ValidateSpellVariants(warnings);
@@ -7587,7 +7589,9 @@ public static partial class RegressionChecks
 				// The far sky's two wait for its lesson (FarSky, .ai/second-half.md 6.2: nothing of the far shore on show).
 				if (deed.Visibility != AchievementVisibility.Always
 					&& !(deed.Kind == AchievementKind.Feat && deed.Visibility == AchievementVisibility.Recipe && !string.IsNullOrEmpty(deed.ComboId))
-					&& deed.Visibility != AchievementVisibility.FarSky)
+					&& deed.Visibility != AchievementVisibility.FarSky
+					// Endless's three wait for endless to open (Taken Back; .ai/endless-mode.md 2.2).
+					&& deed.Visibility != AchievementVisibility.Endless)
 					warnings.Add($"Achievement '{id}' is a {deed.Kind} shown {deed.Visibility}; a {deed.Kind} is listed from the first run.");
 				break;
 			case AchievementKind.Road:

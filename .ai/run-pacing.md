@@ -58,7 +58,7 @@ TimerVictorySeconds = 1800                     // when the clock stops and the b
 ReferenceRunSeconds = 900   (const)            // the run every pacing number was tuned on
 RunPace      = TimerVictorySeconds / 900       // 2.0 today; 1 if TimerVictorySeconds <= 0
 PaceSeconds  = timeElapsed / RunPace
-PaceMinutes  = max(0, PaceSeconds / 60)
+PaceMinutes  = clamp(PaceSeconds, 0, victory pace) / 60    // held at the boss since endless (section 13)
 ```
 
 So on today's run, "the Lunger arrives at 90 s" means real 3:00, and every pace number below
@@ -1038,3 +1038,34 @@ level gate).
   with the same density curve stretched over it, and nobody has played one. Eric's word was "longer"; how the middle
   ten minutes of a stretched run feel is a playtest question.
 - **The phone**, where a third more minutes is a third more battery and heat.
+
+## 13. The clock past the boss: endless (2026-11-09)
+
+Until endless (`.ai/endless-mode.md`) the run clock stopped at the boss and never ran past the chapter's
+victory time. A run that keeps the vigil runs it on, night after night, so every reader of the pace clock was
+sorted by what it should do there (endless-mode.md 1.6):
+
+| reader | past the boss |
+|---|---|
+| the spawn interval (floor from pace 11.4), batch sizes, horde speed, the elite interval (30 s from 12), formation shapes, the late tables, the music lead, swarm pressure's start | already flat by 15:00: untouched |
+| spawn health's per-minute line, the Warden's `1 + 0.22 x PaceMinutes`, the XP multiplier (`XpPaceMultiplier`, x2.5) | **held at their victory-time value**: `PaceMinutes` is clamped there |
+| the elite schedule (`ShouldSpawnElite`), the Warden's clock | read raw `PaceSeconds` and keep running, as a night needs them to |
+| the Sketchbook's ghost (4:00, 9:30), stage hints (last at 13:30) | one-shot in the first night |
+
+**The clamp** is `Node2DGame.PaceMinutes = clamp(PaceSeconds, 0, EndlessVictoryPaceSeconds) / 60`, where the
+victory pace is the chapter's victory time (`EndlessCatalog.ChapterVictorySeconds`, the one shim endless reads it
+through; today 900 on every chapter) over `RunPace`. Before the boss it changes nothing - the clock never ran past
+it - so every table above stands; measured, a 15-minute `--fixed-fps 30` run on seed 1234 before and after it read
+`lvByMin` [3,6,8,11,13,16,18,20,22,24,26,28,30,32,34] and [3,5,8,10,13,16,18,20,22,24,27,29,31,33,35], the same
+within the spawner's own noise (its picks are not seeded).
+
+**The one thing that grows past it is the night's strength** (`EndlessCatalog.HealthStrength`/`DamageStrength`),
+on its own clock: minutes of `PaceSeconds` past the victory pace, so a chapter with a longer run stretches its
+nights with it. It multiplies spawn health, the Warden's health, the returning warden's and `EnemyDamageScale`,
+once a second. **Endless runs never feed these tables**: a measurement of the first fifteen minutes is the same
+run with or without the vigil, and the nights are measured in endless-mode.md section 7.
+
+**The far shore's twenty-minute run (section 12) composes with it.** The shim reads
+`StageCatalog.VictorySecondsFor`, so on a chapter whose run is twenty minutes the clamp holds at its own boss
+(1200 real seconds, pace 900 at `RunPace` 4/3) and a night there would be twenty minutes long. No far-shore
+chapter is endless (question 5), so today that is a rule kept, not a case played.

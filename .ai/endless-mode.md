@@ -4,9 +4,18 @@ Eric, 2026-11-08:
 
 > "we want to also unlock endless mode once you beat the original campaign"
 
-**Status: design for Eric's review, 2026-11-08. Nothing is built.** Section 6 is the short list of
-decisions that are his; every other choice here is a recommendation he can overturn. Every number in
-sections 1 and 3 is a first value to be measured (section 5, E5), not a measurement.
+**Decided 2026-11-08.** Eric read the summary - unlocked by taking back the Throne (and the chapter's own
+warden beaten), chosen in the run when the warden falls (the vigil beside the way home), the warden
+returning every quarter hour with the field's strength climbing by the minute, a wall that ends every run
+by about 90 minutes, a capped purse (600 a run), three Feats, records per chapter, wizard and difficulty,
+only the first night counting for the campaign's deeds, the far shore left out, no cutscene - with all
+five questions of section 6 answered as recommended, and said:
+
+> "Build it"
+
+**Status: built 2026-11-09 (section 5, E0 to E6).** Every number in sections 1 and 3 was a first value; section 7
+says what was built, where it departs from this design, what was measured and what moved - above all the night's
+strength (7.3), which the measurement reshaped.
 
 No endless mode exists today. "Endless" in the code means only that the procedural ground streams
 forever (`TerrainStreamer`). "The original campaign" is the road: the 13 chapters of
@@ -115,6 +124,11 @@ the third's 1.7, the fourth's 2.3. Target: a fight of one to three minutes for t
 A fall pays a chest where it fell.
 
 ### 1.5 How it scales
+
+> **Superseded by measurement (E5, section 7.3).** The curve below was the design's first value; as built the
+> strength climbs +12% health and +3% damage a minute for the second night and then compounds (x1.09 and x1.04 a
+> minute), because the linear hour below never caught a farmed build. The shape of the night - one number,
+> health and damage only, the field otherwise the 15:00 field - is as written.
 
 One number grows: **the night's strength**, read from `m`, the minutes of run clock since the first
 warden fell. It multiplies on top of the chapter's row (`ChapterDifficulty`) and the preset.
@@ -515,16 +529,226 @@ in the hand at minute 80.
 
 ## 6. Questions for Eric
 
+All five **decided 2026-11-08, as recommended** ("Build it").
+
 1. **Where the choice is made.** In the run, at the warden's fall: the way home or the vigil
    (recommended) - or a button on the world-map card, chosen before the run, as Vampire Survivors and
-   Halls of Torment do?
+   Halls of Torment do? **Decided: in the run, at the fall.**
 2. **What a night is.** The warden is sent again every quarter hour, the field growing stronger by the
    minute between (recommended) - or no boss after the first, only the climb - or Vampire Survivors' loop,
-   the clock back to 0:00 and the chapter replayed stronger?
+   the clock back to 0:00 and the chapter replayed stronger? **Decided: the warden every quarter hour,
+   the field climbing between.**
 3. **The wall.** Should the night close in for certain from an hour after the first fall, so every run
-   ends by about an hour and a half (recommended) - or grow without end?
+   ends by about an hour and a half (recommended) - or grow without end? **Decided: the wall.**
 4. **What a night may earn.** Places found in a night count, but everything measured over a run - a
    Conjunction first made included - counts only the first night (recommended) - or should a Conjunction
-   first made in a night count?
+   first made in a night count? **Decided: places count, measures read the first night; a Conjunction
+   first made in a night waits for a run that makes it in the first.**
 5. **The far shore.** Leave it out of endless until its six seats are built, then decide (recommended) -
-   or plan for it now?
+   or plan for it now? **Decided: left out.**
+
+---
+
+## 7. As built (2026-11-09)
+
+Built in one branch, E0 to E6, in the order of section 5. Where the build departs from sections 1-4 it says so
+here; everything not named below is as written above.
+
+### 7.1 What is where
+
+| piece | files |
+|---|---|
+| the catalog: chapters, the open rule, the strength, the shares, the cap, the Feats' ids, the records, **the one run-length shim** | `scripts/EndlessCatalog.cs` (`EndlessRecord` beside it) |
+| the night: eligibility, the vigil, the ledger, the strength tick, the returning warden, the orb fold, the dry pool, the HUD and pause lines, the purse, the records, the tools' hooks | `scripts/Node2DGame.Endless.cs`; call sites in `Node2DGame.cs`, each marked "Endless" |
+| the ring and its hold | `scripts/VigilRing.cs` |
+| the results tile, heading and purse line | `scripts/GameOverScreen.Endless.cs`; `RunReport.Endless*`, `ArcaneRewardBreakdown.Night*` |
+| the card line | `scripts/WorldMap.Endless.cs` |
+| the Feats | `scripts/AchievementDefinitions.Endless.cs`, `AchievementVisibility.Endless` |
+| the opened-mode entry | `RunUnlockKind.Mode`, its icon `reward-vigil` (`tools/art/reward_icons.py`, a candle in its ring of light) |
+| the save | `SaveData.EndlessRecords`, `SaveData.HasKeptVigil` - additive, **no schema step** |
+| the validator | `scripts/RegressionChecks.Endless.cs`, `ValidateEndless` in `RunAll` |
+| the tools | `_BalanceHarness --endless --leave-at=N --warden-limit=S` (`_BalanceHarness.Endless.cs`); `_UiShot --endless-open --endless-steps=N --endless-after=F --endless-night=N,CLOCK --endless-leave --vigil-stand=K --endless-record=... --kept-vigil` (`_UiShot.Endless.cs`) |
+
+**The run-length shim.** Every "past the boss" rule - the pace clamp, the returning warden's quarter hour, the
+first night's end, the results bar - reads `EndlessCatalog.ChapterVictorySeconds(stageId)`, and nothing else. Since
+the far shore's twenty-minute runs merged it reads their accessor, `StageCatalog.VictorySecondsFor`: 900 on every
+endless chapter, 1200 on the far shore, which is never endless. `Node2DGame.EndlessVictorySeconds` caches it once a
+run; the clamp divides it by `RunPace`, so a longer chapter holds its pace at its own boss.
+
+### 7.2 Departures from the design, each a decision the doc left open
+
+- **The ledger is taken when the first vigil is kept**, not at the fall: it is exactly what stepping into the
+  portal at that moment would have recorded, chest and last XP included, which is the rule of 3.1 read literally.
+- **A vigil opened under his feet waits for him to step out once** before it counts a hold, so a fall beside him
+  never keeps it for him.
+- **The ring is added to the ground, not painted** (an additive material) and has a small upright flame at its
+  heart: the first photograph, painted, read as a tan stain on the Forest's dirt.
+- **The banner is two lines**, never three (a third overran the band's panel): *"The way home is open - or keep
+  the vigil. / Stand in your light, and the night goes on."* the first time, *"... or keep the vigil, / and the
+  night goes on."* after, and at a later fall *"Elderbark falls · the second night is held / The way home is open -
+  or keep the vigil."* Keeping it shows *"Night 2 / He will send Elderbark again at 30:00."*
+- **The pause tab's section is two lines**: *"Night 3: enemies +212% health, +53% damage"* and *"2 wardens felled ·
+  Elderbark returns at 45:00"* - the clock is already the tile above it.
+- **The results tile is the clock over "Night 3 · 2 wardens felled"**, with *"A new record"* under the bar; a death
+  in a night is headed *"Fell in the third night"* at the Title size on a PC, wrapping in its column. The whole
+  "Night 3 · 41:20" as the headline number, and the record as a long caption, both pushed a PC's band past 1280.
+- **Records are written only by a run that kept a vigil** (a plain clear is not an endless run), at every later
+  fall (saved there) and at the run's end.
+- **The dry pool**: once the run holds every relic it can take, a night's carriers carry nothing *and a returning
+  warden's fall sets out no chest* (the design named the carriers only; a warden's chest of dead cards is the same
+  problem). Both, and the loose-orb fold, act in a night only, so the first night is untouched. The pool counts
+  every relic not held, the Scribe's Penknife included - so the harness's bot, which never takes the knife, never
+  dried its pool and opened 218 chests in a 100-minute night (193 from elites, at the 30-second cadence), most of them
+  repeats it ignored. A player who takes the knife dries it; one who never does keeps a knife and two dead cards a
+  chest. Whether that wants the knife left out of the count is a playtest's.
+- **The card's other-wizard line** reads *"Merlin's longest: Night 4 · 52:30"* under this wizard's own; the night
+  and its clock are joined by non-breaking spaces.
+- **Sound**: the event reward's sting when the vigil is kept (the portal's own plays at the fall); a sound of its
+  own is still the audio manifest's to add.
+- **`_BalanceHarness --endless --farmed`** stands behind the whole road wherever it plays: endless is open only to
+  a save that took the Throne back, so the farmed profile at the Forest is the whole road's (8,750 Arcane, every
+  road deed), not the Forest's 300.
+
+### 7.3 Measured, and what moved
+
+**Protocol.** `_BalanceHarness --fixed-fps 30 --headless -- --endless --farmed --survivor --immortal
+--policy=ordinary --stage=<0|7> --character=1 --seed=1234 --minutes=100 --timescale=1 --no-save-writes`, two at a
+time, on a copy of the tree. **The save is the whole road's**: endless is open only to a save that took the Throne
+back, so `--endless --farmed` stands behind every chapter of the road wherever it plays - 35 spells and 8 boons from
+deeds, 8,525 of 8,750 Arcane on Powers (Sage Spiral at its cap). `--stop-overrun=60` was given; it fired only once, in the final planned run.
+The **E0 check** (`PaceMinutes` clamped, Marginalia adding): a 15-minute `--all-unlocked --immortal` run on seed 1234
+before and after read `lvByMin` [3,6,8,11,13,16,18,20,22,24,26,28,30,32,34] and [3,5,8,10,13,16,18,20,22,24,27,29,31,
+33,35] - the same within the spawner's unseeded noise; no Marginalia was taken in either.
+
+**Step 1, the design's first values** (+8% / +2% a minute, the wall an hour past the fall at x1.08 / x1.04):
+
+| | Forest (Elderbark) | Emberdeep (the Warden of the Deep) |
+|---|---|---|
+| first fall | 15:00, level 49 (game 15.2) | 15:00, level 53 (game 19.0) |
+| level at 30:00 / 45:00 / 60:00 / 75:00 | 107 / 147 / 178 / 204 | 93 / 129 / 162 / 191 |
+| Marginalia by 75:00 | 149 (+298% spell damage) | 136 |
+| returning wardens' fights (game minutes) | 1.0, 0.3, 0.2, 0.4, 0.9 | 2.0, 2.5, 2.4, 3.1 |
+| where the 100 game minutes ended | **night 7, 1:37:00, x31.6 health**, 6 wardens, swarm pressure 0 | **night 6, 1:25:58, x13.5**, 5 wardens, pressure 0 |
+
+Kills sat at the spawn supply (about 420 a minute) every minute of every night, the wizard lost almost no health
+(the field died before it reached him) and swarm pressure never left zero. **Why**: a night pays two to four levels a
+minute (the XP multiplier is held at x2.5 and the kill rate is the supply; Sage Spiral and the relics make it x3.46
+besides), so the book fills by level 50 and every level after is Marginalia's +2% spell damage - about 5% of the
+build a minute, as fast as the linear strength. And the build's area spells kill a capped field with large room to
+spare. The design's model (a level a minute at level 40, 1.7) was off by three to four times.
+
+**Step 2, compounding from the third night** (+12% / +3% a minute for the second night, then x1.09 / x1.04):
+
+| | Forest | Emberdeep |
+|---|---|---|
+| night strength at 30:00 / 45:00 / 60:00 / 75:00 / 90:00 | x2.8 / 10.2 / 37 / 135 / 493 | the same |
+| level at those falls | 106 / 146 / 177 / 204 / 229 | 106 / 148 / 182 / - |
+| returning wardens (half the chapter health x the strength) | x1.4, 5.1, 18.6, 67.7, 246 - each felled in 0.3-1.3 minutes | x1.4 in 1.6 min, x5.1 in 2.5, **x18.6 in 7.0**, **x67.7 (34 million) never** |
+| the end | **night 7, 1:33:17, x653**, kills still at the supply; the field at the cap from night 6 (alive 104-128 of 131, at the cap a third of each minute) | **stalled at 1:15:00** in the fifth warden's fight to the end of the budget |
+
+Two findings: the field's strength must become a wall in fact past an hour (the Forest bot was killing x653 bodies
+at the supply - 66,000 health each - at 1:33), and a returning warden cannot ride the field's strength (a single
+body meets area damage once; the Emberdeep's fourth was seven minutes and its fifth unwinnable, and a fight the
+build cannot finish holds the clock - nothing ends the run but the wizard's death).
+
+**As built (step 3):** three stretches of one curve, and the warden on its square root.
+
+```
+m <= 15 (night 2)         health 1 + 0.12 m          damage 1 + 0.03 m
+15 < m <= 60 (nights 3-5) x1.09 a minute             x1.04 a minute
+m > 60 (the wall)         x1.25 a minute             x1.10 a minute
+returning warden          chapter health x sqrt(health strength)
+```
+
+| clock | night | health | damage | the warden who ends it |
+|---|---|---|---|---|
+| 15:00 - 30:00 | 2 | x1 - 2.8 | x1 - 1.45 | x1.7 |
+| 30:00 - 45:00 | 3 | x2.8 - 10.2 | x1.45 - 2.6 | x3.2 |
+| 45:00 - 60:00 | 4 | x10.2 - 37 | x2.6 - 4.7 | x6.1 |
+| 60:00 - 75:00 | 5 | x37 - 135 | x4.7 - 8.5 | x11.6 |
+| 75:00 - 90:00 | 6, the wall | x135 - 3,850 | x8.5 - 35 | x62 |
+
+**Measured on the final curve.** The strongest build of the three steps - the Forest, ordinary policy, the
+whole-road farmed save, Aedan, seed 1234 - run alone with the profiler (`--profile=30 --warden-limit=240
+--minutes=95`, never needed: every warden fell on his own):
+
+| fall | clock | level | Marginalia | warden | fight (game minutes) |
+|---|---|---|---|---|---|
+| 1 | 15:00 | 50 | 0 | Elderbark, 9,500 | 0.4 |
+| 2 | 30:00 | 94 | 39 | x1.7 | 0.5 |
+| 3 | 45:00 | 130 | 75 | x3.2 | 0.3 |
+| 4 | 1:00:00 | 160 | 105 | x6.1 | 0.6 |
+| 5 | 1:15:00 | 188 | 133 | x11.6 | 0.5 |
+| 6 | 1:30:00 | 211 | 156 | x62 | 0.6 |
+
+Nights 2 to 5 it killed at the spawn supply (410-430 a minute) with swarm pressure at zero. **The wall closed it at
+about 1:28**: at game minute 90 the field sat at the cap, pressure went from 0 to 0.70 in two minutes, the swarm's
+swells and trail recycler began, and by 1:32:03 kills had fallen to 122 a minute at pressure 1.00 - an overrun,
+which a mortal wizard taking x43 hits does not outlive. So the strongest build measured ends at the wall, as Eric
+decided; any weaker one ends sooner.
+
+The **Emberdeep** on the final curve (ordinary, Aedan, seed 1234; this run's bot levelled slower than step 2's, 66 at
+30:00 against 106): first fall at 15:00 (level 52, a 4.8-minute fight), then the returning Warden of the Deep at
+x1.7 (836,664) in **3.3 minutes**, x3.2 in **3.6**, x6.1 (3 million) in **4.9**, and x11.6 (5.8 million, at 1:15:00)
+still standing when the budget ran out 8.4 minutes later - every night held at pressure 0 until then. The
+Emberdeep's own first fight is about five minutes (`.ai/difficulty-curve.md`), so nights 2-4 now meet a warden about
+as long as the chapter's, against step 2's seven minutes and an unwinnable fifth; the fifth is still long. The
+square root is the knob (an exponent of 0.4 would make the fifth x7 rather than x11.6).
+
+The **planned bot** (`--seek-ascensions`) on the Forest, its best chapter, with another wizard (character 3) and
+seed (77): level 64 at the first fall, 118 / 151 / 181 / 205 / 224 at the next five; every returning warden felled
+(x1.7 to x62) in 0.6-1.7 minutes; **overrun at about 1:33** (swarm pressure full from game minute 98.8, kills down to
+172 a minute, the run ended by `--stop-overrun` at 1:34:27, night 7, x10,381 health). It fells the fourth warden, as
+the design asked, and the sixth.
+
+**Performance over that run** (frame-weighted, PC, headless, the bot's own cost included; by quarter of its frames):
+
+| part of the run | enemies | frame p50 / p95 ms | phys / proc ms | nodes (max) | loose orbs (max) | alloc KB/frame (max) |
+|---|---|---|---|---|---|---|
+| first night | 44 | 6.9 / 13.0 | 2.8 / 2.5 | 4,382 (4,966) | 207 (347) | 23.8 (29.5) |
+| nights 2-3 | 39 | 7.3 / 13.4 | 2.7 / 2.6 | 4,548 (4,936) | 143 (215) | 25.7 (36.1) |
+| nights 4-5 | 105 | 10.6 / 18.3 | 4.5 / 3.0 | 4,757 (5,223) | 125 (209) | 41.5 (56.5) |
+| the wall | 130 | 15.4 / 30.7 | 6.1 / 6.0 | 5,462 (6,179) | 88 (137) | 106.6 (133.2) |
+
+Nodes and orbs follow the field, not the clock: flat through nights 2-5 at the first night's level, and up only when
+the wall fills the field to the cap (the 300-orb fold was never reached here; it held the step-1 Emberdeep's at 300
+while its bot stood at a fight's edge). The walk reached 20,000 px from the start with no sign of float error.
+**Allocation is the one number that grew**: about 25 KB a frame through nights 2-5 and 107 at the wall, where every
+body takes dozens of hits (take-damage calls went from under one a frame to fifteen, floating numbers from 9 to
+324 alive). The endless code allocates once a second (the timer's text) and once every two seconds (the orb fold's
+group read); what grew is the hit path under a field of 400,000-health bodies, which no ordinary run reaches.
+`.ai/performance.md`'s 5 KB a frame at the cap was a weaker build; this farmed one already makes 24 in the first
+night. Worth a look there, not a fault of the night. **The phone was not touched.**
+
+**Against the targets of 1.5**, honestly:
+
+| target | measured |
+|---|---|
+| ordinary, farmed, the Forest: overrun in night 2 or 3 | **missed**: the whole-road farmed ordinary build holds every night to the wall (overrun about 1:28). Nights 2-3 as the usual end would need a second night many times steeper, which would make the wall the first thing a weaker Throne-beater meets |
+| ordinary, farmed, the Emberdeep: overrun in night 2 | **missed**: it held night 4 (step 2 and final) and was stopped by its fifth warden at 1:15 |
+| planned, farmed, its best chapter: fells the fourth warden | **met**: six, overrun about 1:33 |
+| any bot never past 90:00 | **about**: the two strongest measured close at 1:28 and 1:33 - the wall Eric chose, "by about an hour and a half"; an earlier wall start (`WallMinutes`) is the knob for a hard 90 |
+| a returning warden: one to three minutes | Forest 0.3-1.7 minutes every night; Emberdeep 3.3, 3.6, 4.9, then the fifth over 8.4 (its own first fight is about 5) |
+
+**The levers left, Eric's.** What keeps a farmed build alive is Marginalia's damage and the night's XP, not the
+strength: two to four levels a minute, each +2%. Cutting Marginalia's damage in a night (its heal was the design's
+named lever, 1.7), or letting the night's XP multiplier fall, would let the strength curve be gentler and make the
+nights a slower climb rather than a wall at an hour. Neither is in the design, so neither was done.
+
+**The purse** (3.2), from these runs' minutes (the harness ends a run without paying it): every later night pays 8 a
+minute and half each returning warden's bonus, so a Forest run to the wall pays its 600 cap by about 1:15 (75 minutes
+x 8 already 600), about 7 Arcane a minute of night against 25-40 a minute for an ordinary clear. The cap binds
+every long run; a run that leaves by the portal at the second fall pays 195 on top of its first night (photographed:
+15 minutes, one warden). Endless is never a farm.
+
+**Performance** (4.1): nodes across a 100-minute Forest night held at 3,800-5,200 and loose orbs under 180 (the 300
+fold never needed in the Forest; it held the Emberdeep's at 300 while its survivor bot stood at a fight's edge); the
+walk reached 20,000 px from the start with no sign of float error. The profiled run is above.
+
+### 7.4 What needs a person's eyes
+
+- Whether the vigil reads as a choice and not a hazard, beside the portal, at a real fall (photographed: it does
+  read as a ring of his light with a flame, distinct from the arcane door; the motion was not seen).
+- Whether a night feels like more rather than only slower, and whether a fourth Elderbark is a fight or a chore.
+- How a phone feels at minute 80 (heat, battery): not measured, no phone was touched.
+- The banner's words, the card's line and the results' heading are first wordings.

@@ -294,12 +294,79 @@ def apotheosis():
     return c
 
 
+def vigil():
+    """A way to play opened - Endless (.ai/endless-mode.md 2.3): a candle kept burning in a ring of its light.
+
+    The vigil the run keeps is a ring of the wizard's own warm light on the ground (scripts/VigilRing.cs), so
+    the icon is that ring with a light standing in it: a bone-pale candle on a gold dish, its flame the Light
+    element's ramp - the one thing alight - and the ring round its foot in the same ramp, far edge dimmer."""
+    c = raster.Canvas(CELL, CELL, None)
+    bh, bl_, bb, bs, bd = BONE
+    gh, gl, gb, gs, gd = GOLD
+    light = E["light"]
+    _shadow(c, 16, 12)
+
+    # The ring of light on the ground, an ellipse round the candle's foot: its near half brighter than its far.
+    cx, cy, rx, ry = 16.0, 25.0, 12.5, 4.2
+    for deg in range(0, 360, 3):
+        a = math.radians(deg)
+        x = cx + math.cos(a) * rx
+        y = cy + math.sin(a) * ry
+        near = math.sin(a) > 0
+        c.set(x, y, light[1] if near and abs(math.cos(a)) < 0.7 else light[2] if near else light[3])
+    for deg in range(0, 360, 6):
+        a = math.radians(deg)
+        if math.sin(a) > 0.2:
+            c.set(cx + math.cos(a) * (rx - 1.4), cy + math.sin(a) * (ry - 1.0), light[3])
+
+    # The dish: a flat gold ellipse, lit on its upper-left lip.
+    c.disc(16, 24.5, 7.0, 2.2, gb)
+    c.hline(10, 22, 24, gl)
+    c.hline(11, 21, 26, gs)
+    c.set(9, 24, gh)
+
+    # The candle: a bone-pale stick, lit from the left, a drip down its right side.
+    c.rect(12, 12, 19, 23, bb)
+    c.vline(12, 12, 23, bh)
+    c.vline(13, 12, 23, bl_)
+    c.vline(14, 12, 23, bl_)
+    c.vline(19, 12, 23, bs)
+    c.hline(12, 19, 12, bh)
+    c.set(18, 13, bl_)
+    c.vline(19, 13, 17, bb)
+    c.set(19, 18, bs)
+    _rim(c, BONE)
+
+    # The wick and the flame: a teardrop, white at its heart, gold at its tip and edge.
+    c.vline(16, 10, 11, bd)
+    for y in range(1, 11):
+        t = (y - 1) / 9.0
+        half = 0.6 + 3.3 * math.sin(t * math.pi * 0.85)
+        for x in range(int(round(16 - half)), int(round(16 + half)) + 1):
+            d = abs(x - 15.6) / max(0.6, half)
+            if y >= 7 and d < 0.45:
+                tone = light[0]
+            elif d < 0.7 and y >= 5:
+                tone = light[1]
+            elif y <= 3 or d >= 0.9:
+                tone = light[3]
+            else:
+                tone = light[2]
+            c.set(x, y, tone)
+
+    # Motes rising from the ring: a light that stays lit.
+    for (x, y, tone) in ((7, 19, light[2]), (25, 18, light[1]), (5, 23, light[3]), (27, 22, light[2]), (22, 8, light[3]), (9, 9, light[3])):
+        c.set(x, y, tone)
+    return c
+
+
 ICONS = [
     ("reward-energy", energy),
     ("reward-deed", deed),
     ("reward-chapter", chapter),
     ("reward-ascension", ascension),
     ("reward-apotheosis", apotheosis),
+    ("reward-vigil", vigil),
 ]
 
 

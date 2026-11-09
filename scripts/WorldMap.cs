@@ -692,6 +692,9 @@ public partial class WorldMap : Control
 			float best = save?.Lifetime?.BestTimeOnStage(stage.Id) ?? 0f;
 			if (best > 0f)
 				cardBox.AddChild(GlyphLine("duration", $"Longest stand: {FormatMinutes(best)}", InkSoft, "CardBest"));
+			// Endless: the longest night, or what the mode is (WorldMap.Endless.cs).
+			if (EndlessCardLine(stage) is Control night)
+				cardBox.AddChild(night);
 		}
 
 		// F4, the far sky: tonight's Conjunction on every far-shore stop (FarSky.CardLine; .ai/second-half.md 5).

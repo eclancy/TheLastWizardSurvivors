@@ -147,6 +147,17 @@ public class SaveData
 
 	/// <summary>The fastest whole rush, in real seconds with the fights in. 0 until one is won.</summary>
 	public float BossRushBestClearSeconds { get; set; } = 0f;
+
+	// --- ENDLESS (.ai/endless-mode.md 3.5; EndlessCatalog) ---------------------------------------------------------
+	// No schema step for either: both only add and default to the quiet state (the pattern of HasSeenLightGoesOn and
+	// BossRushBestFelled), FromVariant guards each read with ContainsKey, and the ledger rule means no existing record
+	// changes meaning.
+
+	/// <summary>The best night per chapter, wizard and preset (EndlessCatalog.Record): written at every fall in a night, and at the run's end.</summary>
+	public List<EndlessRecord> EndlessRecords { get; set; } = new();
+
+	/// <summary>The first vigil kept: the world-map card's new mark and the first fall's second banner line until then.</summary>
+	public bool HasKeptVigil { get; set; } = false;
 	public List<RunTelemetryRecord> RunTelemetryHistory { get; set; } = new();
 	// Aggregates across every run ever played. The telemetry ring above is capped at 25 entries and
 	// drops most of what an achievement asks about, so it cannot serve this purpose.
@@ -1451,6 +1462,11 @@ public class SaveData
 			playtestChecklistState[entry.Key] = entry.Value;
 		}
 
+		// Endless (EndlessCatalog): the records.
+		var endlessRecords = new Godot.Collections.Array<Godot.Collections.Dictionary>();
+		foreach (EndlessRecord record in EndlessRecords ?? new List<EndlessRecord>())
+			endlessRecords.Add(record.ToGodotDictionary());
+
 		return new Godot.Collections.Dictionary
 		{
 			["SchemaVersion"] = SchemaVersion,
@@ -1473,6 +1489,8 @@ public class SaveData
 			["GlimpsedSecretIds"] = glimpsedSecretIds,
 			["BossRushBestFelled"] = BossRushBestFelled,
 			["BossRushBestClearSeconds"] = BossRushBestClearSeconds,
+			["EndlessRecords"] = endlessRecords,
+			["HasKeptVigil"] = HasKeptVigil,
 			["RunTelemetryHistory"] = telemetryHistory,
 			["Lifetime"] = Lifetime.ToGodotDictionary(),
 			["HasSeenGameplayOnboarding"] = HasSeenGameplayOnboarding,
@@ -1776,6 +1794,21 @@ public class SaveData
 
 		if (root.ContainsKey("BossRushBestClearSeconds"))
 			result.BossRushBestClearSeconds = (float)root["BossRushBestClearSeconds"].AsDouble();
+
+		// Endless (EndlessCatalog): additive, no schema step - a save without the keys has kept no vigil.
+		if (root.ContainsKey("EndlessRecords") && root["EndlessRecords"].VariantType == Variant.Type.Array)
+		{
+			foreach (Variant entry in root["EndlessRecords"].AsGodotArray())
+			{
+				if (entry.VariantType != Variant.Type.Dictionary)
+					continue;
+				EndlessRecord record = EndlessRecord.FromDictionary(entry.AsGodotDictionary());
+				if (!string.IsNullOrWhiteSpace(record.StageId))
+					result.EndlessRecords.Add(record);
+			}
+		}
+		if (root.ContainsKey("HasKeptVigil"))
+			result.HasKeptVigil = root["HasKeptVigil"].AsBool();
 
 		if (root.ContainsKey("MasterVolume"))
 			result.MasterVolume = (float)root["MasterVolume"].AsDouble();

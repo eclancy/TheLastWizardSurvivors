@@ -448,6 +448,8 @@ public partial class _BalanceHarness : Node
 			// the bot reads is real time, and every fight adds to it. Each arrival and fall is logged
 			// as a BOSS RUSH line by the run itself.
 			else if (arg == "--boss-rush") Global.BossRush = true;
+			// --endless, --leave-at=N (_BalanceHarness.Endless.cs).
+			else if (TryParseEndlessArg(arg)) { }
 		}
 
 		// Immune to the pause. A level-up pauses the tree, and a driver that pauses with it can
@@ -520,6 +522,8 @@ public partial class _BalanceHarness : Node
 
 		if (Explore || giveRelics.Length > 0 || grantBoons.Length > 0)
 			SaveManager.WritesDisabled = true;
+		// --endless: the save, whichever it is now, made one that can hold this chapter through the night.
+		OpenEndlessOnSave();
 		ApplyFarSkyArg();
 		ApplyLadderArgs();
 
@@ -1085,6 +1089,8 @@ public partial class _BalanceHarness : Node
 		AutoPickChestScreen();
 		AutoPickLevelUp();
 		DriveMovement();
+		// --endless --warden-limit: a returning warden the build cannot kill is felled (_BalanceHarness.Endless.cs).
+		TickEndlessWardenLimit();
 		// A fallen boss opens the way home and the run ends when the player steps in (Node2DGame's
 		// victory portal); the bot steps in at once, so a run that wins still ends as it always did.
 		// The run ends there too: what the clock would add after a victory is a field standing still.
@@ -1095,6 +1101,9 @@ public partial class _BalanceHarness : Node
 				bossDownAt = elapsed;
 				GD.Print($"HARNESS boss down at t={elapsed:0}s ({elapsed / 60f:0.0} min), level {player.CurrentLevel}");
 			}
+			// --endless: the vigil instead, and the night goes on (_BalanceHarness.Endless.cs).
+			if (KeepEndlessVigil(won))
+				return;
 			won.EnterVictoryPortal();
 			Finish("beat the boss");
 			return;
@@ -1173,6 +1182,13 @@ public partial class _BalanceHarness : Node
 		}
 		else if (position >= 0)
 			road.AddRange(StageCatalog.Campaign.Take(position));
+		// --endless: whoever keeps a vigil has taken the Throne back, so he stands behind the whole road wherever he
+		// plays it - every chapter's deeds and the Arcane they paid (_BalanceHarness.Endless.cs).
+		if (Endless)
+		{
+			road.Clear();
+			road.AddRange(StageCatalog.Campaign);
+		}
 		var behind = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		for (int i = 0; i < road.Count; i++)
 		{
@@ -3019,7 +3035,7 @@ public partial class _BalanceHarness : Node
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}{LadderSummary()}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}{LadderSummary()}{EndlessSummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -3950,6 +3966,7 @@ public partial class _BalanceHarness : Node
 			$"  stage        : {Global.SelectedStageIdx}; spawned " + string.Join(", ", spawnedByType.Select(p => $"{p.Key} {p.Value}")),
 		};
 		lines.AddRange(DropLedger());
+		lines.AddRange(EndlessReportLines());
 		lines.AddRange(HealingLedgerLines());
 		if (PickEvery > 1)
 			lines.Add($"  weak picks   : took one level-up in {PickEvery}; skipped {weakSkips} of {weakLevelUpsSeen}");

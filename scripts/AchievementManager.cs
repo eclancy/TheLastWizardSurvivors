@@ -43,6 +43,8 @@ public enum RunUnlockKind
 	Lesson,
 	/// <summary>An Unlocks entry finished whose reward is not a spell, boon or wizard - Arcane Energy.</summary>
 	Deed,
+	/// <summary>A way to play opened: Endless, on the run that first takes the Throne back (.ai/endless-mode.md 2.3).</summary>
+	Mode,
 }
 
 /// <summary>One thing a run earned, as the results screen shows it.</summary>

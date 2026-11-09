@@ -93,6 +93,11 @@ public enum AchievementVisibility
 	/// (Teachings), since nothing of the far shore is on show before (.ai/second-half.md 6.2).
 	/// </summary>
 	FarSky,
+	/// <summary>
+	/// Endless's Feats (EndlessCatalog, AchievementDefinitions.Endless.cs): not on the page at all until endless is
+	/// open - the Throne taken back - since nothing of endless is on show before (.ai/endless-mode.md 2.2).
+	/// </summary>
+	Endless,
 }
 
 public sealed class AchievementDefinition
@@ -212,7 +217,7 @@ public sealed class AchievementDefinition
 	}
 }
 
-public static class AchievementDefinitions
+public static partial class AchievementDefinitions
 {
 	/// <summary>
 	/// How many Black Hares Laelaps' hound must run down in one run of the Broken Circle (the
@@ -732,7 +737,7 @@ public static class AchievementDefinitions
 		// F10: Every Seat Lit - all six gods rekindled.
 		// (F10's second line is below; leave this one as it is)
 		// F10: All the Gods' Forms - each god's Apotheosis taken.
-	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).ToList();
+	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).Concat(EndlessDeeds()).ToList();
 
 	/// <summary>
 	/// One Road deed for every side event of every chapter (SideEventDirector.EventsFor - a chapter may hold
@@ -874,6 +879,8 @@ public static class AchievementDefinitions
 				return save != null && ConjunctionLadder.IsShown(ComboCatalog.ForId(deed.ComboId), save);
 			case AchievementVisibility.FarSky:
 				return save != null && Teachings.HasLearned(save, Teaching.FarSky);
+			case AchievementVisibility.Endless:
+				return EndlessCatalog.IsOpen(save);
 			default:
 				return true;
 		}

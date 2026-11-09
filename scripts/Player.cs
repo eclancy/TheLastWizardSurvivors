@@ -8682,8 +8682,14 @@ public partial class Player : CharacterBody2D
 	{
 		MarginaliaTaken++;
 		Heal(Mathf.Max(1, Mathf.RoundToInt(MaxHP * MarginaliaHealFraction)));
-		// Multiplied in like a SpellDamage boon (ApplyBoon), so every damage reader already sees it.
-		damageMultiplier *= 1f + MarginaliaSpellDamageBonus;
+		// Multiplied into damageMultiplier like a SpellDamage boon (ApplyBoon), so every damage reader already sees
+		// it - but the Marginalia's own share ADDS (.ai/endless-mode.md 1.7): the n-th note lifts the run's notes
+		// from 1 + 0.02(n-1) to 1 + 0.02n, so sixty are +120%, not the x3.3 sixty compounding steps were - an
+		// exponential that could outrun a night's linear strength. At the handful a fifteen-minute run takes, the
+		// two differ by under half a percent.
+		float before = 1f + MarginaliaSpellDamageBonus * (MarginaliaTaken - 1);
+		float after = 1f + MarginaliaSpellDamageBonus * MarginaliaTaken;
+		damageMultiplier *= after / before;
 	}
 
 	// The flat stats a spell arrives with, for a card that has no previous level to diff against.

@@ -1555,6 +1555,9 @@ public partial class _UiShot : Node
 			}
 			else if (arg.StartsWith("--rush-steps="))
 				rushSteps = int.Parse(arg.Substring("--rush-steps=".Length));
+			// Endless: --endless-open, --endless-steps, --vigil-stand, --endless-night, --endless-record, --kept-vigil
+			// (_UiShot.Endless.cs).
+			else if (TryParseEndlessShotArg(arg)) { }
 			else if (arg.StartsWith("--boss-bleed="))
 			{
 				string[] bleed = arg.Substring("--boss-bleed=".Length).Split(',');
@@ -2025,6 +2028,9 @@ public partial class _UiShot : Node
 		// A run that walks to its event can win it, and a won event saves on the spot.
 		if (gotoTarget != null || takeWayfinder || arriveEvent || seerLeg >= 0 || seerRead || doorTrace >= 0f || doorOpenAt >= 0f)
 			SaveManager.WritesDisabled = true;
+		// Endless: once every flag is read, so --stage has named the chapter (_UiShot.Endless.cs).
+		if (endlessOpen)
+			OpenEndlessOnShotSave();
 
 		if (!ResourceLoader.Exists(ScenePath))
 		{
@@ -3606,6 +3612,8 @@ public partial class _UiShot : Node
 				rushNextStepFrame = frames + RushStepFrames;
 				GD.Print($"_UiShot: rush step {rushStepsDone} of {rushSteps}");
 			}
+			// Endless: a night stepped through, entered, stood in (_UiShot.Endless.cs).
+			TickEndlessShot();
 			if (demoUnlocks && !demoUnlocksAdded && deathForced
 				&& FindNodeOfType<GameOverScreen>(GetTree().Root) is GameOverScreen results && results.Report != null)
 			{

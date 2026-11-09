@@ -457,14 +457,16 @@ public partial class GameOverScreen : CanvasLayer
 		var title = new Label
 		{
 			Name = "OutcomeTitle",
-			Text = won ? "Victory" : result.Outcome == RunOutcome.Quit ? "Run ended" : "Defeat",
+			// Endless: a death in a night is not a defeat - the save already has the first night's victory (EndlessHeading).
+			Text = EndlessHeading(result) ?? (won ? "Victory" : result.Outcome == RunOutcome.Quit ? "Run ended" : "Defeat"),
 			VerticalAlignment = VerticalAlignment.Center,
 			HorizontalAlignment = narrow ? HorizontalAlignment.Center : HorizontalAlignment.Left,
 			SizeFlagsHorizontal = narrow ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
 			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
 		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
-		title.AddThemeColorOverride("font_color", won ? VictoryInk : result.Outcome == RunOutcome.Quit ? Stone.Heading : DefeatInk);
+		// Endless's heading is a sentence, not a word: at the Display size it pushed a PC's band past 1280.
+		ResponsiveLayout.SetFont(title, EndlessHeading(result) != null && !narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
+		title.AddThemeColorOverride("font_color", won ? VictoryInk : result.Outcome == RunOutcome.Quit || EndlessHeading(result) != null ? Stone.Heading : DefeatInk);
 		bandRow.AddChild(title);
 
 		Label where = CodexRows.MakeText(BuildWhereLine(), ResponsiveLayout.TextRole.Label, Stone.InkSoft);
@@ -501,6 +503,8 @@ public partial class GameOverScreen : CanvasLayer
 		left.AddThemeConstantOverride("separation", 0);
 		bandRow.RemoveChild(title);
 		title.CustomMinimumSize = Vector2.Zero;
+		// Endless's sentence of a heading wraps in the column's own width rather than widening it (GameOverScreen.Endless.cs).
+		WrapEndlessHeading(title);
 		left.AddChild(title);
 		where.HorizontalAlignment = HorizontalAlignment.Left;
 		// Its own width, not the column's: wrapped at 250 a chapter name broke over two lines.
@@ -542,6 +546,9 @@ public partial class GameOverScreen : CanvasLayer
 	{
 		if (report.BossRushTotal > 0)
 			return BuildBossRushTile(won);
+		// Endless: the night and its clock, built as the rush's is (GameOverScreen.Endless.cs).
+		if (report.EndlessNight > 0)
+			return BuildEndlessTile();
 
 		// A chapter with no survival clock (the Throne: its procession brings him) has no arrival to count to.
 		bool clocked = report.BossArrivalSeconds > 0f;
@@ -1035,6 +1042,8 @@ public partial class GameOverScreen : CanvasLayer
 				$"+{Count(a.BossBonus)}", false));
 		// F4, the far sky: tonight's Conjunction made (FarSky.ArcaneBonus).
 		if (a.FarSkyBonus > 0) lines.Add(("conjunction", $"Tonight's Conjunction made - {a.FarSkyName}", $"+{Count(a.FarSkyBonus)}", false));
+		// Endless: the later nights' purse, capped (GameOverScreen.Endless.cs).
+		if (a.NightBonus > 0) lines.Add(("duration", EndlessBreakdownLabel(a), $"+{Count(a.NightBonus)}", false));
 		lines.Add(("energy", "This run", $"+{Count(report.ArcaneEarned)}", true));
 		if (a.UnlockBonus > 0)
 			lines.Add(("done", "Unlock rewards", $"+{Count(a.UnlockBonus)}", true));
@@ -1142,6 +1151,7 @@ public partial class GameOverScreen : CanvasLayer
 		RunUnlockKind.Apotheosis => "Apotheosis revealed",
 		RunUnlockKind.Page => "New spell page",
 		RunUnlockKind.Lesson => "Learned",
+		RunUnlockKind.Mode => "New way to play",
 		_ => "Unlock completed",
 	};
 
@@ -1166,6 +1176,9 @@ public partial class GameOverScreen : CanvasLayer
 			// A lesson wears its family's mark: the Ascension's glass, the final forms' fire (Teachings).
 			case RunUnlockKind.Lesson:
 				return Reward(entry.Id is "apotheosis" ? "reward-apotheosis" : "reward-ascension");
+			// A way to play: Endless's candle in its ring of light (tools/art/reward_icons.py).
+			case RunUnlockKind.Mode:
+				return Reward("reward-vigil") ?? Reward("reward-chapter");
 			default:
 				return Reward("reward-deed");
 		}
