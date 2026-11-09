@@ -9,6 +9,14 @@ Three docs, three jobs — don't confuse them:
 - `.ai/art-direction.md` — the **contract**: grid, light model, palette, silhouette rules.
 - **this file** — the **backlog**: what still has to be drawn, in what order, and how much of it.
 
+**2026-11-09: the Sketchbook, the kids' art, the Boo and the Test Wizard were removed** at Eric's request
+(`assets/kidsart/`, `assets/enemies/boo-*` and the source sheet, `assets/testwizard/`, `kids_art.py`,
+`sprite_boo.py`, `sprite_testwizard.py`). Every image under `assets/` is generated now. The section on the
+Sketchbook below, the Boo's row and the many shots "on the Sketchbook's paper" are history: the palest
+ground left is the Fallow Fields' stubble (`--stage=9`), and a shot that wants a bright floor takes that.
+A command below with `--character=0` named the Test Wizard; `--start-spell` now opens any wizard on the
+spell (`Global.ToolStartingSpellId`), so say `--character=1`.
+
 
 ## The pack-art kill list
 
@@ -84,8 +92,8 @@ the stage shader already does a lot of the work of making them cohere.
 - `char-2d-pixel-dungeon-asset-pack-character-animation-priest1-v1-1.png`, still referenced by
   `CharacterSelection.cs`
 - *(the Boo's `assets/enemies/boo-*.png` left this list on 2026-10-20: Elim's ghost, redrawn to
-  the contract at Eric's request - see "Also shipped")*
-- `assets/testwizard/testwizard-1.png`
+  the contract at Eric's request - see "Also shipped"; removed with the Sketchbook on 2026-11-09)*
+- *(`assets/testwizard/testwizard-1.png` left this list on 2026-11-09: the Test Wizard was removed)*
 
 Everything else in the actor tier has already moved to `assets/bonelight/characters/`.
 
@@ -221,12 +229,15 @@ bug.
 
 | | Cell | Scale | Note |
 |---|---|---|---|
-| **Boo** | 96×96 | `3` → `2` | Elim's ghost, redrawn on the Bonelight model **at Eric's request (2026-10-20)** and made the Sketchbook's second miniboss - the one kids' drawing the never-restyle rule was lifted for. `tools/art/sprite_boo.py` grows his 17×15 drawing ×4 and smooths it, so the silhouette, slot eyes, O mouth and raised arm are his; then lights it (rim on the key side, `occ` on the shadow side, bone ramp sinking to deep), cuts his round base into a ragged trailing hem that is dithered see-through, hollows the eyes round his mark, and puts a cold `arcane` cyan light in the chest and throat - the colour of its wail. ~64 px figure, ~128 on screen. `moving` is still his own two frames; `attack` is the wail, timed to its 1 s wind-up; `hurt` flinches and thins; `death` dissolves from the edge in, drifting up, and leaves the two eye-points last. |
+| ~~**Boo**~~ (removed 2026-11-09) | 96×96 | `3` → `2` | Elim's ghost, redrawn on the Bonelight model **at Eric's request (2026-10-20)** and made the Sketchbook's second miniboss - the one kids' drawing the never-restyle rule was lifted for. `tools/art/sprite_boo.py` grows his 17×15 drawing ×4 and smooths it, so the silhouette, slot eyes, O mouth and raised arm are his; then lights it (rim on the key side, `occ` on the shadow side, bone ramp sinking to deep), cuts his round base into a ragged trailing hem that is dithered see-through, hollows the eyes round his mark, and puts a cold `arcane` cyan light in the chest and throat - the colour of its wail. ~64 px figure, ~128 on screen. `moving` is still his own two frames; `attack` is the wail, timed to its 1 s wind-up; `hurt` flinches and thins; `death` dissolves from the edge in, drifting up, and leaves the two eye-points last. |
 | **Elderbark** | 96×96 | `6` → `2` | The boss, off the orc sheet at last. |
 
 Both scales were fractional or applied to the wrong cell size, and both are integers now.
 
-### The Sketchbook — not on the backlog, and never will be
+### The Sketchbook — not on the backlog, and never will be (REMOVED 2026-11-09)
+
+History: the chapter, its cast, the Boo and every file below were removed at Eric's request on 2026-11-09;
+git history holds them. What follows is the record of what they were.
 
 Twelve sprite sheets drawn by Eric's kids, wired in as chapter 8. They are the whole cast of it:
 eight enemies, a boss and its projectile, plus a dog and a two-faced message scattered as decor.

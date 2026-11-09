@@ -99,7 +99,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Väinämöinen | Discovery | the thaw (Frozen Waste); secret until the Waste opens |
 | John Dee | Achievement | The Library at Mortlake: open 30 chests (100 since 2026-11-03, `.ai/passives-and-items.md` 8k) |
 | Laelaps | Achievement | The Coursing (Broken Circle); secret until the Circle opens; outside the campaign gate |
-| Test Wizard | Starter | development sandbox, not counted anywhere |
+| ~~Test Wizard~~ | removed 2026-11-09 | was a development sandbox starter, counted nowhere; schema 28 takes him out of saves |
 
 ### 1.3 Boons (15)
 
@@ -881,13 +881,15 @@ The gate chapter. Whatever is decided in 2.5, a secret here pays nothing the gat
 | E3 | The Marks | planned, keepsake | touch | heal; page only |
 | E4 | **The Quench Trough** | **new** | **linger** 3 s in the steam over his forge's quench trough | heal 50% and 60 s in which fire hazards do not hurt |
 
-### 8.11 The Sketchbook (`stage_8`)
+### 8.11 The Sketchbook (`stage_8`) - removed 2026-11-09
+
+**The chapter itself was removed at Eric's request on 2026-11-09**, with its boss (Elim), its cast and
+`RegressionChecks.ValidateSketchbookHoldsNothing`; nothing to earn moved, because it held nothing (below).
 
 **None, and no achievements at all** (Eric, 2026-11-02: "the sketchbook should not have any unlocks or
 any achievements. move that to other maps"). Its clear, *Best Drawing* (400 Arcane Energy), was removed;
-the three secrets of `.ai/stage-secrets.md` 6.9 are shelved, never built; Ma Liang, the wizard planned
-for it, moved to the Court (`.ai/chapter-wizards.md` 4.8). Elim's win purse (`ArcaneVictoryBonus`)
-stays, as every boss's does. `RegressionChecks.ValidateSketchbookHoldsNothing` holds it there.
+the three secrets of `.ai/stage-secrets.md` 6.9 were shelved, never built; Ma Liang, the wizard planned
+for it, moved to the Court (`.ai/chapter-wizards.md` 4.8).
 
 ### 8.12 The castle (`.ai/endgame-castle.md`)
 

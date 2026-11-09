@@ -10,6 +10,11 @@ miniboss everywhere, and seven of the nine chapter tables drew on the same four 
 Enchanted Forest (wolves, brambles, wisps) and the Sketchbook (the kids' drawings) had anything of
 their own.
 
+**2026-11-09: the Sketchbook (`stage_8`) and its whole cast were removed** at Eric's request - the kids'
+creatures, Wizard Dude (Elim), the ghost (Boo) and the dog, with `StageBestiary.Sketchbook.cs` and
+`ArtContractExempt`. Section 4.9 and the Sketchbook's rows below are history; every roster now is held to
+the art contract.
+
 This doc is the design of every chapter's cast, how the code holds it, and the plan for drawing it.
 It was written in two phases:
 
@@ -121,8 +126,8 @@ on their own, ahead of the chapter's table, on the same clocks (`Node2DGame`):
 | Summoner | 285 s | 0.04 | x0.9 | never |
 | MiniBoss | 5:15, then every 165 s | clock, one alive at a time | Health x (1 + 0.22 m) | always a chest carrier |
 
-A chapter that has no creature for a role (the Sketchbook's four) skips that roll and draws no dice
-for it, as before. The chapter tables, band for band from the old environment switch:
+A chapter that has no creature for a role (the Forest's three back-line roles) skips that roll and
+draws no dice for it, as before. The chapter tables, band for band from the old environment switch:
 
 | Chapter | Table (share x health multiplier, in roll order) |
 |---|---|
@@ -134,7 +139,6 @@ for it, as before. The chapter tables, band for band from the old environment sw
 | Frozen Waste | Fast .36, Bulk .32, Wall .20, Heavy .12 |
 | Scorched Sands | Fast .40, Bulk .32, Wall .18, Heavy .10 |
 | The Emberdeep | Heavy .24, Bulk .38, Fast .24, Wall .14 |
-| The Sketchbook | Smiler .28 x0.8, One-Eye .20 x1.0, Zombie .17 x1.5, Vampire .15 x0.85, Message .13 x1.1, Rockem .07 x2.4 |
 
 (Bulk x1.0, Fast x0.75, Heavy x2.2, Wall x1.4 wherever not stated.) The Sunken Cave is the one chapter
 with a late table: it never had a case of its own in the environment switch and fell to the default
@@ -343,9 +347,10 @@ Nothing bipedal-heavy with horns: the Deep Warden is an H.
 | Summoner | Kennelmaster | `EmberKennelmaster` | the keeper of his hounds | a ring of chains held up at hand height | steel, red. Minion: **Chainhound** |
 | MiniBoss | The Chainwright | `EmberChainwright` (48) | his jailer in his own seat: the forge every shackle in the land came from, walking | one arm a chain-hoist, chains hanging | steel deep |
 
-### 4.9 The Sketchbook (`stage_8`) - Wizard Dude
+### 4.9 The Sketchbook (`stage_8`) - Wizard Dude (REMOVED 2026-11-09)
 
-**Unchanged, and not part of Phase 2.** Moved from `Node2DGame`'s switch into
+History: the chapter and this roster were removed on 2026-11-09. As it was - **unchanged, and not part
+of Phase 2.** Moved from `Node2DGame`'s switch into
 `StageBestiary.Sketchbook.cs` band for band and slot for slot: Smiler (Bulk), Vampire (Fast), Rockem
 (Heavy and MiniBoss), Zombie (Wall), One-Eye and the Message (Extra), Blobby (Charger), Pushy Dude
 (Slammer, a cone). Ranged, Turret, Exploder and Summoner are absent - the kids drew no counterpart.
@@ -384,7 +389,6 @@ it moves into the castle, and the Throne has no trickle cast (`.ai/endgame-castl
 | Frozen Waste | Rime Guard (attendant) | 10 | 1 |
 | Scorched Sands | - | 10 | 1 |
 | The Emberdeep | - | 10 | 1 |
-| The Sketchbook | all (the kids') | 0 | 0 |
 | **Total** | | **68** | **7** |
 
 75 poses, each derived to the 22-frame set (1650 frames). **No bought art can be used**: the packs
@@ -446,8 +450,8 @@ Forest's grass ramp on grass is the other risk; earth (`#C99A5E`) is the fallbac
 
 **Ground warnings: a decision (section 10).** The charge streak (orange), slam ring (amber), fuse ring
 (red) and summon ring (mint) are today one language across the campaign: a player learns once that
-orange means a charge. The Sketchbook (Blobby violet, Pushy cyan) and the Rime Guard (pale cyan)
-already break it per chapter. **Recommended: keep the four warning hues per verb everywhere, and let
+orange means a charge. The Rime Guard (pale cyan) already breaks it (as the Sketchbook's Blobby and
+Pushy did until that chapter's removal). **Recommended: keep the four warning hues per verb everywhere, and let
 only bolts and orbs take the chapter's element** - a warning is a road sign, not a costume.
 
 ---
@@ -482,14 +486,13 @@ creature on.
 **Left where they are, on purpose:** `MotherRotBoss.tscn`'s `SpawnScenePath` (a boss scene's own
 export; the Swamp's Phase 2 points it at the Broodling), `StillWardenBoss`'s guard (already the
 Frozen Waste's), `SummonerEnemy.tscn`'s minion (it is a stand-in; each chapter's own summoner names its
-own minion), the ghost and the dog (Sketchbook set-pieces, not roles), and the plain `enemy.tscn` that
+own minion), and the plain `enemy.tscn` that
 `_UiShot` and the swarm-fold check use as a test body.
 
 **`RegressionChecks.ValidateBestiary`** - at startup, beside the other validators. It checks that every
 playable chapter has a roster; every role is filled or absent with a reason (Bulk, the MiniBoss and an
 Extra never absent); every scene loads as an `Enemy` of the class its role needs (a Turret is a
-`Rooted` `RangedEnemy`, a MiniBoss has `IsMiniBoss`, no table body is a miniboss outside the
-Sketchbook); every sheet has a looping `moving` with an imported texture, a non-looping `death`, and an
+`Rooted` `RangedEnemy`, a MiniBoss has `IsMiniBoss`, no table body is a miniboss); every sheet has a looping `moving` with an imported texture, a non-looping `death`, and an
 `attack` if it telegraphs; declared `EnemyType`s match their scenes and are unique across chapters;
 each table's shares add to 1; a drawn creature matches its stand-in's stat block; a chapter's own
 summoner calls up the chapter's own minion; and its boss's adds are the chapter's. It runs the class
@@ -505,8 +508,9 @@ own - Bulk The Drowned (scenes/CaveDrowned.tscn); Fast Gloomwing (scenes/CaveGlo
 
 At the end of Phase 1 there are seven, one per chapter still drawing: the Forest (9), the Cave (11),
 the Swamp (12 - its eleven and Mother Rot's brood), the Ruins, the Frozen Waste, the Sands and the
-Emberdeep (11 each). The Cursed Dungeon and the Sketchbook own their whole casts. **Phase 2 is done
-when the validator ends `0 errors and 1 warnings`** (the old `test_wizard` one).
+Emberdeep (11 each). The Cursed Dungeon owns its whole cast (the Sketchbook did too, until its removal on
+2026-11-09). **Phase 2 is done when the validator reports no warnings** (since the Test Wizard's removal on
+2026-11-09, the old `test_wizard` warning is gone too).
 
 **`tools/art/bestiary_kit.py`** - the art half: `build_cast` writes a creature's four strips and its
 `SpriteFrames` from one pose, `report` prints size and density and writes a contact sheet, and
@@ -642,7 +646,7 @@ With a fourth agent, split Group A: the Forest and the Cave (20), the Swamp (11)
   stand-in, and is bellied both ways (flat-topped and hooped, it was a treasure chest). The
   crossbowman's bolt is arcane (`#C08CFF` / `#FFF0FF`), the castle's cold fire: section 6 has no
   castle row yet.
-- The Sketchbook: complete (the kids'), not part of Phase 2.
+- The Sketchbook: removed with its cast on 2026-11-09 (it was complete, the kids', and never part of Phase 2).
 - The Court: drawn (`tools/art/cast_court.py`, 11 of 11; `.ai/endgame-castle.md` 5.7). One row per
   job - servants in linen, the guard in steel behind a red kite, the hunt in lichen green and a red
   coat, the courtiers in wool and violet, the hound in bone, the built three in polished steel, black
