@@ -11,7 +11,9 @@ using TheOneHeMissed.scripts;
 // looks (the WATCH), and her gaze is drawn on the turf as a pale fan - stopped by the barrows, which she cannot see
 // through. Anything that MOVES in it, she sees: she bolts, bounding away to another of her grazing places on the
 // down, and the hunt's hounds are slipped at the one who startled her. A man who stands still in her gaze is not
-// seen, and nor is one who moves behind a barrow. Reach her while she does not see you, and she is won.
+// seen, and nor is one who moves behind a barrow. Come to her side unseen and she lets him near - stands, looks at
+// him, and goes on, calm, to the next of her places; the third time (ApproachesToWin) she is won. Three stalks over
+// different ground, with different barrows between: one was a ten-second walk.
 //
 // HELD TO .ai/unlock-puzzles.md's BAR (section 1):
 //   1. The state is drawn in the world: her head down or up, and her gaze as a fan on the ground, cut short at
@@ -35,14 +37,14 @@ using TheOneHeMissed.scripts;
 public partial class SilverHindEvent : SideEvent
 {
 	// --- Her gaze ---------------------------------------------------------------------------------
-	[Export] public float GazeRange { get; set; } = 600f;
+	[Export] public float GazeRange { get; set; } = 640f;
 	[Export] public float GazeHalfAngleDegrees { get; set; } = 36f;
 	/// <summary>How far off the wizard's bearing a look may fall either way: she looks toward him, roughly.</summary>
 	[Export] public float GazeJitterDegrees { get; set; } = 24f;
 
 	// --- Her rhythm (real seconds) ------------------------------------------------------------------
-	[Export] public float GrazeMinSeconds { get; set; } = 2.2f;
-	[Export] public float GrazeMaxSeconds { get; set; } = 3.6f;
+	[Export] public float GrazeMinSeconds { get; set; } = 1.8f;
+	[Export] public float GrazeMaxSeconds { get; set; } = 3.2f;
 	/// <summary>Her head coming up before she looks: the warning, and the time to stop.</summary>
 	[Export] public float TellSeconds { get; set; } = 0.6f;
 	[Export] public float WatchMinSeconds { get; set; } = 1.4f;
@@ -56,6 +58,13 @@ public partial class SilverHindEvent : SideEvent
 	[Export] public float MoveWindowSeconds { get; set; } = 0.15f;
 	/// <summary>How close is "at her side".</summary>
 	[Export] public float ReachRadius { get; set; } = 72f;
+	/// <summary>
+	/// How many times he must come to her side unseen. Before the last she lets him near, stands a moment and goes on,
+	/// calm - no hounds - to the next of her places; the last time she is won. One approach was a ten-second walk.
+	/// </summary>
+	[Export] public int ApproachesToWin { get; set; } = 3;
+	/// <summary>How long she stands, letting him near, before she goes on.</summary>
+	[Export] public float LetNearSeconds { get; set; } = 0.9f;
 
 	// --- Her places, and the bolt -------------------------------------------------------------------
 	[Export] public int PlaceCount { get; set; } = 6;
@@ -79,7 +88,7 @@ public partial class SilverHindEvent : SideEvent
 	// Her eyes, roughly, above her feet: where the gaze is drawn from (world px, facing right).
 	private static readonly Vector2 EyeLift = new(24f, -60f);
 
-	private enum Mood { Grazing, Tell, Watching, Bolting, Settling, Won }
+	private enum Mood { Grazing, Tell, Watching, Bolting, Settling, LetNear, Won }
 
 	private readonly List<Vector2> places = new();
 	private readonly float[] reach = new float[Rays];
@@ -99,12 +108,16 @@ public partial class SilverHindEvent : SideEvent
 	private float wonFor = -1f;
 	private Vector2 winSpot;
 	private bool firstWin;
+	private int approaches;
+	private bool calmBolt;
 
 	private Node2D root;
 	private Sprite2D sprite;
 
-	/// <summary>Bolts so far. For _ExploreProbe.</summary>
+	/// <summary>Bolts so far: the times she saw him move. For _ExploreProbe.</summary>
 	public int Bolts { get; private set; }
+	/// <summary>Times he has come to her side unseen. For _ExploreProbe.</summary>
+	public int Approaches => approaches;
 	/// <summary>Where she is now, and whether she is looking. For _ExploreProbe and _UiShot.</summary>
 	public Vector2 HindPosition => hind;
 	public bool IsWatching => mood is Mood.Watching or Mood.Settling;
@@ -115,7 +128,9 @@ public partial class SilverHindEvent : SideEvent
 	protected override string Announcement => "A silver hind grazes out on the down. The hunt has not found her.";
 	protected override string Objective => mood == Mood.Won ? "The Silver Hind"
 		: sawYouLeft > 0f ? "She saw you move"
+		: mood == Mood.LetNear || (calmBolt && mood == Mood.Bolting) ? "She let you near"
 		: IsWatching ? "She is looking"
+		: approaches > 0 ? $"Stalk the Silver Hind  ({approaches}/{Math.Max(1, ApproachesToWin)})"
 		: "Stalk the Silver Hind";
 	protected override Vector2? PointerTarget => mood == Mood.Won ? null : hind;
 	protected override string SiteGlyph => "hind";
@@ -216,6 +231,14 @@ public partial class SilverHindEvent : SideEvent
 			TickBolt(delta);
 			return;
 		}
+		if (mood == Mood.LetNear)
+		{
+			PlaceSprite(FrameStand);
+			moodLeft -= delta;
+			if (moodLeft <= 0f)
+				GoOn(feet);
+			return;
+		}
 
 		// What she sees, first: a man moving in her gaze. Then whether he is at her side.
 		if (IsWatching)
@@ -229,7 +252,17 @@ public partial class SilverHindEvent : SideEvent
 		}
 		if (feet.DistanceTo(hind) <= ReachRadius)
 		{
-			Win();
+			approaches++;
+			if (approaches >= Math.Max(1, ApproachesToWin))
+			{
+				Win();
+				return;
+			}
+			// Not yet hers: she lifts her head, looks at him a moment, and goes on, calm.
+			mood = Mood.LetNear;
+			moodLeft = LetNearSeconds;
+			facingRight = feet.X >= hind.X;
+			SfxPlayer.AtPosition(SfxCatalog.SecretSeen, hind, 0f);
 			return;
 		}
 
@@ -346,6 +379,40 @@ public partial class SilverHindEvent : SideEvent
 		Bolts++;
 		sawYouLeft = 2.5f;
 		SfxPlayer.AtPosition(SfxCatalog.HindBolt, hind, 0.04f);
+		BoundTo(FurthestPlaceFrom(feet), calm: false);
+
+		// The hunt's hounds, slipped at the one who startled her, from the side away from her.
+		if (Game != null)
+		{
+			Vector2 away = (feet - hind).Normalized();
+			for (int i = 0; i < HoundsOnBolt; i++)
+			{
+				float spread = (i - (HoundsOnBolt - 1) * 0.5f) * 0.6f;
+				Vector2 at = Game.ReachablePoint(feet + away.Rotated(spread) * 420f);
+				Game.SpawnEventEnemy(BestiaryRole.Fast, at, 1f, false);
+			}
+		}
+	}
+
+	// Let near, she goes on to the next of her places in their order (one at least a stalk away from him), calm: no
+	// hounds, no "saw you".
+	private void GoOn(Vector2 feet)
+	{
+		int next = -1;
+		for (int k = 1; k < places.Count; k++)
+		{
+			int i = (placeIndex + k) % places.Count;
+			if (places[i].DistanceTo(feet) >= PlaceMinStep)
+			{
+				next = i;
+				break;
+			}
+		}
+		BoundTo(next >= 0 ? next : FurthestPlaceFrom(feet), calm: true);
+	}
+
+	private int FurthestPlaceFrom(Vector2 feet)
+	{
 		int best = placeIndex;
 		float bestDistance = -1f;
 		for (int i = 0; i < places.Count; i++)
@@ -359,25 +426,19 @@ public partial class SilverHindEvent : SideEvent
 				best = i;
 			}
 		}
-		placeIndex = best;
+		return best;
+	}
+
+	private void BoundTo(int place, bool calm)
+	{
+		placeIndex = place;
+		calmBolt = calm;
 		boltFrom = hind;
-		boltTo = places[best];
+		boltTo = places[place];
 		boltLength = Mathf.Max(1f, boltFrom.DistanceTo(boltTo));
 		boltT = 0f;
 		facingRight = boltTo.X >= boltFrom.X;
 		mood = Mood.Bolting;
-
-		// The hunt's hounds, slipped at the one who startled her, from the side away from her.
-		if (Game != null)
-		{
-			Vector2 away = (feet - hind).Normalized();
-			for (int i = 0; i < HoundsOnBolt; i++)
-			{
-				float spread = (i - (HoundsOnBolt - 1) * 0.5f) * 0.6f;
-				Vector2 at = Game.ReachablePoint(feet + away.Rotated(spread) * 420f);
-				Game.SpawnEventEnemy(BestiaryRole.Fast, at, 1f, false);
-			}
-		}
 	}
 
 	private void TickBolt(float delta)

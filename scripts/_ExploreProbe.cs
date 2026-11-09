@@ -239,7 +239,7 @@ public partial class _ExploreProbe : Node
 	private bool intoGazeWalked;
 	private float hindClearClock;
 	private float hindStood;
-	private (bool Seen, int Bolts, bool Won, int Places, bool SawInto) hindSnap;
+	private (bool Seen, int Bolts, bool Won, int Places, bool SawInto, int Approaches) hindSnap;
 	private int hindSnapCur = -1;
 	private int thawStrayTouches;
 	private (bool Seen, int Phrases, int Singings, int Wrongs, int Notes) thawSnap;
@@ -1310,11 +1310,13 @@ public partial class _ExploreProbe : Node
 			}
 			if (e is SilverHindEvent || (hindSnap.Seen && cur == hindSnapCur))
 			{
-				Check("the Silver Hind was stalked to her side", hindSnap.Won,
-					$"{hindSnap.Bolts} bolt(s), {hindSnap.Places} places, stood still {hindStood:0.0}s while she looked");
+				// The snapshot is taken while she runs; the win lands on the frame the sites close, so ask the event.
+				bool hindWon = hindSnap.Won || (e is SilverHindEvent && e.IsWon);
+				Check("the Silver Hind was stalked to her side, every time she asked", hindWon && hindSnap.Approaches >= 2,
+					$"{hindSnap.Approaches} approach(es), {hindSnap.Bolts} bolt(s), {hindSnap.Places} places, stood still {hindStood:0.0}s while she looked");
 				if (intoGaze)
 					Check("walking on in her gaze, he was seen: she bolted, and he stalked her again from there",
-						hindSnap.SawInto && hindSnap.Bolts >= 1 && hindSnap.Won, $"{hindSnap.Bolts} bolt(s)");
+						hindSnap.SawInto && hindSnap.Bolts >= 1 && hindWon, $"{hindSnap.Bolts} bolt(s)");
 				else
 					Check("a stalker who is still whenever her head is up is never seen", hindSnap.Bolts == 0,
 						$"{hindSnap.Bolts} bolt(s)");
@@ -1710,7 +1712,8 @@ public partial class _ExploreProbe : Node
 			if (clearSwarm)
 				hindClearClock = 0f;
 			hindSnapCur = cur;
-			hindSnap = (true, stalking.Bolts, stalking.IsWon, stalking.Places.Count, hindSnap.SawInto || (intoGazeWalked && stalking.Bolts > 0));
+			hindSnap = (true, stalking.Bolts, stalking.IsWon, stalking.Places.Count, hindSnap.SawInto || (intoGazeWalked && stalking.Bolts > 0),
+				stalking.Approaches);
 		}
 		// The thaw: listened to, then sung back at his own walk (SingStep); the swarm cleared only every 6 s.
 		if (e is ThawEvent thawing && thawing.IsFound)

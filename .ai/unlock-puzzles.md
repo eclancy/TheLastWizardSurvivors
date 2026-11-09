@@ -875,6 +875,7 @@ No two events share an ask, and no event shares one with a secret in its chapter
 | Cursed Dungeon | the Gaoler's key | carry | **slip past** |
 | The Court | the seer's voice | seek | seek |
 | The Court | the dotted door | trace | **draw in one stroke** |
+| The White Downs (far shore) | the Silver Hind | - | **stalk** (built with the chapter, F3: `.ai/second-half.md` 9, "F3, built") |
 
 ---
 
