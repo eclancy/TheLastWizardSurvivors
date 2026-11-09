@@ -59,7 +59,25 @@ public partial class Node2DGame : Node2D
 	/// <remarks>Hook 6: a chapter's rules may pin it (ChapterRules.PinnedPaceSeconds - the Throne's end state).</remarks>
 	public float PaceSeconds => chapterRules?.PinnedPaceSeconds ?? timeElapsed / RunPace;
 
-	private float PaceMinutes => Mathf.Max(0.0f, PaceSeconds / 60.0f);
+	/// <summary>
+	/// THE CHAPTER'S OWN VICTORY TIME, in real seconds of run clock: when its warden walks in. The one accessor every
+	/// "past the boss" rule reads - endless's clamp below, its returning warden's quarter hour, its first night's end
+	/// (Node2DGame.Endless.cs) - so a chapter whose run is not fifteen minutes (the far shore's twenty) moves them all
+	/// by changing what this returns, never a literal 900 or TimerVictorySeconds read beside it. Today
+	/// TimerVictorySeconds, which is 900 on every chapter; the reference run's length where a chapter has no clock
+	/// (the Throne sets it to 0: its procession brings him).
+	/// </summary>
+	public float ChapterVictorySeconds => TimerVictorySeconds > 0f ? TimerVictorySeconds : ReferenceRunSeconds;
+
+	/// <summary>The same moment on the pace clock: where everything that grows with the run stops growing.</summary>
+	public float ChapterVictoryPaceSeconds => ChapterVictorySeconds / RunPace;
+
+	// Held at the chapter's victory time (.ai/endless-mode.md 1.6): the three readers that would keep growing past the
+	// boss - spawn health's per-minute line, the Warden's 1 + 0.22 x minutes and the XP multiplier - stop where the
+	// boss stops the clock today. It changes nothing before then (the clock never ran past it until endless), so every
+	// measured table in .ai/run-pacing.md stands. Raw PaceSeconds still runs on: the elite schedule and the Warden's
+	// clock read it, and a night needs both.
+	private float PaceMinutes => Mathf.Clamp(PaceSeconds, 0.0f, ChapterVictoryPaceSeconds) / 60.0f;
 	// Fallbacks only. The spawn ring is measured from the visible rectangle now (see
 	// GetSpawnRadiusForDirection); these are what it falls back to if the camera cannot be read.
 	[Export] public float SpawnMinDistance { get; set; } = 250.0f;

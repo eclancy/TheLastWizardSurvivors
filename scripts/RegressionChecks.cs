@@ -52,6 +52,8 @@ public static partial class RegressionChecks
 		HudBand.Validate(warnings);
 		ValidateWorldMap(warnings);
 		ValidateBossRush(warnings);
+		// Endless (RegressionChecks.Endless.cs, .ai/endless-mode.md).
+		ValidateEndless(warnings);
 		ValidateHazardPlacement(warnings);
 		ValidateFamiliar(warnings);
 		ValidateSpellVariants(warnings);

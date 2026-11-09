@@ -4,9 +4,17 @@ Eric, 2026-11-08:
 
 > "we want to also unlock endless mode once you beat the original campaign"
 
-**Status: design for Eric's review, 2026-11-08. Nothing is built.** Section 6 is the short list of
-decisions that are his; every other choice here is a recommendation he can overturn. Every number in
-sections 1 and 3 is a first value to be measured (section 5, E5), not a measurement.
+**Decided 2026-11-08.** Eric read the summary - unlocked by taking back the Throne (and the chapter's own
+warden beaten), chosen in the run when the warden falls (the vigil beside the way home), the warden
+returning every quarter hour with the field's strength climbing by the minute, a wall that ends every run
+by about 90 minutes, a capped purse (600 a run), three Feats, records per chapter, wizard and difficulty,
+only the first night counting for the campaign's deeds, the far shore left out, no cutscene - with all
+five questions of section 6 answered as recommended, and said:
+
+> "Build it"
+
+**Status: being built (section 5, E0 to E6).** Every number in sections 1 and 3 was a first value; the
+"Built" notes in section 7 say what was measured and what moved.
 
 No endless mode exists today. "Endless" in the code means only that the procedural ground streams
 forever (`TerrainStreamer`). "The original campaign" is the road: the 13 chapters of
@@ -515,16 +523,20 @@ in the hand at minute 80.
 
 ## 6. Questions for Eric
 
+All five **decided 2026-11-08, as recommended** ("Build it").
+
 1. **Where the choice is made.** In the run, at the warden's fall: the way home or the vigil
    (recommended) - or a button on the world-map card, chosen before the run, as Vampire Survivors and
-   Halls of Torment do?
+   Halls of Torment do? **Decided: in the run, at the fall.**
 2. **What a night is.** The warden is sent again every quarter hour, the field growing stronger by the
    minute between (recommended) - or no boss after the first, only the climb - or Vampire Survivors' loop,
-   the clock back to 0:00 and the chapter replayed stronger?
+   the clock back to 0:00 and the chapter replayed stronger? **Decided: the warden every quarter hour,
+   the field climbing between.**
 3. **The wall.** Should the night close in for certain from an hour after the first fall, so every run
-   ends by about an hour and a half (recommended) - or grow without end?
+   ends by about an hour and a half (recommended) - or grow without end? **Decided: the wall.**
 4. **What a night may earn.** Places found in a night count, but everything measured over a run - a
    Conjunction first made included - counts only the first night (recommended) - or should a Conjunction
-   first made in a night count?
+   first made in a night count? **Decided: places count, measures read the first night; a Conjunction
+   first made in a night waits for a run that makes it in the first.**
 5. **The far shore.** Leave it out of endless until its six seats are built, then decide (recommended) -
-   or plan for it now?
+   or plan for it now? **Decided: left out.**
