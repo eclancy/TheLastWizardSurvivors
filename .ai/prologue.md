@@ -1,6 +1,6 @@
 # The prologue
 
-The story-mode introduction: eight illustrated panels, about 38 seconds, mostly without words. Built
+The story-mode introduction: eight illustrated panels, about 40 seconds, mostly without words. Built
 2026-10-31 from Eric's request: *"When you first open up story mode, there should be an introduction
 to the story, mostly told through art, introducing the final boss and his dark creatures taking over
 the land, and kidnapping the other wizards."* And then: *"Overall keep text minimal."*
@@ -13,7 +13,7 @@ choice below comes from it.
 | # | Panel (`name`) | Line | What it is |
 |---|---|---|---|
 | 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it five of the game's own wizards (below), each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
-| 2 | He comes (`throne`) | *He came here first.* | The same circle under him, and **only his silhouette**: a tall cowled shape inside a collar of points, one arm raised with the wizards' light streaming into his hand, rimmed by an eclipse of his own dark light behind his head. No face, folds, trim or keys. The stones are down, the wizards are on the ground, and the shadow running out of his hem has eyes in it. |
+| 2 | He comes (`throne`) | *He came here first.* | **Animated** (2026-11-08, Eric: *"it's hard to see what he's doing in the background, it should show him lifting each of the wizards into the air to capture them"*; below). The moot's circle under him, its fire out and its ward gone cold, the stones thrown down outward, and **only his silhouette** at the back of it: a tall cowled shape inside a collar of points, one arm raised, an eclipse of his own dark light behind his head. No face, folds, trim or keys; the shadow running out of his hem has eyes in it. The five stand round the cold ward as the moot left them, each staff still lit - and then he takes them one at a time: his reach leaves his hand, a hoop of his violet closes on one and lifts it into the air, where it hangs in his grip while its light streams out of its staff into his hand. The outer two, the inner two, and last the Pyromancer from the front of the ring, lifted up past him to hang over his sun: a crown of five round his head. |
 | 3 | The tide (`tide`) | - | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture). His shadows over the land: a village at the foot of a hill, still lit and quiet for a breath - then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope toward the village, every body on its own lane with its feet on the ground, growing as it comes, the front rank striding up big by the village as the panel ends. The last frame is the old still: the flood arrived. Every one of them wears his mark in its eyes. |
 | 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
@@ -41,7 +41,8 @@ Nothing else is said: no title card, no narration, nothing an image is already s
 **Rules it keeps:**
 
 - **He is the only source of dark light.** The darkness ramp is used as emission on him, his eclipse,
-  his orb, the chain and the corona over the tower - nowhere else. What his light lands on takes the
+  his orb, the chain, his grip on the five in panel 2 (the reach, the hoops and the glow behind each one he
+  holds) and the corona over the tower - nowhere else. What his light lands on takes the
   violet *pigment* row, as the ward's floor takes gold (`.ai/title-screen.md`, "emissive ramps belong
   on the emitter").
 - **His creatures wear his mark and no colour.** Silhouettes in occlusion, one class attachment each
@@ -61,8 +62,11 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   goofy. Use the silhouettes of the characters in the game."* Each is now cut from his real sprite
   (`roster_figure` / `silhouette` in the generator: the 48 cell's pixels, contact line and sparks
   dropped, smoothed onto the panel's grid, filled flat, lit only at the anchor where his own element
-  sits in the sprite). Which frames: idle in the moot, the second frame of his death strip in panel 2
-  (going down), his walk in panel 4. **Only the five whose silhouette a fresh save already shows** -
+  sits in the sprite). Which frames: idle in the moot and in panel 2 while he stands, the first frame of
+  his death strip once the hoop has him (the flinch), his walk in panel 4. In panel 2 each is filled higher
+  up his own robe's row than the moot's deep end - the stop that gives the five an even brightness, so the
+  red row's Pyromancer sits two stops above the rest (`THRONE_ROBE`) - and drawn a third taller than the
+  moot drew him, so all five read as wizards at a glance on a phone. **Only the five whose silhouette a fresh save already shows** -
   the four disciplines and John Dee. Tituba, Vainamoinen and Laelaps are secret until their chapters
   open (`.ai/side-events.md`, "Secret wizards"), and the prologue plays before any chapter has, so it
   would print the answer before the question. Dee's orb is the darkness ramp in the game; here it burns
@@ -119,11 +123,12 @@ and the ward's construction from `splash.vigil`. New here: the standing stones, 
 silhouettes and the searching hound (`sniffing_hound`), the dark wizard, the black sun, the tower and
 the player from behind (`player_back`).
 
-**The animated panels.** Three panels animate, each in its own box of its mid layer (`ANIMS` holds each
-one's box, clock and atlas width): the tide's rush (`TIDE_BOX`, 560x272 at 400,328 - the whole flood, so
-its still mid layer is empty), the hiding's searchers (`MISSED_BOX`, 368x112 at 296,400) and the break's
-chain (`BREAK_BOX`; `.ai/cutscenes.md` says what moves). Each is drawn at 8 frames a second over the
-panel's hold and written as `<name>-anim.png` (an atlas, four frames a row) with `<name>-anim.json` (the
+**The animated panels.** Four panels animate, each in its own box of its mid layer (`ANIMS` holds each
+one's box, clock and atlas width): the five lifted (`THRONE_BOX`, below), the tide's rush (`TIDE_BOX`,
+560x272 at 400,328 - the whole flood, so its still mid layer is empty), the hiding's searchers
+(`MISSED_BOX`, 368x112 at 296,400) and the break's chain (`BREAK_BOX`; `.ai/cutscenes.md` says what
+moves). Each is drawn at 8 frames a second over the panel's hold (the throne at 12) and written as
+`<name>-anim.png` (an atlas, four frames a row; the throne's eight) with `<name>-anim.json` (the
 box, the clock, and a timeline of one atlas frame per tick, so a held frame is stored once). Each frame
 is the WHOLE mid layer inside the box - so laid over the still mid layer it is the scene at that moment,
 and outside the box nothing moves. Every edge and size is a multiple of 8, so the dissolve's Bayer
@@ -132,6 +137,25 @@ panel, pixel for pixel, with no seam. The hiding is about 7 MB of texture while 
 which animates its whole flood, about 23 (446 KB on disk - flat colours compress well). The tide's bodies
 are rendered once per (kind, size, seed, light) and pasted along their lanes (`creature_fig`,
 `_TIDE_CACHE`), or the 45 frames would re-draw 1,600 creatures each.
+
+**The throne's lifting** (`THRONE_BOX`, 368x312 at 296,232: the five from the ground to the air, him, his
+orb and the streams; its still mid layer is empty inside it, the break's pattern). It runs at **12 frames a
+second**, not 8: a lift carries a whole figure up to 200 art pixels, and at 8 the rise went up in jumps the
+eye could not follow as one movement. Each lift is a smoothstep held under 150 art px/s (`THRONE_LIFT`,
+twelve and a half a frame), and the panel is held **7.0 s**, not 5.2, so five of them fit one after another
+with a still beat before the first and a rest after the last. The clock, in panel seconds (`THRONE_FIVE`):
+the circle stands whole and still until his reach leaves his hand at 1.1 s; the hoops close at 1.25 (the
+Stormcaller, outer left), 1.85 (the Geomancer, outer right), 2.45 (the Frostweaver), 3.05 (Dee) and 3.65 (the
+Pyromancer, front centre), each foot leaving the ground 0.3 s after its hoop; the last comes to rest over his
+sun at about 6.0 s, and the dissolve to the tide begins at 6.3. From each hoop on, that wizard's light streams
+out of his staff into the orb in the raised hand, which grows with every light it takes, and the staff burns
+down to half (still its own colour, so each is still known by his light). The frames are the whole mid layer
+drawn in two passes: the ground (shadows, the hoops' marks, him, what passes behind him) under the panel's
+full vignette, so it meets the still layer at the box's edge without a seam, and the five and his grip on
+them under none: they never leave the middle of the frame, and the vignette's dither at any strength set a
+lattice of stone dots over their flat robes (at a fifth of it, one pixel in 32, still a grid on screen). 60
+unique frames of 84 ticks: about 28 MB of texture while the panel is up (560 KB on disk), the heaviest of the
+four, a little over the tide's 23. No impact beat: the tide's burst, a few seconds on, is the one that is his.
 
 ## The scene
 
@@ -236,23 +260,26 @@ and exits non-zero on any failure. Takes about a minute.
 
 ```
 xvfb-run -a -s "-screen 0 1400x1300x24" "$GODOT_BIN" --path . --resolution 1280x720 --fixed-fps 60 \
-  scenes/_UiShot.tscn -- --scene=res://scenes/Prologue.tscn --frames=396 --shot=pro-throne --no-save-writes
+  scenes/_UiShot.tscn -- --scene=res://scenes/Prologue.tscn --frames=300 --burst=8,44 --shot=pro-throne --no-save-writes
 ```
 
 Add `--resolution 540x1212 ... --portrait --safe-area` for the Pixel 9 canvas. At 60 fps the panels sit
-mid-hold at frames 138, 396, 672 (the tide, animated), 954, 1236, 1512 (the break, animated: see
-`.ai/cutscenes.md`), 1776 and 2022; frame 255 is mid-dissolve from the first to the second, and the
-whole thing ends at about frame 2280. The tide starts dissolving in at frame 504, so its moment `t`
-seconds in is frame `504 + 60t`: `--frames=600 --burst=5,42` takes the rush at 1.6, 2.3, 3.0, 3.7 and
-4.4 s (the wave over the crest, the pour, the flood mid-slope, the front rank arriving). The hiding
-starts dissolving in at frame
-1068, so its moment `t` seconds in is frame `1068 + 60t`: `--frames=1128 --burst=4,60` takes it at 1,
-2, 3 and 4 s (the hound arriving, sniffing at his shoulder, standing, gone past). `--frames=138
---burst=6,276` takes the first six panels in one run.
+mid-hold at frames 138, 444 (the throne, animated), 780 (the tide, animated), 1062, 1344, 1620 (the
+break, animated: see `.ai/cutscenes.md`), 1884 and 2130; frame 255 is mid-dissolve from the first to the
+second, and the whole thing ends at about frame 2388. The throne starts dissolving in at frame 234, so its
+moment `t` seconds in is frame `234 + 60t`: `--frames=300 --burst=8,44` (above) takes it at 1.1, 1.8, 2.6,
+3.3, 4.0, 4.8, 5.5 and 6.2 s (his reach to the first; the first rising and the second taken; the outer two
+up; the inner two going; the last in front of him; going up past his head; all five held; at rest before
+the dissolve). The tide starts dissolving in at frame 612, so its moment `t` seconds in is frame
+`612 + 60t`: `--frames=708 --burst=5,42` takes the rush at 1.6, 2.3, 3.0, 3.7 and 4.4 s (the wave over
+the crest, the pour, the flood mid-slope, the front rank arriving). The hiding starts dissolving in at
+frame 1176, so its moment `t` seconds in is frame `1176 + 60t`: `--frames=1236 --burst=4,60` takes it at
+1, 2, 3 and 4 s (the hound arriving, sniffing at his shoulder, standing, gone past). `--frames=138
+--burst=6,300` takes the first six panels in one run, each well inside its hold.
 
 ## Not done
 
-- Only the tide, the hiding and the break animate. The others are still but for drift (no flicker on
-  the fire, no blinking eyes); the animated box would carry any of them if it is wanted.
+- Only the throne, the tide, the hiding and the break animate. The others are still but for drift (no
+  flicker on the fire, no blinking eyes); the animated box would carry any of them if it is wanted.
 - No pad has been held on the skip prompt and no phone has played it; both are reasoned from
   `MenuNavigator` and `BaseButton` and tested with an injected key.

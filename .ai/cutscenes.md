@@ -44,6 +44,7 @@ offset for the prologue's panels. Every hold is a named constant, and `Regressio
 | **Boss arrival** (`Node2DGame.BossEntrance.cs`) | the climax: speed lines out of the body in `EntranceFlareElement`'s ramp (violet for the dark wizard), with the shake, bar jolt, push-in kick and flare it had | 0.65 s before the pan (`BossEntrancePanDelay`); on the landed boss 0.5 s after it lands and 0.45 s after the pan rests, whichever is later (`BossEntranceLandedHold`, `RestHold`); the camera goes back with the field still held; home, the bars go out and 0.6 s later the field is let go (`BossEntrancePlayHold`) | pan capped at 220 px/s and 600 px/s2 (`BossEntrancePanMaxSpeed`, `MaxAccel`), the zoom on a capped spring too; both ways |
 | **The landed boss** (`BossEnemy.IsAwaitingFight`) | - | stands in its own sprite, untargetable with its clock stopped, until the field is let go (`LetLandedBodiesFight`); the Long Coil and the kids' wizard lead their arrivals (`EntranceDelaySeconds` 0.6, 0.75) so their reveal lands with the camera there | - |
 | **The prologue's break** (`Prologue`, `Beat.Impact`) | at 2.0 s: warm speed lines out of the Archmage's staff, a shake of the stage, a warm dithered flash | every panel still 0.9 s at its start and 0.35 s at its end; the black holds 0.6 s after the last panel (`EndHoldSeconds`) before the next screen - the prologue's, every lesson's, every freeing's | the drift a smoothstep, at most 23 canvas px/s (`MaxDriftSpeed` 28) |
+| **The prologue's throne** (the lifting, 2026-11-08) | calm: none - his reach, a hoop flashing on the ground and speed lines of his light under each one rising are drawn in the frames; the tide's burst a few seconds on is his one impact | the circle whole and still for 1.1 s (the dissolve and a beat) before his reach; one taken every 0.6 s; the last at rest 0.33 s before the dissolve out, the panel held 7.0 s (it was 5.2) so the five fit one after another | each lift a smoothstep under 150 art px/s, its box at 12 frames a second (the others' 8 went up in jumps); back and mid as one |
 | **The prologue's tide** (the rush, 2026-11-07) | at 1.4 s, the wave bursting over the crest: COLD speed lines out of the ridge, a shake, his violet - the one impact that is the dark wizard's | the village lit and the slope empty for the first 1.1 s: the quiet before it | the rush is the animated box's own frames (8 fps), never a layer drifting; back and mid drift as one so the flood cannot slide on its ground |
 | **Lessons and freeings** (embedded reels) | calm: none | the same end hold before the results | the same drift |
 | **The defeat** (`DefeatSequence`) | violet speed lines rush in on him through the zoom; the four jolts it had | freeze held 0.55 s; a 0.3 s close-up before he falls; 0.6 s between his landing and the word | the zoom 0.6 s, eased in and out (it was 0.32 s, fastest on its first frame) |
@@ -139,7 +140,8 @@ darkness ramp is emission on him and his chain alone); from the break on it is t
 atlas width. The break's box is `BREAK_BOX` (288,384 - 672,576, every edge on the 8-pixel Bayer grid), 8 fps
 over 5.4 s, 35 unique frames of 44 ticks. Its still mid layer is empty inside the box: everything there moves.
 
-**Length:** the prologue is about 38 s now (eight panels; `Prologue.ReelSeconds("prologue")`).
+**Length:** the prologue is about 40 s now (eight panels; `Prologue.ReelSeconds("prologue")`; 38 until the
+throne's lifting, 2026-11-08, held its panel 7.0 s instead of 5.2).
 
 ## B. Freed (built)
 
@@ -274,14 +276,16 @@ python tools/art/freed.py --preview                  # the ground and every free
 
 Both audit every layer against the contract palette and must print **0** off-contract pixels.
 
-**The pictures.** At 60 fps the prologue's panels start dissolving in at 0, 3.9, 8.4, 13.3, 17.8, 22.5,
-27.2 and 31.3 s, and it ends at about 38.0 s. The break starts at frame 1350, so its moment `t` is frame
-`1350 + 60t`: `--frames=1416 --burst=5,42` takes it at 1.1, 1.8, 2.5, 3.2 and 3.9 s (banked, his light up,
-the chain flying, the first lights back, three lights back). The five is mid-hold at 1776, the road at 2022.
+**The pictures.** At 60 fps the prologue's panels start dissolving in at 0, 3.9, 10.2, 15.1, 19.6, 24.3,
+29.0 and 33.1 s, and it ends at about 39.8 s. The break starts at frame 1458, so its moment `t` is frame
+`1458 + 60t`: `--frames=1524 --burst=5,42` takes it at 1.1, 1.8, 2.5, 3.2 and 3.9 s (banked, his light up,
+the chain flying, the first lights back, three lights back). The five is mid-hold at 1884, the road at 2130.
+The throne's lifting (`.ai/prologue.md`, "The throne's lifting") starts at frame 234: `--frames=300
+--burst=8,44` takes it at 1.1 to 6.2 s.
 
 ```
 "$GODOT_BIN" --path . --resolution 1280x720 --fixed-fps 60 scenes/_UiShot.tscn -- \
-  --scene=res://scenes/Prologue.tscn --frames=1356 --burst=5,42 --shot=cut-break-pc --no-save-writes
+  --scene=res://scenes/Prologue.tscn --frames=1524 --burst=5,42 --shot=cut-break-pc --no-save-writes
 "$GODOT_BIN" --path . --resolution 1280x720 --fixed-fps 60 scenes/_UiShot.tscn -- \
   --scene=res://scenes/Prologue.tscn --reel=freed_tituba --frames=200 --shot=cut-freed-tituba-pc --no-save-writes
 ```
