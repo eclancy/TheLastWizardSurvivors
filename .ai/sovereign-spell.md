@@ -329,7 +329,7 @@ Eric, 2026-11-08, word for word:
 
 ### 9.1 The recipe
 
-**Arcane Explosion down Resonance + Gravewell down Mass Grave**, both at level 8, offered in the Ascension
+**Arcane Explosion (shown as Canticle since 2026-11-09, `.ai/spell-roster.md`) down Resonance + Gravewell down Mass Grave**, both at level 8, offered in the Ascension
 strip like every Conjunction (`ComboCatalog`, the last recipe, `IsRite`) under the both-parents-at-8 rule.
 Resonance is the blast that goes off again wherever the wizard's other spells last struck; Mass Grave is
 one great grave a cast under the front of the swarm, draining what it holds. Arcane, Earth and Darkness:

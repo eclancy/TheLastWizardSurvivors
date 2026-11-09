@@ -3462,6 +3462,26 @@ skeleton:
   on the field and is limited by how many enemies there are, not by what each hit deals. The cut
   would only have weakened it against a single elite or boss, where the width gains it nothing.
 
+### Canticle - Arcane Explosion sung on the music's beat (2026-11-09)
+
+The Sibyl's spell, re-themed on Eric's idea ("Maybe Sybil's arcane explosion actually adds to the music of the
+game"; `.ai/character-fit.md` section 5, row 19). Display name **Canticle**; the id `arcane_explosion` and every
+save key stay. Built `28909de5`..`57365a8f`; numbers unchanged, balance testing pending; nobody has heard it.
+
+- **A note per charging cast**, in that spell's element voice (`assets/sfx/note_<element>.wav`, A4, pitched to the
+  chord's next tone in the chapter's key). **The burst waits for the next counted beat** of the sounding music and
+  sounds the gathered notes as one chord (at most six). No music with a known beat: it bursts at once.
+  `assets/music/beats.json`, written by `tools/audio/music.py` (`--beats` rewrites it without a render), read by
+  `MusicBeats`; `MusicPlayer` says where the music is in its beat. `--no-music` and `--canticle-log` for checks.
+- **The Hundred Mouths** (the Sibyl's form): its echoes land on the beats after the burst, two a beat.
+- **Cards:** Sympathetic Blast is **Harmony**, and takes the element of **the spell in the slot right after
+  Canticle's** (the strip marks that slot; an empty one leaves it Arcane; no wrap-around) - the first slot-play
+  effect (`in-flight.md` 9a); Static Nova is **Storm Chord**; Lingering Rift is **Sustain** (two to four thin rings
+  pulsing in place, the outermost on the radius it hurts); Resonance is kept (the Sovereign Rite names it); Event
+  Horizon is **Fermata** (a fermata mark on the frozen sphere). Tagline: "Casts build a chord; it sings out."
+- Still to judge by ear: the chords in the stranger modes, whether a burst lands musically, the charge notes'
+  level; by eye: the motes in a full swarm on the phone, Harmony's mark on the Sketchbook's paper.
+
 ### Arcane Explosion charges off your other spells
 
 **Today:** a pulse around the player on a 1.5s timer. Indistinguishable in feel from Solar Flare and
