@@ -3,8 +3,16 @@
 Eric, 2026-11-08: *"start brainstorming ways to help combination spells happen in a way that the player
 can naturally work towards in the campaign through unlocks, etc."*
 
-**Status: a brainstorm for Eric to choose from (2026-11-08). Nothing here is built and no code changed.**
-Section 3 is the recommended shortlist and section 5 the questions.
+**Status: decided by Eric (2026-11-08) and being built** - section 3's four rungs, every question in
+section 5 answered as recommended. Section 6 says what was built and where.
+
+**Decided, Eric, 2026-11-08:** having read the summary (the four-rung ladder, and that the doc's other
+recommendations would be taken as they stand), *"Build the ladder"*. So the shortlist (section 3) is built
+rung by rung - I Know it, II Kindred Draw, III the pair shares its light, IV Nostradamus foretells - and each
+question in section 5 is decided as it recommends (marked there). His rules no rung may loosen: both parents
+at level 8 down both named Ascensions; one locked thing on show at a time (`.ai/slow-start.md`); every
+non-starter spell from exactly one achievement (`UnlockCatalog`); and no rung adds XP, rerolls, bans or
+element tags.
 
 **The rule no idea here loosens** (Eric, `.ai/combo-spells.md` section 0): both parents at level 8, each
 down the one Ascension its recipe names. What the ideas may touch is everything around that rule: what
@@ -349,25 +357,28 @@ like a chore; whether the Sibyl's reel lands; whether a recipe made on the road 
 
 ## 5. Questions for Eric
 
+**All nine decided by Eric, 2026-11-08, as recommended** ("Build the ladder"). Each carries its decision.
+
 1. **The element gate on the road.** The far shore waives it for tonight's recipe. May the road ease it for
    a recipe's named paths as an *earned* rule, the recipe itself unchanged (idea 8)? **Recommended: yes**,
-   from the Archivist, at full strength; half if the bot then makes recipes before pace 10.
+   from the Archivist, at full strength; half if the bot then makes recipes before pace 10. **Decided: as
+   recommended.**
 2. **A favour on the road.** Should anything on the road deal a recipe's parents *first*, as the far sky
    does? **Recommended: only late and only chosen** - Nostradamus from the Court (idea 6). Before that, a
-   lean (Kindred Draw), never "first".
+   lean (Kindred Draw), never "first". **Decided: as recommended.**
 3. **Item 37's teacher.** When the Conjunctions lesson moves to a character, should it be the Sibyl
    (freed in the Geode Heart's chapter, a prophetess, +3 rerolls)? **Recommended: yes**, and her reel names
-   the save's first recipe.
+   the save's first recipe. **Decided: as recommended** - when item 37 lands; not part of the ladder's build.
 4. **Known from one half.** Show a recipe once the save owns either parent, the missing half by its
-   existing locked hint (idea 1)? **Recommended: yes**, from the lesson on.
+   existing locked hint (idea 1)? **Recommended: yes**, from the lesson on. **Decided: as recommended.**
 5. **The first recipe.** On the common path it is Sagittarius, which no bot has made. Build a recipe
    chapter 4 completes before F6-F10's others (idea 10)? **Recommended: Maelstrom first of the gods'
-   five**; Burning Briar if F6 waits.
+   five**; Burning Briar if F6 waits. **Decided: as recommended** - content, built with F6, not here.
 6. **Kindred Draw.** A new Power, three levels at 100 / 160 / 220, shown once Conjunctions are learned?
-   **Recommended: yes.**
-7. **Paying forward.** Should making one recipe make the next easier (idea 13)? **Recommended: no.**
+   **Recommended: yes.** **Decided: as recommended.**
+7. **Paying forward.** Should making one recipe make the next easier (idea 13)? **Recommended: no.** **Decided: no.**
 8. **The castle.** Nostradamus's chosen recipe (idea 6), or each castle chapter's fixed one (idea 11)?
    **Recommended: Nostradamus**: a planner chooses. The castle's recipes if the stage-select pledge proves
-   too much for a phone.
+   too much for a phone. **Decided: Nostradamus.**
 9. **The target.** A skilled player's planned recipe by about pace 11-12 on the road, the castle allowed a
-   minute more? **Recommended: yes.**
+   minute more? **Recommended: yes.** **Decided: as recommended.**
