@@ -156,6 +156,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 | 9 | Laelaps | keeps Cyclone Slash and Fated to Catch, unchanged. (Re-drawing the blades as a hound and fox of wind, the endless chase, stays an unasked idea) | "next" | kept |
 | 10 | Abe no Seimei | keeps Kindled Ward and Exorcist, unchanged | "next" | kept |
 | 11 | The Dark Wizard | keeps The Taking and Dread, unchanged. **His unlock is a mystery achievement**: The Taker Taken shows its condition (every chapter's boss on Hardcore) from the first run, and reads "???" for its name and its reward, with the seal, until done (`SealedName`/`SealedReward`, as a Conjunction's Feat reads before it is made). It was already listed under the Throne as "The Taker Taken - Frees someone": the title gave away who is taken | "do not change the dark wizard, but add his unlock condition as a mystery achievement" | built `ff5fa9a6`, validated (0 errors); the page not looked at |
+| 12 | Merlin | keeps Orb of Ages and Warding Hand, unchanged | "Next" | kept |
 
 ---
 
