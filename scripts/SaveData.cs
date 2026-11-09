@@ -32,7 +32,11 @@ public class SaveData
 	// 25 is the boon rework's (in-flight 41): runs hold two boon slots now and the shop sells the
 	// third and fourth, so a save that has played - every run it played held six - is granted both
 	// Reliquary Shelf levels rather than being asked to buy back capacity it had.
-	public const int CurrentSchemaVersion = 25;
+	// 26 is the Sovereign Rite's move onto its own recipe (Eric, 2026-11-08; .ai/sovereign-spell.md
+	// section 9): Arcane Explosion and Gravewell made one, paid by its Feat rather than the Warden of
+	// the Deep's deed. A save that owned the Rite, did that deed or beat the Warden keeps it - its
+	// Feat is recorded done, as 24 did for Shadow Bolt.
+	public const int CurrentSchemaVersion = 26;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -245,9 +249,10 @@ public class SaveData
 
 	/// <summary>
 	/// The lessons given (Teachings): the systems this save has been taught, each by its post-run cutscene,
-	/// by id ("ascension", "apotheosis", "conjunctions", "sovereign_rite"). A system is usable once its id is
-	/// here (the Ascension also by <see cref="AscensionLearned"/>). Schema 22 writes the first three for a
-	/// played save that could already use them, so it never sees the cutscenes.
+	/// by id ("ascension", "apotheosis", "conjunctions", "far_sky"). A system is usable once its id is here
+	/// (the Ascension also by <see cref="AscensionLearned"/>). Schema 22 writes the first three for a played
+	/// save that could already use them, so it never sees the cutscenes. "sovereign_rite" may still be here
+	/// from the Rite's retired lesson (2026-11-08); nothing reads it.
 	/// </summary>
 	public List<string> LessonsLearned { get; set; } = new();
 
@@ -472,6 +477,9 @@ public class SaveData
 
 		if (SchemaVersion < 25)
 			MigrateToBoonRework();
+
+		if (SchemaVersion < 26)
+			MigrateRiteToConjunction();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -1091,6 +1099,47 @@ public class SaveData
 	private const string ShadowBoltSpellId = "shadow_bolt";
 	private const string ShadowBoltOldDeedId = "castle_conqueror";
 	private const string ShadowBoltFeatId = "conjunction_shadow_bolt";
+
+	/// <summary>
+	/// Schema 26: the Sovereign Rite became a Conjunction of its own (Eric, 2026-11-08; .ai/sovereign-spell.md
+	/// section 9) - Arcane Explosion down Resonance and Gravewell down Mass Grave, made in a run and paid by its
+	/// recipe's derived Feat - and the Warden of the Deep's deed pays only its Arcane Energy now. A save that owned
+	/// the Rite keeps it, as schema 24 kept Shadow Bolt: the spell stays granted and its Feat is recorded done -
+	/// quietly, so the recipe is known rather than offered as new, its Codex page keeps its name, and no Arcane
+	/// Energy changes hands. "Owned" is the spell in the save, the Warden's deed done, or the Warden beaten (the
+	/// deed promised the Rite to a save that beat him, paid at the reconcile after its next run, which a save
+	/// migrated before that run has not had). What the Rite needed to be MADE changes for everyone - its two
+	/// parents, and Conjunctions learned - and that is the design, not a confiscation: this grants neither parent
+	/// and teaches nothing. Frozen ids below, never the live catalogs. True when it did anything
+	/// (RegressionChecks.ValidateRiteMigration).
+	/// </summary>
+	internal bool MigrateRiteToConjunction()
+	{
+		bool owned = UnlockedSpellIds.Contains(RiteSpellId, System.StringComparer.OrdinalIgnoreCase)
+			|| UnlockedAchievementIds.Contains(RiteOldDeedId, System.StringComparer.OrdinalIgnoreCase)
+			|| (Lifetime?.HasDefeatedBoss(RiteOldBossId) ?? false);
+		if (!owned)
+			return false;
+		bool changed = false;
+		if (!UnlockedAchievementIds.Contains(RiteFeatId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedAchievementIds.Add(RiteFeatId);
+			changed = true;
+		}
+		if (!UnlockedSpellIds.Contains(RiteSpellId, System.StringComparer.OrdinalIgnoreCase))
+		{
+			UnlockedSpellIds.Add(RiteSpellId);
+			changed = true;
+		}
+		return changed;
+	}
+
+	// Schema 26's frozen ids: the Rite, the deed that paid it from 2026-11-02 to 2026-11-08, that deed's boss, and
+	// the recipe's derived Feat.
+	private const string RiteSpellId = "sovereign_rite";
+	private const string RiteOldDeedId = "emberdeep_ended";
+	private const string RiteOldBossId = "emberdeep_warden";
+	private const string RiteFeatId = "conjunction_sovereign_rite";
 
 	/// <summary>
 	/// Schema 19: every spell that is not a starter is an achievement's (.ai/achievements-and-secrets.md

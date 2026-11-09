@@ -60,6 +60,8 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene FrostShardScene { get; set; }
 	[Export] public PackedScene RiptideScene { get; set; }
 	[Export] public PackedScene ShadowBoltScene { get; set; }
+	// The Sovereign Rite's caster (scenes/SovereignRite.tscn, SovereignRiteCaster; Player.Sovereign.cs).
+	[Export] public PackedScene SovereignRiteScene { get; set; }
 	[Export] public PackedScene ThornVineScene { get; set; }
 	[Export] public PackedScene GaleBladeScene { get; set; }
 	[Export] public PackedScene MoltenShardScene { get; set; }
@@ -4808,6 +4810,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("cinderbreath", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshFlamethrower(spell, CinderbreathScene);
 		else if (spell.Id.Equals("riptide", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, RiptideScene);
 		else if (spell.Id.Equals(ShadowBolt.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireShadowBolt(spell);
+		else if (spell.Id.Equals(SovereignRite.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireSovereignRite(spell);
 		else if (spell.Id.Equals("thorn_vine", StringComparison.OrdinalIgnoreCase)) outcome = FireThornVine(spell, ThornVineScene);
 		else if (spell.Id.Equals("gale_blade", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, GaleBladeScene);
 		else if (spell.Id.Equals("molten_shard", StringComparison.OrdinalIgnoreCase)) outcome = FireBoltSpell(spell, MoltenShardScene, BoltAim.RandomInRange);
@@ -7702,15 +7705,13 @@ public partial class Player : CharacterBody2D
 		}
 
 		// A combination is not in the spell catalog - it is never a card - and is made only by fusing its
-		// two parents, from the strip (Player.Combinations.cs, ComboCatalog).
-		// The Sovereign Rite is a Conjunction too, but its second half names the spell it anoints
-		// ("sovereign_rite:fireball", Player.Sovereign.cs), and nothing is fused.
+		// two parents, from the strip (Player.Combinations.cs, ComboCatalog) - the Sovereign Rite among them.
 		// The one exception is a Conjunction this wizard opened on (the dark wizard's The Taking): it levels on
 		// cards and takes his Apotheosis, so its selection is a level or his form, never a fusion.
 		if (HeldStartingConjunction(spellId) is SpellData opening)
 			return LevelStartingConjunction(opening, evolutionId);
 		if (ComboCatalog.ForId(spellId) is ComboDefinition combination)
-			return combination.IsRite ? TryAnoint(evolutionId) : TryFuse(combination);
+			return TryFuse(combination);
 
 		SpellData spellTemplate = ResolveSpellTemplate(spellId);
 		if (spellTemplate == null)
@@ -8205,11 +8206,9 @@ public partial class Player : CharacterBody2D
 			offers.Add(option);
 		}
 		// The combinations whose recipes this loadout meets (ComboCatalog, Player.Combinations.cs): after
-		// every spell's own, since both parents are already at level 8 and offer nothing of their own.
+		// every spell's own, since both parents are already at level 8 and offer nothing of their own. The
+		// Sovereign Rite is one of them, once its late gate holds too (Player.Sovereign.cs).
 		offers.AddRange(BuildComboOffers());
-		// The Sovereign Rite, on the same plate, once the save owns it and the run meets its gate (Player.Sovereign.cs).
-		if (TryBuildSovereignOffer() is LevelUpOption rite)
-			offers.Add(rite);
 		return offers;
 	}
 

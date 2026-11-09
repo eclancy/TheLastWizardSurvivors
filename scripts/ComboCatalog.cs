@@ -24,14 +24,7 @@ public sealed class ComboIngredient
 	public string SpellName { get; init; } = string.Empty;
 	public string AscensionName { get; init; } = string.Empty;
 
-	/// <summary>
-	/// The Sovereign Rite's second ingredient (<see cref="ComboDefinition.IsRite"/>): not one spell but whichever
-	/// active spell the player points the Rite at. Its <see cref="SpellId"/> and <see cref="AscensionId"/> are
-	/// empty and its <see cref="SpellName"/> reads "any active spell you hold".
-	/// </summary>
-	public bool AnyActiveSpell { get; init; }
-
-	/// <summary>"Hunter's Draw - Hunter's Mark": the parent as the browser and the Achievements row name it ("Sovereign Rite" when it names no Ascension).</summary>
+	/// <summary>"Hunter's Draw - Hunter's Mark": the parent as the browser and the Achievements row name it.</summary>
 	public string Label => string.IsNullOrEmpty(AscensionName) ? SpellName : $"{SpellName} - {AscensionName}";
 }
 
@@ -59,11 +52,12 @@ public sealed class ComboDefinition
 	public string SynergyTag { get; init; } = string.Empty;
 
 	/// <summary>
-	/// The Sovereign Rite (.ai/sovereign-spell.md, SovereignRite): the one recipe whose second ingredient is
-	/// any active spell (<see cref="ComboIngredient.AnyActiveSpell"/>) and whose result is that spell, anointed,
-	/// rather than a spell of its own. Its first ingredient is the Rite, which names no Ascension. It is unlocked
-	/// by a Road deed rather than by its Feat, offered by Player.TryBuildSovereignOffer rather than by
-	/// <see cref="ComboCatalog.Evaluate"/> (which never calls it Ready), and never fused.
+	/// The Sovereign Rite (.ai/sovereign-spell.md, SovereignRite): the capstone. Since 2026-11-08 an ordinary
+	/// two-spell recipe - Arcane Explosion down Resonance and Gravewell down Mass Grave - offered and fused as any
+	/// other, with two differences: the strip waits for its late gate as well (SovereignRite.MeetsGate: the player's
+	/// level and the fuel the other active spells would pour in), and fusing it silences every other active spell
+	/// for the rest of the run (Player.Sovereign.cs). Never the far sky's recipe (FarSky.MayName), and nobody opens
+	/// on it (RegressionChecks.ValidateOpeners).
 	/// </summary>
 	public bool IsRite { get; init; }
 
@@ -286,29 +280,42 @@ public static class ComboCatalog
 		// (F10's block is below; leave this one as it is)
 		// F10: Anvil Line (ricochet) - Molten Shard's Forge Swarm + Iron Palisade's Iron Ring; StartsFusedFor = "hephaestus".
 		// (the Sovereign Rite is below; leave it last)
-		// The Sovereign Rite (.ai/sovereign-spell.md section 3): the Rite and whichever active spell it is
-		// pointed at. Every other active spell falls silent and pours its levels into that one.
+		// The Sovereign Rite (.ai/sovereign-spell.md section 9; Eric, 2026-11-08: "the soverign rite should be a
+		// combination spell itself - pick two spells that make sense to combine to create this"). Resonance is the
+		// blast that goes off again where the wizard's spells struck; Mass Grave the one great grave under the front
+		// of the swarm, draining what it holds. Made one, a crowned blast falls on the thickest pack, a great grave
+		// opens under it and the blast goes off again in the grave (SovereignRiteCaster) - and every other active
+		// spell falls silent and pours its levels in. Arcane, Earth and Darkness: three, the ceiling, so Static Nova
+		// (+Lightning) on Arcane Explosion seals it. Arcane Explosion is the Cumaean Sibyl's own: not hers to make.
 		new()
 		{
 			Id = SovereignRite.SpellId,
 			Name = "Sovereign Rite",
 			Verb = "anoint",
 			IsRite = true,
-			First = new ComboIngredient { SpellId = SovereignRite.SpellId, SpellName = "Sovereign Rite" },
-			Second = new ComboIngredient { AnyActiveSpell = true, SpellName = AnyActiveSpellName },
+			First = new ComboIngredient
+			{
+				SpellId = SovereignRiteCaster.BlastSpellId, AscensionId = ArcaneExplosion.ResonanceId,
+				SpellName = "Arcane Explosion", AscensionName = "Resonance",
+			},
+			Second = new ComboIngredient
+			{
+				SpellId = SovereignRiteCaster.GraveSpellId, AscensionId = GravewellTrap.MassGraveId,
+				SpellName = "Gravewell", AscensionName = "Mass Grave",
+			},
 			ResourcePath = "res://SpellData_SovereignRite.tres",
 			SynergyTag = "Conjunction / Anoint",
 		},
 	};
 
-	/// <summary>How the Rite's second ingredient reads in a recipe (the Codex, the Achievements row).</summary>
-	public const string AnyActiveSpellName = "any active spell you hold";
-
 	/// <summary>The Sovereign Rite's recipe (<see cref="ComboDefinition.IsRite"/>).</summary>
 	public static ComboDefinition Rite => ForId(SovereignRite.SpellId);
 
-	/// <summary>The recipes made by fusing two spells: every recipe but the Rite.</summary>
-	public static IEnumerable<ComboDefinition> Fusions => Definitions.Where(d => !d.IsRite);
+	/// <summary>
+	/// The recipes made by fusing two spells: every recipe, the Rite among them since 2026-11-08 (until then it
+	/// fused nothing). Kept as its own name because the far sky and Every Conjunction Known read it.
+	/// </summary>
+	public static IEnumerable<ComboDefinition> Fusions => Definitions;
 
 	public static IReadOnlyList<ComboDefinition> All => Definitions;
 
@@ -371,8 +378,7 @@ public static class ComboCatalog
 	public static bool IsKnown(ComboDefinition recipe, SaveData save) =>
 		recipe != null && save != null
 		&& (GlobalStatsManager.IsAchievementUnlocked(save, FeatId(recipe.Id))
-			// The Rite's second ingredient is any spell: the recipe is known once the Rite is owned.
-			|| recipe.Ingredients.All(i => i.AnyActiveSpell || GlobalStatsManager.IsSpellUnlockedForLevelUp(save, i.SpellId)));
+			|| recipe.Ingredients.All(i => GlobalStatsManager.IsSpellUnlockedForLevelUp(save, i.SpellId)));
 
 	/// <summary>Whether the save has made the recipe at least once: its Feat is done, and the name may be shown.</summary>
 	public static bool IsMet(ComboDefinition recipe, SaveData save) =>
@@ -397,8 +403,8 @@ public static class ComboCatalog
 	public static ComboStanding Evaluate(ComboDefinition recipe, IEnumerable<SpellData> loadout, string starterSpellId)
 	{
 		var standing = new ComboStanding { Recipe = recipe };
-		// The Rite is never fused: Player.TryBuildSovereignOffer is its strip offer, so it is never Ready here.
-		if (recipe == null || recipe.IsRite)
+		// The Rite stands here as any recipe does; its late gate is the strip's to add (Player.TryBuildComboOffer).
+		if (recipe == null)
 			return standing;
 		List<SpellData> held = (loadout ?? Enumerable.Empty<SpellData>()).Where(s => s != null).ToList();
 		standing.Taken = held.Any(s => s.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));

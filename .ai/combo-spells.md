@@ -8,7 +8,8 @@ ascensions."*
 
 **Status: sections 0, 2 and 3 are built (2026-11-01, `wip/combo-sagittarius`) - the system and
 Sagittarius; section 6 says how. Section 7 is built too (2026-11-07): Shadow Bolt, once an ordinary
-chain spell, converted whole into the third fusion recipe (in-flight item 17). Section 4's nine are
+chain spell, converted whole into the third fusion recipe (in-flight item 17). Section 8 is built
+(2026-11-08): the Sovereign Rite, rebuilt as a recipe of two spells. Section 4's nine are
 still proposals.** There is no spell called
 Constellation: it is one of **Starfall's** two level 8 Ascensions (the stars stay lit where they fell,
 joined by lines of light that cut). So Sagittarius is **Hunter's Draw + Starfall**, and its recipe names
@@ -449,10 +450,9 @@ fusion and the spell firing - was taken through the menu by pad presses in `_UiS
 is unmeasured: no harness run reached it, and `ArrowShare` 0.8 and `MaxLitStars` 16 are still section 3's
 first guesses.
 
-**The Sovereign Rite is in `ComboCatalog` too** (2026-11-02, `.ai/sovereign-spell.md` section 8): a recipe with
-`IsRite`, whose first ingredient is the Rite and whose second is `AnyActiveSpell` ("any active spell you
-hold"). `Evaluate` never calls it Ready and `Fusions` leaves it out; `Player.TryBuildSovereignOffer` is its
-strip offer, on the same plate. After it is taken nothing fuses.
+**The Sovereign Rite is in `ComboCatalog` too** (2026-11-02, `.ai/sovereign-spell.md` section 8). Until
+2026-11-08 it was a recipe whose second ingredient was "any active spell you hold"; since then it is an
+ordinary recipe of two named Ascensions (section 8 below). After it is made nothing fuses.
 
 **The Taking - Hollow Star + Kindled Ward (seize)** (2026-11-02, `.ai/dark-wizard-playable.md` section 6). Needs
 Hollow Star down **Black Sun** (`hollow_star_titan_cataclysm`, +Darkness) and Kindled Ward down **Pyre**
@@ -545,3 +545,35 @@ checklist:
 **What no harness checks:** whether the fused spell reads at a glance as its two parents, and
 whether the beat's swell-then-collapse stays readable in a 140-body swarm at both canvases -
 `_UiShot --demo-combo=shadow_bolt:fuse` photographs it, but judging it still needs eyes.
+
+---
+
+## 8. The Sovereign Rite - Arcane Explosion + Gravewell (anoint). Built 2026-11-08
+
+Eric, 2026-11-08: *"the soverign rite should be a combination spell itself - pick two spells that make
+sense to combine to create this"*, and *"soveriegn rite also doesn't need an animation to learn. it just
+unlocks with combination spells"*. The whole design, its gates, its fuel and its measurement are
+`.ai/sovereign-spell.md` section 9; this is its row in the roster.
+
+- **Needs:** Arcane Explosion at level 8 down **Resonance** (`arcane_explosion_supernova`, no element: every
+  blast goes off again where the wizard's other spells last struck) and Gravewell at level 8 down **Mass
+  Grave** (`gravewell_titan_cataclysm`, +Darkness: one great grave a cast under the front of the swarm,
+  draining what it holds) - **and**, unlike every other recipe, the Rite's late gate: player level 28 and 16
+  levels across the other active spells (`SovereignRite.MeetsGate`).
+- **Aim / cadence / demand / payload:** the thickest pack in reach / the frozen Gravewell's cooldown, one
+  great grave a cast / stand where packs form / a crowned blast that throws nothing, a great grave opened
+  under it already armed, and the blast again inside the grave as it springs (Resonance's echo, made the
+  grave's).
+- **What it costs:** every other active spell falls silent for the rest of the run and its levels become the
+  Rite's fuel (the verb, ANOINT). Passives - Aegis Ward - are untouched.
+- **Elements:** Arcane, Earth, Darkness: three, the ceiling. **Static Nova** (+Lightning) on Arcane Explosion
+  makes four and refuses the fusion; Lingering Rift keeps the pair inside three. Arcane Explosion is the
+  Cumaean Sibyl's own spell, so the recipe is never hers (`ComboSeal.OwnSpell`).
+- **Its neighbours.** Neither parent is in another BUILT recipe. Section 4's **Pitfall** (proposed) names
+  Gravewell too, but down **Grave Line**: the two would seal each other through Gravewell's one Ascension,
+  which is the system working as section 2 means it to.
+- **Never tonight's recipe:** `FarSky.MayName` refuses `IsRite`, so the far sky never names the capstone.
+- Where to look: `ComboCatalog` (the recipe, last), `SovereignRite` (the gate and the fuel table),
+  `SovereignRiteCaster` (`scenes/SovereignRite.tscn`), `Player.Sovereign.cs` (`Crown`, the silence),
+  `SpellData_SovereignRite.tres`; held by `ValidateComboCatalog` like any recipe and by `ValidateSovereignRite`
+  and `ValidateRiteMigration` for what is its own.

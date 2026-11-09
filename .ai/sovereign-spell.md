@@ -1,7 +1,13 @@
 # The Sovereign Rite: every spell's power poured into one
 
-**Status: approved by Eric (2026-11-02) with one change, and built (section 8):** it is a **combination**:
-the Rite is one ingredient and the spell you point it at is the other (section 3, as revised).
+**Status: rebuilt 2026-11-08 as an ordinary two-spell Conjunction (section 9)** - Arcane Explosion down
+Resonance and Gravewell down Mass Grave, made one late in a run, after which every other active spell falls
+silent and feeds it. No lesson of its own: it unlocks with Conjunctions. **Section 9 is the current design;**
+sections 1-8 are the first build (2026-11-02: a rite you pointed at one of your own spells), kept for the
+reasoning and the measurements, and each says where it no longer holds.
+
+*First build (2026-11-02), superseded:* approved by Eric with one change, and built (section 8): it was a
+**combination** whose one ingredient was the Rite and whose other was the spell you pointed it at.
 
 Eric, 2026-11-02: *"I want a very powerful ability that you can't unlock until late in the game that
 prevents any other non-passive spell from activating, but gets power based on the number of other
@@ -16,6 +22,10 @@ original-content rule).
 ---
 
 ## 1. What it is
+
+> **Since 2026-11-08 (section 9):** the Rite is a spell of its own, made from two parents, and it is the one
+> crowned spell - nothing is chosen or anointed. What follows held for the first build. The silence, the
+> fuel, "it never undoes" and the fiction still hold, with "the Rite" for "the anointed spell".
 
 A **rite**, not a spell: it takes no slot and casts nothing itself. Taken once, late in a run:
 
@@ -34,13 +44,19 @@ why it comes late and costs everything else.
 
 ## 2. Name
 
-**Recommended: the Sovereign Rite** (the anointed spell is "Sovereign <spell>": "Sovereign Cinderbreath").
+**Recommended: the Sovereign Rite** (the anointed spell is "Sovereign <spell>": "Sovereign Cinderbreath";
+since 2026-11-08 the spell is simply the Sovereign Rite, and nothing is renamed).
 Alternates: *Unison*, *The Lodestar*. Not "Deus Ex Machina" (Magic Survival's), not anything in
 `.ai/combo-spells.md`'s taken list (Conjunction is the combination spells' word).
 
 ---
 
 ## 3. Unlock and offer: a combination you point at a spell
+
+> **Superseded 2026-11-08 (section 9).** The Rite is a recipe of two named Ascensions like every other
+> Conjunction, paid by its own Feat; the Warden of the Deep's deed pays only Arcane Energy; there is no
+> "choose a spell" page and no lesson. The late gate below survives as level 28 and 16 fuel (the "three
+> active spells" line is implied by the fuel and dropped).
 
 Eric (2026-11-02): *"How does the player get sovereign rite? Randomly in level up? It should be a
 combination spell that you select another spell to use on."* So it is not dealt at random. It is a
@@ -69,6 +85,11 @@ ingredient is **whichever of your active spells you choose**.
 
 ## 4. The power
 
+> **Still the rule since 2026-11-08,** read with "the Rite" for "the anointed spell": F is every active spell's
+> levels but the Rite's two parents (which become it), a fused Conjunction held counting its two parents'
+> levels; the numbers as retuned for the Rite as its own spell are section 9's. The "Interactions" paragraph
+> below is the first build's: nothing is anointed now, and the Rite is a Conjunction itself.
+
 Let **F** = the sum of the levels of every *other* active spell held when the rite is taken, plus every
 level those spells would gain afterwards (they still level: an upgrade card for a silenced spell now reads
 "+1 fuel to Sovereign Cinderbreath", so the build keeps growing). Then the anointed spell gets:
@@ -94,6 +115,11 @@ already anointed cannot fuse into a Conjunction. Chest items and boons keep work
 
 ## 5. How it looks
 
+> **Still the look since 2026-11-08,** with the Rite as the crowned spell: its graves wear the corona, its
+> strikes are crowned where they land, its blast is Arcane Explosion's front in the gilded ramp, the crown-ring
+> sits over the wizard, and the loadout strip crowns its slot and seals the rest; the silenced icons fly into
+> its slot the moment it is made (section 9).
+
 The anointed spell has to read as *changed* at a glance, in a crowd, on both canvases:
 
 - **Its casts are crowned**: every projectile, strike or zone it makes gains a thin white-gold corona
@@ -109,6 +135,10 @@ The anointed spell has to read as *changed* at a glance, in a crowd, on both can
 ---
 
 ## 6. Measuring it
+
+> **Since 2026-11-08:** `_BalanceHarness --seek-combo=sovereign_rite --all-unlocked --immortal` (`--seek-sovereign`
+> says the same; `--anoint` is gone), and the ratio is the Rite ALONE over the minute after against every source
+> over the minute before (section 9).
 
 `_BalanceHarness --seek-sovereign --all-unlocked --immortal`: when the strip offers it, and the loadout's
 damage per second for the 60 s before and the 60 s after (target ratio about 1.3), across at least three
@@ -132,6 +162,15 @@ is offered as a Conjunction whose second ingredient the player chooses (section 
 ---
 
 ## 8. Built (2026-11-02, `wip/sovereign-rite`)
+
+> **The first build, superseded 2026-11-08 by section 9.** Gone since: `Player.TryBuildSovereignOffer` and
+> `TryAnoint`, the one-card-per-spell page, `ComboIngredient.AnyActiveSpell`, the refused targets (decision 2:
+> Arcane Explosion is now a PARENT of the Rite), "Sovereign <spell>" names, the Warden of the Deep's deed paying
+> the Rite and the Feat's 250 Arcane Energy (decision 6), and the lesson. Still as described: the boon riding
+> `CollectActive`, `RefreshSovereignFuel`, the silence (`IsSilenced`, `DropStandingNodes`, "+1 fuel" cards to
+> level 8 with no mutation page, Ascension or Apotheosis), Aegis Ward as the one passive (decision 1), nothing
+> fusing after it (decision 3), area or scale never both (decision 4), the Penknife sparing it (decision 5), and
+> the look (`SovereignCorona`, `SovereignHits`, `SovereignCrown`, `LoadoutHud`).
 
 Sections 1-6 as written, with the decisions below. Where to look:
 
@@ -277,3 +316,170 @@ What the table says:
   the end, and the Stormcaller never reached level 25.
 - `--seek-sovereign --policy=ordinary` is the ordinary build; with neither, no policy takes the Rite, so a
   report without the flag plays as it did before the Rite existed.
+
+---
+
+## 9. Rebuilt as a Conjunction of two spells (2026-11-08)
+
+Eric, 2026-11-08, word for word:
+
+1. *"the soverign rite should be a combination spell itself - pick two spells that make sense to combine to
+   create this"* - and to the proposal below, *"Yes, build it"*.
+2. *"soveriegn rite also doesn't need an animation to learn. it just unlocks with combination spells"*.
+
+### 9.1 The recipe
+
+**Arcane Explosion down Resonance + Gravewell down Mass Grave**, both at level 8, offered in the Ascension
+strip like every Conjunction (`ComboCatalog`, the last recipe, `IsRite`) under the both-parents-at-8 rule.
+Resonance is the blast that goes off again wherever the wizard's other spells last struck; Mass Grave is
+one great grave a cast under the front of the swarm, draining what it holds. Arcane, Earth and Darkness:
+three, inside a Conjunction's ceiling (`.ai/combo-spells.md` rule 3), so **Static Nova** (+Lightning) on
+Arcane Explosion refuses the fusion and Lingering Rift keeps it. The **Cumaean Sibyl** opens on Arcane
+Explosion, so the recipe is never hers (`ComboSeal.OwnSpell`) - accepted. Neither parent is in another built
+recipe; `.ai/combo-spells.md`'s proposed **Pitfall** names Gravewell down Grave Line, so the two would seal
+each other through Gravewell's one Ascension.
+
+**No "choose a spell" step.** Fusing the two makes the Sovereign Rite itself the crowned spell. Every OTHER
+active spell falls silent for the rest of the run (`Player.Crown`, `IsSilenced`), and its levels - and every
+level it gains afterwards, on plain "✶ +1 fuel to Sovereign Rite" cards to level 8 - are the Rite's fuel.
+Passives (Aegis Ward) are untouched; nothing fuses after it; it never undoes.
+
+### 9.2 Its gates beyond the recipe
+
+Kept LATE, as Eric first asked ("can't unlock until late in the game"), and never a trap
+(`SovereignRite.MeetsGate`, read by `Player.TryBuildComboOffer` and refused again by `TryFuse`):
+
+- **player level 28**, as tuned in section 8;
+- **16 levels of fuel at the moment of fusion** - every active spell's levels but the two parents', which
+  become the Rite. Two other spells at level 8 is the least that meets it. "Three active spells" is implied
+  and dropped. A **fused Conjunction held is worth its two frozen parents' levels** (sixteen), not its own
+  one level - the levels that went into it - so an earlier Conjunction is never a trap to hold
+  (`SovereignRite.FuelOf`).
+
+The ascension browser and the Codex show both as chips on the recipe's result ("You 24/28", "9/16 levels of
+fuel"; out of a run "You 28", "16 levels of fuel"). Its Feat, "Conjunction: Sovereign Rite", is met the first
+time the strip offers it, as every recipe's is, and reads the gate in its line.
+
+### 9.3 What it casts (`scripts/SovereignRiteCaster.cs`, `scenes/SovereignRite.tscn`)
+
+Built from its parents, as every Conjunction is: both ride on it frozen as they were (`SpellData.ComboParents`).
+
+- **aim:** the thickest pack in reach - the enemy with the most others within a great grave's bank of it
+  (Mass Grave's 84 px), ties to the nearer, so the grave opens at the front of the pack; a second blast a cast
+  (Amount) falls on the next thickest at least one blast radius away. Reach and cooldown are the frozen
+  Gravewell's (`SovereignRiteCaster.Freeze`): one great grave a cast, as Mass Grave was.
+- **the crowned blast:** the frozen Arcane Explosion's hit (Resonance's x2.8 in it) on every body in its reach
+  (Arcane Explosion's own reach, area lines and Lingering Rift's +40% in it). It **throws nothing**: the pull is
+  Hollow Star's verb, and a push would empty the grave it falls into. Drawn as Arcane Explosion's own front in
+  its **gilded** ramp - arcane white into gold, the crown's colours.
+- **the great grave:** Gravewell's own trap on the frozen Gravewell's numbers - Mass Grave's width, hold and
+  drain, and its level 4 (Bone Spikes' bones, Grave Chill's weaken) - opened already armed (Quickset's tear),
+  credited to the Rite and crowned by the corona. Never on blocked ground.
+- **the echo:** as the grave springs, the blast goes off again inside it at Resonance's share (1.0): Resonance's
+  "again, where your spells struck", made the grave's now that no other spell strikes. Drawn as the same front
+  run the other way, collapsing into a dark heart - the blast going down into the grave.
+- **the fuel** (section 4's four numbers, `SovereignRite.GainsFor`): the boon rides the Rite and both frozen
+  parents (one object), so the blast's and the grave's damage and area read it through `CollectActive`, and
+  the Rite's own cooldown and count; **+1 blast a cast per 40 fuel** - a full book, five other spells at 8 -
+  where the first build gave one per 20 (section 9.5 says why).
+- The tunables are the scene's: `BlastShare`, `EchoShare`, `GraveShare` (section 9.5 gives the tuned values).
+
+The look of section 5 holds: the corona on the graves in the Rite's element ramp (its dominant element by the
+summed weights, `SfxCatalog.DominantElement`: Darkness after Mass Grave unless a level 4 deepening ties it,
+when the lower element wins), every strike crowned where it lands
+(`SovereignHits`), the turning crown-ring over the wizard (`SovereignCrown`), the gold crown frame and fuel on
+its slot and every silenced slot greyed under the seal (`LoadoutHud`), and the silenced icons flying into its
+slot the moment it is made.
+
+### 9.4 The unlock and the saves
+
+- **No lesson, no reel.** `Teaching.SovereignRite`, `Teachings.Rite`, the `sovereign_rite` reel
+  (`Prologue.Reels`), its Options > Story row and its two panels (`tools/art/lessons.py`'s rite-crown and
+  rite-seal, six PNGs and their `.import` sidecars) are gone. The Rite is offered to any save that has
+  learned Conjunctions and owns both parents. A relic whose card names the Rite needs Conjunctions learned.
+- **Its own Feat pays it** (`UnlockCatalog.FromCombination`), as every recipe's does; no Arcane Energy rides
+  on it any more (the old Feat's 250 is gone with the Warden's grant).
+- **The Warden of the Deep's deed** ("The Long Road Back") pays **300 Arcane Energy** and nothing else again -
+  its words "300 Arcane Energy" - which is what it paid before 2026-11-02.
+- **Schema 26** (`SaveData.MigrateRiteToConjunction`, `RegressionChecks.ValidateRiteMigration`): a save that
+  owned the Rite - the spell in the save, the Warden's deed done, or the Warden beaten (the deed promised it at
+  the next reconcile) - keeps it: the spell stays and its Feat is recorded done, quietly, so the recipe is known
+  and its Codex page keeps its name. No Arcane Energy changes hands, no parent is granted and nothing is taught:
+  what the Rite now needs to be MADE (Arcane Explosion, Gravewell, Conjunctions learned) is the design, as
+  Shadow Bolt's move (schema 24) left Void Lance and Contagion to be earned. Schema 22 still writes the retired
+  lesson id for such a save; nothing reads it.
+- **The far sky never names it** (`FarSky.MayName` refuses `IsRite`, as it did; `ComboCatalog.Fusions` now
+  includes the Rite, so it also counts toward "Every Conjunction Known").
+
+### 9.5 Measured
+
+`_BalanceHarness --seek-combo=sovereign_rite --all-unlocked --full-shop --immortal --timescale=3`, chapter 1,
+15 minutes, two runs at a time. The ratio is section 4's: **the Rite ALONE** over the 60 s after it is made,
+against **every source** over the 60 s before. The planner seeks both parents down their named paths, then -
+once both are met and the fuel is short - takes any level on another spell before a boon, fishes for one with
+its rerolls and ascends another spell when offered (a player planning the Rite; `PickTowardCombo`).
+
+**As tuned: `BlastShare` 1.8, `EchoShare` 1.0, `GraveShare` 1.8; the fuel table +0.5% damage, -0.8% cooldown
+to -30%, +1% area to +40%, +1 blast per 40.**
+
+| wizard | seed | parents ascended (min) | offered (min, level) | taken (min, level) | fuel at taking -> 15:00 | before -> Rite alone (dmg/s) | ratio |
+|---|---|---|---|---|---|---|---|
+| John Dee | 11 | Gravewell 8.0, Arcane Explosion 11.3 | 11.6, L37 | 11.8, L38 | 16 -> 32 | 985 -> 1666 | **x1.69** |
+| Pyromancer | 23 | Arcane Explosion 7.0, Gravewell 11.6 | 11.6, L41 | 12.0, L42 | 19 -> 25 | 1477 -> 1824 | **x1.23** |
+| John Dee | 37 | Arcane Explosion 8.7, Gravewell 9.4 | 11.2, L35 | 11.5, L36 | 16 -> 23 | 1289 -> 1531 | **x1.19** |
+| Pyromancer | 11 | Arcane Explosion 9.0, Gravewell 14.3 | 14.3, L44 | 14.7, L45 | 22 -> 22 | 1126 -> 1709 | x1.52 (18 s after: the run ends) |
+
+**Mean of the three full minutes x1.37; their pooled rates (5,021 against 3,751 a second) x1.34** - against the
+1.3 target, inside the scatter of about 0.2 either way that section 8 found (one seed's "before" ran from 985 to
+2,022 a second between two runs). The planned, fully upgraded bot is first offered it at **minute 11.2-12.3**
+(14.3 once), which is where section 6 wanted the Rite.
+
+How it got there:
+
+| shares (blast/echo/grave), amount | runs | ratio |
+|---|---|---|
+| 1 / 1 / 1, +1 blast per 20 | Pyromancer 11 and 23, John Dee 11 | x0.74, x0.68, x1.04 |
+| 2 / 1 / 2, +1 blast per 40 | Pyromancer 11 and 23, John Dee 11 | x1.16, x1.66, x1.51 (John Dee 23 never made it: Arcane Explosion ascended at 15.0) |
+| **1.8 / 1 / 1.8, +1 blast per 40** | the table above | **x1.19-1.69, pooled x1.34** |
+
+- **Its parents' numbers alone are not enough.** At shares of 1 the Rite dealt about 1,050-1,500 a second -
+  one spell's parents standing in for six spells - so the Conjunction carries its own multiplier, as Shadow
+  Bolt's shares do. The Rite alone is about 900-1,000 a second per unit of share in these runs.
+- **One blast per 20 fuel doubled it within a minute.** A late book climbs four levels of fuel in the minute
+  after the fusion, so the second blast and grave arrived inside the measured minute; at 40 only a full book (five
+  other spells at level 8) earns it, and the growth before that is damage, cooldown and area.
+- **Without the shop the bot does not get there in time.** At `--all-unlocked --immortal` without `--full-shop`
+  the Pyromancer and the Frostweaver were first offered it at 14.8 and 15.0 and never made it: the recipe is 16
+  levels of two named spells, and the gate 16 more on the others - about 32 levels before the fusion. With
+  the shop, the **Frostweaver never ascended Gravewell down Mass Grave** (its Darkness gate, four instances, is
+  far from an Ice book), so the second wizard measured is John Dee (Hollow Star, a Darkness book). Whether a
+  player reaches it earlier than the bot is the pacing question the Conjunctions already have
+  (`.ai/combo-spells.md` section 6).
+- Read the ratio as power, not kill speed: every hit is credited in full, overkill included, and from minute 8
+  the bots kill what the spawner sends.
+
+### 9.6 Decided while building (for Eric to overrule)
+
+1. **The echo is the grave's.** Resonance echoes where the wizard's OTHER spells struck, and the Rite silences
+   them all, so its echo goes off inside each great grave the moment it springs.
+2. **No pull, no push.** The blast throws nothing (the pull is Hollow Star's; a push would empty the grave).
+3. **A held Conjunction is worth its parents' levels as fuel** (sixteen for a fused one), not its one level.
+4. **The "both Ascensions" crown (in-flight item 50, 2026-11-07) is removed.** The crowned spell is the Rite
+   itself now, a Conjunction that never ascends, so the twin had nothing left to double;
+   `SpellData.SovereignTwinAscensions`, `RefreshSovereignTwin` and `ValidateSovereignTwin` are gone.
+5. **The Warden of the Deep's deed pays 300 Arcane Energy only**, and the Rite's own Feat pays the Rite and no
+   Arcane Energy.
+6. **The icon is kept** (`sovereign-rite-light.png`, the crown over the lights pouring in): it still says what
+   the Rite does. A picture of the blast and the grave would be `tools/art/spell_icons.py`'s to draw.
+7. **The Eagle Ampulla** (`.ai/new-items.md`, not built) was written for an anointed spell carrying its silenced
+   spells' statuses; under this design it would be the Rite carrying them. Its card needs rewording when built.
+8. **The Rite carries its own multipliers** (`BlastShare` and `GraveShare` 1.8) and **one more blast per 40 fuel**,
+   not per 20 (section 9.5). Damage, cooldown and area per fuel are section 4's as tuned in section 8.
+9. **The late gate is binding in practice.** With the recipe it is about 32 levels before the fusion, so the bot
+   needs the shop to make it by minute 12 (section 9.5). If Eric wants it earlier, the fuel gate (16) is the lever,
+   not the level floor.
+
+**What no harness or shot checks:** whether a crowd reads the crowned blast, the grave and the echo as one spell
+made of two (`_UiShot --demo-sovereign=fuse --spell-stage=30 --cast-on-stage` photographs it at both canvases);
+and the slot fly-in at the moment it is made, which fires (it was logged) but which `_UiShot` never caught in
+flight - it wants eyes in a real run.

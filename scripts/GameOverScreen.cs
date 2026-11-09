@@ -1165,7 +1165,7 @@ public partial class GameOverScreen : CanvasLayer
 				return BonelightSkin.LoadTextureSafe(entry.IconPath) ?? Reward("reward-apotheosis");
 			// A lesson wears its family's mark: the Ascension's glass, the final forms' fire (Teachings).
 			case RunUnlockKind.Lesson:
-				return Reward(entry.Id is "apotheosis" or "sovereign_rite" ? "reward-apotheosis" : "reward-ascension");
+				return Reward(entry.Id is "apotheosis" ? "reward-apotheosis" : "reward-ascension");
 			default:
 				return Reward("reward-deed");
 		}

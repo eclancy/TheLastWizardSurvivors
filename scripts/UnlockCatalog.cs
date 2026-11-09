@@ -281,11 +281,12 @@ public static class UnlockCatalog
 		// The Taking (Hollow Star's Black Sun and Kindled Ward's Pyre), the dark wizard's own: he opens on it made
 		// (ComboDefinition.StartsFusedFor); anyone else makes it, and its Feat pays it, as any recipe.
 		FromCombination(TheTaking.SpellId),
-		// THE SOVEREIGN RITE (.ai/sovereign-spell.md section 3): the one Conjunction that is not paid by its own
-		// Feat. It is the reward of the end of the road - beating the Warden of the Deep, the Emberdeep's boss -
-		// so nothing on a new save reaches it early; its Feat ("Conjunction: Sovereign Rite") is the recipe's row
-		// and pays Arcane Energy. Not counted by The Grimoire Restored: it is a combination (GrimoireSpellIds).
-		FromAchievement(SovereignRite.SpellId, "emberdeep_ended", "Defeat the Warden of the Deep, at the end of the road."),
+		// The Sovereign Rite (Arcane Explosion's Resonance and Gravewell's Mass Grave): a Conjunction like the rest
+		// since 2026-11-08, paid by its own Feat (.ai/sovereign-spell.md section 9). Until then it was the Warden of
+		// the Deep's deed's, and a save that owned it so keeps it (SaveData.MigrateRiteToConjunction, schema 26).
+		// Its lateness is its gate in the run (SovereignRite.MeetsGate), not its unlock. Not counted by The Grimoire
+		// Restored: it is a combination (GrimoireSpellIds).
+		FromCombination(SovereignRite.SpellId),
 
 		// Boons fill the shop that passive spells used to. Priced by how much a run changes when
 		// one turns up: a stat nudge is cheap, a whole defensive layer is not. The three boons are

@@ -234,8 +234,10 @@ into what is open or taken, dashed into the rest, the way to the Apotheosis in t
 and the recipes it joins as a margin note. Spells, Items and Recipes are bookmarks on the top edge (LB/RB). On a
 phone one page at a time: the index, and a tap turns to the entry's page ("‹ Index"), in the same holder so it
 fills the plate edge to edge; a swipe or LB/RB turns to the next entry. Parchment in the level-up screen's
-manuscript inks (`CodexRows.Vellum`, `CodexInk`). The Sovereign Rite is a recipe of its own: the Rite (with its
-gate from `SovereignRite`) and "any active spell you hold" into "Sovereign <your spell>".
+manuscript inks (`CodexRows.Vellum`, `CodexInk`). The Sovereign Rite was a recipe of its own shape until
+2026-11-08 (the Rite and "any active spell you hold"); since then it is an ordinary recipe - Arcane Explosion's
+Resonance and Gravewell's Mass Grave - whose result carries two more chips, your level and the fuel
+(`SovereignRite`, `.ai/sovereign-spell.md` section 9).
 
 | piece | where |
 |---|---|

@@ -148,58 +148,33 @@ public partial class SpellData : Resource
         return null;
     }
 
-    // THE SOVEREIGN RITE (.ai/sovereign-spell.md, SovereignRite): on the one spell the Rite anointed,
-    // the power the silenced spells pour into it, as a milestone of its own that no card offers. Its
-    // numbers move with the fuel (Player.RefreshSovereignFuel rewrites them in place), and it carries
-    // damage, cooldown, area or scale and amount and nothing else (RegressionChecks.ValidateSovereignRite).
-    // Not exported: run-only, so a Duplicate never carries it and no save ever holds it.
+    // THE SOVEREIGN RITE (.ai/sovereign-spell.md, SovereignRite): on the Rite - and on the two frozen parents
+    // it carries, which share the one object - the power the silenced spells pour into it, as a milestone of
+    // its own that no card offers. Its numbers move with the fuel (Player.RefreshSovereignFuel rewrites them in
+    // place), and it carries damage, cooldown, area or scale and amount and nothing else
+    // (RegressionChecks.ValidateSovereignRite). Not exported: run-only, so a Duplicate never carries it and no
+    // save ever holds it.
     public SpellEvolutionOption SovereignBoon { get; set; }
 
-    /// <summary>True on the spell the Sovereign Rite anointed, for the rest of the run.</summary>
+    /// <summary>True on the Sovereign Rite (and its frozen parents) once made, for the rest of the run.</summary>
     public bool IsSovereign => SovereignBoon != null;
 
     /// <summary>
     /// True on a spell the Sovereign Rite silenced: it never fires again this run, and its levels are
-    /// the anointed spell's fuel. Run-only, like <see cref="SovereignBoon"/>; Player.IsSilenced is the rule.
+    /// the Rite's fuel. Run-only, like <see cref="SovereignBoon"/>; Player.IsSilenced is the rule.
     /// </summary>
     public bool SilencedBySovereign { get; set; }
 
-    // THE RITE'S SECOND PATH (Eric, 2026-11-07, in-flight 50): the crowned spell holds BOTH of its
-    // level-8 Ascensions - the one the player picked as always, and the unchosen branch(es) carried
-    // here, active exactly as the pick is (CollectActive, HasEvolution). Run-only, like SovereignBoon:
-    // not exported, so a Duplicate never carries it and no save ever holds it.
-    public SpellEvolutionOption[] SovereignTwinAscensions { get; set; }
-
-    /// <summary>
-    /// Gives the crowned spell its unchosen level-8 branch(es): called at the crowning, and again at
-    /// the Ascension pick for a spell crowned before level 8. Does nothing on an uncrowned spell, and
-    /// nothing until the spell has picked its own Ascension - the Rite doubles a choice, it never
-    /// makes one. A Conjunction has no level-8 options of its own, so it gains nothing here.
-    /// </summary>
-    public void RefreshSovereignTwin()
-    {
-        if (!IsSovereign || SelectedLevel8Evolution == null)
-        {
-            SovereignTwinAscensions = null;
-            return;
-        }
-        var options = GetEvolutionOptionsForLevel(8);
-        var twins = new List<SpellEvolutionOption>();
-        foreach (SpellEvolutionOption option in options)
-        {
-            if (option != null && !string.Equals(option.Id, SelectedLevel8EvolutionId, StringComparison.OrdinalIgnoreCase))
-                twins.Add(option);
-        }
-        SovereignTwinAscensions = twins.Count > 0 ? twins.ToArray() : null;
-    }
+    // (The Rite's "second path" - a crowned spell holding both its level-8 Ascensions, in-flight item 50 - was
+    // here until 2026-11-08. The crowned spell is the Rite itself since, a Conjunction that never ascends, so it
+    // had nothing left to double: .ai/sovereign-spell.md section 9.)
 
     // EVERY READER BELOW WALKS THE SAME LIST, in milestone order: level 4, level 8, Apotheosis, and
     // the Sovereign Rite's boon last. They used to repeat a level-4 block and a level-8 block each,
     // fifteen times over, and the issue that planned the third milestone (#60) listed seven of them
     // by name as places it could be forgotten. One collector means it cannot be - which is also how
     // the Rite's fuel reaches every reader at once. A reused buffer, because several of these run on
-    // every cast of every spell. Sized for every milestone at once: level 4, level 8 and its
-    // Sovereign twins (at most three branches a spell today), the Apotheosis and the Rite's boon.
+    // every cast of every spell. Sized for every milestone at once, with room to spare.
     private readonly SpellEvolutionOption[] activeBuffer = new SpellEvolutionOption[8];
 
     private int CollectActive(int level)
@@ -207,16 +182,6 @@ public partial class SpellData : Resource
         int n = 0;
         if (level >= 4 && SelectedLevel4Evolution != null) activeBuffer[n++] = SelectedLevel4Evolution;
         if (level >= 8 && SelectedLevel8Evolution != null) activeBuffer[n++] = SelectedLevel8Evolution;
-        // The Rite's second path (SovereignTwinAscensions): the unchosen branch rides the same gate
-        // as the chosen one, so a crowned spell reads both exactly as it reads its pick.
-        if (level >= 8 && SovereignTwinAscensions != null)
-        {
-            foreach (SpellEvolutionOption twin in SovereignTwinAscensions)
-            {
-                if (twin != null)
-                    activeBuffer[n++] = twin;
-            }
-        }
         if (SelectedApotheosis != null) activeBuffer[n++] = SelectedApotheosis;
         if (SovereignBoon != null) activeBuffer[n++] = SovereignBoon;
         return n;
@@ -506,16 +471,6 @@ public partial class SpellData : Resource
             || string.Equals(SelectedLevel8EvolutionId, evolutionId, StringComparison.OrdinalIgnoreCase)
             || string.Equals(SelectedApotheosisId, evolutionId, StringComparison.OrdinalIgnoreCase))
             return true;
-        // A crowned spell owns its unchosen Ascension too, so every script that branches on the
-        // other path (HasEvolution is how they all ask) runs both at once.
-        if (SovereignTwinAscensions != null)
-        {
-            foreach (SpellEvolutionOption twin in SovereignTwinAscensions)
-            {
-                if (twin != null && string.Equals(twin.Id, evolutionId, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-        }
         return false;
     }
 
@@ -555,8 +510,6 @@ public partial class SpellData : Resource
         {
             SelectedLevel8Evolution = evolution;
             SelectedLevel8EvolutionId = evolution.Id;
-            // Crowned before level 8: the Rite's second path arrives with the pick itself.
-            RefreshSovereignTwin();
         }
         else if (evolution.MilestoneLevel == ApotheosisCatalog.MilestoneLevel)
         {

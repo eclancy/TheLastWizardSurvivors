@@ -13,7 +13,8 @@ over the table below where they differ:
 - **New systems are unlocked by an achievement and taught in a post-run cutscene.** *"I think new
   systems should be unlocked in a post-run cutscene, after fulfilling an achievement, like finding a
   landmark. The cutscene can then explain the new system."* So questions 4 and 5 are answered
-  otherwise: the Ascension, the Apotheosis and Conjunctions (and the Sovereign Rite after them) each
+  otherwise: the Ascension, the Apotheosis and Conjunctions (and the Sovereign Rite after them, until
+  2026-11-08 - a Conjunction since, it unlocks with them and has no rung of its own) each
   open when the save completes a chosen achievement - finding a landmark is his example, which
   points at the stage secrets (`.ai/stage-secrets.md`) - and the next time a run ends, a short
   cutscene plays before the results to show and explain what was learned. The cutscene is the
@@ -39,8 +40,8 @@ Built on `wip/slow-start` (section 10). One line each, with why:
 | **the Ascension** | **the Pinfold** (`secret_pinfold`, the Fields' spell vault, pays the Familiar) | 2, the Fallow Fields | A landmark, as Eric's example asked: in every run of the chapter, five to seven chunks out, with a far tell (`achievements-and-secrets.md` 6.4) - findable by design, and the chapter the doc already gave the Ascension. The Hayward's pound: the first thing he kept from us. |
 | **the Apotheosis** | **the Fallen Star** (`secret_fallen_star`, the Circle's vault, pays Starfall) | 3, the Broken Circle | The circle where the wizards met, and a star that fell there: a wizard's final form is learned where the wizards were last whole. The doc's chapter for it. |
 | **Conjunctions** | **the Geode Heart** (`secret_geode_heart`, the Cave's vault, pays Frost Shard) | 4, the Sunken Cave | A crystal grown round a light: two things grown into one stone. The doc's chapter for it, and the first chapter with no side event, so the vault is the chapter's one find. |
-| **the Sovereign Rite** | **the Warden of the Deep** (`emberdeep_ended`), unchanged | 10, the Emberdeep | Eric's instruction: it keeps its deed, and gets its lesson reel. |
-| **the far sky** | **Artemis rekindled** (`Teachings.FarSkyTeacherId`: whoever is seated at the far shore's first chapter) | Far Shore 1, the White Downs | Added 2026-11-08 by piece F4 of `.ai/second-half.md` (section 9, "F4, built"): a fifth lesson, owed as the Rite's is - by a deed, not a vault - and played after her rekindling reel. Nothing of it is shown before it is learned. |
+| ~~the Sovereign Rite~~ | **nothing since 2026-11-08**: a Conjunction (Arcane Explosion + Gravewell), learned with Conjunctions | - | Was the Warden of the Deep's deed with a reel of its own. Eric, 2026-11-08: *"soveriegn rite also doesn't need an animation to learn. it just unlocks with combination spells"* - the rung, its reel and its art are gone (`.ai/sovereign-spell.md` section 9). |
+| **the far sky** | **Artemis rekindled** (`Teachings.FarSkyTeacherId`: whoever is seated at the far shore's first chapter) | Far Shore 1, the White Downs | Added 2026-11-08 by piece F4 of `.ai/second-half.md` (section 9, "F4, built"): a lesson owed by a deed, not a vault (as the Rite's was until it became a Conjunction), and played after her rekindling reel. Nothing of it is shown before it is learned. |
 
 **The three are a ladder, not three fixed pairs.** Whichever teacher a save finds first teaches the
 Ascension, the second the Apotheosis, the third Conjunctions (`Teachings.Owed`). In campaign order - the
@@ -92,7 +93,7 @@ clock), `.ai/achievements-and-secrets.md` (how unlocks are earned), `.ai/combo-s
 | Ascension | **yes** | taught by the Hayward, chapter 2 (`GlobalStatsManager.HasLearnedAscension`) |
 | Apotheosis | with the Ascension | it needs its spell's Ascension path, so it is sealed with it |
 | Conjunctions | with the Ascension | both parents must be ascended down named paths; each recipe's derived Feat completes the first time it is met |
-| Sovereign Rite | **yes** | the Warden of the Deep, chapter 10 (being built) |
+| Sovereign Rite | with Conjunctions | the Warden of the Deep until 2026-11-08; a recipe of two spells since, unlocked with Conjunctions |
 
 ---
 
@@ -164,7 +165,7 @@ One new system per boss, on the first four chapters, and never two on one result
 | **Ascension** | the Hayward | **unchanged** | chapter 2 |
 | **Apotheosis** | with the Ascension | **taught by the Ninth Stone** | chapter 3, the first wall's prize |
 | **Conjunctions** | with the Ascension | **taught by the Hollow Choir** | chapter 4 |
-| Sovereign Rite | the Warden of the Deep | **unchanged** | chapter 10 |
+| Sovereign Rite | the Warden of the Deep | **with Conjunctions** since 2026-11-08 (a recipe of two spells) | with Conjunctions |
 
 **Why these two bosses.** The Broken Circle is "the circle where the wizards met" - the place to learn
 your own wizard's final form, and the first wall, so the reward for climbing it is the biggest thing a
@@ -217,7 +218,7 @@ An illustrative new player, who clears each early chapter at the second try:
 | 6-8 | farms the Forest and Fields, tries the Circle | 6 | ~350 a clear | Powers | |
 | ~9 | Circle, clears | 6 | the Ninth Stone: Shadegrease, **the Apotheosis** | | |
 | ~10-12 | Sunken Cave | 6 | the Hollow Choir: Riptide, **Conjunctions** | | |
-| late | the Emberdeep | 6 | the Warden of the Deep: **the Sovereign Rite** | | |
+| late | the Emberdeep | 6 | the Warden of the Deep: 300 Arcane Energy (the Sovereign Rite until 2026-11-08; a Conjunction since) | | |
 
 - **The pages are bought where the shop is first visited.** Bound Pages is the top card, a new player
   can afford the first page after his second run, and a fifth spell is likely worth more than the
@@ -248,8 +249,8 @@ the book holds 4-6, and by the Apotheosis 6. Element tiers count held spells, bo
   Lantern Oil (1) make 3, and no other spell a new save owns carries Fire; the fourth wants a page and
   Meteor Swarm (Veteran). Full Grimoire waits for six (Q10).
 - **Conjunctions** need two ascended spells that are not the wizard's own: three pages at least, and the
-  fusion frees one. **The Sovereign Rite** needs three actives whose other levels sum to 16: six pages
-  by then.
+  fusion frees one. **The Sovereign Rite** (a Conjunction since 2026-11-08) needs its two parents and 16
+  levels across the other active spells: four pages at the least, six by then.
 - `ValidateElementReachability` is unchanged: it asks what the full book can reach.
 
 ---
@@ -397,6 +398,14 @@ For the agent who does. Each line is where the change lives, not how.
 | **schema 22** | `SaveData.MigrateToSlowStart`: `FullBookKept` for every save with a run on record; the three ladder lessons learned (no reels) for every save that had the Ascension by the old rule (the flag, the Hayward beaten, or a chapter past the Fields opened, read from frozen lists); the Rite's lesson for a save that owns it. Written as the step after 21, which is `wip/dungeon-move`'s and not on this branch: 21 must merge before a build carrying 22 ships, or a save migrated here skips it. |
 | **validators** | `RegressionChecks.SlowStart.cs`: `ValidateSpellBook` (3 + deed pages + Bound Pages = 6; a page deed is a Feat or a Road deed before the first gate; the Folio's card), `ValidateTeachers` (each rung's teacher a built vault in a playable chapter, in campaign order; every reel's panels on disk with a one-line caption; the Rite still the Warden's; the ladder's out-of-order rule on paper), `ValidateSlowStartMigration` (sample saves at 21). `ValidateDifficultyMigration` lost its two Hayward checks; `ValidateCodex` looks for the recipes on a save that may be shown them, and checks a fresh one is shown none. |
 | **tools** | `_BalanceHarness`: `--slots=N` (`SpellBook.ToolOverride`), `--fresh-save` past the Forest marks Survivor done, `--farmed` buys Bound Pages first, `--all-unlocked` owns the full book and every lesson, and the report's "spell book" line (the book it started with, when a page opened, when it was first full). `_UiShot`: `--learned=a,b|all`, `--reel=<id>` (with `--scene=res://scenes/Prologue.tscn`), `--find-secret=<id>`; the own-everything save owns every lesson and the full book. |
+
+**Since 2026-11-08 the ladder has no Rite rung** (`.ai/sovereign-spell.md` section 9): `Teaching.SovereignRite`,
+`Teachings.Rite`, its reel in `Prologue.Reels`, its row in Options > Story and its two panels in
+`tools/art/lessons.py` are gone, and the Codex shows the Rite as one more recipe once Conjunctions may be shown.
+Read the rows above that name the Rite (the Codex's, schema 22's "the Rite's lesson", the validator's "the Rite
+still the Warden's") as what was built then. Schema 22 still writes the old lesson id for a save that owned the
+Rite; nothing reads it now. A chest relic whose card names the Rite needs Conjunctions learned
+(`ChestItemCatalog.TeachingNamedBy`).
 
 ### 10.2 Where it departs from this doc
 

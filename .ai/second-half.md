@@ -56,7 +56,7 @@ Each line is a rule already in the game, where it lives, and what it decides her
 | Each Apotheosis owns a verb no other form or Conjunction owns | `ApotheosisCatalog`, `RegressionChecks.ValidateApotheosisCatalog` / `ValidateComboCatalog` | every god's form claims a new verb (3.2) |
 | One wizard opens on a Conjunction, at level 1 of its own table | `ComboDefinition.StartsFusedFor` (`scripts/ComboCatalog.cs`), `Player.AddStartingConjunction`, `ApotheosisCatalog.OnStartingConjunction`, `ValidateOpeners` (was `ValidateStartingConjunction`; every opener since F1) | the gods follow that exact precedent (3.4) |
 | Every chapter has its own cast | `StageBestiary.<Chapter>.cs`, `ValidateBestiary`, `.ai/bestiary.md` | six new casts |
-| One locked system on show at a time; a system is learned when its post-run reel plays | `Teachings` (`IsShown`, `Ladder`, `Rite`), `slow-start.md` | the far shore is invisible until the Throne is won; its one system is taught by its first god (6.2) |
+| One locked system on show at a time; a system is learned when its post-run reel plays | `Teachings` (`IsShown`, `Ladder`; the Rite's own lesson retired 2026-11-08), `slow-start.md` | the far shore is invisible until the Throne is won; its one system is taught by its first god (6.2) |
 | Every character has exactly one source | `UnlockCatalog`, `ValidateUnlockCatalog` | each god is paid by one deed (6.1) |
 | A gate behind luck is a bad gate | `achievements-and-secrets.md` 2.5 | Eric's "every spell" needs a guard, since nine spells are in secret vaults (6.1, question 6) |
 | The campaign list is measured by deeds | `GlobalStatsManager.ChaptersClearedAt` and `AchievementDefinitions.CampaignChapterCount` both count `StageCatalog.Campaign` | **the far shore cannot be appended to `CampaignOrder`** (section 7) |
@@ -379,8 +379,10 @@ The far sky is taught by a god, not a vault: Eric's latest word on teaching is t
 systems (`in-flight.md` item 37), and the huntress who relights the night sky is the one to teach reading
 it. On the White Downs the sky is empty until she is rekindled - the moon has not risen - so the chapter's
 first runs have no far sky in the fiction as well as the code. Its lesson is taught by a deed, as the
-Sovereign Rite's is (`Teachings.Rite`, an empty `TeacherSecretId`): a new `Teaching.FarSky`, a fifth
-lesson, owed when Artemis's deed completes.
+Sovereign Rite's was (an empty `TeacherSecretId`): a new `Teaching.FarSky`, a fifth lesson then, owed when
+Artemis's deed completes. (Since 2026-11-08 the Rite is a Conjunction with no lesson of its own -
+`.ai/sovereign-spell.md` section 9 - so the far sky is the one lesson past the ladder; and the far sky
+never names the Rite, the capstone, as tonight's recipe: `FarSky.MayName` refuses `IsRite`.)
 
 ### 6.3 The reels
 

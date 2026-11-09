@@ -84,30 +84,6 @@ def arc(c, src, dst, n, seed, ramps, bow, spread=8):
     pr.motes(c, src, dst, n, seed, ramps, spread=spread, bow=bow)
 
 
-def crown(c, x, y, w):
-    """The Sovereign's crown (LoadoutHud's anointed slot, drawn large): three gold points on a band."""
-    u = w / 24.0
-    for i in (-1, 0, 1):
-        px_ = x + i * 8 * u
-        tall = (8 if i == 0 else 6) * u
-        c.poly([(px_ - 2.4 * u, y), (px_ + 2.4 * u, y), (px_, y - tall)], G[1])
-        c.line(px_, y - tall, px_ + 1.4 * u, y - 1.5 * u, G[2])
-        c.disc(px_, y - tall - 1.2 * u, 1.2 * u, 1.2 * u, LT[1])
-    c.rect(x - 12 * u, y, x + 12 * u, y + 3 * u, G[1])
-    c.hline(x - 12 * u, x + 12 * u, y + 3 * u, G[3])
-    for i in (-2, 0, 2):
-        c.disc(x + i * 4 * u, y + 1.5 * u, 0.9 * u, 0.9 * u, R[0])
-
-
-def wax_seal(c, x, y, r):
-    """A sealed spell (LoadoutHud's silenced slot): the band across it and a blot of red wax on the band."""
-    c.rect(x - r * 1.6, y - r * 0.3, x + r * 1.6, y + r * 0.3, S[4])
-    c.disc(x, y, r, r * 0.9, R[2])
-    c.disc(x - r * 0.15, y - r * 0.15, r * 0.7, r * 0.6, R[1])
-    c.set(x - r * 0.4, y - r * 0.4, R[0])
-    c.hline(x - r * 0.4, x + r * 0.4, y + r * 0.1, R[3])
-
-
 def stone_light(c, x, yb, w, h, seed, ramp, halo, lit=True, ramp_stone=None):
     """A standing stone with a spell's light burning on its crown; returns the light's centre."""
     pr.standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=ramp_stone or [S[2], S[3], S[4], OCC, OCC],
@@ -343,58 +319,9 @@ def ring_band(c, x, y, r, a0, a1, ramp, edge=False):
             c.set(x + ct * (r - d), y + st * (r - d), col)
 
 
-# =========================================================================== the Sovereign Rite
-RING = [("fire", "ember"), ("ice", "azure"), ("grass", "verdant"), ("lightning", "gold")]
-
-
-def _rite_ground(seed):
-    back, mid, fore = pr.frame(True), pr.frame(), pr.frame()
-    night(back, 404, seed, moon=(330, 270, 9))
-    back.radial(480, 520, 270, 70, [V[3], V[3], V[4], V[4], None])
-    return back, mid, fore
-
-
-def _ring_points():
-    # Two each side of the anointed one and none behind it, where its own stone would hide them.
-    return [(480 + math.cos(math.pi * (1 + a)) * 160, 552 - math.sin(math.pi * a) * 40) for a in (0.06, 0.27, 0.73, 0.94)]
-
-
-def p_rite_crown():
-    """1. "One spell may take the strength of all the rest." Six spells' lights on low stones, five in an arc
-    and one in the middle on a tall one; the five pour their light into the sixth, and over it the crown the
-    HUD puts on an anointed spell."""
-    back, mid, fore = _rite_ground(401)
-    cx, top_y = 480, 430
-    back.radial(cx, top_y, 120, 90, [G[4], G[4], V[3], None])
-    centre = stone_light(mid, cx, 590, 50, 150, 403, LT, G)
-    for i, ((el, halo), (x, y)) in enumerate(zip(RING, _ring_points())):
-        light = stone_light(mid, x, y + 36, 26, 42, 410 + i, E[el], M[halo])
-        arc(mid, light, (centre[0] + (x - cx) * 0.06, centre[1] + 4), 150, 420 + i, [E[el]], bow=60, spread=8)
-    glow(mid, centre[0], centre[1], 13, LT, halo=G)
-    crown(mid, centre[0], centre[1] - 34, 40)
-    near_heath(fore, 431)
-    layers = dict(back=back, mid=mid, fore=fore)
-    pr.finish(layers, 0.85)
-    return layers
-
-
-def p_rite_seal():
-    """2. "The others fall silent for the run, and their levels feed it." The five are out, each sealed
-    with red wax across its stone, as the HUD seals a silenced slot; the sixth burns crowned, bigger."""
-    back, mid, fore = _rite_ground(401)
-    cx = 480
-    back.radial(cx, 420, 150, 120, [G[3], G[4], G[4], V[3], None])
-    centre = stone_light(mid, cx, 590, 50, 150, 403, LT, G, lit=False)
-    for i, ((el, halo), (x, y)) in enumerate(zip(RING, _ring_points())):
-        stone_light(mid, x, y + 36, 26, 42, 410 + i, E[el], M[halo], lit=False)
-        wax_seal(mid, x, y + 36 - 22, 7)
-    glow(mid, centre[0], centre[1] - 6, 22, LT, halo=G)
-    pr.ward(mid, centre[0], centre[1] - 6, 40, 40, A=LT, pool=False)
-    crown(mid, centre[0], centre[1] - 52, 56)
-    near_heath(fore, 431)
-    layers = dict(back=back, mid=mid, fore=fore)
-    pr.finish(layers, 0.85)
-    return layers
+# (The Sovereign Rite's two panels, rite-crown and rite-seal, were here until 2026-11-08. The Rite is a
+# Conjunction since, learned with them - Eric: "soveriegn rite also doesn't need an animation to learn. it just
+# unlocks with combination spells" - so its reel and its art are gone: .ai/sovereign-spell.md section 9.)
 
 
 # =========================================================================== the far sky (piece F4)
@@ -543,7 +470,6 @@ PANELS = [
     ("ascension-gift", p_ascension_gift), ("ascension-rise", p_ascension_rise),
     ("apotheosis-circle", p_apotheosis_circle), ("apotheosis-form", p_apotheosis_form),
     ("conjunctions-two", p_conjunctions_two), ("conjunctions-one", p_conjunctions_one),
-    ("rite-crown", p_rite_crown), ("rite-seal", p_rite_seal),
     # F4, the far sky (.ai/second-half.md 6.3; Prologue.FarSkyBeats).
     ("far-sky-meet", p_far_sky_meet), ("far-sky-favour", p_far_sky_favour),
 ]
