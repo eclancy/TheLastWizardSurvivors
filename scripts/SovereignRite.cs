@@ -62,8 +62,13 @@ public static class SovereignRite
 	public const float AreaPerFuel = 0.01f;
 	/// <summary>The area never grows past this (+40%).</summary>
 	public const float AreaCap = 1.40f;
-	/// <summary>One more crowned blast (and its grave) a cast for every this many levels of fuel.</summary>
-	public const int FuelPerAmount = 20;
+	/// <summary>
+	/// One more crowned blast (and its grave) a cast for every this many levels of fuel. 20 in the first build,
+	/// where one more was a tongue or a bolt; for the Rite one more is a whole second blast and grave, which at 20
+	/// doubled it within a minute of the fusion (fuel climbs four levels in that minute on a late book). At 40 only
+	/// a full book - five other spells at level 8 - lets a second fall (section 9.5).
+	/// </summary>
+	public const int FuelPerAmount = 40;
 
 	/// <summary>
 	/// The spells the Rite counts as passive: never silenced, never fuel. SpellData.IsPassive is set on nothing

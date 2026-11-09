@@ -5998,7 +5998,7 @@ public static partial class RegressionChecks
 	private const float RiteDamagePerFuel = 0.005f;
 	private const float RiteCooldownPerFuel = 0.008f;
 	private const float RiteAreaPerFuel = 0.01f;
-	private const int RiteFuelPerAmount = 20;
+	private const int RiteFuelPerAmount = 40;
 
 	// SCHEMA 26 (SaveData.MigrateRiteToConjunction): the Sovereign Rite became a recipe of its own, paid by its Feat,
 	// and the Warden of the Deep's deed pays only Arcane Energy. A save that owned the Rite - the spell itself, the

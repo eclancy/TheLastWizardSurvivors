@@ -3243,6 +3243,16 @@ public partial class _BalanceHarness : Node
 	// A sample a second: the run's spell damage, in total and by spell, for the rate before and after.
 	private readonly List<(float At, long Total, Dictionary<string, long> BySpell)> sovereignSamples = new();
 
+	// Both of the Rite's parents met and the fuel still short of its gate: the planner's cue to level the rest.
+	private bool EvaluateRiteFuelShort(ComboDefinition recipe)
+	{
+		if (player == null)
+			return false;
+		ComboStanding standing = player.EvaluateCombo(recipe);
+		return standing.FirstMet && standing.SecondMet
+			&& SovereignRite.FuelFrom(player.GetEquippedSpells(), standing.FirstHeld, standing.SecondHeld) < SovereignRite.MinimumFuel;
+	}
+
 	// The Rite on the strip, taken (PickTowardCombo): what the report reads. The fuel is the book's then, as the
 	// fusion finds it - every active spell but the two parents.
 	private void NoteRiteTaken()
@@ -3411,6 +3421,32 @@ public partial class _BalanceHarness : Node
 		}
 		// The parents' other Ascensions are never taken: the planner below only sees the rest of the strip.
 		var otherAscensions = ascensions.Where(o => !parentIds.Contains(o.SpellId) && !ComboCatalog.IsComboOption(o)).ToList();
+
+		// The Sovereign Rite, both parents met: what it waits for now is its fuel (SovereignRite.MeetsGate), and every
+		// level on another active spell is one. A player planning the Rite takes those levels before a boon, fishes
+		// for them with his rerolls, and ascends another spell when it is offered (its eighth level is fuel too).
+		if (recipe.IsRite && sovereignTakenAt < 0f && EvaluateRiteFuelShort(recipe))
+		{
+			LevelUpOption otherUp = otherAscensions.FirstOrDefault(o => o.MilestoneLevel == Player.AscensionSpellLevel
+				&& o.EvolutionChoices.Any(e => !o.EvolutionLockReason.ContainsKey(e.Id)));
+			if (otherUp != null)
+				return $"{otherUp.SpellId}:{otherUp.EvolutionChoices.First(e => !otherUp.EvolutionLockReason.ContainsKey(e.Id)).Id}";
+			LevelUpOption fuelCard = options
+				.Where(o => !o.IsBoon && o.SpellId != Player.MarginaliaId && !parentIds.Contains(o.SpellId)
+					&& !SovereignRite.DefensiveSpellIds.Contains(o.SpellId) && (!o.IsNewUnlock || !player.IsSpellBookFull))
+				.OrderBy(o => o.IsNewUnlock)
+				.ThenByDescending(o => o.NextLevel)
+				.FirstOrDefault();
+			if (fuelCard != null)
+				return fuelCard.IsEvolutionMilestone && fuelCard.EvolutionChoices?.Count > 0
+					? $"{fuelCard.SpellId}:{fuelCard.EvolutionChoices[0].Id}"
+					: fuelCard.AutoChoice(Variant);
+			if (charges != null && charges.Rerolls > 0 && rerollsThisLevel < PlannedRerollsPerLevelUp)
+			{
+				rerollsThisLevel++;
+				return RerollAction;
+			}
+		}
 
 		// A parent's card: into the book first, then toward its cap. Its mutation keeps the pair inside three
 		// elements - a deepening, or the untagged path - never an element path that would bring a fourth.

@@ -49,14 +49,18 @@ public partial class SovereignRiteCaster : Node2D
 	/// <summary>Each crowned blast deals this share of the frozen Arcane Explosion's hit to every body in its reach.</summary>
 	[Export] public float BlastShare { get; set; } = DefaultBlastShare;
 
-	/// <summary>BlastShare's default, which Freeze also writes onto the card as the stand-in damage.</summary>
-	public const float DefaultBlastShare = 1f;
+	/// <summary>
+	/// BlastShare's default, which Freeze also writes onto the card as the stand-in damage. 1.8, as measured
+	/// (.ai/sovereign-spell.md 9.5): at 1 the Rite alone dealt x0.68-1.04 of the loadout it silenced, at 2 x1.16-1.66,
+	/// against a 1.3 target - one spell's parents' numbers standing in for six spells' worth.
+	/// </summary>
+	public const float DefaultBlastShare = 1.8f;
 
 	/// <summary>The echo in the grave as it springs: this share of the blast's hit (Resonance's ResonanceShare).</summary>
 	[Export] public float EchoShare { get; set; } = ArcaneExplosion.ResonanceShare;
 
-	/// <summary>The grave's collapse and drain: this share of the frozen Gravewell's.</summary>
-	[Export] public float GraveShare { get; set; } = 1f;
+	/// <summary>The grave's collapse and drain: this share of the frozen Gravewell's. 1.8, as BlastShare.</summary>
+	[Export] public float GraveShare { get; set; } = 1.8f;
 
 	/// <summary>The most blasts one cast lets fall, whatever the fuel and the player's Amount.</summary>
 	public const int MaxBlastsPerCast = 4;
