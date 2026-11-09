@@ -74,8 +74,10 @@ public static class QuestLog
 		new Prisoner("vainamoinen", "the singer under the ice", "Someone is singing under the ice.", "{0} sings above the ice now."),
 		// The onmyoji, sealed in his own five-pointed seal: "the old wards were broken from the inside".
 		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0} keeps his own wards again."),
-		// The smith who struck every chain in the game, chained to his own anvil: "every shackle came from here".
-		new Prisoner("wayland", "the smith at the anvil", "Someone below is still at the anvil. He may not stop.", "{0} has put his hammer down."),
+		// The smith who struck every chain in the game, chained to his own anvil: "every shackle came from here". The
+		// held line says he is a slave there (Eric, 2026-11-08: make it "clearer that he is unable to stop or is a
+		// slave"); it was "Someone below is still at the anvil. He may not stop.", which read as a choice.
+		new Prisoner("wayland", "the smith at the anvil", "Someone below is chained to the anvil and cannot stop forging.", "{0} has put his hammer down."),
 		// The prophetess of Cumae, kept where nobody comes to ask: she is heard in more places than one.
 		new Prisoner("sibyl", "the voice in the rock", "A woman's voice comes out of the rock, from more than one place.", "{0} speaks with one voice again."),
 		// The witch of the deep wood, kept in her own hut and the hut kept walking its circle for ever (4.1). The Forest

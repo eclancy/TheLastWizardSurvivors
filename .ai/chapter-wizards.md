@@ -995,7 +995,8 @@ gained its line.
   chains (n of 4)", with the dashed track round each stake filling as its chain goes.
 - **His unlock** is the site's derived Road deed, "The Chains Struck", secret until `stage_7`, counted at the Throne only;
   the locked hint is "Chained to his own anvil in the Emberdeep." Quest-log prisoner "the smith at the anvil"; held line
-  "Someone below is still at the anvil. He may not stop."
+  "Someone below is chained to the anvil and cannot stop forging." (2026-11-08, Eric: clearer that he cannot stop,
+  that he is a slave there; it was "Someone below is still at the anvil. He may not stop.")
 - **His clue.** `HintCue.Sparks`, a seventh row of `hint-cues.png`: sparks rising in on the forge's hot air,
   white-hot with a fire tail and cooling to embers in the last third of their life, a few on each strike. The far tell
   is fire's hot stop, not his cold violet: the forge is built, and built things burn (world-and-tone.md, the one
