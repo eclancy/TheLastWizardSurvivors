@@ -77,8 +77,136 @@ public partial class MusicPlayer : Node
 	private float pendingFadeIn;
 	private float pendingSoloFade;
 
-	/// <summary>The set playing (or fading), if any. Read by the startup log and nothing else.</summary>
+	/// <summary>The set playing (or fading), if any. Read by the startup log and the beat clock.</summary>
 	public string CurrentSetId => currentSet?.Id ?? string.Empty;
+
+	/// <summary>The autoload, for the beat clock's readers (the Canticle). Null outside a running game.</summary>
+	public static MusicPlayer? Instance { get; private set; }
+
+	// --- the beat clock (2026-11-09) ------------------------------------------------------------------
+	// THE CANTICLE IS SUNG ON THE BEAT (.ai/character-fit.md section 5, row 19): its burst waits for the next
+	// counted beat of whatever music is sounding, and The Hundred Mouths' echoes land on the beats after it.
+	// Where the music is comes off the playing stream - the set's AudioStreamSynchronized, whose stems all
+	// start at bar one, or a solo loop - and what a beat is comes from MusicBeats (the score's own map).
+	//
+	// "Sounding" is meant: a set or solo loop that is playing, not paused, not on its way out, and loud on
+	// its fader. And a stream whose position does not move is not sounding either - a headless run's audio
+	// driver mixes nothing, so its players report a position frozen where it started - so a position that
+	// has not changed for StalePositionMsec says "no beat", and the Canticle bursts at once, as it always did.
+
+	/// <summary>Where a piece of music is in its counted beat, at the moment it was asked.</summary>
+	public readonly struct BeatClock
+	{
+		public BeatClock(MusicBeats.Piece piece, double position, int ordinal, double sinceBeat, double toNextBeat)
+		{
+			Piece = piece;
+			Position = position;
+			Ordinal = ordinal;
+			SinceBeat = sinceBeat;
+			ToNextBeat = toNextBeat;
+		}
+
+		public MusicBeats.Piece Piece { get; }
+		/// <summary>Seconds into the loop, as the stream has been mixed.</summary>
+		public double Position { get; }
+		/// <summary>The counted beat at or before it, numbered from bar one of the loop.</summary>
+		public int Ordinal { get; }
+		public double SinceBeat { get; }
+		public double ToNextBeat { get; }
+	}
+
+	private const ulong StalePositionMsec = 300;
+	private const float AudibleFader = 0.25f;
+	// Per player - the set, then the two solos - the position last seen and when it last moved. Watched every
+	// frame in _Process (three reads), so a stream that has stopped moving is known the moment it is asked.
+	private readonly double[] lastPosition = { -1.0, -1.0, -1.0 };
+	private readonly ulong[] positionMovedMsec = new ulong[3];
+
+	private void WatchPositions()
+	{
+		ulong now = Time.GetTicksMsec();
+		for (int i = 0; i < 3; i++)
+		{
+			AudioStreamPlayer? player = i == 0 ? setPlayer : soloPlayers[i - 1];
+			if (player == null || !player.Playing)
+				continue;
+			double position = player.GetPlaybackPosition();
+			if (position != lastPosition[i])
+			{
+				lastPosition[i] = position;
+				positionMovedMsec[i] = now;
+			}
+		}
+	}
+
+	// A stream just started has not been mixed yet: give it the stale window to show it moves.
+	private void MarkStarted(int index)
+	{
+		lastPosition[index] = -1.0;
+		positionMovedMsec[index] = Time.GetTicksMsec();
+	}
+
+	/// <summary>
+	/// The counted beat of the music that is sounding. False when nothing with a known beat is audible: the
+	/// menus' silence, a run's music fading out, a piece missing from the beat map, a headless run.
+	/// </summary>
+	public bool TryGetBeat(out BeatClock clock)
+	{
+		clock = default;
+		// The louder of the set and the two solo loops: the one the player is hearing.
+		int source = -1;
+		float best = AudibleFader;
+		if (setPlayer != null && setPlayer.Playing && !setPlayer.StreamPaused && !startPending
+			&& setFade.Target > 0f && setFade.Level >= best)
+		{
+			source = 0;
+			best = setFade.Level;
+		}
+		for (int i = 0; i < soloPlayers.Length; i++)
+		{
+			AudioStreamPlayer? solo = soloPlayers[i];
+			if (solo != null && solo.Playing && !solo.StreamPaused && soloFades[i].Target > 0f && soloFades[i].Level >= best)
+			{
+				source = i + 1;
+				best = soloFades[i].Level;
+			}
+		}
+		if (source < 0)
+			return false;
+		AudioStreamPlayer player = source == 0 ? setPlayer! : soloPlayers[source - 1]!;
+		MusicBeats.Piece? piece = source == 0 ? MusicBeats.For(CurrentSetId) : SoloPiece(source - 1, player.Stream);
+		if (piece == null)
+			return false;
+		if (Time.GetTicksMsec() - positionMovedMsec[source] > StalePositionMsec)
+			return false;
+		double mixed = player.GetPlaybackPosition();
+		// The position is the last mix's; the time since it brings it up to now, which is when anything played
+		// on this frame is mixed in after it - so a note sounded on the beat lands with the music's beat.
+		double position = mixed + AudioServer.GetTimeSinceLastMix();
+		piece.Locate(position, out int ordinal, out double since, out double toNext);
+		clock = new BeatClock(piece, position, ordinal, since, toNext);
+		return true;
+	}
+
+	// A solo loop's piece, looked up by its file once per stream rather than on every frame that asks.
+	private readonly AudioStream?[] soloPieceStream = new AudioStream?[2];
+	private readonly MusicBeats.Piece?[] soloPiece = new MusicBeats.Piece?[2];
+
+	private MusicBeats.Piece? SoloPiece(int index, AudioStream? stream)
+	{
+		if (stream == null)
+			return null;
+		if (soloPieceStream[index] != stream)
+		{
+			soloPieceStream[index] = stream;
+			soloPiece[index] = MusicBeats.ForFile(System.IO.Path.GetFileName(stream.ResourcePath));
+		}
+		return soloPiece[index];
+	}
+
+	/// <summary>The key the Canticle sings in when no beat is sounding: the run's chapter's own set, or A minor.</summary>
+	public static MusicBeats.Piece? KeyForStage(int stageIndex) =>
+		MusicBeats.For(MusicCatalog.RunSetForStage(stageIndex)?.Id ?? string.Empty) ?? MusicBeats.For("menu");
 
 	/// <summary>Whether the set playing carries its own boss layer (MusicSet.BossLayer).</summary>
 	public bool CurrentSetHasBossLayer => setStream != null && setStream.StreamCount > BossLayer;
@@ -88,8 +216,17 @@ public partial class MusicPlayer : Node
 		return AudioServer.GetBusIndex(MusicBusName) >= 0 ? MusicBusName : MasterBusName;
 	}
 
+	// --no-music (a user argument, like --no-save-writes): nothing is ever started, so a run plays in silence with
+	// no beat anywhere. For a tool run that must see the game as it is with no music sounding - the Canticle bursting
+	// the moment its chord is full (--canticle-log says so) - and for anyone who wants a run without it.
+	private bool silenced;
+
 	public override void _Ready()
 	{
+		Instance = this;
+		silenced = System.Array.IndexOf(OS.GetCmdlineUserArgs(), "--no-music") >= 0;
+		if (silenced)
+			GD.Print("MusicPlayer: --no-music, nothing will play");
 		ProcessMode = ProcessModeEnum.Always;
 		setPlayer = CreatePlayer("SetPlayer");
 		soloPlayers[0] = CreatePlayer("SoloPlayerA");
@@ -127,7 +264,7 @@ public partial class MusicPlayer : Node
 	public void PlaySet(MusicSet set, float fadeInSeconds, float pulse = 0f, float lead = 0f,
 		float soloFadeSeconds = -1f)
 	{
-		if (setPlayer == null)
+		if (setPlayer == null || silenced)
 			return;
 
 		SetLayerTargets(pulse, lead);
@@ -174,6 +311,7 @@ public partial class MusicPlayer : Node
 		setFade.To(1f, pendingFadeIn);
 		setPlayer.VolumeDb = FaderDb(setFade.Level);
 		setPlayer.Play();
+		MarkStarted(0);
 		FadeSolos(pendingSoloFade);
 		// Every stem and the level it starts at, so a headless log says what a run opens on.
 		var levels = new System.Text.StringBuilder();
@@ -214,7 +352,7 @@ public partial class MusicPlayer : Node
 	public void PlaySolo(AudioStream stream, float crossfadeSeconds)
 	{
 		AudioStreamPlayer? player = soloPlayers[activeSolo];
-		if (player == null)
+		if (player == null || silenced)
 			return;
 		if (player.Stream != stream || !player.Playing)
 		{
@@ -230,6 +368,7 @@ public partial class MusicPlayer : Node
 			fade.Level = crossfadeSeconds > 0f ? 0f : 1f;
 			player.VolumeDb = FaderDb(fade.Level);
 			player.Play();
+			MarkStarted(activeSolo + 1);
 			GD.Print($"MusicPlayer: solo loop {stream.ResourcePath} in over {crossfadeSeconds:0.#} s, set '{CurrentSetId}' out");
 		}
 		soloFades[activeSolo].To(1f, crossfadeSeconds);
@@ -312,6 +451,7 @@ public partial class MusicPlayer : Node
 			StartPendingSet();
 			dt = 0f;
 		}
+		WatchPositions();
 		for (int i = 0; i < LayerCount; i++)
 		{
 			float fadeIn = i == BossLayer ? BossLayerFadeInSeconds : LayerFadeInSeconds;
