@@ -4863,7 +4863,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("cyclone_slash", StringComparison.OrdinalIgnoreCase)) outcome = FireOrRefreshOrbitingBlade(spell, CycloneSlashScene);
 		else if (spell.Id.Equals("black_tentacles", StringComparison.OrdinalIgnoreCase)) outcome = FireBlackTentacles(spell, BlackTentaclesScene, interval);
 		else if (spell.Id.Equals("cone_of_cold", StringComparison.OrdinalIgnoreCase)) outcome = FireConeBlast(spell, ConeOfColdScene);
-		else if (spell.Id.Equals("scorching_ray", StringComparison.OrdinalIgnoreCase)) outcome = FireScorchingRay(spell, ScorchingRayScene);
+		else if (spell.Id.Equals("scorching_ray", StringComparison.OrdinalIgnoreCase)) outcome = FireScorchingRay(spell, ScorchingRayScene, interval);
 		else if (spell.Id.Equals("meteor_swarm", StringComparison.OrdinalIgnoreCase)) outcome = FireMeteorSwarm(spell, MeteorImpactScene);
 		else if (spell.Id.Equals("hunters_draw", StringComparison.OrdinalIgnoreCase))
 		{
@@ -7274,7 +7274,76 @@ public partial class Player : CharacterBody2D
 	private readonly Dictionary<ulong, int> scorchNext = new();
 	private readonly List<Node2D> scorchTargets = new();
 
-	private CastOutcome FireScorchingRay(SpellData spell, PackedScene scene)
+	// THE RAYS OF A CAST LEAVE ONE AFTER ANOTHER (Eric, 2026-11-09: "Scorching ray, as you get more rays, should stagger
+	// the timing of the rays (with a slight randomness to that staggered timing), instead of all firing at once, giving a
+	// more chaotic feel"). The first leaves at once and each after it ScorchRayGap later, give or take ScorchRayGapJitter
+	// of that gap (combatRng). However many rays and however short the cooldown, the whole cast's spread is at most
+	// ScorchStaggerShare of its cooldown even with every gap at its longest, so a cast is always done before the next one
+	// begins and its heat bookkeeping never overlaps another's. The count is unchanged - "scorching ray can start with 3
+	// rays, we balance it on damage". A ray waits in the arena as an idle beam (ScorchingRayBeam.Fire's delay), in the
+	// spell group, so a boss's arrival freezes it with everything else (Node2DGame.FreezePlayerSpells) and it leaves after.
+	public const float ScorchRayGap = 0.095f;
+	public const float ScorchRayGapJitter = 0.3f;
+	public const float ScorchStaggerShare = 0.5f;
+
+	/// <summary>The mean gap between the rays of a cast of <paramref name="rays"/> on a cooldown of <paramref name="interval"/>
+	/// seconds: ScorchRayGap, shrunk so the cast's spread with every gap at its longest stays inside ScorchStaggerShare of it.</summary>
+	public static float ScorchStaggerGap(int rays, float interval) => rays > 1
+		? MathF.Min(ScorchRayGap, MathF.Max(0f, interval) * ScorchStaggerShare / ((rays - 1) * (1f + ScorchRayGapJitter)))
+		: 0f;
+
+	/// <summary>
+	/// A staggered ray (ScorchRayGap) whose target fell before its turn picks again, as its cast would have: the nearest
+	/// living enemy in reach that the cast is not already burning, else the nearest one it is (a spare ray joins a beam,
+	/// as the cast's spare rays do). It takes that enemy's heat - the cast's, if a ray of the cast is on it, else cold,
+	/// since the cast burned it not - and a fresh one is held into the next cast at that heat, as the cast's own targets
+	/// are. Null with nothing in reach: the ray goes where its target fell and strikes what stands there.
+	/// </summary>
+	public Node2D? RetargetScorchingRay(ScorchingRayBeam beam)
+	{
+		SpellData spell = beam?.SpellData;
+		if (spell == null)
+			return null;
+		float reach = spell.GetReachAtLevel(spell.CurrentLevel);
+		float reachSq = reach * reach;
+		Enemy? fresh = null, joined = null;
+		float freshSq = float.MaxValue, joinedSq = float.MaxValue;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e.IsDying)
+				continue;
+			float d = GlobalPosition.DistanceSquaredTo(e.GlobalPosition);
+			if (d > reachSq)
+				continue;
+			if (scorchHeld.ContainsKey(e.GetInstanceId()))
+			{
+				if (d < joinedSq)
+				{
+					joined = e;
+					joinedSq = d;
+				}
+			}
+			else if (d < freshSq)
+			{
+				fresh = e;
+				freshSq = d;
+			}
+		}
+		Enemy? target = fresh ?? joined;
+		if (target == null)
+			return null;
+		ulong id = target.GetInstanceId();
+		int struck = scorchHeld.TryGetValue(id, out int held) ? held : 1;
+		if (target == fresh)
+			scorchHeld[id] = struck;
+		int streak = struck - 1;
+		beam.Heat = streak / (float)ScorchRampCasts;
+		beam.DamageMultiplier = beam.CastDamageMultiplier * (1f + ScorchRampPerCast * streak);
+		beam.SetSpellLevel(spell.CurrentLevel);
+		return target;
+	}
+
+	private CastOutcome FireScorchingRay(SpellData spell, PackedScene scene, float interval)
 	{
 		if (scene == null) return CastOutcome.NoTarget;
 		// The nearest-in-range check comes before the sort. A spell with nothing in reach is now
@@ -7322,8 +7391,14 @@ public partial class Player : CharacterBody2D
 		bool eyeOfRa = spell.HasEvolution(ScorchingRayBeam.EyeOfRaId);
 		ScorchingRayBeam? sun = null;
 		int sunStreak = -1;
+		// The stagger (ScorchRayGap): the gap shrinks when rays x the longest gap would pass ScorchStaggerShare of the cooldown.
+		float castMultiplier = GetSpellDamageMultiplier(spell);
+		float gap = ScorchStaggerGap(rayCount, interval);
+		float delay = 0f;
 		for (int i = 0; i < rayCount; i++)
 		{
+			if (i > 0)
+				delay += gap * (1f + combatRng.RandfRange(-ScorchRayGapJitter, ScorchRayGapJitter));
 			// More rays than bodies in reach: the spare ones join the beams already on them, as before.
 			var target = scorchTargets[i % scorchTargets.Count];
 			ulong id = target.GetInstanceId();
@@ -7341,7 +7416,8 @@ public partial class Player : CharacterBody2D
 			if (ray is ScorchingRayBeam beam)
 			{
 				beam.SpellData = spell;
-				beam.DamageMultiplier = GetSpellDamageMultiplier(spell) * (1f + ScorchRampPerCast * streak);
+				beam.CastDamageMultiplier = castMultiplier;
+				beam.DamageMultiplier = castMultiplier * (1f + ScorchRampPerCast * streak);
 				beam.AreaMultiplier = areaMultiplier;
 				beam.Heat = heat;
 				beam.SetSpellLevel(spell.CurrentLevel);
@@ -7357,7 +7433,7 @@ public partial class Player : CharacterBody2D
 			// The beam strikes one point and its burst is drawn out of the radius it hits, so a visual
 			// scale would only thicken the line past anything it does.
 			ray.Scale = Vector2.One;
-			(ray as ScorchingRayBeam)?.Fire(GlobalPosition, target, target.GlobalPosition);
+			(ray as ScorchingRayBeam)?.Fire(GlobalPosition, target, target.GlobalPosition, delay);
 			raysFired++;
 		}
 		// Marked once every ray is out, before any can land (a beam strikes on a later frame, in its own _Process).

@@ -29,6 +29,9 @@ namespace TheOneHeMissed.scripts;
 //     the next, and the next, burning everything it crosses.
 // The ids are the archetype's, kept so every save's choices and the Ascension browser carry over.
 //
+// The rays of one cast leave one after another, a little unevenly (Player.ScorchRayGap, Fire's delay, Depart),
+// each from where the wizard then stands.
+//
 // And Imhotep's Apotheosis, the Eye of Ra (EyeOfRaId, FlareEyeOfRa): the hottest ray of each cast flares like
 // the sun where it lands. He opens on the ray since 2026-11-09 (.ai/character-fit.md section 1), and the form
 // came with him from Fireball.
@@ -199,6 +202,14 @@ public partial class ScorchingRayBeam : Node2D
 	public Player? PlayerRef { get; set; }
 
 	/// <summary>
+	/// The cast's damage multiplier before the held target's ramp: what a ray that picks a new target on its turn
+	/// (Player.RetargetScorchingRay) multiplies that target's ramp onto - an echo's share included.
+	/// </summary>
+	public float CastDamageMultiplier { get; set; } = 1.0f;
+	// Seconds left before this ray leaves (Player.ScorchRayGap): the rays of a cast leave one after another.
+	private float waitLeft;
+
+	/// <summary>
 	/// The Eye of Ra (EyeOfRaId): this is the cast's hottest ray, and it flares where it first lands. Set by
 	/// Player.FireScorchingRay on one ray a cast, never on the others.
 	/// </summary>
@@ -212,6 +223,8 @@ public partial class ScorchingRayBeam : Node2D
 	private enum BeamPhase
 	{
 		Idle,
+		// Its cast has made it and it waits its turn (Player.ScorchRayGap), drawn as nothing.
+		Waiting,
 		Extending,
 		Holding,
 		// Handoff: the beam's end swings from a fallen target to the next.
@@ -301,13 +314,16 @@ public partial class ScorchingRayBeam : Node2D
 		RefreshComputedStats();
 	}
 
-	public void Fire(Vector2 from, Node2D? target, Vector2 fallbackTargetPosition)
+	/// <param name="delay">Seconds before it leaves (Player.ScorchRayGap); 0 for at once. It leaves from where the
+	/// wizard stands then, and picks again if its target fell meanwhile (Depart).</param>
+	public void Fire(Vector2 from, Node2D? target, Vector2 fallbackTargetPosition, float delay = 0f)
 	{
 		origin = from;
 		targetNode = target;
 		lockedTargetPosition = target != null && IsInstanceValid(target) ? target.GlobalPosition : fallbackTargetPosition;
 		didDamage = false;
-		phase = BeamPhase.Extending;
+		waitLeft = delay;
+		phase = delay > 0f ? BeamPhase.Waiting : BeamPhase.Extending;
 		phaseTimer = 0f;
 		impactTime = -1f;
 		afterglow = 0f;
@@ -324,6 +340,33 @@ public partial class ScorchingRayBeam : Node2D
 			beamQuad.Modulate = gild;
 		if (fxQuad != null)
 			fxQuad.Modulate = gild;
+		UpdateVisual(origin, origin, 0f);
+	}
+
+	// Its turn has come: it leaves from where the wizard stands now, not where he stood when the cast was made, at its
+	// target - or, if that fell to an earlier ray or anything else meanwhile, at what the cast would have picked
+	// instead (Player.RetargetScorchingRay, which also gives it that target's heat). Nothing is allocated.
+	private void Depart()
+	{
+		if (PlayerRef != null && IsInstanceValid(PlayerRef))
+		{
+			if (PlayerRef.IsDead)
+			{
+				QueueFree();
+				phase = BeamPhase.Idle;
+				return;
+			}
+			origin = PlayerRef.GlobalPosition;
+			bool lost = targetNode == null || !IsInstanceValid(targetNode)
+				|| (targetNode is Enemy enemy && (enemy.IsDying || !enemy.InEnemyRegistry));
+			if (lost && PlayerRef.RetargetScorchingRay(this) is Node2D next)
+			{
+				targetNode = next;
+				lockedTargetPosition = next.GlobalPosition;
+			}
+		}
+		phase = BeamPhase.Extending;
+		phaseTimer = 0f;
 		UpdateVisual(origin, origin, 0f);
 	}
 
@@ -367,6 +410,18 @@ public partial class ScorchingRayBeam : Node2D
 		shimmerTime += (float)delta;
 		// Sunlance's band of flames is drawn while it sweeps (that is when it burns) and goes out after.
 		sweepGlow = phase == BeamPhase.Sweeping ? 1f : MathF.Max(0f, sweepGlow - (float)delta / 0.12f);
+
+		if (phase == BeamPhase.Waiting)
+		{
+			// Held for a boss's arrival as every spell is (Player.HeldForBossEntrance; the spell group is frozen too, which
+			// stops this node altogether): its turn waits until the fight starts.
+			if (PlayerRef != null && IsInstanceValid(PlayerRef) && PlayerRef.HeldForBossEntrance)
+				return;
+			waitLeft -= (float)delta;
+			if (waitLeft <= 0f)
+				Depart();
+			return;
+		}
 
 		if (phase == BeamPhase.Afterglow)
 		{

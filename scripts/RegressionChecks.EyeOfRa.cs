@@ -11,6 +11,30 @@ using TheOneHeMissed.scripts;
 // as his opener is (.ai/character-fit.md section 1); it was Fireball's.
 public static partial class RegressionChecks
 {
+	// The ray's stagger (Player.ScorchRayGap; Eric, 2026-11-09): the rays of a cast leave one after another, and a cast
+	// whose last ray left after the next cast began would tangle the two casts' heat bookkeeping. Proved on paper: every
+	// gap at its longest, from 2 to 16 rays, on cooldowns from 0.05 s to 4 s.
+	private static void ValidateScorchStagger(List<string> warnings)
+	{
+		if (Player.ScorchRayGapJitter < 0f || Player.ScorchRayGapJitter >= 1f)
+			warnings.Add($"Scorching Ray: a stagger jitter of {Player.ScorchRayGapJitter} could make a gap negative or double it.");
+		foreach (float interval in new[] { 0.05f, 0.3f, 0.6f, 1.12f, 1.6f, 4f })
+		{
+			for (int rays = 2; rays <= 16; rays++)
+			{
+				float longest = (rays - 1) * Player.ScorchStaggerGap(rays, interval) * (1f + Player.ScorchRayGapJitter);
+				if (longest > interval * Player.ScorchStaggerShare + 0.0001f)
+				{
+					warnings.Add($"Scorching Ray: {rays} rays on a {interval:0.00} s cooldown can spread over {longest:0.000} s, past "
+						+ $"{Player.ScorchStaggerShare * 100f:0}% of it; the next cast would begin before this one is done.");
+					return;
+				}
+			}
+		}
+		if (Player.ScorchStaggerGap(3, 1.6f) <= 0f || Player.ScorchStaggerGap(1, 1.6f) != 0f)
+			warnings.Add("Scorching Ray: the rays of a cast no longer leave one after another (ScorchStaggerGap).");
+	}
+
 	private static void ValidateEyeOfRa(List<string> warnings)
 	{
 		const string scenePath = "res://scenes/enemy.tscn";
