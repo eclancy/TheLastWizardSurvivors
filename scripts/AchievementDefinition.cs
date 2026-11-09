@@ -238,6 +238,13 @@ public static partial class AchievementDefinitions
 	public const int MortlakeChestTarget = 100;
 
 	/// <summary>
+	/// Chests in ONE run that pay Folio (the Magpie feat): John Dee opens on it, and everyone else earns it by collecting
+	/// as he does. A run that reaches the boss opens about seventeen on the elite-chest economy (_ChestSim,
+	/// .ai/passives-and-items.md section 8), so ten is a good run's worth, not a full one's.
+	/// </summary>
+	public const int MagpieChestTarget = 10;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -265,6 +272,9 @@ public static partial class AchievementDefinitions
 	/// Eric, 2026-11-02, "dark wizard should unlock after defeating all stages on hard mode").
 	/// </summary>
 	public const string TakerTakenId = "the_taker_taken";
+
+	/// <summary>What a mystery deed's name and reward read until it is done: The Taker Taken's (Eric, 2026-11-09).</summary>
+	public const string MysteryName = "???";
 
 	/// <summary>
 	/// The Road Restored: every chapter's boss beaten on Default or harder. Merlin now belongs to the Moot.
@@ -387,7 +397,7 @@ public static partial class AchievementDefinitions
 		{
 			Id = "first_blood", DisplayName = "First Blood",
 			Description = "Defeat 1 enemy.",
-			RewardText = "Unlocks Arcane Explosion", SpellUnlockId = "arcane_explosion",
+			RewardText = "Unlocks Canticle", SpellUnlockId = "arcane_explosion",
 			Category = AchievementCategory.Progress,
 			Measure = c => c.Lifetime.TotalKills, Target = 1,
 		},
@@ -468,6 +478,18 @@ public static partial class AchievementDefinitions
 			RewardText = "300 Arcane Energy", CurrencyReward = 300,
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.TotalKills, Target = 2000,
+		},
+		// FOLIO'S FEAT (.ai/character-fit.md section 6, 2026-11-09): John Dee opens on Folio, and everyone else earns it by
+		// collecting the way he does - ten chests in a single run. One run, not a lifetime: Elite Hunter and The Library at
+		// Mortlake already count every chest ever opened. Measured off the best run kept in the lifetime stats
+		// (LifetimeStats.BestChestsInRun), so the menu shows the best run so far and the pause screen this run's count.
+		new()
+		{
+			Id = "magpie", DisplayName = "Magpie",
+			Description = $"Open {MagpieChestTarget} chests in a single run.",
+			RewardText = "Unlocks Folio", SpellUnlockId = "folio",
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestChestsInRun, Target = MagpieChestTarget,
 		},
 		new()
 		{
@@ -576,9 +598,15 @@ public static partial class AchievementDefinitions
 		// deed naming the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him alone -
 		// his spell, The Taking, is a Conjunction he opens on, which its own Feat pays everyone else (ComboCatalog);
 		// he is never named while locked (CodexRows.HidesWizard: "Frees someone").
+		// A MYSTERY until it is done (Eric, 2026-11-09, .ai/character-fit.md section 5: "do not change the dark wizard,
+		// but add his unlock condition as a mystery achievement"). The condition is on the page; the deed's name and
+		// what it pays are not - the title "The Taker Taken" says who is taken - so the row reads "???" for both
+		// (SealedName and SealedReward, CodexRows.DeedEntry, the way a Conjunction's Feat reads before it is made),
+		// with the seal for its glyph, until the last Hardcore boss falls and the name and the reward are revealed.
 		new()
 		{
 			Id = TakerTakenId, DisplayName = "The Taker Taken",
+			SealedName = MysteryName, SealedReward = MysteryName,
 			Description = "Defeat every chapter's boss on Hardcore.",
 			RewardText = "Unlocks The Dark Wizard",
 			CharacterUnlockId = "dark_wizard",

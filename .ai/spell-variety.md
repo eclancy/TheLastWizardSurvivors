@@ -41,7 +41,7 @@ Three findings that sharpen it:
   `DirectionalCone`, but `Player.FireConeBlast` calls `FindNearestEnemy` like everything else. A
   whole family of weapons is unreachable because the variable does not exist. *(Built 2026-10-25:
   `Player.FacingDirection` and `FacingSide` - phase 1 below - and the first two spells of the facing
-  family on them. Cone of Cold still aims at the nearest enemy.)*
+  family on them. Cone of Cold aims the way he faces since 2026-11-09, `.ai/character-fit.md`.)*
 - **`SpellTargetingMode` is decorative.** The enum has six values, but it is only ever computed in
   `Node2DGame.ResolveTargetingMode` to build a debug string. The firing functions hardcode
   `FindNearestEnemy` at seven call sites. We have the vocabulary without the machinery.

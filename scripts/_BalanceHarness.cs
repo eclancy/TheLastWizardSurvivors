@@ -1620,9 +1620,6 @@ public partial class _BalanceHarness : Node
 		// bolts cut on the line - once the form has cut.
 		if (SpiritualWeapon.StatSevers > 0)
 			GD.Print($"HARNESS SEVER m={row.Minute} {SpiritualWeapon.SeverLine()}");
-		// Avalon (her passive): the first fall it healed to full, once it has.
-		if (player.AvalonAtSeconds >= 0f)
-			GD.Print($"HARNESS AVALON m={row.Minute} at={player.AvalonAtSeconds:0.0}s");
 		// The Dose (Paracelsus): how many carriers each generation has had, and how many last carriers it has finished.
 		if (Contagion.DoseInfectedByGeneration[1] > 0)
 			GD.Print($"HARNESS DOSE m={row.Minute} by generation={string.Join("/", Contagion.DoseInfectedByGeneration)} last={Contagion.LastCarriersDosed}");
@@ -1634,14 +1631,15 @@ public partial class _BalanceHarness : Node
 		// passed the mark on, and of those the falls that had stars left to loose again.
 		if (Sagittarius.HuntVolleys > 0)
 			GD.Print($"HARNESS HUNT m={row.Minute} volleys={Sagittarius.HuntVolleys} passes={Sagittarius.HuntPasses} revolleys={Sagittarius.HuntRevolleys}");
-		// The Eye of Ra (Imhotep): flares so far, bodies blinded by them, elites seared instead, and how many are blind now.
-		if (Fireball.FlaresThisRun > 0)
+		// The Eye of Ra (Imhotep, on Scorching Ray): flares so far, bodies blinded by them, elites seared instead, and how
+		// many are blind now.
+		if (ScorchingRayBeam.FlaresThisRun > 0)
 		{
 			int blindNow = 0;
 			foreach (Enemy e in EnemyRegistry.Snapshot)
 				if (IsInstanceValid(e) && e.IsBlinded)
 					blindNow++;
-			GD.Print($"HARNESS EYE m={row.Minute} flares={Fireball.FlaresThisRun} blinded={Fireball.BlindedThisRun} seared={Fireball.ElitesSearedThisRun} blind_now={blindNow}");
+			GD.Print($"HARNESS EYE m={row.Minute} flares={ScorchingRayBeam.FlaresThisRun} blinded={ScorchingRayBeam.BlindedThisRun} seared={ScorchingRayBeam.ElitesSearedThisRun} blind_now={blindNow}");
 		}
 		// Dragon's Teeth (Medea): stones thrown, bodies turned, and what the turned did to their own.
 		if (ElementalPulse.StatStonesThrown > 0)
@@ -4017,8 +4015,8 @@ public partial class _BalanceHarness : Node
 		if (Contagion.DoseInfectedByGeneration[1] > 0)
 			lines.Add($"  the dose: carriers by generation {string.Join("/", Contagion.DoseInfectedByGeneration)}, {Contagion.LastCarriersDosed} last carriers finished");
 		// The Eye of Ra (Imhotep): how often it flared and what it blinded.
-		if (Fireball.FlaresThisRun > 0)
-			lines.Add($"  the eye of ra flared {Fireball.FlaresThisRun} times, blinded {Fireball.BlindedThisRun}, seared {Fireball.ElitesSearedThisRun} elites");
+		if (ScorchingRayBeam.FlaresThisRun > 0)
+			lines.Add($"  the eye of ra flared {ScorchingRayBeam.FlaresThisRun} times, blinded {ScorchingRayBeam.BlindedThisRun}, seared {ScorchingRayBeam.ElitesSearedThisRun} elites");
 		// Dragon's Teeth (Medea): the stones, and the crowd fighting itself.
 		if (ElementalPulse.StatStonesThrown > 0)
 			lines.Add($"  dragon's teeth threw {ElementalPulse.StatStonesThrown} stones, turned {ElementalPulse.StatBodiesTurned}; the turned landed {Enemy.TurnedBlows} blows and killed {Enemy.TurnedKills}");

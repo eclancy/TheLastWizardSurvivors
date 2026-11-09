@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://87a62n7se1t7"
-path="res://.godot/imported/hollow_star_spirit_mirror.png-81e1329f2394e70afaeed9a8dd5823e2.ctex"
+uid="uid://bugcqcafw5uwc"
+path="res://.godot/imported/familiar-raven-ink-howl.png-a0ec3d171b3f63f3988b0a39ca102394.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bonelight/ui/evolutions/hollow_star_spirit_mirror.png"
-dest_files=["res://.godot/imported/hollow_star_spirit_mirror.png-81e1329f2394e70afaeed9a8dd5823e2.ctex"]
+source_file="res://assets/bonelight/characters/familiar-raven-ink-howl.png"
+dest_files=["res://.godot/imported/familiar-raven-ink-howl.png-a0ec3d171b3f63f3988b0a39ca102394.ctex"]
 
 [params]
 

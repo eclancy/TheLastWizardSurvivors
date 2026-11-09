@@ -28,6 +28,13 @@ namespace TheOneHeMissed.scripts;
 //   - Sunlance (level 8): the ray widens into a lance that stays lit and sweeps on from its target to
 //     the next, and the next, burning everything it crosses.
 // The ids are the archetype's, kept so every save's choices and the Ascension browser carry over.
+//
+// The rays of one cast leave one after another, a little unevenly (Player.ScorchRayGap, Fire's delay, Depart),
+// each from where the wizard then stands.
+//
+// And Imhotep's Apotheosis, the Eye of Ra (EyeOfRaId, FlareEyeOfRa): the hottest ray of each cast flares like
+// the sun where it lands. He opens on the ray since 2026-11-09 (.ai/character-fit.md section 1), and the form
+// came with him from Fireball.
 public partial class ScorchingRayBeam : Node2D
 {
 	[Export] public SpellData SpellData { get; set; }
@@ -42,6 +49,10 @@ public partial class ScorchingRayBeam : Node2D
 	public const string BurnThroughId = "scorching_ray_reactive_catalyst";
 	public const string PrismId = "scorching_ray_titan_cataclysm";
 	public const string SunlanceId = "scorching_ray_infinite_horizon";
+	// Imhotep's Apotheosis (.ai/chapter-wizards.md 4.6, ApotheosisCatalog): the cast's hottest ray flares like the sun
+	// (FlareEyeOfRa). It was "fireball_eye_of_ra" while he opened on Fireball; a save that saw it there still has it
+	// seen (SaveData.MovedAscensions).
+	public const string EyeOfRaId = "scorching_ray_eye_of_ra";
 
 	/// <summary>Flashpoint: the burst is this much wider at full heat than on a fresh target.</summary>
 	// 0.6, not the first build's 1 (twice as wide): with the old card's +35% the level 7 ray measured 755
@@ -190,9 +201,30 @@ public partial class ScorchingRayBeam : Node2D
 	public float AreaMultiplier { get; set; } = 1.0f;
 	public Player? PlayerRef { get; set; }
 
+	/// <summary>
+	/// The cast's damage multiplier before the held target's ramp: what a ray that picks a new target on its turn
+	/// (Player.RetargetScorchingRay) multiplies that target's ramp onto - an echo's share included.
+	/// </summary>
+	public float CastDamageMultiplier { get; set; } = 1.0f;
+	// Seconds left before this ray leaves (Player.ScorchRayGap): the rays of a cast leave one after another.
+	private float waitLeft;
+
+	/// <summary>
+	/// The Eye of Ra (EyeOfRaId): this is the cast's hottest ray, and it flares where it first lands. Set by
+	/// Player.FireScorchingRay on one ray a cast, never on the others.
+	/// </summary>
+	public bool FlaresEyeOfRa { get; set; }
+	private bool eyeOfRaFlared;
+	// What the last strike struck (null if nothing stood there): the flare's own target, which has had the ray.
+	private Node2D? lastStruck;
+	// The player's area times the spell's evolved area: what grows the flare, as it grows the burst.
+	private float flareArea = 1f;
+
 	private enum BeamPhase
 	{
 		Idle,
+		// Its cast has made it and it waits its turn (Player.ScorchRayGap), drawn as nothing.
+		Waiting,
 		Extending,
 		Holding,
 		// Handoff: the beam's end swings from a fallen target to the next.
@@ -282,13 +314,16 @@ public partial class ScorchingRayBeam : Node2D
 		RefreshComputedStats();
 	}
 
-	public void Fire(Vector2 from, Node2D? target, Vector2 fallbackTargetPosition)
+	/// <param name="delay">Seconds before it leaves (Player.ScorchRayGap); 0 for at once. It leaves from where the
+	/// wizard stands then, and picks again if its target fell meanwhile (Depart).</param>
+	public void Fire(Vector2 from, Node2D? target, Vector2 fallbackTargetPosition, float delay = 0f)
 	{
 		origin = from;
 		targetNode = target;
 		lockedTargetPosition = target != null && IsInstanceValid(target) ? target.GlobalPosition : fallbackTargetPosition;
 		didDamage = false;
-		phase = BeamPhase.Extending;
+		waitLeft = delay;
+		phase = delay > 0f ? BeamPhase.Waiting : BeamPhase.Extending;
 		phaseTimer = 0f;
 		impactTime = -1f;
 		afterglow = 0f;
@@ -305,6 +340,35 @@ public partial class ScorchingRayBeam : Node2D
 			beamQuad.Modulate = gild;
 		if (fxQuad != null)
 			fxQuad.Modulate = gild;
+		UpdateVisual(origin, origin, 0f);
+	}
+
+	// Its turn has come: it leaves from where the wizard stands now, not where he stood when the cast was made, at its
+	// target - or, if that fell to an earlier ray or anything else meanwhile, at what the cast would have picked
+	// instead (Player.RetargetScorchingRay, which also gives it that target's heat). Nothing is allocated.
+	private void Depart()
+	{
+		if (PlayerRef != null && IsInstanceValid(PlayerRef))
+		{
+			if (PlayerRef.IsDead)
+			{
+				QueueFree();
+				phase = BeamPhase.Idle;
+				return;
+			}
+			// A staggered ray leaves from where his light is when its turn comes (Player.StaffTipLocal - the sun on
+			// Imhotep's palm), as the cast's first ray did.
+			origin = PlayerRef.GlobalPosition + PlayerRef.StaffTipLocal();
+			bool lost = targetNode == null || !IsInstanceValid(targetNode)
+				|| (targetNode is Enemy enemy && (enemy.IsDying || !enemy.InEnemyRegistry));
+			if (lost && PlayerRef.RetargetScorchingRay(this) is Node2D next)
+			{
+				targetNode = next;
+				lockedTargetPosition = next.GlobalPosition;
+			}
+		}
+		phase = BeamPhase.Extending;
+		phaseTimer = 0f;
 		UpdateVisual(origin, origin, 0f);
 	}
 
@@ -348,6 +412,18 @@ public partial class ScorchingRayBeam : Node2D
 		shimmerTime += (float)delta;
 		// Sunlance's band of flames is drawn while it sweeps (that is when it burns) and goes out after.
 		sweepGlow = phase == BeamPhase.Sweeping ? 1f : MathF.Max(0f, sweepGlow - (float)delta / 0.12f);
+
+		if (phase == BeamPhase.Waiting)
+		{
+			// Held for a boss's arrival as every spell is (Player.HeldForBossEntrance; the spell group is frozen too, which
+			// stops this node altogether): its turn waits until the fight starts.
+			if (PlayerRef != null && IsInstanceValid(PlayerRef) && PlayerRef.HeldForBossEntrance)
+				return;
+			waitLeft -= (float)delta;
+			if (waitLeft <= 0f)
+				Depart();
+			return;
+		}
 
 		if (phase == BeamPhase.Afterglow)
 		{
@@ -427,6 +503,12 @@ public partial class ScorchingRayBeam : Node2D
 		impactTime = shimmerTime;
 		LeaveScorch(splashAt);
 		phaseTimer = 0f;
+		// The Eye of Ra: where the cast's hottest ray first lands, once - never where it swings or sweeps on to.
+		if (FlaresEyeOfRa && !eyeOfRaFlared)
+		{
+			eyeOfRaFlared = true;
+			FlareEyeOfRa(at, lastStruck);
+		}
 
 		if (fell && handoffsLeft > 0 && FindNext(at, HandoffReach) is Node2D next)
 		{
@@ -541,6 +623,7 @@ public partial class ScorchingRayBeam : Node2D
 		didDamage = true;
 		throughPosition = impactPosition;
 		burnedThrough = false;
+		lastStruck = null;
 		if (PlayerRef == null)
 			return false;
 
@@ -570,6 +653,7 @@ public partial class ScorchingRayBeam : Node2D
 				}
 			}
 		}
+		lastStruck = struck;
 		if (struck == null)
 			return false;
 
@@ -758,6 +842,88 @@ public partial class ScorchingRayBeam : Node2D
 			}
 		}
 	}
+
+	// THE EYE OF RA (Imhotep's Apotheosis, the verb "blind"; .ai/chapter-wizards.md 4.6, .ai/character-fit.md section 1):
+	// "Each cast, the hottest ray flares like the sun. Whatever sees it loses you for two seconds and wanders." The ray
+	// is the sun focused through his bronze mirror, the act that frees him (.ai/unlock-puzzles.md 3.1), and where the
+	// cast's hottest ray first lands (Player.FireScorchingRay picks it: the first of the hottest, so the held target,
+	// else the nearest) the light goes out round it to FlareRadiusFor its heat - FlareColdRadius on a fresh target,
+	// FlareHotRadius held to full heat, times the area, MaxFlareRadius at most. Every ordinary body in it is blinded
+	// for BlindSeconds (Enemy.ApplyBlind): it loses him, wanders at a feeling pace and begins no attack. ELITES ARE
+	// STRUCK, NOT BLINDED, as the Quatrains strike rather than stop them: seared for FlareSearShare of the ray's hit,
+	// all but the ray's own target, which has had the ray. BOSSES ARE NEITHER: a boss never loses him (the
+	// crowd-control rule). One flare a cast and only the cast's own landing - not Prism's split rays, not Sunlance's
+	// sweeps, not Handoff's swing - so it comes on the spell's own beat.
+	//
+	// WHAT IS ALREADY BLIND DOES NOT SEE IT. Fireball's flare came every 5.5 s against a 2 s blind, so a blinded crowd
+	// always had its eyes back before the next; the ray casts every 1.6 s or less and its hottest ray lands on the same
+	// held target cast after cast, so a flare that renewed a running blind would hold the crowd round that target
+	// blind for good. A blinded body's own two seconds run out first, and only then can the next flare take it.
+	//
+	// 120 to 240 px is the first guess, kept untuned (Eric, 2026-11-09: no balance runs for this change). One run each
+	// was made before that (_BalanceHarness --character=19 --all-unlocked --immortal --seek-apotheosis, seed 1234), for
+	// whoever tunes it: on Fireball the Eye of Ra blinded 210 a minute once taken (12 flares a minute, 17 a flare; its
+	// minutes ran 184-243); on the ray it flares about 56 times a minute and catches 3 to 4 a flare - most flares are
+	// cold, on a swarm body that dies in a cast or two - so 120-240 blinded 177 a minute and 140-280 blinded 228.
+	public const float FlareColdRadius = 120f;
+	public const float FlareHotRadius = 240f;
+	public const float MaxFlareRadius = 380f;
+	public const float BlindSeconds = 2f;
+	public const float FlareSearShare = 0.5f;
+
+	/// <summary>The Eye of Ra's tallies this run, for _BalanceHarness (reset by every Player._Ready).</summary>
+	public static int FlaresThisRun, BlindedThisRun, ElitesSearedThisRun;
+
+	public static void ResetEyeOfRaTallies()
+	{
+		FlaresThisRun = 0;
+		BlindedThisRun = 0;
+		ElitesSearedThisRun = 0;
+	}
+
+	/// <summary>How far an Eye of Ra flare reaches from a ray this hot (0 to 1), at this area multiplier.</summary>
+	public static float FlareRadiusFor(float heat, float area) =>
+		MathF.Min(MaxFlareRadius, Mathf.Lerp(FlareColdRadius, FlareHotRadius, Mathf.Clamp(heat, 0f, 1f)) * MathF.Max(0f, area));
+
+	private void FlareEyeOfRa(Vector2 at, Node2D? target)
+	{
+		float flare = FlareRadiusFor(Heat, flareArea);
+		float flare2 = flare * flare;
+		int sear = Math.Max(1, Mathf.RoundToInt(damage * FlareSearShare));
+		bool canSear = PlayerRef != null && IsInstanceValid(PlayerRef);
+		Node2D? arena = GetParent() as Node2D;
+		FlaresThisRun++;
+		foreach (Enemy e in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(e) || e.IsDying || e is BossEnemy || e.GlobalPosition.DistanceSquaredTo(at) > flare2)
+				continue;
+			if (e.IsMiniBoss)
+			{
+				if (e != target && canSear)
+				{
+					// Seared, and seen to be: a small burst of the sun's own fire on the body, not the blind's glint.
+					Vector2 searedAt = e.GlobalPosition;
+					PlayerRef!.DealDamageToEnemy(e, sear, source: SpellData);
+					ElitesSearedThisRun++;
+					if (arena != null)
+						FireburstLayer.Spawn(arena, searedAt, SearBurstRadius, FireburstLayer.Style.Sun);
+				}
+				continue;
+			}
+			if (e.IsBlinded)
+				continue;
+			e.ApplyBlind(BlindSeconds);
+			if (e.IsBlinded)
+				BlindedThisRun++;
+		}
+		// The flare itself, the sun breaking out to exactly the reach it blinds, hotter from a hotter ray (SunFlare): the
+		// arena's, since this beam frees itself once its scorch has cooled. Each blinded body wears its glint from there.
+		if (arena != null)
+			SunFlare.Spawn(arena, at, flare, Heat);
+	}
+
+	// The burst of the sun's fire on a seared elite: about the body, a hit on it alone (FireburstLayer's Sun style).
+	private const float SearBurstRadius = 26f;
 
 	private void UpdateVisual(Vector2 from, Vector2 to, float alphaScale)
 	{
@@ -1114,6 +1280,7 @@ public partial class ScorchingRayBeam : Node2D
 		// No burst at all until an evolution's Area grows one: the base ray strikes one enemy.
 		float evolvedArea = SpellData?.GetAreaMultiplierAtLevel(CurrentLevel) ?? 1f;
 		splashRadius = evolvedArea > 1.001f ? BaseSplashRadius * evolvedArea * AreaMultiplier : 0f;
+		flareArea = evolvedArea * AreaMultiplier;
 		flashpoint = SpellData?.HasEvolution(FlashpointId) == true;
 		handoff = SpellData?.HasEvolution(HandoffId) == true;
 		burnThrough = SpellData?.HasEvolution(BurnThroughId) == true;

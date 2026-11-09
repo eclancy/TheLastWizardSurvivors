@@ -9,7 +9,8 @@
 ; (.ai/chapter-wizards.md 4.1). The witch of the deep wood, whose hut stands behind a fence of bone. Her
 ; passive is Bone Fence, the one axis no other wizard owns: every shove and pull her spells give lands
 ; harder (+20% knockback). She opens on Thorned Vine, two elements (Grass and Poison) - a freed wizard may
-; (R2); the form deepens Grass.
+; (R2); the form deepens Grass. She flies in her mortar, broom in hand (roster.yaga, anim_sets.hover); the look
+; only, her Feet collider meets water and walls as everyone's does.
 [resource]
 script = ExtResource("1")
 Id = "baba_yaga"

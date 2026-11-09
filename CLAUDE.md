@@ -15,6 +15,7 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
 - `.ai/releasing.md` — how a downloadable Windows build and the release-signed Android APK are made (`bash tools/release/release.sh X.Y.Z "what changed"`, rehearsed with `--dry-run`) and how every Windows copy updates itself from GitHub Releases when it starts (`scripts/UpdateScreen.cs`, laid over the title in exported builds only), while an Android copy only offers the new APK (`scripts/UpdateBanner.cs`). The Android signing key lives outside the repo and losing it strands every installed copy. **Read it before touching `export_presets.cfg`, `config/version`, or the title screen's startup.**
 - `.ai/spell-variety.md` — why most spells feel alike (22 of 23 auto-aim on a fixed timer), the axes of weapon variety the genre uses that we do not, the phased plan for closing that, and the item ideas worth taking from Vampire Survivors and Magic Survival. **Read it before adding a spell or a chest item.**
 - `.ai/spell-roster.md` — the roster rethink: all 24 spells with a distinct aim, cadence, demand and payload, the three collisions that caused the sameness, and the dependency order for building it.
+- `.ai/character-fit.md` — every wizard's starting spell and passive judged against their story, look, element and verb; Eric's decisions (Imhotep opens on Scorching Ray since 2026-11-09) and the open proposals. **Read it before changing a wizard's opener or passive.**
 - `.ai/passives-and-items.md` — boons, item rarity and Full Set Enchantments; section 3a holds the element-carrier audit and the two reactive boons.
 - `.ai/enemy-behaviour.md` — the plan for per-enemy behaviour (splitting blobs, circling wolves, teleporting mages) and the Halls of Torment inspiration pass.
 - `.ai/art-inventory.md` — what art we own vs. actually reference, and where the unused art could go. **Read it before adding art or concluding we lack a sprite**; note especially that 420 world props are mis-filed under `assets/organized/ui/`.
@@ -222,7 +223,7 @@ Order matters, and passive-spell work depends on it:
 7. Flat reduction — `Σ PassiveSpellEffect.GetFlatDamageReduction()` + Metal.
 8. `CurrentHP -= mitigated`.
 9. Bastion of Spikes retaliation if HP drops below 30%.
-10. Death: spend an extra life and heal to `MaxHP / 2` (to `MaxHP` the first time a run spends one under Morgan le Fay's Avalon, `Player.ExtraLifeHeal`), otherwise emit `Died`.
+10. Death: spend an extra life and heal to `MaxHP / 2` (`Player.ExtraLifeHeal`; Morgan le Fay's Avalon, which healed the first one to full, became Glamour, a 10% dodge in step 2, on 2026-11-09), otherwise emit `Died`.
 
 `DamageTaken` carries the **pre-mitigation** amount. A passive that should scale off damage *actually dealt* must read the HP delta, not the signal argument.
 

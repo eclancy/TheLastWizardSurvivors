@@ -323,6 +323,15 @@ landing on forty enemies plays one impact, not forty.
 `Enemy.ApplyPoison` ticks every second for its whole duration on every poisoned enemy. It
 must **not** play a sound per tick — that is the single worst mix hazard in the game.
 
+## Canticle's notes (2026-11-09)
+
+Twelve `note_<element>` files (`assets/sfx/note_<element>.wav`, one per element voice, A4), for the Sibyl's
+Canticle (`.ai/spell-roster.md`). Each charging cast plays its spell's element note pitched to the chord's next
+tone in the chapter's key, 8 dB under the burst (`ArcaneExplosion.AddNote`); the burst sounds the gathered notes
+together on the next beat (`SoundChord`, six at most). Each note peaks at -26 dBFS, under the loudness table on
+purpose: they are only ever heard together, and a chord of three to six sums to -20 to -15 peak, -33 to -29 RMS,
+level with a chapter's bed and pulse. `analyse.py --confuse`: 0 confusable pairs after two rebuilds. Not yet heard.
+
 ## Spell shapes
 
 Sounds no element table can express, because they are about a spell's *form* rather than its

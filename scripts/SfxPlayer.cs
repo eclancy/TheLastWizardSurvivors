@@ -276,6 +276,8 @@ public partial class SfxPlayer : Node
 		voice.Stream = stream;
 		voice.GlobalPosition = globalPosition;
 		voice.PitchScale = Jitter(pitchJitter);
+		// A pooled voice may last have carried a Canticle charge note, the one thing played under unity.
+		voice.VolumeDb = 0f;
 		voice.Play();
 		if (critical)
 			TriggerDuck(stream);
@@ -364,8 +366,44 @@ public partial class SfxPlayer : Node
 		voice.Stream = stream;
 		voice.GlobalPosition = globalPosition;
 		voice.PitchScale = pitchScale;
+		voice.VolumeDb = 0f;
 		voice.Play();
 		return true;
+	}
+
+	// THE CANTICLE (the Cumaean Sibyl's spell, ArcaneExplosion; .ai/character-fit.md section 5, row 19). Every cast
+	// that charges it adds a note to a chord in the voice of that spell's element, and the burst, on the music's
+	// beat, sounds the gathered notes together. The two are one file each (note_<element>, at A4) heard two ways:
+	//   * the CHORD: Normal tier, at unity - the files are normalised so that three to six together land level
+	//     with a chapter's bed and pulse, under its whole set (NOTE_DB in tools/audio/sfx.py): it joins the
+	//     music rather than sitting on it. At most CanticleChordVoices of one chord sound, so a level 1 chord's
+	//     eight notes never take a third of the positional pool on one frame.
+	//   * a CHARGE note, as each cast adds it: CanticleChargeDb under the file, under the XP orb, in the Swarm
+	//     tier (it drops itself before it steals) and throttled - a quiet tick of the chord growing, under the
+	//     cast's own cue, which is the sound the cast is heard by.
+	public const float CanticleChargeDb = -8.0f;
+	public const int CanticleChordVoices = 6;
+	private const int CanticleChargeGapMs = 70;
+
+	/// <summary>One Canticle note: the element's voice at <paramref name="pitch"/> (1 is A4), as part of the burst's
+	/// chord or, quieter, as a charge note gathering.</summary>
+	public static void CanticleNote(Element element, Vector2 position, float pitch, bool chord)
+	{
+		var self = Get();
+		if (self == null || !self.streams.TryGetValue(SfxCatalog.NoteFor(element), out var stream))
+			return;
+		if (!chord && self.Throttled("canticle_charge", CanticleChargeGapMs))
+			return;
+		var voice = self.TakePositional(chord ? SfxCatalog.SfxTier.Normal : SfxCatalog.SfxTier.Swarm);
+		if (voice == null)
+			return;
+		voice.Bus = self.bedBus;
+		voice.MaxDistance = MaxAudibleDistance;
+		voice.Stream = stream;
+		voice.GlobalPosition = position;
+		voice.PitchScale = Mathf.Clamp(pitch, 0.25f, 4f);
+		voice.VolumeDb = chord ? 0f : CanticleChargeDb;
+		voice.Play();
 	}
 
 	// ---------------------------------------------------------------------

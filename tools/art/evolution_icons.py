@@ -1206,6 +1206,8 @@ SPELLS = {
     "contagion":         dict(paint=si.contagion, travel=None, tip=(16, 16), rows=("poison",)),
     "bramble_seed":      dict(paint=si.bramble_seed, travel=(0, -1), tip=(16, 4), rows=("grass",)),
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
+    # John Dee's opener (.ai/character-fit.md section 6): the open book and the page flying from it (the tip).
+    "folio":             dict(paint=si.folio, travel=(0.8, -1), tip=(26, 4), rows=("arcane", "darkness")),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -2383,23 +2385,45 @@ def _(sp, c):
     sp.why = "the world dimmed round the tear"
 
 
-# --- Arcane Explosion ------------------------------------------------------------------------------
+# --- The Canticle (Arcane Explosion's id) ----------------------------------------------------------
+# Renamed 2026-11-09 (.ai/character-fit.md section 5, row 19): a chord sung on the music's beat. The cards
+# kept their ids; Harmony, Sustain and Fermata were redrawn for what they now say, the rest repaint with the
+# spell's own picture (spell_icons_core.arcane_explosion: the rings, a note at their heart).
+
+def m_slot(cv, x0, y0, size, ramp):
+    """A spell slot, as the loadout strip draws one: a square of the steel rim on the deep backing, the
+    element it lends lit inside it."""
+    st = M["steel"]
+    cv.rect(x0, y0, x0 + size - 1, y0 + size - 1, OCC)
+    cv.rect(x0 + 1, y0 + 1, x0 + size - 2, y0 + size - 2, st[2])
+    cv.rect(x0 + 2, y0 + 2, x0 + size - 3, y0 + size - 3, M["violet"][4])
+    cx, cy = x0 + (size - 1) / 2.0, y0 + (size - 1) / 2.0
+    cv.disc(cx, cy, size * 0.26, size * 0.26, ramp[2])
+    cv.disc(cx - 0.5, cy - 0.5, size * 0.15, size * 0.15, ramp[1])
+    cv.set(cx - 1, cy - 1, ramp[0])
+
 
 @card("arcane_explosion_dual_shockwave")
 def _(sp, c):
-    """Sympathetic Blast (Dual Shockwave's id): the blast wearing the element of the spell that set it
-    off - its ring broken into three arcs, each in another spell's light."""
+    """Harmony (Sympathetic Blast's id, 2026-11-09): the burst takes the element of the spell in the NEXT
+    SLOT - so the chord, re-lit in that element's light (Fire, for the picture: Storm Chord is the Lightning
+    one), and tied by a slur to the slot that lends it, in the corner."""
     reset(sp)
-    sp.place = Place(0.62)
+    sp.place = Place(0.6, at=(12.5, 12.5))
+    sp.recolour = "fire"
 
-    def arcs(cv, x):
-        for (el, a0, a1) in (("lightning", -150, -40), ("ice", -20, 90), ("poison", 110, 200)):
-            ramp = E[el]
-            for d in range(a0, a1, 4):
-                t = math.radians(d)
-                for (rr, tone) in ((13.0, ramp[2]), (12.0, ramp[1]), (11.0, ramp[0] if d % 12 == 0 else ramp[1])):
-                    cv.set(C0 + math.cos(t) * rr, C0 + math.sin(t) * rr, tone)
-    O(sp, arcs)
+    def lent(cv, x):
+        ramp = E["fire"]
+        m_slot(cv, 19, 19, 9, ramp)
+        # The slur, from under the chord to the slot's side.
+        for k in range(0, 9):
+            t = k / 8.0
+            sx = 9.0 + t * 9.0
+            sy = 22.0 + math.sin(t * math.pi) * 3.0
+            cv.set(sx, sy + 1, OCC)
+            cv.set(sx, sy, ramp[1] if k % 3 else ramp[0])
+    O(sp, lent)
+    sp.why = "the next slot lends the burst its element"
 
 
 @card("arcane_explosion_static_nova")
@@ -2410,16 +2434,21 @@ def _(sp, c):
 
 @card("arcane_explosion_lingering_rift")
 def _(sp, c):
-    """Lingering Rift: a rift left on the ground under the blast."""
+    """Sustain (Lingering Rift's id, 2026-11-09): the note rings on in the ground under the burst - a standing
+    wave, bands of its light lying in the floor, the outermost on the reach, the neighbours in opposite phase."""
     reset(sp)
-    sp.place = Place(0.72, dy=-4)
+    sp.place = Place(0.68, dy=-5)
 
-    def rift(cv, x):
+    def ringing(cv, x):
         a = E["arcane"]
-        cv.disc(C0, 24.5, 12.5, 4.2, a[3])
-        cv.disc(C0, 24.5, 10.0, 2.8, OCC)
-        zig(cv, (6, 24.5), (26, 24.5), a[1], 1.0, 6, a[0])
-    U(sp, rift)
+        cv.disc(C0, 24.5, 13.0, 4.6, M["violet"][4])
+        for (rx, ry, tone) in ((12.5, 4.2, a[1]), (8.5, 2.9, a[3]), (4.6, 1.6, a[1])):
+            for d in range(0, 360, 6):
+                t = math.radians(d)
+                cv.set(C0 + math.cos(t) * rx, 24.5 + math.sin(t) * ry, tone)
+        cv.set(C0, 24.5, a[0])
+    U(sp, ringing)
+    sp.why = "the note ringing in the ground"
 
 
 @card("arcane_explosion_supernova")
@@ -2462,10 +2491,20 @@ def _(sp, c):
 
 @card("arcane_explosion_event_horizon")
 def _(sp, c):
-    """Event Horizon: a sphere of stopped time where the blast went off - motes hung still in it, and
-    what walked in frozen."""
+    """Fermata (Event Horizon's id, 2026-11-09): a held note - the sphere of stopped time where the burst went
+    off, motes hung still in it, what walked in frozen, and the fermata over it all."""
     reset(sp)
-    sp.place = Place(0.55)
+    sp.place = Place(0.5, dy=3)
+
+    def fermata(cv, x):
+        # Inside the disc, clear of the Ascension's top gem: the arc over the sphere's top, its dot under it.
+        a = E["arcane"]
+        for d in range(180, 361, 6):
+            t = math.radians(d)
+            for (rr, tone) in ((6.0, a[1]), (5.0, a[0])):
+                cv.set(C0 + math.cos(t) * rr, 11.0 + math.sin(t) * (rr - 1.0), tone)
+        cv.rect(C0 - 0.5, 9.0, C0 + 0.5, 10.0, a[0])
+    O(sp, fermata)
 
     def sphere(cv, x):
         a = E["arcane"]
@@ -3515,52 +3554,32 @@ def _(sp, c):
     U(sp, seared)
 
 
-@card("fireball_eye_of_ra")
-def _(sp, c):
-    """Eye of Ra (Imhotep's Apotheosis, blind): the ball flaring like the sun - a ring of white light round it and
-    rays running out past it - and under it the eye of Ra itself, its lid line, pupil, tear-mark and curl in the
-    sun's gold: what sees it loses you."""
-    reset(sp)
-    sp.accent = None
-    sp.place = Place(0.58, at=(16.0, 13.0))
+def eye_of_ra(cv):
+    """The eye of Ra in the sun's gold, low in the cell: its lid line, brow, white-hot pupil, tear-mark and curl."""
+    l = E["light"]
+    gold = l[3]
+    # The upper lid, a long shallow arc; the lower, shorter; the brow over it.
+    for (px, py) in ((9, 25), (10, 24), (11, 24), (12, 23), (13, 23), (14, 23), (15, 23), (16, 23), (17, 23),
+                     (18, 23), (19, 24), (20, 24), (21, 25), (22, 25)):
+        cv.set(px, py, gold)
+    for px in range(11, 21):
+        cv.set(px, 26, gold)
+    for px in range(10, 21):
+        cv.set(px, 21, l[2])
+    # The pupil, white-hot: the sun in it.
+    for (px, py) in ((15, 24), (16, 24), (15, 25), (16, 25)):
+        cv.set(px, py, l[0])
+    cv.set(14, 24, l[1])
+    cv.set(17, 25, l[1])
+    # The tear-mark down, and the curl out behind.
+    for (px, py) in ((14, 27), (14, 28), (13, 29), (13, 30)):
+        cv.set(px, py, gold)
+    for (px, py) in ((18, 27), (19, 28), (20, 29), (21, 29), (22, 28), (22, 27)):
+        cv.set(px, py, gold)
 
-    def flare(cv, x):
-        l = E["light"]
-        for k in range(12):
-            a = k * math.pi / 6.0 + 0.26
-            r0, r1 = 7.5, (14.0 if k % 2 == 0 else 11.0)
-            steps = int((r1 - r0) * 2)
-            for t in range(steps + 1):
-                rr = r0 + t / 2.0
-                px, py = 16 + math.cos(a) * rr, 13 + math.sin(a) * rr
-                if py > 21:
-                    continue
-                cv.set(int(round(px)), int(round(py)), l[1] if rr < (r0 + r1) / 2.0 else l[3])
-        cv.ring(16, 13, 7.5, 7.5, l[2], thick=1)
-    U(sp, flare)
 
-    def eye(cv, x):
-        l = E["light"]
-        gold = l[3]
-        # The upper lid, a long shallow arc; the lower, shorter; the brow over it.
-        for (px, py) in ((9, 25), (10, 24), (11, 24), (12, 23), (13, 23), (14, 23), (15, 23), (16, 23), (17, 23),
-                         (18, 23), (19, 24), (20, 24), (21, 25), (22, 25)):
-            cv.set(px, py, gold)
-        for px in range(11, 21):
-            cv.set(px, 26, gold)
-        for px in range(10, 21):
-            cv.set(px, 21, l[2])
-        # The pupil, white-hot: the sun in it.
-        for (px, py) in ((15, 24), (16, 24), (15, 25), (16, 25)):
-            cv.set(px, py, l[0])
-        cv.set(14, 24, l[1])
-        cv.set(17, 25, l[1])
-        # The tear-mark down, and the curl out behind.
-        for (px, py) in ((14, 27), (14, 28), (13, 29), (13, 30)):
-            cv.set(px, py, gold)
-        for (px, py) in ((18, 27), (19, 28), (20, 29), (21, 29), (22, 28), (22, 27)):
-            cv.set(px, py, gold)
-    O(sp, eye)
+# The Eye of Ra moved to Scorching Ray with Imhotep's opener on 2026-11-09 (.ai/character-fit.md section 1); its card
+# is with the ray's, below ("scorching_ray_eye_of_ra"). It was "fireball_eye_of_ra" here, the ball flaring.
 
 
 # --- Frost Shard -----------------------------------------------------------------------------------
@@ -3994,12 +4013,194 @@ def _(sp, c):
     O(sp, shards)
 
 
-@card("hollow_star_spirit_mirror")
+# The Spirit Mirror left Hollow Star with John Dee's opener on 2026-11-09: it is Folio's form now (below).
+
+
+# --- Folio -------------------------------------------------------------------------------------------
+
+# John Dee's book (scripts/Folio.cs). Every card is something more a PAGE does (.ai/spell-roster.md 2e), and every icon
+# draws the page doing it: torn in two over what it struck, spilling its ink on the ground, edged in gold and cut
+# through a line of them, the book thrown shut and bursting open, the ink of the slain flying home into it.
+
+def _lerp(a, b, t):
+    return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
+
+
+def leaf(cv, pts, edge=None, ink=True):
+    """One page, as the game draws it: the bone ramp lit from the upper left, its shaded sides (right and bottom) in
+    Darkness's edge - or gold, gilt - and two lines of violet ink across it. pts: top-left, top-right, bottom-right,
+    bottom-left."""
+    b = M["skin"]
+    edge = edge or E["darkness"][3]
+    tl, tr, br, bl = pts
+    cv.poly_shade(pts, [b[0], b[0], b[1], b[2]], bias=-0.1)
+    cv.line(tr[0], tr[1], br[0], br[1], edge)
+    cv.line(br[0], br[1], bl[0], bl[1], edge)
+    if ink:
+        for (t, w) in ((0.3, 0.8), (0.58, 0.5)):
+            left, right = _lerp(tl, bl, t), _lerp(tr, br, t)
+            a, z = _lerp(left, right, 0.18), _lerp(left, right, 0.18 + 0.64 * w)
+            cv.line(a[0], a[1], z[0], z[1], M["violet"][4])
+
+
+def open_book(cv, dy=0):
+    """The open book alone, low and wide: pale pages over violet boards, the gutter dark - si.folio's book."""
+    b, v = M["skin"], M["violet"]
+    cv.poly_shade([(2, 19 + dy), (15, 21 + dy), (16, 21 + dy), (29, 19 + dy), (29, 27 + dy), (16, 29 + dy),
+                   (15, 29 + dy), (2, 27 + dy)], [v[1], v[2], v[3], v[4]], bias=0.1)
+    cv.poly_shade([(3, 19 + dy), (15, 21 + dy), (15, 27 + dy), (3, 25 + dy)], [b[0], b[1], b[1], b[2]], bias=-0.05)
+    cv.poly_shade([(16, 21 + dy), (28, 19 + dy), (28, 25 + dy), (16, 27 + dy)], [b[1], b[2], b[2], b[3]], bias=0.1)
+    cv.vline(15, 21 + dy, 28 + dy, v[4])
+    cv.vline(16, 21 + dy, 27 + dy, b[3])
+
+
+def torn_leaf():
+    """Torn Leaf: a page torn in two over the skull it struck, the halves flung apart either way."""
+    c = _cv()
+    a = E["arcane"]
+    b = M["skin"]
+    foe(c, 16, 25, 1.15)
+    # Where each half went: a short streak from the strike up to it.
+    c.line(14, 21, 10, 18, a[2])
+    c.line(18, 21, 22, 18, a[2])
+    leaf(c, [(3, 8), (12, 6), (13, 15), (5, 17)])
+    leaf(c, [(19, 6), (28, 8), (27, 17), (18, 15)])
+    # The torn edges, ragged: teeth of the paper's lit tone along the two inner sides.
+    for (x, y) in ((13, 7), (12, 9), (13, 11), (12, 13)):
+        c.set(x, y, b[1])
+    for (x, y) in ((18, 7), (19, 9), (18, 11), (19, 13)):
+        c.set(x, y, b[1])
+    # Scraps thrown up between them.
+    c.set(15, 4, b[0])
+    c.set(16, 12, b[1])
+    c.set(15, 16, a[1])
+    return c
+
+
+def gilt_page():
+    """Gilt Edge: one page edged in gold, and the clean cut it made through the line of skulls behind it."""
+    c = _cv()
+    g = GOLD
+    foe(c, 20, 13, 1.0)
+    foe(c, 26, 7, 0.9)
+    # The cut, along the page's line, through both: gold, dashed.
+    for i in range(0, 19):
+        x, y = 12 + i * 0.95, 21 - i * 0.95
+        if i % 4 != 3:
+            c.set(x, y, g[0] if i % 2 == 0 else g[1])
+    leaf(c, [(2, 19), (11, 16), (13, 25), (5, 28)], edge=g[1])
+    # The gilt runs along its top too, and catches the key at the corner.
+    c.line(2, 19, 11, 16, g[1])
+    c.set(2, 19, g[0])
+    c.set(13, 25, g[2])
+    return c
+
+
+def bound_volume():
+    """Bound Volume: the book thrown shut and bursting open in the thick of them - its pages flying out every way."""
+    c = _cv()
+    v, b, a = M["violet"], M["skin"], E["arcane"]
+    for k in range(6):
+        ang = -math.pi / 2 + k * TAU / 6.0
+        px, py = C0 + math.cos(ang) * 11.5, C0 + math.sin(ang) * 11.5
+        leaf(c, [(px - 2, py - 2), (px + 2, py - 2.5), (px + 2.5, py + 2), (px - 1.5, py + 2.5)], ink=False)
+        c.line(C0 + math.cos(ang) * 6.5, C0 + math.sin(ang) * 6.5, C0 + math.cos(ang) * 8.5, C0 + math.sin(ang) * 8.5, a[1])
+    # The closed book: violet boards lit along the spine and the top, the page block's pale fore-edge, a gold clasp.
+    c.poly_shade([(11, 9), (20, 10), (20, 22), (11, 21)], [v[0], v[1], v[2], v[3]])
+    c.vline(11, 9, 21, v[0])
+    c.line(11, 9, 20, 10, v[0])
+    c.vline(19, 11, 21, b[1])
+    c.vline(20, 11, 21, b[2])
+    c.set(18, 15, GOLD[0])
+    c.set(19, 15, GOLD[1])
+    c.set(20, 15, GOLD[2])
+    c.set(12, 10, a[0])
+    return c
+
+
+def commonplace_book():
+    """Commonplace Book: the open book, and the ink of two of the slain flying home into it - dark letters with a
+    spark of Arcane at their hearts, on curving paths from the skulls they left."""
+    c = _cv()
+    a, d = E["arcane"], E["darkness"]
+    foe(c, 6, 8, 0.95)
+    foe(c, 26, 8, 0.95)
+    open_book(c, dy=1)
+    for side in (-1, 1):
+        for i in range(1, 9):
+            t = i / 9.0
+            x = 16 + side * (10 - 10 * t) - side * math.sin(t * math.pi) * 2.0
+            y = 11 + 9 * t - math.sin(t * math.pi) * 4.0
+            if i % 3 == 0:
+                c.set(x, y, M["violet"][4])
+                c.set(x + 1, y, M["violet"][4])
+                c.set(x, y + 1, M["violet"][4])
+                c.set(x + 1, y + 1, a[1])
+            else:
+                c.set(x, y, d[2] if i < 5 else a[2])
+    return c
+
+
+@card("folio_torn_leaf")
 def _(sp, c):
-    """The Spirit Mirror: Dee's obsidian glass, and every orb in its reach pulled to it."""
+    reset(sp)
+    sp.subject = torn_leaf
+
+
+@card("folio_inkblot")
+def _(sp, c):
+    """Inkblot: the book and its page drawn up, the ink dripping off the page, and the black stain on the ground."""
+    reset(sp)
+    sp.place = Place(0.74, dy=-5)
+
+    def stain(cv, x):
+        d, v = E["darkness"], M["violet"]
+        # A rim a stop up from the Darkness night it lies on, or the black blot vanishes into it.
+        cv.disc(C0, 25.5, 12.0, 4.0, d[2])
+        cv.disc(C0 + 0.5, 25.8, 10.5, 3.2, d[3])
+        cv.disc(C0 + 0.5, 26.0, 9.0, 2.4, v[4])
+        cv.set(C0 - 5, 24.5, d[1])
+        cv.set(C0 - 4, 24.5, d[2])
+    U(sp, stain)
+
+    def drips(cv, x):
+        v, d = M["violet"], E["darkness"]
+        for (px, py) in ((21, 14), (21, 16), (20, 19)):
+            cv.set(px, py, v[4])
+            cv.set(px + 1, py, d[3])
+    O(sp, drips)
+
+
+@card("folio_gilt_edge")
+def _(sp, c):
+    reset(sp)
+    sp.subject = gilt_page
+
+
+@card("folio_bound_volume")
+def _(sp, c):
+    reset(sp)
+    sp.subject = bound_volume
+
+
+@card("folio_commonplace_book")
+def _(sp, c):
+    reset(sp)
+    sp.subject = commonplace_book
+
+
+@card("folio_spirit_mirror")
+def _(sp, c):
+    """The Spirit Mirror (John Dee's Apotheosis, on Folio since 2026-11-09): Dee's obsidian glass, and the orbs and the
+    loose pages it draws in from round it."""
     reset(sp)
     sp.subject = spirit_mirror
-    O(sp, lambda cv, x: m_orbs(cv, [(4, 9), (27, 8), (5, 21), (26, 21)]))
+
+    def drawn_in(cv, x):
+        m_orbs(cv, [(4, 9), (27, 8), (5, 21), (26, 21)])
+        leaf(cv, [(2, 13), (6, 12), (6.5, 16), (2.5, 17)], ink=False)
+        leaf(cv, [(25, 13), (29, 12.5), (29.5, 16.5), (25.5, 17)], ink=False)
+    O(sp, drawn_in)
 
 
 # --- Hunter's Draw ---------------------------------------------------------------------------------
@@ -4934,6 +5135,26 @@ def _(sp, c):
     O(sp, thrown)
 
 
+@card("riptide_reactive_catalyst")
+def _(sp, c):
+    """Undertow (2026-11-09, the drag-in card against Breaker's push out): Breaker's picture turned round - the wave
+    rolling on to the right, and a quarry caught in its backwash pulled back to the left, toward the caster, the
+    water's lines trailing after it and the chevrons pointing home."""
+    reset(sp)
+    sp.place = Place(0.66, at=(21.0, 19.0))
+
+    def dragged(cv, x):
+        w = E["water"]
+        quarry(cv, 7, 9, 3.4)
+        for (y, x0, x1) in ((7, 12, 17), (10, 12, 18), (13, 11, 16)):
+            cv.hline(x0, x1, y, w[1] if y == 10 else w[2])
+        for k, xx in enumerate((11, 7)):
+            for d in range(-3, 4):
+                cv.set(xx + abs(d) * 0.8 - 3, 21 + d, w[0] if k == 0 else w[1])
+        m_drops(cv, w, [(3, 14), (9, 4), (2, 6)])
+    O(sp, dragged)
+
+
 @card("riptide_hyper_acceleration")
 def _(sp, c):
     """Groundswell: the wave building as it runs - small off the hand, swelling, breaking big."""
@@ -5134,6 +5355,42 @@ def _(sp, c):
             cv.set(gx, gy + 1, f[3])
         m_glint(cv, 6, 5, 4, E["light"])
     O(sp, sweep)
+
+
+@card("scorching_ray_eye_of_ra")
+def _(sp, c):
+    """Eye of Ra (Imhotep's Apotheosis, blind - the ray's since it became his opener, 2026-11-09): the ray come down
+    into the ground and flaring like the sun where it strikes - a ring of white light round the strike and rays
+    running out past it, a white-hot point at its heart - and under it the eye of Ra itself (eye_of_ra): what sees
+    it loses you. Drawn on the strike wherever the placed ray puts it (sc.RAY_STRIKE), as the ray's other cards are."""
+    reset(sp)
+    sp.accent = None
+    anchor = anchor_of(SPELLS["scorching_ray"]["paint"])
+    sp.place = Place(0.62, at=(12.0, 8.0))
+
+    def flare(cv, x):
+        l = E["light"]
+        sx, sy = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        for k in range(12):
+            a = k * math.pi / 6.0 + 0.26
+            r0, r1 = 5.5, (12.0 if k % 2 == 0 else 9.5)
+            steps = int((r1 - r0) * 2)
+            for t in range(steps + 1):
+                rr = r0 + t / 2.0
+                px, py = sx + math.cos(a) * rr, sy + math.sin(a) * rr
+                if py > 20 or px < 0 or py < 0:
+                    continue
+                cv.set(int(round(px)), int(round(py)), l[1] if rr < (r0 + r1) / 2.0 else l[3])
+        cv.ring(sx, sy, 5.5, 5.5, l[2], thick=1)
+    U(sp, flare)
+
+    def strike(cv, x):
+        l = E["light"]
+        sx, sy = sp.place.mapper(anchor)(*sc.RAY_STRIKE)
+        cv.disc(sx, sy, 2.6, 2.6, l[1])
+        cv.disc(sx, sy, 1.4, 1.4, l[0])
+        eye_of_ra(cv)
+    O(sp, strike)
 
 
 # --- Shadow Bolt -----------------------------------------------------------------------------------

@@ -7,8 +7,9 @@
 
 ; Rescued, not a starter: the Fallow Fields' chapter wizard, freed by paying the Tithe-Reeve's scale its due
 ; (.ai/chapter-wizards.md 4.2). The sorceress of Colchis, granddaughter of the Sun, held in the reeve's granary and
-; counted with the grain. Her passive is Rejuvenation, the one axis no other wizard owns: every heal she takes is a
-; fifth more (+20% healing). She opens on Solar Flare, two elements (Light and Fire) - a freed wizard may (R2); the
+; counted with the grain. Her passive is the Salve since 2026-11-09 - the charm she gave Jason against the bulls'
+; fire: enemy bolts deal her 30% less (Player.TakeBoltDamage), which helps the stand her Solar Flare asks for. It was
+; Rejuvenation, +20% healing, worth little once healing was made scarce (.ai/character-fit.md). She opens on Solar Flare, two elements (Light and Fire) - a freed wizard may (R2); the
 ; form deepens Fire.
 [resource]
 script = ExtResource("1")
@@ -18,9 +19,9 @@ StartingSpellResource = ExtResource("2")
 HealthModifier = 1.0
 SpeedModifier = 1.0
 IsUnlocked = true
-StartingPassiveId = "healing_20"
-StartingPassiveName = "Rejuvenation"
-StartingPassiveDescription = "+20% healing"
+StartingPassiveId = "bolt_damage_30"
+StartingPassiveName = "The Salve"
+StartingPassiveDescription = "Enemy bolts deal 30% less damage to you"
 IsLegendaryStart = false
 Portrait = ExtResource("3")
 Frames = ExtResource("4")

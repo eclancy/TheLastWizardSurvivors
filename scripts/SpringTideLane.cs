@@ -8,7 +8,8 @@ using TheOneHeMissed.scripts;
 // floods the ground it travels over. Each cast leaves a lane of water behind it for LifeSeconds;
 // whatever stands in the lane is slowed and dragged along the wave's heading by the current. The
 // player aims a line, and the water moves the swarm down it - into a wall, a Gravewell, a crater,
-// or simply away.
+// or simply away. Since 2026-11-09 the current follows her level 4 choice: out along the heading as
+// Breaker throws, or back up the lane toward her after Undertow (Inward), as its backwash drags.
 //
 // "Flood" was on #59's list of unclaimed verbs, against Water. The drag rides ApplyKnockback, so
 // boss knockback resistance applies.
@@ -47,6 +48,13 @@ public partial class SpringTideLane : Node2D
 		: Mathf.Lerp(StartHalfWidth, HalfWidth, Mathf.Clamp(x / GrowLength, 0f, 1f));
 	public Vector2 Heading { get; set; } = Vector2.Right;
 	public float FloodSpeed { get; set; } = 0f;
+
+	/// <summary>
+	/// The current runs back up the lane toward her instead of out along the wave's heading: the wave took Undertow
+	/// (BoltEvolutions.UndertowId), so the flood drags as its backwash does (Eric, 2026-11-09: "drag enemies in OR push
+	/// them out"). The drag and the foam the shader runs down the lane both turn round.
+	/// </summary>
+	public bool Inward { get; set; }
 
 	private const float LifeSeconds = 4f;
 	private const float DragSpeed = 150f;
@@ -97,7 +105,8 @@ public partial class SpringTideLane : Node2D
 		material.SetShaderParameter(ParamHalfWidth, HalfWidth);
 		material.SetShaderParameter(ParamStartHalfWidth, StartHalfWidth < 0f || GrowLength <= 0f ? HalfWidth : StartHalfWidth);
 		material.SetShaderParameter(ParamGrowLength, GrowLength);
-		material.SetShaderParameter(ParamDragSpeed, DragSpeed);
+		// Negative runs the foam back toward her (Inward), at the drag's own speed either way.
+		material.SetShaderParameter(ParamDragSpeed, Inward ? -DragSpeed : DragSpeed);
 		material.SetShaderParameter(ParamSeed, (GetInstanceId() % 997) * 0.731f);
 		material.SetShaderParameter(ParamGilded, SpellData?.IsLegendary ?? false);
 		material.SetShaderParameter(ParamDrainLength, FloodSpeed > 0f ? DrainSeconds * FloodSpeed : 0f);
@@ -140,7 +149,12 @@ public partial class SpringTideLane : Node2D
 			if (local.X < tail || local.X > front || Mathf.Abs(local.Y) > HalfWidthAt(local.X)) continue;
 
 			e.ApplySlow(SlowMultiplier, 0.4f);
-			e.ApplyKnockback(Heading * DragSpeed);
+			// Inward, the current lets go a body's width short of where she cast, as Undertow's backwash does
+			// (BoltEvolutions.UndertowStopShort): it gathers the pack before her, never onto her feet.
+			if (!Inward)
+				e.ApplyKnockback(Heading * DragSpeed);
+			else if (local.X > BoltEvolutions.UndertowStopShort)
+				e.ApplyKnockback(-Heading * DragSpeed);
 			ulong id = e.GetInstanceId();
 			if (!nextHitAt.TryGetValue(id, out float readyAt) || age >= readyAt)
 			{

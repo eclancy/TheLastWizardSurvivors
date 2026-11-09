@@ -20,9 +20,9 @@
 //
 // THE HOLE IS A HOLE. The near wall (upper left, toward the key) is in the dark; the far wall faces the
 // key and catches it, so the lip on the lower right is the ramp's hot and its inner wall the ramp's edge
-// stepping down into occlusion - a bowl, as crater.gdshader lights one. On the Spirit Mirror (John Dee's
-// Apotheosis) the hole is Dee's obsidian scrying glass instead: black glass with one hard reflection
-// across it, the specular as a line (obsidian_glass.py's rule), so the form is told from the spell.
+// stepping down into occlusion - a bowl, as crater.gdshader lights one. (Until 2026-11-09 John Dee's
+// Spirit Mirror turned the hole into his obsidian scrying glass here; the form moved to Folio with his
+// opener, and Folio draws the glass itself.)
 //
 // THE HEAT IS THE FALLOFF (0.9.3, Eric: "enemies should take more damage the closer they are to the
 // center"). The collapse hits hardest at the centre and least at its edge (HollowStar.ShareAt), so the
@@ -45,7 +45,6 @@ uniform float clock = 0.0;
 // Eclipse: the corona hugging the core, 0..1 (0: none).
 uniform float corona = 0.0;
 uniform bool black_sun = false;
-uniform bool mirror = false;
 // The collapse's falloff: its radius, and how bright it burns (0: not drawn).
 uniform float heat_radius = 80.0;
 uniform float heat = 0.0;
@@ -58,8 +57,6 @@ const float GRID = 2.0;
 const vec2 KEY = vec2(-0.70710678, -0.70710678);
 const vec3 OCC = vec3(0.020, 0.027, 0.047);          // #05070C
 const vec3 VIOLET_DEEP = vec3(0.078, 0.063, 0.122);  // violet deep #14101F
-const vec3 STEEL_LIT = vec3(0.722, 0.784, 0.863);    // steel lit #B8C8DC
-const vec3 STEEL_HI = vec3(0.863, 0.910, 0.957);     // steel hi #DCE8F4
 
 varying vec2 world;
 varying flat vec2 origin;
@@ -98,16 +95,6 @@ void fragment() {
 		float depth = (core - r) / core;
 		if (core - r < GRID) {
 			col = facing < -0.2 ? ramp_hot.rgb : ramp_mid.rgb;
-		} else if (mirror) {
-			// Black glass: a hard reflection across it, steel hi on its crest, and the rest of the disc
-			// violet deep fading by dither into occlusion toward the near edge.
-			float band = dot(p, vec2(0.70710678, -0.70710678)) + core * 0.22;
-			if (abs(band) < GRID * 0.75 && depth > 0.15)
-				col = STEEL_HI;
-			else if (abs(band) < GRID * 1.75 && depth > 0.1)
-				col = STEEL_LIT;
-			else
-				col = b < 0.35 + 0.4 * (-facing) ? VIOLET_DEEP : OCC;
 		} else if (facing < -0.15 && core - r < GRID * 3.0) {
 			col = core - r < GRID * 2.0 ? ramp_edge.rgb : (b < 0.5 ? VIOLET_DEEP : ramp_edge.rgb);
 		} else if (depth < 0.35 && b < (0.35 - depth) * 2.0) {

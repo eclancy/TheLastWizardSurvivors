@@ -164,6 +164,12 @@ public partial class BurningOil : Node2D
 		Player player = Node2DGame.Current?.RunPlayer;
 		if (player == null || player.IsDead || !Burns(player.GlobalPosition))
 			return;
+		// Wings (Wayland the Smith, Player.Wings.cs): the spilled oil never touches him; he flies over it.
+		if (player.FliesOverTrap())
+		{
+			burn = 0f;
+			return;
+		}
 		burn += dt;
 		if (burn < tickSeconds || damage <= 0)
 			return;

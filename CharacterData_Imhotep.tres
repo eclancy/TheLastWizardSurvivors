@@ -1,15 +1,19 @@
 [gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
-[ext_resource type="Resource" path="res://SpellData_Fireball.tres" id="2"]
+[ext_resource type="Resource" path="res://SpellData_ScorchingRay.tres" id="2"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/imhotep-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/ImhotepFrames.tres" id="4"]
 
-; Rescued, not a starter: the Scorched Sands' chapter wizard, freed by kindling the three signal beacons round his
-; tomb at once (.ai/chapter-wizards.md 4.6). Architect of the first pyramid, physician, High Priest of Ra. His
-; passive is Surveyor, the one axis no other wizard owns: the reach at which orbs and pickups come to him (+20%).
-; He opens on Fireball, the Long Coil's deed, pure Fire - which he shares with the Pyromancer (R1: their spells
-; differ). The form deepens Fire.
+; Rescued, not a starter: the Scorched Sands' chapter wizard, freed by turning the bronze mirrors round his tomb
+; until the sun reaches its door (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1). Architect of the first
+; pyramid, physician, High Priest of Ra. His passive is Surveyor, the one axis no other wizard owns: the reach at
+; which orbs and pickups come to him (+20%).
+; He opens on Scorching Ray since 2026-11-09 (.ai/character-fit.md section 1): a ray that heats up on one target is
+; the sun focused through his bronze mirror, the same act that frees him. Fire + Arcane, earned by everyone else
+; through the fire_adept achievement; he holds it whatever the save owns (Player.GetLevelUpOptions offers a wizard
+; his own opener). He opened on Fireball before, which stays the Sands boss's deed spell. His form, the Eye of Ra,
+; deepens Fire.
 [resource]
 script = ExtResource("1")
 Id = "imhotep"

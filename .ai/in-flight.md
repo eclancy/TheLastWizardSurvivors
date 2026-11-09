@@ -207,7 +207,7 @@ things come up; strike what lands.**
      hits); the level-4 screen photographed at 1280x720. Not yet verified: no eyes-on crowd check of either
      effect in a real windowed run, no phone-canvas pass, numbers are first guesses, and the two adept feats
      have not been earned in real play.
-9a. **Play with spell slots** (Eric, 2026-11-04): items and boons that empower particular slots (the first,
+9a. **Play with spell slots** (Eric, 2026-11-04; the first is built 2026-11-09: Canticle's Harmony takes the element of the spell in the slot after Canticle's, marked on the strip, `.ai/spell-roster.md`): items and boons that empower particular slots (the first,
    the last, the slot beside another) and ways to switch which spell sits in which slot during a run. The
    Gimmel Ring's move to "your first two slots" (item 8) is the first of these; design the family together
    so the slot is a thing the player arranges on purpose. Read `.ai/passives-and-items.md` (Full Set

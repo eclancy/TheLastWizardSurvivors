@@ -93,7 +93,7 @@ The questions as they were put:
 | 3 | Sunken Cave | **the Cumaean Sibyl** | Arcane | Arcane Explosion | **echo** | The Hundred Mouths | **listen** for the true mouth | none (R1 if Ma Liang too) |
 | 4 | Blighted Swamp | **Paracelsus** | Poison | Contagion | **distil** | The Dose | **escort** him to the ferry | none |
 | 5 | Mystic Ruins | **Abe no Seimei** | Light | Kindled Ward | **banish** | The Five-Pointed Seal | **solve** the four stones | none |
-| 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **aim** bronze mirrors to bring the sun to his door (was kindle three beacons; `.ai/unlock-puzzles.md` 3.1) | R1 |
+| 6 | Scorched Sands | **Imhotep** | Fire (Fire+Arcane) | Scorching Ray (Fireball until 2026-11-09, `.ai/character-fit.md`) | **blind** | Eye of Ra | **aim** bronze mirrors to bring the sun to his door (was kindle three beacons; `.ai/unlock-puzzles.md` 3.1) | R1 |
 | 7 | The Emberdeep | **Wayland the Smith** | Metal | Iron Palisade | **temper** | The Tempered Line | **bait** the hammers onto his chains | none |
 | 8 | The Court (second event; was the Sketchbook) | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; P2 |
 | 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **light the lamps ahead** of her barge (was keep pace; `.ai/unlock-puzzles.md` 3.7) | R2 (R1 on Stormsweep) |
@@ -181,10 +181,19 @@ hut is the Forest's second event, after the grove, through P2's API exactly as 6
   head at the top, a thorned vine climbing it with its living tip curling over. The tip and the shoot are grass's ramp,
   one bead of poison on a thorn: the only light on her. Bone-Leg, as the tales call her: the far foot under the hem is
   bone. Face set and level, never a grin. 0.88 edges/px. Sheets written by `build.py`'s wizard loop for this name only.
+  **Since 2026-11-09 she flies in her mortar** (Eric: "Her typical movement can be flying in a mortar holding a broom";
+  `084cc285`, `.ai/character-fit.md`): a mortar carved from one log hides her from the hips down, two rows above a shadow
+  that narrows as she rises, and she joins Nimue among the floaters (`FLOATERS`, `anim_sets.hover`: a hover idle, a drift
+  for a walk; her Feet collider is unchanged). The pestle became a broom whose twigs stream back as she moves; the vine
+  climbs its handle, its tip and poison bead her only light (`CharacterVisuals` staff tip (14, 4)); the shoot from the
+  earth went (a floater has no ground under her hand) and Bone-Leg is hidden in the mortar. Her wood is the gold row from
+  its deep end, on her own palette bytes (`WOOD_RAMP`): no new colours. 0.94 edges/px. `WalkingHutEvent` still says she
+  "steps out" of the door; she now comes out in her mortar.
 - **Her passive, Bone Fence** (`knockback_20`): +20% to every shove and pull the player's side gives -
   `Enemy.PlayerKnockbackScale`, read by `Enemy.ApplyKnockback` and set back to 1 by every `Player._Ready`. The two shoves
   that are the place's, not his (the Broken Ward pushing the swarm out of its ring, the Court's rooms), now go through
-  `Enemy.ApplyWorldShove`, which it never touches. Her own vine pushes nothing: it is a build's passive.
+  `Enemy.ApplyWorldShove`, which it never touches. Her own vine pushed nothing, so it was a build's passive - until
+  2026-11-09, when Thorned Vine began throwing what it cuts aside (`ThornVine.VineShoveSpeed`; Eric chose it, `.ai/character-fit.md`).
 - **The event** (`WalkingHutEvent`, `tools/art/walking_hut.py`, `world/hut/`). The hut stands on a 280 px open disc swept
   for through the band (`EventSiteInBand`, dense) and walks a 200 px circle round it at 45 px/s whenever someone is
   within 3200 px - "round and round". It begins when he comes within 480 px of the HUT (or of the circle's middle).
@@ -283,7 +292,9 @@ the bot makes as her uses; nothing on the phone.
   what it strikes turns on its neighbours for three seconds."* Tagline: *"One stone, and they fight."*
   Elites are struck, not turned; bosses as the rule says. Needs a new enemy state (attack the nearest
   other enemy), the largest code cost in this doc.
-- **Passive: Rejuvenation**, +20% healing from every source.
+- **Passive: The Salve** since 2026-11-09: enemy bolts deal her 30% less - the charm she gave Jason against the bulls'
+  fire, and a help to the stand her Solar Flare asks for (Eric: "maybe just that ranged attacks deal 30% less, because it
+  helps with the standing still theme she has"; `.ai/character-fit.md`). It was **Rejuvenation**, +20% healing.
 - **Freed by: pay.** The Tithe-Reeve's great scale stands in the granary yard. From arrival, every XP orb
   that falls within 320 px of it drifts into its pan instead of to him. When the pan holds one level's XP
   at that moment of the run, the beam drops and the granary opens. Walking off keeps what is paid. No
@@ -309,7 +320,10 @@ nobody can know she is there - she is **secret until `stage_9`**, counted at the
   across her in one diagonal to the near hip; a thin bronze diadem with the Sun's disc on it over black hair; dried herbs
   at her girdle. 0.98 edges/px. New bytes: lichen as `\x8b-\x8f`; the red row is merlin_concepts' `\x14-\x18`, reused
   byte for byte.
-- **Her passive, Rejuvenation** (`healing_20`): +20% to every heal that comes through `Player.Heal` - the flask, the
+- **Replaced 2026-11-09 by the Salve** (`bolt_damage_30`: `EnemyProjectile` lands through `Player.TakeBoltDamage`,
+  which lightens the blow by 30% after the `DamageTaken` signal and before armour, floored at 1). Rejuvenation went
+  because +20% of a trickle is a trickle: 2-5 HP a minute. What follows is the record of it as it was.
+  **Her passive, Rejuvenation** (`healing_20`): +20% to every heal that comes through `Player.Heal` - the flask, the
   Light tier's banked share, the Grass tier, every regeneration line (a point at a time), the relics, the boons, the
   cat's purr, the events' heals - with the fraction **carried** (`rejuvenationCarry`), as `AddXp` carries XP, because
   most of what heals a run now is one-point regeneration ticks and 1.2 rounds back to 1. Not a revive (a life is not a
@@ -800,11 +814,17 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
   Ra at Heliopolis; revered as a sage and healer for two thousand years after.
 - **Why here.** "He hid the water." The builder who could find water and raise it is sealed in a dry
   tomb beside the road the water left.
-- **Spell.** **Fireball** (Fire), the Long Coil's deed: the sun's fire in one slow, heavy blast. Shares
-  Fire with the Pyromancer (R1).
-- **Form: Eye of Ra (blind).** *"The blast flares like the sun. Whatever sees it loses you for two
-  seconds and wanders."* Tagline: *"What sees it forgets you."* A wander state through
-  `Enemy.AdjustSteering`; bosses immune.
+- **Spell.** **Scorching Ray** (Fire+Arcane) since 2026-11-09: the sun focused through his bronze mirror onto
+  one target, the act that frees him (Eric: "I like your imhotep suggestion, implement that as well";
+  `.ai/character-fit.md`). It was **Fireball** (Fire), the Long Coil's deed, which stays in the game as the
+  Sands boss's spell. Shares Fire with the Pyromancer (R1). He can no longer fuse Dark Lens, whose parent
+  the ray is (`ComboSeal.OwnSpell`).
+- **Form: Eye of Ra (blind)**, `scorching_ray_eye_of_ra` (`fireball_eye_of_ra` until 2026-11-09; a save
+  that saw the old one still has it seen, `SaveData.MovedAscensions`). *"Each cast, the hottest ray flares
+  like the sun. Whatever sees it loses you for two seconds and wanders. Hotter rays flare wider."* Tagline:
+  *"What sees it forgets you."* One flare a cast where the hottest ray first lands, 120 px cold to 240 px at
+  full heat (untuned); a body already blind does not see the next flare, or a held target's crowd would stay
+  blind for good. A wander state through `Enemy.AdjustSteering`; bosses immune.
 - **Passive: Surveyor**, +20% pickup reach.
 - **Freed by: kindle.** Three signal beacons on the dunes round his tomb, about 700 px apart. Stand by
   one 1.5 s to light it; a lit beacon burns 25 s before the dry wind puts it out. All three alight at
@@ -951,7 +971,10 @@ and the stumble are the only tells); Surveyor, which the bot's builds never feel
 - **Form: The Tempered Line (temper).** *"Every blow the stakes take hardens the line. Struck enough,
   it rings and cuts everything along it."* Tagline: *"The more they strike, the harder."* First guess:
   +5% per contact to +100%, then one cut along the whole line and a reset.
-- **Passive: Wings**, +10% move speed.
+- **Passive: Wings**, +10% move speed - since 2026-11-09 **floor traps can't touch him, and water doesn't slow him**
+  (`over_traps_and_water`, `Player.Winged`), and **he flies when he moves**: the iron wings open and beat and he skims
+  over a narrowing shadow, folded again when he stands (Eric: "I like A, but instead of extra speed, make him immune to
+  floor traps / water slowing"; `.ai/character-fit.md`).
 - **Freed by: bait.** He is chained to the great anvil by four chains staked in the floor. No spell
   breaks his own iron; only his forge's hammers can. On arrival the bellows wake four Trip-Hammers (the
   chapter's Slammer). Stand by a stake as one winds up, step out of the tell, and a slam that lands on
@@ -1040,7 +1063,10 @@ He is the Court's second event, so he waits on P2 and the Court's flip, with Nos
   was never let finish it.
 - **Spell.** **Familiar** (Arcane): painted creatures that come alive. The catalog gives one Apotheosis
   per form, each with its own verb, so he gets one, on the **crow** (the tale's painted birds). Taken
-  as the dog or the cat, he has none; the character card should say so.
+  as the dog or the cat, he has none; the character card should say so. **Since 2026-11-09 he always opens on
+  the crow** - no choice of form (Eric: "he automatically starts with a crow familiar"; his card reads "Familiar -
+  Crow") - and **his crow is an ink brush-painting come alive**, through every form it grows into, while every
+  other wizard's crow stays light (`Familiar.PaintsInInk`, `tools/art/familiar.py`; `.ai/character-fit.md`).
 - **Form: The Painted Door (displace).** *"Where the crow strikes it paints a door, and whatever stands
   on it steps out of a second door far across the field."* Tagline: *"Move the knot, not the kill."*
 - **Passive: Paint What Is Needed**, once a run, below a quarter of his health, a flask is painted at
@@ -1221,7 +1247,8 @@ met by the bot, which cannot be hurt); nothing on the phone.
   alternative under R1: **Stormsweep** (the storm on the water); the form works for either facing spell.
 - **Form: Fata Morgana (double).** *"A mirage of you walks beside you facing the other way and casts
   behind you. Enemies near it chase it."* Tagline: *"Half of them chase a ghost."*
-- **Passive: Avalon**, the first fall of a run heals to full, not half.
+- **Passive: Glamour** since 2026-11-09: 1 in 10 blows strike a mirage of her instead (it was **Avalon**, the first
+  fall of a run healing to full, which waited on a revive she rarely held; `.ai/character-fit.md`).
 - **Freed by: keep pace.** The barge drifts under the span toward the gate, its one lantern seen through
   gaps in the deck. Stay within 260 px of it for its drift (about 1,200 px, 50 s: slower than him, ahead
   of the collapse). Fall behind or run ahead and the lantern dims; out of reach 6 s and it drifts back to
@@ -1251,7 +1278,9 @@ met by the bot, which cannot be hurt); nothing on the phone.
   it, which keeps her apart from the Frostweaver's trident (a first draft's raised-arm stave read as one).
   Sheets written by `build_roster`'s wizard loop for her name only; her freeing reel is `freed.py`'s row and
   `Freeings.WizardIds`.
-- **Avalon** (`first_fall_full`): the first extra life a run spends heals to full, not half (`Player.ExtraLifeHeal`,
+- **Replaced 2026-11-09 by Glamour** (`glamour_evasion_10`, `Player.Mirage.cs`: 10% added to the dodge roll in
+  `TakeDamage` step 2; Eric: "glamour", over making Avalon her own revive; `.ai/character-fit.md`). What follows is
+  the record of Avalon as it was. **Avalon** (`first_fall_full`): the first extra life a run spends heals to full, not half (`Player.ExtraLifeHeal`,
   read in `TakeDamage`'s step 10). After the Archmage's Overlooked in the pipeline, so a blow Overlooked turns
   aside never spends a life - but a character has one passive, so the two never meet in a run. On the healing
   ledger as two lines: "an extra life" (every revive's half, which the ledger never counted) and "Avalon" (the

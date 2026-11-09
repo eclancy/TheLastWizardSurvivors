@@ -1,12 +1,18 @@
 [gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
-[ext_resource type="Resource" path="res://SpellData_HollowStar.tres" id="2"]
+[ext_resource type="Resource" path="res://SpellData_Folio.tres" id="2"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/dee-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/DeeFrames.tres" id="4"]
 
 ; Freed by collecting, not a starter: an Achievement unlock ("mortlake_library", open 100 chests).
-; The collector - elites carry his scattered library, so they drop more chests - opening on Hollow Star, the pull spell.
+; The collector - elites carry his scattered library, so they drop more chests.
+; He opens on Folio since 2026-11-09 (.ai/character-fit.md section 6; Eric: "I don't think hollow star feels like a
+; good spell for him"): a book paid for by what he gathers, turning a page every cooldown and one more for every orb
+; he picks up. Arcane + Darkness, earned by everyone else through the Magpie feat (ten chests in one run); he holds
+; it whatever the save owns (Player.GetLevelUpOptions offers a wizard his own opener). His form, the Spirit Mirror
+; (pull), moved onto it and deepens Darkness. Hollow Star, his opener before, is nobody's now: a spell anyone can
+; earn (Survivor), which he may now fuse into The Taking, since his own spell is no longer one of its parents.
 [resource]
 script = ExtResource("1")
 Id = "john_dee"

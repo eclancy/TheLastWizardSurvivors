@@ -151,7 +151,7 @@ public static class StageHintCatalog
 			{
 				"Help! Is someone there?",
 				"Please - I can hear you. I am down here!",
-				"I have been patient so long. Please, this way.",
+				"I have been patient for so long. Please, this way.",
 				"Do not leave me here. Not again.",
 			},
 		},

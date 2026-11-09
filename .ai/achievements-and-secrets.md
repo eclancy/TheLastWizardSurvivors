@@ -80,7 +80,8 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Hunter's Draw | Metal, Wind | Purchase | 140 |
 | Gravewell | Earth, Darkness | Purchase | 150 |
 | Starfall | Light | Purchase | 150 |
-| Hollow Star | Darkness | Purchase | 160; John Dee opens on it |
+| Hollow Star | Darkness | Purchase | 160; nobody opens on it since 2026-11-09 (John Dee opens on Folio, `.ai/character-fit.md`) |
+| Folio | Arcane, Darkness | Feat | **Magpie**: open 10 chests in a single run (2026-11-09); John Dee opens on it |
 | Stormsweep | Lightning | Purchase | 160 |
 | Kindled Ward | Light | Purchase | 170 |
 | Familiar | Arcane | Purchase | 170; the Coursing (Laelaps) needs it |

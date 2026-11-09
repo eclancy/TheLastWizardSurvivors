@@ -54,6 +54,9 @@ BG = (11, 15, 24)
 INK = (220, 232, 255)
 FORMS = ["hound", "greathound", "rimehound", "cerberus", "cerberus-rime", "annwn", "annwn-rime",
          "crow", "raven", "stormcrow", "morrigan", "morrigan-storm", "griffin", "griffin-storm",
+         # Ma Liang's crow, painted in ink (familiar.py, "MA LIANG'S CROW")
+         "crow-ink", "raven-ink", "stormcrow-ink", "morrigan-ink", "morrigan-storm-ink", "griffin-ink",
+         "griffin-storm-ink",
          "cat", "grimalkin", "cait-sith", "cath-palug", "cath-palug-sith"]
 SETS = [
     ("heel", "level 1 - at heel, nothing in range"),

@@ -1,0 +1,470 @@
+{
+ "_": "Written by tools/audio/music.py (--beats, and every render). Read by scripts/MusicBeats.cs. Do not edit: change the Piece and re-run.",
+ "pieces": {
+  "boss": {
+   "bars": 24,
+   "beat_seconds": 0.43478260869565216,
+   "beats_per_bar": 4,
+   "bpm": 138.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "boss_loop.wav",
+   "loop_seconds": 41.73913043478261,
+   "mode": "aeolian",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  },
+  "bridge": {
+   "bars": 24,
+   "beat_seconds": 0.5,
+   "beats_per_bar": 2,
+   "bpm": 120.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0
+   ],
+   "file": "bridge_bed.wav",
+   "loop_seconds": 24.0,
+   "mode": "aeolian",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  },
+  "cave": {
+   "bars": 24,
+   "beat_seconds": 0.375,
+   "beats_per_bar": 3,
+   "bpm": 160.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0
+   ],
+   "file": "cave_bed.wav",
+   "loop_seconds": 27.0,
+   "mode": "aeolian",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  },
+  "court": {
+   "bars": 16,
+   "beat_seconds": 0.5357142857142857,
+   "beats_per_bar": 3,
+   "bpm": 112.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    11,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0
+   ],
+   "file": "court_bed.wav",
+   "loop_seconds": 25.714285714285715,
+   "mode": "harmonic minor",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  },
+  "downs": {
+   "bars": 16,
+   "beat_seconds": 0.42857142857142855,
+   "beats_per_bar": 4,
+   "bpm": 140.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "downs_bed.wav",
+   "loop_seconds": 27.428571428571427,
+   "mode": "hexatonic minor",
+   "tonic": "E",
+   "tonic_midi": 64,
+   "voicing": "tertian"
+  },
+  "dungeon": {
+   "bars": 16,
+   "beat_seconds": 0.45454545454545453,
+   "beats_per_bar": 4,
+   "bpm": 132.0,
+   "chord": [
+    0,
+    6,
+    3,
+    12,
+    10,
+    13,
+    15,
+    18
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "dungeon_bed.wav",
+   "loop_seconds": 29.09090909090909,
+   "mode": "locrian",
+   "tonic": "B",
+   "tonic_midi": 71,
+   "voicing": "tertian"
+  },
+  "emberdeep": {
+   "bars": 16,
+   "beat_seconds": 0.4,
+   "beats_per_bar": 4,
+   "bpm": 150.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    11,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "emberdeep_bed.wav",
+   "loop_seconds": 25.6,
+   "mode": "harmonic minor",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  },
+  "fields": {
+   "bars": 16,
+   "beat_seconds": 0.5172413793103449,
+   "beats_per_bar": 3,
+   "bpm": 116.0,
+   "chord": [
+    0,
+    7,
+    4,
+    12,
+    10,
+    14,
+    16,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0
+   ],
+   "file": "fields_bed.wav",
+   "loop_seconds": 24.827586206896555,
+   "mode": "mixolydian",
+   "tonic": "G",
+   "tonic_midi": 67,
+   "voicing": "tertian"
+  },
+  "forest": {
+   "bars": 24,
+   "beat_seconds": 0.5357142857142857,
+   "beats_per_bar": 2,
+   "bpm": 112.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0
+   ],
+   "file": "forest_bed.wav",
+   "loop_seconds": 25.714285714285715,
+   "mode": "dorian",
+   "tonic": "D",
+   "tonic_midi": 62,
+   "voicing": "tertian"
+  },
+  "frozen": {
+   "bars": 16,
+   "beat_seconds": 0.4166666666666667,
+   "beats_per_bar": 4,
+   "bpm": 144.0,
+   "chord": [
+    0,
+    7,
+    12,
+    14,
+    19,
+    21,
+    24,
+    26
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "frozen_bed.wav",
+   "loop_seconds": 26.666666666666668,
+   "mode": "ionian",
+   "tonic": "C",
+   "tonic_midi": 60,
+   "voicing": "fifths"
+  },
+  "heath": {
+   "bars": 12,
+   "beat_seconds": 0.43478260869565216,
+   "beats_per_bar": 5,
+   "bpm": 138.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    4.0
+   ],
+   "file": "heath_bed.wav",
+   "loop_seconds": 26.08695652173913,
+   "mode": "dorian",
+   "tonic": "D",
+   "tonic_midi": 62,
+   "voicing": "tertian"
+  },
+  "menu": {
+   "bars": 8,
+   "beat_seconds": 0.8333333333333334,
+   "beats_per_bar": 4,
+   "bpm": 72.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "menu_theme.wav",
+   "loop_seconds": 26.666666666666668,
+   "mode": "aeolian",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  },
+  "ruins": {
+   "bars": 16,
+   "beat_seconds": 0.46875,
+   "beats_per_bar": 4,
+   "bpm": 128.0,
+   "chord": [
+    0,
+    7,
+    4,
+    12,
+    11,
+    14,
+    16,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "ruins_bed.wav",
+   "loop_seconds": 30.0,
+   "mode": "lydian",
+   "tonic": "F",
+   "tonic_midi": 65,
+   "voicing": "tertian"
+  },
+  "sands": {
+   "bars": 24,
+   "beat_seconds": 0.5769230769230769,
+   "beats_per_bar": 2,
+   "bpm": 104.0,
+   "chord": [
+    0,
+    7,
+    4,
+    12,
+    10,
+    14,
+    16,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0
+   ],
+   "file": "sands_bed.wav",
+   "loop_seconds": 27.69230769230769,
+   "mode": "mixolydian",
+   "tonic": "G",
+   "tonic_midi": 67,
+   "voicing": "tertian"
+  },
+  "sketchbook": {
+   "bars": 24,
+   "beat_seconds": 0.35714285714285715,
+   "beats_per_bar": 3,
+   "bpm": 168.0,
+   "chord": [
+    0,
+    7,
+    4,
+    12,
+    11,
+    14,
+    16,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0
+   ],
+   "file": "sketchbook_bed.wav",
+   "loop_seconds": 25.714285714285715,
+   "mode": "ionian",
+   "tonic": "C",
+   "tonic_midi": 60,
+   "voicing": "tertian"
+  },
+  "swamp": {
+   "bars": 16,
+   "beat_seconds": 0.21428571428571427,
+   "beats_per_bar": 7,
+   "bpm": 280.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    10,
+    13,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    2.0,
+    4.0
+   ],
+   "file": "swamp_bed.wav",
+   "loop_seconds": 24.0,
+   "mode": "phrygian",
+   "tonic": "E",
+   "tonic_midi": 64,
+   "voicing": "tertian"
+  },
+  "throne": {
+   "bars": 12,
+   "beat_seconds": 0.5769230769230769,
+   "beats_per_bar": 4,
+   "bpm": 104.0,
+   "chord": [
+    0,
+    7,
+    3,
+    12,
+    11,
+    14,
+    15,
+    19
+   ],
+   "counted": [
+    0.0,
+    1.0,
+    2.0,
+    3.0
+   ],
+   "file": "throne_bed.wav",
+   "loop_seconds": 27.69230769230769,
+   "mode": "harmonic minor",
+   "tonic": "A",
+   "tonic_midi": 69,
+   "voicing": "tertian"
+  }
+ }
+}

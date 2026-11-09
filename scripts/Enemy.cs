@@ -1960,7 +1960,7 @@ public partial class Enemy : CharacterBody2D
 	/// under way still lands: AttackTelegraph's promise). Its body is still a body - one that blunders into him still
 	/// hurts. Stacking-resistant like every debuff: the longer of the two durations, never a sum. Elites, minibosses
 	/// and bosses are immune (IsMiniBoss): a boss that lost him would be a fight that stopped, and the elites are
-	/// struck by the flare instead (Fireball.FlareEyeOfRa).
+	/// struck by the flare instead (ScorchingRayBeam.FlareEyeOfRa).
 	/// </remarks>
 	public void ApplyBlind(float duration)
 	{

@@ -449,7 +449,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | chapter | site | voice | sound (cue) | lines, in order (the last repeats) |
 |---|---|---|---|---|
 | Enchanted Forest | `the_grove` | sound | `hint_grove_whisper` (leaves) | "Leaves whispering, though there is no wind." / "The whisper again. Something out there still grows." / "Fainter now, the whispering. It has not stopped." |
-| Cursed Dungeon | `gaolers_key` | **speech** (Tituba, unnamed) | `hint_cell_cry` (echo) | "Help! Is someone there?" / "Please - I can hear you. I am down here!" / "I have been patient so long. Please, this way." / "Do not leave me here. Not again." |
+| Cursed Dungeon | `gaolers_key` | **speech** (Tituba, unnamed) | `hint_cell_cry` (echo) | "Help! Is someone there?" / "Please - I can hear you. I am down here!" / "I have been patient for so long. Please, this way." / "Do not leave me here. Not again." |
 | Blighted Swamp | `bog_lanterns` | sound | `hint_lantern_flare` (wisp) | "Far off, a cold light flares and gutters." / "The cold light again. Nothing living lit it." / "It is still burning out there." |
 | Frozen Waste | `the_thaw` | sound (Väinämöinen, unnamed) | `hint_ice_song` (song) | "The ice groans. Under it, faintly, someone is singing." / "The song again, slow and deep, from under the ice." / "The singing is weaker now." |
 | Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` (bell) | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
@@ -615,8 +615,8 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   chapter, so only the Throne counts him.
 - **Morgan le Fay** (2026-11-03), the enchantress of Avalon, the queen in the black barge: upright into the wind
   off the strait, her hair and a lichen-green mantle streamed back, the spell's rune of rime before her raised
-  palm. Opens on **Sleet Runes** (Ice+Wind, R2). Passive *Avalon*: the first extra life a run spends heals to
-  full, not half. Freed by lighting the lamps ahead of her barge under the Last Bridge (`.ai/unlock-puzzles.md` 3.7);
+  palm. Opens on **Sleet Runes** (Ice+Wind, R2). Passive *Glamour* (since 2026-11-09; it was *Avalon*): 1 in 10
+  blows strike a mirage of her instead. Freed by lighting the lamps ahead of her barge under the Last Bridge (`.ai/unlock-puzzles.md` 3.7);
   counted at the Throne's gate only.
 - **The Cumaean Sibyl** (2026-11-02), the prophetess of Cumae, old, hooded, a bronze jar of arcane light on
   her crook. Opens on **Arcane Explosion** - which, alone, keeps its own time until she holds a second spell.
@@ -643,7 +643,8 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   round his dry tomb at once, the Sands' second event; secret until the Sands open; counted at the Throne's gate only.
 - **Medea** (2026-11-03), the sorceress of Colchis, granddaughter of the Sun, drawn serious: upright, a madder mantle
   over a sea-green peplos, a bronze diadem, a small sun in her open hand and a bronze sickle in the other. Opens on
-  **Solar Flare** (two elements, R2). Passive *Rejuvenation*: +20% healing from every source. Freed by paying the
+  **Solar Flare** (two elements, R2). Passive *The Salve* (since 2026-11-09; it was *Rejuvenation*, +20% healing): enemy bolts
+  deal her 30% less. Freed by paying the
   Tithe-Reeve's scale a level's XP, the Fallow Fields' second event; secret until the Fields open (`stage_9`),
   counted at the Throne's gate only.
 - **Ma Liang** (2026-11-03), the boy of the Chinese tale whose brush made real whatever he painted, drawn young and

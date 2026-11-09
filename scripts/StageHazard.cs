@@ -121,11 +121,12 @@ public partial class StageHazard : Area2D
 
 		ApplyFrameForPhase(duration <= 0f ? 1f : Mathf.Clamp(phaseTimer / duration, 0f, 1f));
 
-		if (phase != Phase.Active)
-			return;
 		Player? player = Node2DGame.Current?.RunPlayer;
-		playerInside = player != null && !player.IsDead && BootOnIt(player);
-		if (!playerInside)
+		// Wings (Wayland the Smith, Player.Wings.cs): the plate never touches him. His boots are asked in every phase,
+		// not only while it bites, so he holds his flight over a plate at rest as well as an armed one; every other
+		// wizard is asked only while it is armed, as before.
+		playerInside = player != null && !player.IsDead && (phase == Phase.Active || player.Winged) && BootOnIt(player);
+		if (!playerInside || player!.FliesOverTrap() || phase != Phase.Active)
 			return;
 
 		damageTimer += d;

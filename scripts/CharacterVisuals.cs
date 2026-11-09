@@ -60,8 +60,9 @@ public static class CharacterVisuals
 			// The orb in the gold claw at the head of his staff (tools/art/player_archmage.py, ORB; the generator prints
 			// (13.4, 5.8)): the title figure's light, where Magic Missile leaves him (Player.CastSpellNow).
 			case "archmage": return new Vector2(13, 6);
-			// The living tip of the thorned vine curling over the head of her pestle (roster.py, yaga()).
-			case "baba_yaga": return new Vector2(16, 3);
+			// The living tip of the thorned vine curling over the top of her broom's handle (roster.py, yaga()), the
+			// centroid of its grass pixels in frame 1. Her rest pose; the hover idle lifts her two rows at most, as Nimue's.
+			case "baba_yaga": return new Vector2(14, 4);
 			// The rune of rime cut in the air before her raised hand (roster.py, morgan()): where her runes leave her.
 			case "morgan": return new Vector2(43, 15);
 			// The dose in the round-bellied flask he holds up to the light (roster.py, paracelsus()), its middle.
@@ -69,7 +70,9 @@ public static class CharacterVisuals
 			// The star kindled at the heart of the armillary sphere he holds up (roster.py, nostradamus()): where
 			// Starfall's light is, not the brass rings round it.
 			case "nostradamus": return new Vector2(12, 5);
-			// The sun resting on his raised palm (roster.py, imhotep()): Fireball leaves from it.
+			// The sun resting on his raised palm (roster.py, imhotep()): what reads a staff tip leaves from it (Magic Missile,
+			// Cinderbreath) - and Scorching Ray, his opener since 2026-11-09, whose rays leave the sun he holds (Eric:
+			// "Implement your visual suggestion"; Player.FireScorchingRay and ScorchingRayBeam's staggered release).
 			case "imhotep": return new Vector2(38, 5);
 			// The small sun burning over her open palm (roster.py, medea()).
 			case "medea": return new Vector2(39, 12);

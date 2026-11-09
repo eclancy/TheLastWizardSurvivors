@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1otsecoxq0ji"
-path="res://.godot/imported/fireball_eye_of_ra.png-d790514b3116b33877d5aeeb6b1d454e.ctex"
+uid="uid://be6p8fu1fe6qd"
+path="res://.godot/imported/scorching_ray_eye_of_ra.png-00965cfe67d475e8b620f79f7fb93701.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bonelight/ui/evolutions/fireball_eye_of_ra.png"
-dest_files=["res://.godot/imported/fireball_eye_of_ra.png-d790514b3116b33877d5aeeb6b1d454e.ctex"]
+source_file="res://assets/bonelight/ui/evolutions/scorching_ray_eye_of_ra.png"
+dest_files=["res://.godot/imported/scorching_ray_eye_of_ra.png-00965cfe67d475e8b620f79f7fb93701.ctex"]
 
 [params]
 

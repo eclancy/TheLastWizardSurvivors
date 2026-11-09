@@ -27,7 +27,7 @@ EffectValue = 12.0
 
 [resource]
 script = ExtResource("1")
-Tagline = "A poisoning vine lashes a pack."
+Tagline = "A poison vine lashes a pack aside."
 Id = "thorn_vine"
 Name = "Thorned Vine"
 CurrentLevel = 1
@@ -37,7 +37,7 @@ BaseCooldown = 1.4
 BaseProjectileCount = 1
 BaseRange = 400.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_thornvine_lvl2"), SubResource("Resource_thornvine_lvl3")])
-Description = "A thorned vine bursts from the ground beside the thickest pack and lashes across it, cutting through and poisoning several enemies."
+Description = "A thorned vine bursts from the ground beside the thickest pack and lashes across it, poisoning several enemies and throwing them aside."
 Icon = ExtResource("3_icon")
 ElementWeights = {
 "Grass": 1,

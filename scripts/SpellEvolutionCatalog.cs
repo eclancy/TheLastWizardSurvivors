@@ -186,6 +186,10 @@ public static class SpellEvolutionCatalog
 			case OrbOfAges.SpellId:
 				SetupOrbOfAgesEvolutions(spell);
 				break;
+			// John Dee's opener (.ai/character-fit.md section 6): a book whose pages fly at the crowd.
+			case Folio.SpellId:
+				SetupFolioEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -301,6 +305,10 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
+	// THE CANTICLE (Arcane Explosion's id; .ai/character-fit.md section 5, row 19, 2026-11-09): the Cumaean Sibyl's
+	// spell became a chord sung on the music's beat, and its cards were renamed for it - Sympathetic Blast is Harmony,
+	// Static Nova Storm Chord, Lingering Rift Sustain, Event Horizon Fermata; Resonance keeps its name, which the
+	// Sovereign Rite's recipe names. The ids, and every number, did not move ("pending balance testing").
 	private static void SetupArcaneExplosionEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
@@ -312,19 +320,19 @@ public static class SpellEvolutionCatalog
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = ArcaneExplosion.SympatheticBlastId,
-			DisplayName = "Sympathetic Blast",
-			// "The spell that set it off" was the code's word for it, not the player's (Eric, 2026-11-04: "What does
-			// Spell that set it off mean? Update wording"). It is the cast that fills the charge (lastCharger,
-			// ArcaneExplosion.SympathyElement): the last spell you cast before the blast. The elements with no status
-			// hit harder (SympathyBareShare), so "others", not "fire". 124 of the 130 (DescriptionBudget).
-			Description = "Takes the element of the last spell you cast: ice slows, lightning staggers, poison poisons, others hit harder. +20% damage.",
+			DisplayName = "Harmony",
+			// The element is the NEXT SLOT'S spell's since 2026-11-09 (Eric: "i want the player to be able to
+			// purposefully select the element"; ArcaneExplosion.SympathyElement, Player.SpellInSlotAfter), not the last
+			// cast's, which nobody could aim. The strip marks the slot. The elements with no status hit harder
+			// (SympathyBareShare), so "others", not "fire". 127 of the 130 (DescriptionBudget).
+			Description = "Takes the element of the spell in the next slot: ice slows, lightning staggers, poison poisons, others hit harder. +20% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
 			VisualTag = "SympatheticBlast",
 			ModulateColor = Colors.White,
 			SynergyTag = "Arcane / Loadout",
-			// It said "whichever spell you cast most"; it is the last.
-			SynergyDescription = "The blast wears the last spell you cast."
+			// It said "whichever spell you cast most", then "the last spell you cast"; it is the next slot's.
+			SynergyDescription = "Choose its element: whatever you take into the next slot."
 		});
 
 		// The element path (ElementPaths): Arcane's branch into Lightning. Its three chain sparks were
@@ -335,8 +343,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "arcane_explosion_static_nova",
 			BonusElementWeights = new() { { "Lightning", 1 } },
-			DisplayName = "Static Nova",
-			Description = "The blast crackles with static: +20% damage, and "
+			DisplayName = "Storm Chord",
+			Description = "The chord crackles with static: +20% damage, and "
 				+ ElementPaths.Describe(ElementRider.Shock, 0f, 0.3f) + ".",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
@@ -345,15 +353,15 @@ public static class SpellEvolutionCatalog
 			VisualTag = "StaticNova",
 			ModulateColor = ElementColors.GetEvolutionTint(Element.Lightning),
 			SynergyTag = "Arcane / Lightning",
-			SynergyDescription = "Branches into Lightning. Every detonation pins the crowd where it stands for a moment."
+			SynergyDescription = "Branches into Lightning. Every burst pins the crowd where it stands for a moment."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = "arcane_explosion_lingering_rift",
 			BonusElementWeights = new() { { "Arcane", 1 } },
-			DisplayName = "Lingering Rift",
-			Description = "Each blast leaves a rift on the ground for 2.5s that hurts what stands in it (+40% Area).",
+			DisplayName = "Sustain",
+			Description = "Each burst's note rings on in the ground for 2.5s and hurts what stands in it (+40% Area).",
 			MilestoneLevel = 4,
 			AreaMultiplier = 1.4f,
 			Effect = SpellEffect.ZoneDuration,
@@ -361,7 +369,7 @@ public static class SpellEvolutionCatalog
 			VisualTag = "LingeringRift",
 			ModulateColor = new Color(0.85f, 0.35f, 0.95f),
 			SynergyTag = "Arcane / Zone",
-			SynergyDescription = "Creates persistent defensive zones against advancing waves."
+			SynergyDescription = "The note holds the ground against advancing waves."
 		});
 
 		// Level 8 (2 choices)
@@ -369,7 +377,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ArcaneExplosion.ResonanceId,
 			DisplayName = "Resonance",
-			Description = "Every blast goes off again wherever each of your other spells last struck. +180% damage.",
+			Description = "Every burst goes off again wherever each of your other spells last struck. +180% damage.",
 			MilestoneLevel = 8,
 			// x2.8, echoes at full: at x1.6 and echoes at 75% it measured 244 a second at level 8 with one
 			// partner spell, at x2.2 285 (band 331-465; the old Supernova 372). One partner is one echo.
@@ -384,9 +392,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ArcaneExplosion.EventHorizonId,
 			BonusElementWeights = new() { { "Arcane", 1 } },
-			DisplayName = "Event Horizon",
-			// No pull since 2h: the pull is Hollow Star's, and it turned Dual Shockwave's throw inward.
-			Description = "Time stops for 2.5s where the blast goes off: everything caught, and whatever walks in, freezes. +190% damage, 80% wider.",
+			DisplayName = "Fermata",
+			// No pull since 2h: the pull is Hollow Star's, and it turned Dual Shockwave's throw inward. A held note
+			// since 2026-11-09 (the Canticle): the mechanic is Event Horizon's, unchanged. 123 of the 130.
+			Description = "A held note: time stops for 2.5s where it sounds - all it catches, and whatever walks in, freezes. +190% damage, 80% wider.",
 			MilestoneLevel = 8,
 			AreaMultiplier = 1.8f,
 			// x2.9: at x2.2 and x2.5 it measured 300 and 309 a second at level 8 (band 331-465; the old card,
@@ -397,7 +406,7 @@ public static class SpellEvolutionCatalog
 			VisualTag = "EventHorizon",
 			ModulateColor = Colors.White,
 			SynergyTag = "Arcane / Stasis",
-			SynergyDescription = "Ascension: deepens Arcane. A sphere of stopped time the pack walks into and does not leave."
+			SynergyDescription = "Ascension: deepens Arcane. A held note the pack walks into and does not leave."
 		});
 	}
 
@@ -2602,7 +2611,8 @@ public static class SpellEvolutionCatalog
 	// that collapses three times, a collapse that seeds wells on the next packs. The pull is this spell's
 	// verb and no other's, so its cards may develop it. Branch() keeps each id, its element gain and the
 	// gain's price; the name and the look are set here, after it. Crush and Black Sun (ids
-	// amplified_impact and titan_cataclysm) are John Dee's Apotheosis path, as their ids always were.
+	// amplified_impact and titan_cataclysm) were John Dee's Apotheosis path while he opened on it (his form
+	// moved to Folio with his opener on 2026-11-09), as their ids always were.
 	// The behaviours are HollowStar's, by id; only the numbers on the cards ride the stat fields.
 	private static void SetupHollowStarEvolutions(SpellData spell)
 	{
@@ -2805,14 +2815,22 @@ public static class SpellEvolutionCatalog
 	private static void SetupRiptideEvolutions(SpellData spell)
 	{
 		Color sea = new Color(0.55f, 0.82f, 1.0f);
+		// PUSH OUT OR DRAG IN (Eric, 2026-11-09, on Tituba: "her spell upgrade options should include ways that the tide
+		// can drag enemies in OR push them out"). Breaker is the push, and says so plainly; Undertow is the drag, at the
+		// same strength reversed toward her (BoltEvolutions.UndertowId, ElementalBolt.DragTowardCaster). Four level 4
+		// cards: the mutation page lays out more than three (LevelUpMenu's narrower cards).
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
-			"The wave throws everything it breaks over back along its run. +35% damage, and a wave 30% bigger.",
-			"Water / Knockback", "Clears a lane, and shoves the pack back into the next wave's path.",
+			"The wave throws everything it strikes out, away from you. +35% damage, and a wave 30% bigger.",
+			"Water / Push", "Clears a lane, and shoves the pack back into the next wave's path.",
 			o => { Renamed(o, "Breaker", "Breaker", sea); o.DamageMultiplier = 1.35f; o.ScaleMultiplier = 1.3f; o.KnockbackBonus = 100f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
 			$"The wave grows as it runs, from {BoltEvolutions.GroundswellStart * 100f:0}% to {BoltEvolutions.GroundswellEnd * 100f:0}% of its size. -25% cooldown, 25% faster.",
 			"Water / Distance", "Fire it long: the farther the pack, the wider the water that reaches it.",
 			o => { Renamed(o, "Groundswell", "Groundswell", sea); o.CooldownMultiplier = 0.75f; o.SpeedMultiplier = 1.25f; }));
+		spell.Level4Options.Add(Branch(spell, DefaultBranch.ReactiveCatalyst,
+			"The wave's backwash drags everything it strikes back toward you. +20% damage.",
+			"Water / Pull", "Gathers the pack in for your close spells, and into the next wave's path.",
+			o => { Renamed(o, "Undertow", "Undertow", sea); o.DamageMultiplier = 1.2f; o.KnockbackBonus = 100f; }));
 		AddElementPath(spell);
 		// A TIDAL WAVE (2026-10-27, "riptide size should end up being a huge portion of the screen per
 		// shot"), named for what it is since 2026-10-29: Tidal Wall. x3 of a level 8 wave (224 px) is about
@@ -3827,6 +3845,97 @@ public static class SpellEvolutionCatalog
 			VisualTag = "TurningGale",
 			SynergyTag = "Ascension / Wind",
 			SynergyDescription = "Ascension: deepens Wind. Every rune is two passes, and the second comes from behind them."
+		});
+	}
+
+	// Folio (scripts/Folio.cs, .ai/character-fit.md section 6): John Dee's book, whose pages fly at the crowd - turned
+	// every cooldown and once more for every orb he gathers. Every card is something more a PAGE does, which is this
+	// spell's and no other's: it tears, it spills its ink, it is gilt and cuts on, the book is thrown whole, the dead are
+	// written back into it (spell-roster.md section 2e: every spell its own evolutions). Arcane + Darkness, a hybrid, so
+	// its element path is deepening either half, each at the hybrid's price: level 4 deepens Darkness (Inkblot) and
+	// level 8 Arcane (Bound Volume) - never both at one milestone, or a hybrid would reach three of one element
+	// (ValidateEvolutionElementCeiling). No card trades Darkness away: John Dee's form deepens it (ApotheosisCatalog).
+	// Every number on these cards is one Folio reads: damage and the turn through Folio.Refresh and the fire loop, the
+	// count through GetProjectileCountAtLevel, pierce through GetPierceAtLevel, a page's speed through
+	// GetSpeedMultiplier; the behaviours by id. Each percentage is computed from the number the option carries.
+	private static void SetupFolioEvolutions(SpellData spell)
+	{
+		const float inkDamage = 1.15f;
+		const int giltPierce = 2;
+		const float giltSpeed = 1.25f;
+		const int volumePages = 2;
+		const float volumeDamage = 1.3f;
+		const float commonplaceDamage = 1.35f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.TornLeafId,
+			DisplayName = "Torn Leaf",
+			// "Half" is Folio.TornShare; RegressionChecks.ValidateFolio holds the two together.
+			Description = "A page tears in two on its first strike, and each half flies on at another enemy nearby for half its cut.",
+			MilestoneLevel = 4,
+			VisualTag = "TornLeaf",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. One page, three wounds, where the crowd is thick."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.InkblotId,
+			DisplayName = "Inkblot",
+			Description = $"Where a page strikes, its ink spills: a black stain that slows whatever walks through it by {Folio.InkSlow * 100f:0}%. "
+				+ $"+{(inkDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 4,
+			DamageMultiplier = inkDamage,
+			BonusElementWeights = new() { { "Darkness", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "Inkblot",
+			SynergyTag = "Darkness / Slow",
+			SynergyDescription = "Deepens Darkness. The pack wades through the ground you have already cut."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.GiltEdgeId,
+			DisplayName = "Gilt Edge",
+			Description = $"Every page is edged in gold and cuts on through {giltPierce} more enemies, flying {(giltSpeed - 1f) * 100f:0}% faster.",
+			MilestoneLevel = 4,
+			PierceBonus = giltPierce,
+			SpeedMultiplier = giltSpeed,
+			VisualTag = "GiltEdge",
+			SynergyTag = "Pierce",
+			SynergyDescription = "No new element. A page goes on through the line it was thrown at."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.BoundVolumeId,
+			DisplayName = "Bound Volume",
+			Description = "Each turn of the book flies bound as one volume to the thickest pack and bursts open there. "
+				+ $"+{volumePages} pages a turn, +{(volumeDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			ProjectileCountBonus = volumePages,
+			DamageMultiplier = volumeDamage,
+			BonusElementWeights = new() { { "Arcane", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "BoundVolume",
+			SynergyTag = "Ascension / Arcane",
+			SynergyDescription = "Ascension: deepens Arcane. The timed turn lands as one burst of pages in the thick of them."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.CommonplaceBookId,
+			DisplayName = "Commonplace Book",
+			Description = "Whatever a page kills is written into the book: its ink flies back to you and turns another page. "
+				+ $"+{(commonplaceDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = commonplaceDamage,
+			VisualTag = "CommonplaceBook",
+			SynergyTag = "Ascension / Pages",
+			SynergyDescription = "Ascension: no new element. Every kill is another page; the faster they fall, the faster it turns."
 		});
 	}
 }

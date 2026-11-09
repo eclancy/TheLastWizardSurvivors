@@ -261,3 +261,172 @@ def impact(element, seed=23):
         (thump, 0.0, 0.5),
     ])
     return _finish(S.pad(out, dur + 0.10), p["tail"] * 0.6, IMPACT_CEILING)
+
+
+# ---------------------------------------------------------------------------
+# notes: the Canticle's chord (2026-11-09)
+# ---------------------------------------------------------------------------
+# The Cumaean Sibyl's spell is sung on the music's beat (.ai/character-fit.md section 5, row 19): every
+# cast that charges it adds a note to a chord, voiced by THAT spell's element, and the burst sounds the
+# gathered notes together in the chapter's key. So each element gets one more file, note_<element>: its
+# construct played as an instrument - a pitch the ear can sing, with the element's identity in the timbre
+# and the envelope, never in the pitch.
+#
+# ONE note per element, all at NOTE_REF_HZ. The game pitches it to the chord's degree at play time
+# (AudioStreamPlayer pitch, section 7 of the audio contract: variation at play time, not on disk), and
+# folds every degree into A3..A5 (ArcaneExplosion.NotePitch), so the pitch scale runs 0.5 to 2 and twelve
+# files serve every key. Built for that range: lowpassed at NOTE_CEILING, so the top of the fold still sits
+# under CAST_CEILING; highpassed under the lowest voice, so the bottom of it never reaches the sub band; and
+# the shared transient at a third of a cast's, because a chord is up to six of them on one frame.
+NOTE_REF_HZ = 440.0
+NOTE_DUR = 0.55
+NOTE_CEILING = 3400.0
+NOTE_FLOOR = 150.0
+
+
+def _note_fire(f, dur, seed):
+    """A reed of fire: a saw on the pitch through the element's falling filter, its crackle gated in."""
+    n = S.n_samples(dur)
+    p = ELEMENTS["fire"]
+    tone = S.lowpass(S.osc("saw", f, dur), S.sweep(dur, p["c0"], p["c1"] * 2.5, 0.6), 1.2)
+    roar = S.bandpass(S.osc("noise", 0, dur, seed=seed), S.sweep(dur, p["c0"] * 0.7, p["c1"] * 1.5, 0.6), p["q"])
+    roar = S.gate(roar, 95.0, 0.86, seed=seed + 1)
+    # Caught at once and burning on, where grass's pluck is struck and gone and wind's breath swells in.
+    out = S.mix(S.env_mul(tone, S.ad(dur, 0.006, 1.0)), S.gain(S.env_mul(roar, S.ad(dur, 0.006, 1.2)), 1.0))
+    # The whole flame crackles, not only its roar: the gate over the tone too, and the drive's grit.
+    return S.drive(S.gate(out, 60.0, 0.9, seed=seed + 2), 3.5)
+
+
+def _note_ice(f, dur, seed):
+    """Struck glass: the element's inharmonic partials on the pitch, a breath of frost over them."""
+    n = S.n_samples(dur)
+    glass = S.partials(f, _ICE, dur, amps=[1.0, 0.7, 0.45, 0.25], decays=[2.0, 2.6, 3.4, 4.5])
+    glass = S.tremolo(glass, 6.0, 0.25)
+    frost = S.bandpass(S.osc("noise", 0, dur, seed=seed), 3000.0, 2.2)
+    return S.mix(glass, S.gain(S.env_mul(frost, S.ad(dur, 0.12, 1.4)), 0.3))
+
+
+def _note_arcane(f, dur, seed):
+    """The cast's two detuned triangles, held on the pitch, with its 17 Hz shimmer."""
+    a = S.osc("tri", f, dur)
+    b = S.osc("tri", f * 1.007, dur, phase=0.31)
+    voice = S.tremolo(S.mix(S.gain(a, 0.55), S.gain(b, 0.55)), 17.0, 0.35)
+    voice = S.lowpass(voice, S.sweep(dur, 1800.0, 3200.0, 1.0), 1.2)
+    return S.env_mul(voice, S.ad(dur, 0.02, 1.8))
+
+
+def _note_darkness(f, dur, seed):
+    """Airless, with the octave under it. FORWARDS: a note has to land on its beat, and the reversal
+    is a cast's gesture - so it swells in over 50 ms instead of arriving from nowhere."""
+    sub = S.mix(S.gain(S.osc("saw", f, dur), 0.6), S.gain(S.osc("saw", f * 0.5, dur, phase=0.2), 0.45))
+    sub = S.lowpass(sub, S.sweep(dur, 1100.0, 380.0, 0.8), 1.6)
+    return S.env_mul(sub, S.ad(dur, 0.05, 1.5))
+
+
+def _note_light(f, dur, seed):
+    """The bell, struck on the pitch, with its fifth."""
+    n = S.n_samples(dur)
+    # Pure and long, and touched rather than struck: the fundamental, its octave and the fifth, coming in
+    # over 25 ms - the struck clang is metal's.
+    bell = S.partials(f, [1.0, 2.0, 3.0], dur, amps=[1.0, 0.3, 0.08], decays=[1.6, 2.6, 4.0])
+    fifth = S.env_mul(S.osc("sine", f * 1.5, dur), S.expdecay(n, 2.4))
+    out = S.mix(S.gain(bell, 0.8), S.gain(fifth, 0.26))
+    na = S.n_samples(0.025)
+    return S.env_mul(out, S.ramp(na, 0.0, 1.0) + [1.0] * (n - na))
+
+
+def _note_grass(f, dur, seed):
+    """A plucked string of wood: the saw pluck on the pitch and its knock."""
+    n = S.n_samples(dur)
+    pluck = S.lowpass(S.osc("saw", f, dur), S.sweep(dur, 1500.0, 450.0, 0.5), 1.8)
+    knock = S.env_mul(S.osc("mnoise", 1200, dur, seed=seed), S.decay(n, 14.0))
+    return S.mix(S.env_mul(pluck, S.decay(n, 7.0)), S.gain(knock, 0.55))
+
+
+def _note_earth(f, dur, seed):
+    """Struck stone: a bar (partials 1 and 3.93, a marimba's) dying fast, a thud an octave under, rubble."""
+    n = S.n_samples(dur)
+    bar = S.partials(f, [1.0, 3.93], dur, amps=[1.0, 0.3], decays=[14.0, 22.0])
+    thud = S.env_mul(S.osc("sine", S.sweep(dur, f * 0.5, f * 0.35, 0.4), dur), S.expdecay(n, 10.0))
+    grit = S.decimate(S.lowpass(S.osc("noise", 0, dur, seed=seed), 900.0, 1.0), 3)
+    return S.drive(S.mix(bar, S.gain(thud, 0.8), S.gain(S.env_mul(grit, S.decay(n, 5.0)), 0.7)), 2.5)
+
+
+def _note_wind(f, dur, seed):
+    """A breath over a bottle: the pitch is a narrow band of air, a whisper of its sine under it. Air
+    has no bass, so it keeps the cast's highpass."""
+    air = S.osc("noise", 0, dur, seed=seed)
+    tone = S.bandpass(air, f, 14.0)
+    # The breath's own hiss, high over the pitch where the edge of a bottle whistles - a band, not open.
+    edge = S.lowpass(S.bandpass(air, 2300.0, 1.6), 3200.0, 0.7)
+    sine = S.osc("sine", f, dur)
+    out = S.mix(tone, S.gain(edge, 0.5), S.gain(sine, 0.08))
+    out = S.highpass(out, 300.0, 0.7)
+    # A breath has no attack: it swells to its height half way and goes as it came - a gust. The only
+    # note that does.
+    n = S.n_samples(dur)
+    na = S.n_samples(dur * 0.45)
+    return S.env_mul(out, S.ramp(na, 0.0, 1.0, 0.8) + S.decay(n - na, 1.2))
+
+
+def _note_lightning(f, dur, seed):
+    """A buzz that strikes down onto the pitch from the octave over it in 20 ms, and the crackle - as a
+    band, never an open highpass."""
+    n = S.n_samples(dur)
+    nz = S.n_samples(0.02)
+    pitch = S.ramp(nz, f * 2.0, f, 0.5) + [f] * (n - nz)
+    buzz = S.lowpass(S.osc("square", pitch, dur), 2400.0, 1.0)
+    crackle = S.lowpass(S.highpass(S.osc("noise", 0, dur, seed=seed), 2400.0), 3400.0, 0.7)
+    crackle = S.gate(crackle, 220.0, 0.5, seed=seed + 9)
+    one = S.mix(S.env_mul(buzz, S.decay(n, 6.0)), S.gain(S.env_mul(crackle, S.decay(n, 4.0)), 0.45))
+    # It strikes three times, fast and fading: a stutter nothing else in the chord has.
+    return S.pad(S.layer([(one, 0.0, 1.0), (one, 0.07, 0.6), (one, 0.15, 0.36)]), dur)
+
+
+def _note_poison(f, dur, seed):
+    """The 9 Hz gurgle as a vibrato a quarter-tone wide - in tune, but wet - nasal through its band,
+    with the bubbles."""
+    n = S.n_samples(dur)
+    voice = S.fm("saw", f, 9.0, 0.025, dur, seed=seed)
+    voice = S.bandpass(voice, f * 3.0, 2.4)
+    bubbles = S.gate(S.osc("sine", S.sweep(dur, f * 1.6, f * 0.8, 1.0), dur), 26.0, 0.4, seed=seed + 3)
+    return S.mix(S.env_mul(voice, S.ad(dur, 0.03, 1.2)), S.gain(S.env_mul(bubbles, S.decay(n, 2.0)), 0.35))
+
+
+def _note_metal(f, dur, seed):
+    """Struck metal on the pitch: the six inharmonic partials, the ring modulation turned down so the
+    fundamental still sings."""
+    # A clang: the upper partials as loud as the fundamental at the strike and ringing on after it.
+    struck = S.partials(f, _METAL, dur, amps=[1.0, 0.9, 0.8, 0.7, 0.55, 0.4],
+                        decays=[5.0, 3.0, 2.4, 2.0, 1.8, 1.6])
+    return S.ringmod(struck, 137.0, 0.12)
+
+
+def _note_water(f, dur, seed):
+    """A droplet that rises onto the pitch in 30 ms and rings there, over a little of the dark wash."""
+    n = S.n_samples(dur)
+    nd = S.n_samples(0.03)
+    pitch = S.ramp(nd, f * 0.72, f, 0.6) + [f] * (n - nd)
+    droplet = S.env_mul(S.osc("sine", pitch, dur), S.expdecay(n, 9.0))
+    # A second drop off the first, a fifth of a second on and softer: water falls in drops, and the
+    # pair is what keeps it apart from struck stone and glass, which ring once.
+    second = S.env_mul(S.osc("sine", pitch, dur), S.expdecay(n, 9.0))
+    wash = S.lowpass(S.osc("noise", 0, dur, seed=seed), S.sweep(dur, 900.0, 300.0, 0.9), 0.9)
+    out = S.layer([(droplet, 0.0, 1.0), (second, 0.19, 0.55)])
+    return S.mix(S.pad(out, dur), S.gain(S.env_mul(wash, S.decay(n, 3.0)), 0.22))
+
+
+NOTES = {
+    "fire": _note_fire, "ice": _note_ice, "arcane": _note_arcane, "darkness": _note_darkness,
+    "light": _note_light, "grass": _note_grass, "earth": _note_earth, "wind": _note_wind,
+    "lightning": _note_lightning, "poison": _note_poison, "metal": _note_metal, "water": _note_water,
+}
+
+
+def note(element, seed=31):
+    """One note of the Canticle's chord in the element's voice, at NOTE_REF_HZ."""
+    voice = NOTES[element](NOTE_REF_HZ, NOTE_DUR, seed)
+    out = S.layer([(transient(0.3, 0.006, seed=seed), 0.0, 1.0), (voice, 0.003, 1.0)])
+    out = S.highpass(S.lowpass(S.pad(out, NOTE_DUR + 0.12), NOTE_CEILING, 0.707), NOTE_FLOOR, 0.707)
+    out = S.reverb(out, size=0.45, damp=0.5, mix=ELEMENTS[element]["tail"] * 0.5)
+    return S.dc_block(out)

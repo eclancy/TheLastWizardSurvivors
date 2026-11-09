@@ -1,0 +1,83 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/folio-arcane.png" id="3_icon"]
+
+; Folio, John Dee's opener since 2026-11-09 (.ai/character-fit.md section 6; scripts/Folio.cs). Arcane + Darkness: the
+; scholar's magic and his black mirror. Everyone else earns it with the Magpie feat (ten chests in one run).
+;
+; BaseDamage is ONE PAGE, on the body it cuts. BaseCooldown is the book's own turn (the ONE fire loop); every XP orb he
+; gathers turns one more page at once (Player.NotifyOrbGathered). BaseProjectileCount is the pages a timed turn throws
+; (plus Amount); an orb's turn is always one page. BaseRange is the reach a page looks for its quarry in. Pierce comes
+; only from Gilt Edge (level 4); no level line grants it.
+;
+; FIRST GUESSES, untuned (Eric, 2026-11-09: no balance runs for these changes). A page's 7 sits at the top of Magic
+; Missile's per-dart band (5 at level 1, 7 by level 3), since a page comes alone where a missile comes in threes.
+; Spells start small: one page a turn at level 1, two at 3, three at 6. Written out in full so
+; Player.EnsureRelevantLevelUps generates nothing of its own: every level adds damage, even levels shorten the turn by
+; 0.1 s, and 5 adds reach. Level 8: 16 a page, three pages a turn every 1.6 s, over 340 px - and the orbs on top.
+
+[sub_resource type="Resource" id="Resource_folio_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 1
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_folio_lvl3"]
+script = ExtResource("2")
+Level = 3
+DamageBonus = 1
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_folio_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 1
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_folio_lvl5"]
+script = ExtResource("2")
+Level = 5
+DamageBonus = 1
+RangeBonus = 40.0
+
+[sub_resource type="Resource" id="Resource_folio_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 1
+CooldownBonus = -0.1
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_folio_lvl7"]
+script = ExtResource("2")
+Level = 7
+DamageBonus = 2
+
+[sub_resource type="Resource" id="Resource_folio_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 2
+CooldownBonus = -0.1
+
+[resource]
+script = ExtResource("1")
+Tagline = "Every orb you gather turns a page."
+Id = "folio"
+Name = "Folio"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 7
+BaseCooldown = 2.0
+BaseProjectileCount = 1
+BaseRange = 300.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_folio_lvl2"), SubResource("Resource_folio_lvl3"), SubResource("Resource_folio_lvl4"), SubResource("Resource_folio_lvl5"), SubResource("Resource_folio_lvl6"), SubResource("Resource_folio_lvl7"), SubResource("Resource_folio_lvl8")])
+Description = "A book at your shoulder turns a page every few seconds, and one more for every orb you gather. Each page flies at an enemy and cuts it. Turned pages wait in the book, five at most, until something is near."
+Icon = ExtResource("3_icon")
+TargetingMode = 2
+DamageShape = 1
+ScalingTagsMask = 27
+ElementWeights = {
+"Arcane": 1,
+"Darkness": 1
+}

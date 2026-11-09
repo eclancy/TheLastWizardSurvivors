@@ -153,7 +153,7 @@ public static class EvolutionStatReaders
 			SpellEffect.ProjectileSpeed, SpellEffect.AreaSize, SpellEffect.ExplosionOnHit, SpellEffect.SplitOnHit,
 			SpellEffect.Pierce, SpellEffect.CritChance, SpellEffect.CritDamage),
 		["arcane_explosion"] = R(EvolutionStat.Damage | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider,
-			"ArcaneExplosion.RefreshComputedStats, TriggerExplosion and OpenLingeringRift; charge-driven and persistent, so no cooldown and no visual scale (Sympathetic Blast, Resonance and Event Horizon's stasis by id)",
+			"ArcaneExplosion.RefreshComputedStats, TriggerExplosion and OpenLingeringRift; charge-driven and persistent, so no cooldown and no visual scale (the Canticle's cards by id: Harmony's element from the next slot, Resonance, and Fermata's stasis)",
 			SpellEffect.VortexPull, SpellEffect.Knockback, SpellEffect.Freeze, SpellEffect.ZoneDuration, SpellEffect.AreaSize, SpellEffect.CritDamage),
 		// Spiritual Weapon is read by FORM (SpellData.Variants): one script, but what reaches a blow differs by
 		// weapon, so each form has its own row and TryGet(SpellData) takes the form's before the spell's. The
@@ -201,7 +201,7 @@ public static class EvolutionStatReaders
 		// The four bolts' own cards (BoltEvolutions, 2026-10-29) are behaviours read by id; their numbers
 		// ride on the fields below.
 		["gale_blade"] = R(Bolt, "ElementalBolt (Returning; Eddy, Hooked Throw, Live Wire, Thunderhead and Squall by id)", BoltEffects),
-		["riptide"] = R(Bolt, "ElementalBolt, RiptideWave and Player.FireBoltSpell (Knockback is Breaker's; Groundswell and Trident by id)", BoltEffects),
+		["riptide"] = R(Bolt, "ElementalBolt, RiptideWave and Player.FireBoltSpell (Knockback is Breaker's throw out and Undertow's drag in, ElementalBolt.DragTowardCaster; Groundswell, Undertow and Trident by id)", BoltEffects),
 		["molten_shard"] = R(Bolt, "ElementalBolt, MoltenSlag and Player.FireBoltSpell (projectiles are Forge Swarm's forged shards; Slag Trail, Splitting Shard, Magma Core and Caldera by id)", BoltEffects),
 		// The one bolt that reads Amount (more arrows a volley); the other three never have.
 		["hunters_draw"] = R(Bolt | EvolutionStat.Amount, "ElementalBolt, ArrowRain and Player.LooseHuntersVolley (Amount is more arrows a volley; Knockback is Heavy Draw's, on a full draw; Running Shot, Barbed, Rain of Arrows and Hunter's Mark by id)", BoltEffects),
@@ -320,13 +320,22 @@ public static class EvolutionStatReaders
 		["orb_of_ages"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Area | EvolutionStat.Speed | EvolutionStat.Amount,
 			"Player.FireOrbOfAges (Projectiles and Amount are orbs, Area the ring, Speed the orb, ZoneDuration the ward's time; Burning Rim, Missile Ward, Walking Ward and The Once and Future by id, in OrbOfAges)",
 			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.CritDamage),
+		// John Dee's opener (.ai/character-fit.md section 6): Folio.Refresh reads the turn's numbers, Player.FireFolio the
+		// count. Projectiles and Amount are pages a timed turn throws (an orb's turn is always one); Range is the reach a
+		// page finds its quarry in; Pierce is Gilt Edge's, the only pierce it has; Speed is the page's flight. No Area and
+		// no Scale: no card sets either (the ink and the mirror grow with the wizard's own Area), and the pages are drawn
+		// at one size. Torn Leaf, Inkblot, Gilt Edge's gold, Bound Volume, Commonplace Book and the Spirit Mirror by id.
+		[Folio.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Pierce | EvolutionStat.Speed
+				| EvolutionStat.Rider | EvolutionStat.Amount,
+			"Folio.Refresh, Folio.Strike and Player.FireFolio (pages a timed turn throws plus Amount; Range is the reach a page finds its quarry in; Torn Leaf, Inkblot, Gilt Edge, Bound Volume, Commonplace Book and the Spirit Mirror by id)",
+			SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",
 			SpellEffect.AreaSize, SpellEffect.RootDuration, SpellEffect.CritDamage),
 		["scorching_ray"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Pierce
 				| EvolutionStat.Speed | EvolutionStat.Rider | EvolutionStat.Amount,
-			"ScorchingRayBeam.RefreshComputedStats and Player.FireScorchingRay (Amount is more rays; Area is the burst; Flashpoint, Handoff, Burn Through, Prism and Sunlance by id)",
+			"ScorchingRayBeam.RefreshComputedStats and Player.FireScorchingRay (Amount is more rays; Area is the burst and the Eye of Ra's flare; Flashpoint, Handoff, Burn Through, Prism, Sunlance and the Eye of Ra by id)",
 			SpellEffect.CritChance, SpellEffect.Pierce, SpellEffect.CritDamage),
 		["cinderbreath"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider,

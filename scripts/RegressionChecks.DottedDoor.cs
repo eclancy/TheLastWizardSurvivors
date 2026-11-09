@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TheOneHeMissed.scripts;
 
-// Ma Liang (.ai/chapter-wizards.md 4.8): what holds the trace, the Painted Door and the opening page to their sentences,
+// Ma Liang (.ai/chapter-wizards.md 4.8): what holds the trace, the Painted Door and his opening crow to their sentences,
 // which no build sees and a single run shows once. Every line is a warning, as the rest of RunAll's are.
 public static partial class RegressionChecks
 {
@@ -91,8 +91,18 @@ public static partial class RegressionChecks
 			warnings.Add("Dotted door: Ma Liang is not in CharacterRoster.");
 		else
 		{
-			if (!Player.ChoosesOpeningForm(him))
-				warnings.Add("Ma Liang: he does not choose his Familiar's form at the start of a run; the dog and the cat could never be his.");
+			// He opens on the crow every run, as Nimue opens on the Sword (Eric, 2026-11-09: "he automatically starts with a
+			// crow familiar"): no opening page, the crow's form in his opening hand, his card saying so, and his crow in ink.
+			if (Player.ChoosesOpeningForm(him))
+				warnings.Add("Ma Liang: he chooses his Familiar's form at the start of a run again; he opens on the crow (ChoosesStartingForm must be off).");
+			if (him.StartingSelection != SpellVariants.Selection("familiar", Familiar.CrowId))
+				warnings.Add($"Ma Liang: he opens on '{him.StartingSelection}', not the Familiar as the crow, so The Painted Door may never be his.");
+			if (him.StartingForm?.ShortName != "Crow" || him.StartingSpellResource?.Name != "Familiar")
+				warnings.Add("Ma Liang: his card would not read \"Familiar - Crow\" (the spell's Name and the crow form's ShortName).");
+			if (!Familiar.PaintsInInk(him.Id) || Familiar.PaintsInInk("archmage"))
+				warnings.Add("Ma Liang: his crow must be painted in ink, and nobody else's (Familiar.PaintsInInk).");
+			if (CharacterRoster.GetAll().Any(c => c != null && c.ChoosesStartingForm))
+				warnings.Add("Opening forms: a wizard chooses his form on the run's first screen again; say which in CharacterData.ChoosesStartingForm's note.");
 			ApotheosisDefinition form = ApotheosisCatalog.ForCharacter("ma_liang");
 			if (form == null || form.VariantId != Familiar.CrowId || form.Form?.Id != Familiar.PaintedDoorId)
 				warnings.Add("Ma Liang: his Apotheosis must be The Painted Door, on the crow.");

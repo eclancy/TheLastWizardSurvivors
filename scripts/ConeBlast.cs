@@ -4,8 +4,9 @@ using System.Linq;
 
 namespace TheOneHeMissed.scripts;
 
-// Cone of Cold (Ice x2 double-weight, issue #28): a single-cast cone-shaped burst in the aim/
-// nearest-enemy direction, dealing damage and slowing everything hit. New "cone" archetype - a
+// Cone of Cold (Ice x2 double-weight, issue #28): a single-cast cone-shaped burst in the direction it is
+// handed - the way the player faces since 2026-11-09 (Player.FireConeBlast; it was the nearest enemy) -
+// dealing damage and slowing everything hit. New "cone" archetype - a
 // manual angle+range sweep rather than an Area2D collision shape, since all existing active spells
 // are homing-projectile, self-pulse, or orbit shaped.
 public partial class ConeBlast : Node2D

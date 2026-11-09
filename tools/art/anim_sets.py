@@ -76,8 +76,11 @@ PLAYER_RAMPS = RAMPS + [
     "\x80\x81\x82\x83\x84",
     "\x86\x87\x88\x89\x8a",
     # lichen - Morgan le Fay's mantle (roster.LICHEN_RAMP), the contract's sea-grey-green row: \x95-\x99, since
-    # \x90-\x94 are held for Baba Yaga's, merged in parallel.
+    # \x90-\x94 are Baba Yaga's (below).
     "\x95\x96\x97\x98\x99",
+    # wood - Baba Yaga's mortar and broom handle (roster.WOOD_RAMP): the gold row's five stops on bytes of their
+    # own, because the shared "HGgu" stops at the shade and her mortar is drawn from the deep end.
+    "\x90\x91\x92\x93\x94",
 ]
 
 
@@ -261,8 +264,6 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             "frostweaver": 1, "geomancer": 1, "tituba": 1, "seimei": 1, "sibyl": 1,
             # Lamed by a king: the far leg in its brace hardly bends, so the walk is a heavy one.
             "wayland": 1,
-            # A tall old woman's long, slow step under a coat to the ground.
-            "yaga": 1,
             # A heavy man's planted step under a physician's gown.
             "paracelsus": 1,
             # An old man's measured step under a long physician's gown.
@@ -326,6 +327,8 @@ def walk(pose_fn, bob=2, anchor=WALK_ANCHOR):
 # DRIFTS (no step at all; the cloth streams further back, she leans into it, and a shallower, quicker bob).
 # The contract's anchor still holds on every frame: the lowest pixel is the shadow's occlusion line on row
 # cell-1, which is where the ground is; her feet are simply not on it.
+# Baba Yaga is the second (Eric, 2026-11-09: "Her typical movement can be flying in a mortar holding a broom"):
+# roster.yaga takes the same three arguments, and what streams on her is the broom's twigs, not cloth.
 HOVER_IDLE_FRAMES = 12
 HOVER_MOVING_FRAMES = 8
 
@@ -364,14 +367,42 @@ def hover(pose_fn):
     ]
 
 
-def player_set(pose, idle_frames, pose_fn=None):
+# --- the one who flies when he moves ----------------------------------------------------------
+# Wayland the Smith (Eric, 2026-11-09: "is his movement animation a flying animation?" - option A; .ai/character-fit.md
+# section 5, row 20). Not a floater: standing he stands, wings folded and his weight on his good leg, and his idle is
+# the cast's breath (roster.idle). Only his moving frames change: the wings open and beat and he skims a little over
+# the ground. His pose function draws the whole flight at any point of the beat - pose_fn(beat=, lift=), roster.wayland.
+FLIGHT_FRAMES = 8
+
+
+def flight(pose_fn):
+    """The moving frames of one who flies when he moves (roster.FLYERS): eight frames of one wing beat at 10 a
+    second, the cast's walk rate - a heavy beat, 1.25 a second, for iron wings.
+
+    The beat starts with the wings high. He is lowest there (one row up) and highest at the bottom of the
+    downstroke (three rows), because the downstroke is what lifts him: two rows on average, over a shadow the pose
+    function narrows as he rises. Hurt and death stay derived from the standing pose (player_set), so a flinch in
+    the air reads the same as one on the ground.
+    """
+    tau = 2.0 * math.pi
+    out = []
+    for i in range(FLIGHT_FRAMES):
+        t = i / float(FLIGHT_FRAMES)
+        lift = int(round(2.0 - math.cos(tau * t)))
+        out.append(pose_fn(beat=t, lift=lift))
+    return out
+
+
+def player_set(pose, idle_frames, pose_fn=None, moving=None):
     """The player has no `attack` - spells fire on a timer, so there is nothing to swing.
 
     With `pose_fn`, `moving` is a real walk drawn from the pose function's stride phases. Without
     one it falls back to the derived bob-and-lean, which is what every pose without legs to move
-    still gets.
+    still gets. `moving` given (the frames of `flight`, for one who flies when he moves) is used as it is.
     """
-    if pose_fn is not None:
+    if moving is not None:
+        mv = moving
+    elif pose_fn is not None:
         name = pose_fn.__name__
         mv = walk(pose_fn, WALK_BOB.get(name, 1), WALK_ANCHORS.get(name, WALK_ANCHOR))
     else:
