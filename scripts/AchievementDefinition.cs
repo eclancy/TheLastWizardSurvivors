@@ -245,6 +245,16 @@ public static partial class AchievementDefinitions
 	public const int MagpieChestTarget = 10;
 
 	/// <summary>
+	/// Kills numbered in Lightning's ink in ONE run that pay Corposant (the Storm Petrel feat): a Lightning spell's, a spell
+	/// branched into Lightning, the Lightning tier's chain (RunEvents.RecordLightningKill). The Stormcaller opens on Chain
+	/// Lightning, so every save can reach it from its first run. Measured 2026-11-09 (_BalanceHarness --minutes=15
+	/// --character=3, seed 1234, the real save read-only): the bot spread its picks over five spells and never took Chain
+	/// Lightning past level 3, and still made 310 by minute 5, 492 by minute 10 and 672 in the run. Five hundred is most
+	/// of a run with Lightning in it, or the first half of one built round it - Magpie's "a good run's worth".
+	/// </summary>
+	public const int StormPetrelLightningKills = 500;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -489,6 +499,19 @@ public static partial class AchievementDefinitions
 			RewardText = "Unlocks Folio", SpellUnlockId = "folio",
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.BestChestsInRun, Target = MagpieChestTarget,
+		},
+		// CORPOSANT'S FEAT (2026-11-09): St Elmo's fire is the sailor's sign of a storm, and the storm petrel is the bird
+		// sailors saw before one - a bird named for St Peter, as Magpie (Folio's) is a bird too. Earned by fighting with
+		// Lightning: kills numbered in its ink in a single run. Not the Lightning Adept (Stormguard's), which counts
+		// Lightning held; this counts what Lightning killed. Measured off the best run kept in the lifetime stats
+		// (LifetimeStats.BestLightningKillsInRun), so the menu shows the best run so far and the pause screen this run's.
+		new()
+		{
+			Id = "storm_petrel", DisplayName = "Storm Petrel",
+			Description = $"Defeat {StormPetrelLightningKills} enemies with Lightning in a single run.",
+			RewardText = "Unlocks Corposant", SpellUnlockId = "corposant",
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestLightningKillsInRun, Target = StormPetrelLightningKills,
 		},
 		new()
 		{

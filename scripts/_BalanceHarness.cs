@@ -1655,6 +1655,14 @@ public partial class _BalanceHarness : Node
 		// Paint What Is Needed (his passive): when it painted its flask, once it has.
 		if (player.FlaskPaintedAtSeconds >= 0f)
 			GD.Print($"HARNESS PAINTED FLASK m={row.Minute} at={player.FlaskPaintedAtSeconds:0.0}s");
+		// Corposant: balls loosed, edges turned off, balls a wall grounded, strikes, twins split, wake zaps, lantern hangs
+		// and crowns - once it has loosed one.
+		if (Corposant.StatLaunched > 0)
+			GD.Print($"HARNESS CORPOSANT m={row.Minute} launched={Corposant.StatLaunched} bounces={Corposant.StatBounces} grounded={Corposant.StatGrounded}"
+				+ $" strikes={Corposant.StatStrikes} twins={Corposant.StatTwins} wake={Corposant.StatWakeStrikes} hangs={Corposant.StatHangs} crowns={Corposant.StatCrowns}");
+		// The Storm Petrel feat's count (RunEvents.RecordLightningKill): kills numbered in Lightning's ink so far this run.
+		if (RunEvents.LightningKills > 0)
+			GD.Print($"HARNESS LIGHTNING KILLS m={row.Minute} kills={RunEvents.LightningKills}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

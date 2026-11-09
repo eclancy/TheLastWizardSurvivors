@@ -1208,6 +1208,9 @@ SPELLS = {
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
     # John Dee's opener (.ai/character-fit.md section 6): the open book and the page flying from it (the tip).
     "folio":             dict(paint=si.folio, travel=(0.8, -1), tip=(26, 4), rows=("arcane", "darkness")),
+    # St Elmo's fire (scripts/Corposant.cs): the ball coming off the edge of the view, its heart leading (the tip). Drawn
+    # without its night, as Stormsweep is; the frame lays the milestone's.
+    "corposant":         dict(paint=lambda: si.corposant(sky=False), travel=(-0.7, 0.7), tip=(9, 24), rows=("lightning",)),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -1258,7 +1261,7 @@ BASE = {
     "spiritual_weapon_sword": lambda: sw.icon("sword"),
     "starfall": si.starfall, "familiar": si.familiar_icon, "stormsweep": si.stormsweep,
     "familiar_dog": si.familiar_dog_icon, "familiar_crow": si.familiar_crow_icon, "familiar_cat": si.familiar_cat_icon,
-    "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages,
+    "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages, "corposant": si.corposant,
 }
 
 
@@ -4201,6 +4204,154 @@ def _(sp, c):
         leaf(cv, [(2, 13), (6, 12), (6.5, 16), (2.5, 17)], ink=False)
         leaf(cv, [(25, 13), (29, 12.5), (29.5, 16.5), (25.5, 17)], ink=False)
     O(sp, drawn_in)
+
+
+# --- Corposant -------------------------------------------------------------------------------------
+
+# St Elmo's fire (scripts/Corposant.cs). Every card is something more the BALL does, and every icon draws the ball doing
+# it, as the spell's own icon does (si.corposant): a pale shell, an amber rim, a white heart, tongues of storm-fire
+# streaming back the way it came. Split in two at the edge, a wake of static behind it, burning sea-blue, hung at a
+# masthead, crowning a figure ringed by the swarm.
+
+def storm_fire(cv, x, y, r, back, ramp=None):
+    """One ball of storm-fire at (x, y), its tongues streaming toward `back` (a direction): the spell's ball, any size."""
+    core, hot, mid, edge = ramp or E["lightning"]
+    ux, uy = _unit(back)
+    px, py = -uy, ux
+    for (spread, length, wave) in ((0.0, r * 2.0, 0.8), (0.6, r * 1.3, -0.6), (-0.6, r * 1.3, 0.6)):
+        dx, dy = _unit((ux + px * spread, uy + py * spread))
+        qx, qy = -dy, dx
+        steps = max(2, int(length))
+        for s in range(steps):
+            t = (s + 1.0) / steps
+            sway = math.sin(t * math.pi * 1.5) * wave
+            sx = x + dx * (r * 0.6 + length * t) + qx * sway
+            sy = y + dy * (r * 0.6 + length * t) + qy * sway
+            tone = hot if t < 0.35 else (mid if t < 0.7 else edge)
+            half = 0.3 * r * (1.0 - t)
+            k = -half
+            while k <= half + 0.01:
+                cv.set(sx + qx * k, sy + qy * k, tone if abs(k) < 0.6 else mid)
+                k += 0.8
+    cv.disc(x, y, r, r, edge)
+    cv.disc(x, y, r - 1.0, r - 1.0, mid)
+    cv.disc(x + ux * 0.3, y + uy * 0.3, max(1.0, r - 2.0), max(1.0, r - 2.0), hot)
+    cv.disc(x - ux * 0.6, y - uy * 0.6, max(0.8, r * 0.35), max(0.8, r * 0.35), core)
+
+
+def edge_crack(cv, x, y, ramp=None):
+    """Where a ball turned off the edge of the view: a white heart, four arms, the diagonals short."""
+    core, hot, mid, edge = ramp or E["lightning"]
+    for d in (1, 2):
+        for (dx, dy) in ((d, 0), (-d, 0), (0, d), (0, -d)):
+            cv.set(x + dx, y + dy, core if d == 1 else hot)
+    for (dx, dy) in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
+        cv.set(x + dx, y + dy, mid)
+    cv.set(x, y, core)
+
+
+def view_edge(cv, x, y0, y1):
+    """The edge of the screen, as the spell's icon draws it: a dashed upright in the sea's lit swell."""
+    for y in range(y0, y1 + 1):
+        if y % 3 != 2:
+            cv.set(x, y, M["lichen"][1])
+
+
+def twin_fires():
+    """Twin Fires: the ball came in along the dotted path to the edge and leaves it as two, up and down and away."""
+    c = _cv()
+    core, hot, mid, edge = E["lightning"]
+    view_edge(c, 27, 4, 27)
+    for (x, t) in ((5, edge), (9, edge), (13, mid), (17, mid), (21, hot)):
+        c.set(x, 16, t)
+    storm_fire(c, 11.5, 8.0, 3.6, (1.0, 0.55))
+    storm_fire(c, 11.5, 24.0, 3.6, (1.0, -0.55))
+    edge_crack(c, 25, 16)
+    return c
+
+
+def static_wake():
+    """Static Wake: the ball low on the left, and behind it the way it came a wake of static crackling over a skull."""
+    c = _cv()
+    core, hot, mid, edge = E["lightning"]
+    foe(c, 20.5, 12.5, 1.1)
+    # The wake: kinked strokes of static laid along the path, brightest nearest the ball.
+    for (a, b, tone) in (((26, 4), (23, 8), edge), ((22, 9), (19, 13), mid), ((18, 14), (15, 17), hot)):
+        zig(c, a, b, tone, 1.2, 2, core if tone == hot else None)
+    zig(c, (24, 12), (21, 13), hot, 0.8, 2, core)
+    storm_fire(c, 10.5, 21.5, 4.2, (1.0, -1.0))
+    return c
+
+
+def storm_lantern():
+    """Storm Lantern: the ball hung at a masthead, and the three ways it has flown out and been thrown home again."""
+    c = _cv()
+    core, hot, mid, edge = E["lightning"]
+    g = M["gold"]
+    # The mast and its yard: dark wood, lit on the left.
+    c.vline(16, 12, 28, g[3])
+    c.vline(15, 13, 28, g[2])
+    c.hline(10, 22, 17, g[3])
+    c.hline(10, 21, 16, g[2])
+    # The ways out and home: dotted spokes to a crack at the edge of the night.
+    for (ex, ey) in ((5.0, 6.0), (27.0, 6.0), (27.0, 21.0)):
+        for k in range(2, 7):
+            t = k / 7.0
+            c.set(16 + (ex - 16) * t, 8 + (ey - 8) * t, mid if k % 2 == 0 else edge)
+        edge_crack(c, int(ex), int(ey))
+    storm_fire(c, 16.0, 8.0, 3.8, (0.0, 1.0))
+    return c
+
+
+def saints_crown():
+    """Saint's Crown: a hooded figure in the middle, the swarm pressing in round him, and between them five balls
+    circling close in a crown, each streaming back along the way it turns."""
+    c = _cv()
+    w = M["wool"]
+    for k in range(5):
+        a = math.radians(-90 + 72 * k + 36)
+        foe(c, C0 + math.cos(a) * 12.0, C0 + math.sin(a) * 12.0, 0.8)
+    # The figure: a pointed hat and a cloak, dark, so the crown round him is the light on the card.
+    c.poly([(16, 10), (12.5, 19), (19.5, 19)], w[2])
+    c.line(16, 10, 13, 18, w[1])
+    c.hline(11, 21, 19, w[3])
+    c.poly([(13, 20), (19, 20), (20, 24), (12, 24)], w[3])
+    for k in range(5):
+        a = math.radians(-90 + 72 * k)
+        x, y = C0 + math.cos(a) * 8.0, C0 + math.sin(a) * 8.0
+        # It turns clockwise, so its tongues stream back anticlockwise along the ring.
+        storm_fire(c, x, y, 2.4, (math.sin(a), -math.cos(a)))
+    return c
+
+
+@card("corposant_twin_fires")
+def _(sp, c):
+    reset(sp)
+    sp.subject = twin_fires
+
+
+@card("corposant_static_wake")
+def _(sp, c):
+    reset(sp)
+    sp.subject = static_wake
+
+
+@card("corposant_spindrift")
+def _(sp, c):
+    """Spindrift: the ball re-lit sea-blue on Water's night (derive's element path), and spray flung off it."""
+    O(sp, lambda cv, x: m_drops(cv, E["water"], [(4, 20), (6, 27), (12, 29), (3, 24)]))
+
+
+@card("corposant_storm_lantern")
+def _(sp, c):
+    reset(sp)
+    sp.subject = storm_lantern
+
+
+@card("corposant_saints_crown")
+def _(sp, c):
+    reset(sp)
+    sp.subject = saints_crown
 
 
 # --- Hunter's Draw ---------------------------------------------------------------------------------

@@ -59,6 +59,8 @@ public static partial class RegressionChecks
 		ValidateFacingFamily(warnings);
 		// John Dee's opener and his Spirit Mirror on it (RegressionChecks.Folio.cs).
 		ValidateFolio(warnings);
+		// St Elmo's fire: the view it turns at, the bounce, the one-ball start, the cards and its feat (RegressionChecks.Corposant.cs).
+		ValidateCorposant(warnings);
 		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
 		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);

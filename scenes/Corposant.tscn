@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Corposant.cs" id="1"]
+
+; Corposant's balls of storm-fire: one node in the arena that carries every ball, its wake and its sparks in fixed
+; pools and draws them itself, cells on the world's 2 px grid (scripts/Corposant.cs). No collision shape - a ball
+; strikes what its path crossed this frame, widened by HitRadius and the body it meets - and no art: the ball, the
+; wake, the bolts and the cracks are drawn in code. HitRadius is the ball's drawn radius as well as its reach, grown
+; with the square root of the wizard's Area.
+[node name="Corposant" type="Node2D"]
+script = ExtResource("1")
+BaseSpeed = 430.0
+HitRadius = 12.0

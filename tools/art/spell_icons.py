@@ -591,6 +591,82 @@ def folio():
     return c
 
 
+def corposant(sky=True):
+    """Corposant, St Elmo's fire (scripts/Corposant.cs): a ball of pale storm-fire coming off the edge of the view.
+
+    Three things, in the order the eye takes them: the ball low and left of the middle - an amber rim, a pale shell and a
+    white-hot heart a step ahead of its middle, three tongues of storm-fire streaming back the way it came (it burns like
+    a flame, not a lamp, which is what keeps it apart from Stormsweep's Ball Lightning); the crack up on the right where
+    it turned, on a dashed upright that is the edge of the screen; and a dotted path into that crack from the upper left,
+    the way it went before it turned. Two crackling spurs off the ball. Lightning is pale yellow and vanishes on the
+    card's cream page (Starfall's and Stormsweep's lesson), so it is drawn on a night - the sea's, lichen's deep teal, a
+    different sky from Stormsweep's violet. `sky=False` leaves the night off (tools/art/evolution_icons.py lays its own).
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    core, hot, mid, edge = bl.ELEMENTS["lightning"]
+    if sky:
+        c.disc(15.5, 15.5, 15.0, 15.0, bl.tone("lichen", "shade"))
+        c.disc(15.5, 15.5, 14.0, 14.0, bl.tone("lichen", "deep"))
+
+    # The edge of the view: a dashed upright on the right, the colour of the sea's lit swell.
+    frame = bl.tone("lichen", "lit")
+    for y in range(4, 27):
+        if y % 3 != 2:
+            c.set(27, y, frame)
+    bx, by = 26.0, 9.0          # where it turned
+    cx, cy = 13.0, 20.0         # the ball now
+
+    # The way it went before it turned: dots in from the upper left, dimmest farthest back.
+    for (x, y, t) in ((8, 4, edge), (12, 5, edge), (16, 6, mid), (20, 7, mid), (23, 8, hot)):
+        c.set(x, y, t)
+
+    # The tongues: three streaming back toward the crack, tapering from the shell to the ramp's edge.
+    ux, uy = (bx - cx), (by - cy)
+    n = math.hypot(ux, uy)
+    ux, uy = ux / n, uy / n
+    px, py = -uy, ux
+    # Each a wedge, wide at the shell and licking to a point, with a waver along it so it reads as flame, not a ray.
+    for (spread, length, wave) in ((0.0, 10.0, 0.9), (0.6, 6.5, -0.7), (-0.6, 6.5, 0.7)):
+        dx, dy = ux + px * spread, uy + py * spread
+        m = math.hypot(dx, dy)
+        dx, dy = dx / m, dy / m
+        qx, qy = -dy, dx
+        steps = int(length)
+        for s in range(steps):
+            t = (s + 1.0) / steps
+            sway = math.sin(t * math.pi * 1.5) * wave
+            x = cx + dx * (3.0 + length * t) + qx * sway
+            y = cy + dy * (3.0 + length * t) + qy * sway
+            half = 1.6 * (1.0 - t)
+            tone = hot if t < 0.35 else (mid if t < 0.7 else edge)
+            k = -half
+            while k <= half + 0.01:
+                c.set(x + qx * k, y + qy * k, tone if abs(k) < 0.6 else (mid if t < 0.5 else edge))
+                k += 0.8
+
+    # The ball: rim, shell, body, and the heart a step ahead of its middle (down and left, the way it flies).
+    c.disc(cx, cy, 5.2, 5.2, edge)
+    c.disc(cx, cy, 4.2, 4.2, mid)
+    c.disc(cx + 0.3, cy - 0.3, 3.1, 3.1, hot)
+    c.disc(cx - 0.6, cy + 0.6, 1.7, 1.7, core)
+
+    # Two crackling spurs off the shell, down and to the left.
+    for (a, b, d) in (((8, 22), (5, 23), (4, 26)), ((12, 25), (13, 27), (11, 29))):
+        c.line(a[0], a[1], b[0], b[1], hot)
+        c.line(b[0], b[1], d[0], d[1], mid)
+
+    # The crack where it turned: a white heart, four arms, the diagonals short.
+    tx, ty = int(bx), int(by)
+    for d in range(1, 3):
+        t_ = core if d == 1 else hot
+        for (dx, dy) in ((d, 0), (-d, 0), (0, d), (0, -d)):
+            c.set(tx + dx, ty + dy, t_)
+    for (dx, dy) in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
+        c.set(tx + dx, ty + dy, mid)
+    c.set(tx, ty, core)
+    return c
+
+
 def the_taking():
     """The dark wizard's own (.ai/dark-wizard-playable.md): a hand of his dark light closing on a warm mote.
 
@@ -1334,6 +1410,7 @@ ICONS = [
     ("riptide-water", riptide, CELL),
     ("hollow-star-dark", hollow_star, CELL),
     ("folio-arcane", folio, CELL),
+    ("corposant-lightning", corposant, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
     ("contagion-poison", contagion, CELL),
     ("bramble-seed-grass", bramble_seed, CELL),

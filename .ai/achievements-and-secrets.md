@@ -84,6 +84,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Starfall | Light | Purchase | 150 |
 | Hollow Star | Darkness | Purchase | 160; nobody opens on it since 2026-11-09 (John Dee opens on Folio, `.ai/character-fit.md`) |
 | Folio | Arcane, Darkness | Feat | **Magpie**: open 10 chests in a single run (2026-11-09); John Dee opens on it |
+| Corposant | Lightning | Feat | **Storm Petrel**: defeat 500 enemies with Lightning in a single run (2026-11-09); nobody opens on it |
 | Stormsweep | Lightning | Purchase | 160 |
 | Kindled Ward | Light | Purchase | 170 |
 | Familiar | Arcane | Purchase | 170; the Coursing (Laelaps) needs it |
@@ -190,6 +191,18 @@ earned (2.3).
 | **Kindled Ward** | **The Broken Ward** | Secret | touch five notched ward stones in notch order; the ward re-forms, and its light comes to you (Mystic Ruins) | "The old wards were broken from the inside." A ward that stands on its own, from a ward made whole |
 | **Sleet Runes** | **The Buried Runes** | Secret | stand still in a drift field until the snow settles, then dig up the rune-stones it shows (Frozen Waste) | walking aims the runes; stopping is what finds them |
 | **Stormsweep** | **The Fulgurite** | Secret | stand by a glass tree in the dunes when the dry storm comes round and draws its lightning (Scorched Sands) | lightning that strikes sand leaves glass; a sweep of lightning, from where it struck |
+
+**Added 2026-11-09, after this table:** two Feats for two new spells, each measured off a best-run field in
+`LifetimeStats` added without a schema step (a save without the key reads as no run yet). **Magpie** pays Folio
+(10 chests in one run, `BestChestsInRun`). **Storm Petrel** pays Corposant (`.ai/spell-roster.md`, "Corposant"):
+*defeat 500 enemies with Lightning in a single run* (`BestLightningKillsInRun`). A Lightning kill is one numbered in
+Lightning's ink - a Lightning spell's, a spell branched into Lightning, the Lightning tier's chain - counted where
+the number is chosen (`Player.DealDamageToEnemy` -> `RunEvents.RecordLightningKill`). Not the Lightning Adept
+(Stormguard's), which counts Lightning held; this counts what Lightning killed. The storm petrel is the bird sailors
+saw before a storm, as St Elmo's fire is the light they saw in one, and a bird beside Magpie. The count was measured
+(`_BalanceHarness --minutes=15 --character=3`, seed 1234): the Stormcaller bot spread its picks over five spells and
+never took Chain Lightning past level 3, and made 310 by minute 5, 492 by minute 10 and 672 in the run - so 500 is
+most of a run with Lightning in it, or the first half of one built round it.
 
 Totals: **11 Feats, 9 Road deeds, 9 secrets** - one spell vault in each campaign chapter but the
 Emberdeep: eight on the road before the gate, and the Cursed Dungeon's, which moves past it into the

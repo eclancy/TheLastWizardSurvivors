@@ -11,7 +11,10 @@ public enum SpellTargetingMode
 	DirectionalCone = 5,
 	// The way the player is facing (Player.FacingDirection / FacingSide): the facing family, which
 	// never aims at an enemy (.ai/spell-variety.md, phase 1).
-	Facing = 6
+	Facing = 6,
+	// Nothing at all: loosed in a random direction and left to wander (Corposant, which caroms off the edges of the
+	// view - .ai/spell-variety.md section 2, the Runetracer row). The one spell that picks no target, spot or direction.
+	Unaimed = 7
 }
 
 // The primary way a spell applies damage.
@@ -66,6 +69,7 @@ public static class SpellClassificationText
 		SpellTargetingMode.MultiTarget => "at several enemies at once",
 		SpellTargetingMode.DirectionalCone => "in a cone in front of you",
 		SpellTargetingMode.Facing => "the way you are facing, never at an enemy",
+		SpellTargetingMode.Unaimed => "at nothing: it sets off any which way",
 		_ => null,
 	};
 

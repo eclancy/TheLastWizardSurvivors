@@ -36,6 +36,9 @@ public static class RunEvents
 	// Black Hares of the Broken Circle run down by a hound (Familiar.Strike): the coursing deed that frees
 	// Laelaps (AchievementDefinitions, "coursing"). One run's count - the deed asks for them in a run.
 	private static int haresCoursed;
+	// Kills numbered in Lightning's ink (Player.DealDamageToEnemy): a Lightning spell's, one branched into Lightning, the
+	// Lightning tier's chain. The Storm Petrel feat asks for them in one run, and it pays Corposant.
+	private static int lightningKills;
 	// Seconds into the run the player first took damage, or -1 if they never did. Kept as a time
 	// rather than a bool so "survive N minutes untouched" works for any N instead of only the one
 	// hardcoded five-minute question the old flag could answer.
@@ -54,6 +57,7 @@ public static class RunEvents
 		chestsOpened = 0;
 		revivesUsed = 0;
 		haresCoursed = 0;
+		lightningKills = 0;
 		firstDamageAtSeconds = -1f;
 	}
 
@@ -105,6 +109,11 @@ public static class RunEvents
 
 	public static void RecordHareCoursed() => haresCoursed++;
 
+	public static void RecordLightningKill() => lightningKills++;
+
+	/// <summary>This run's Lightning kills so far, for the harness.</summary>
+	public static int LightningKills => lightningKills;
+
 	public static void RecordFirstDamage(float atSeconds)
 	{
 		if (firstDamageAtSeconds < 0f)
@@ -144,6 +153,7 @@ public static class RunEvents
 		result.ChestsOpened = chestsOpened;
 		result.RevivesUsed = revivesUsed;
 		result.HaresCoursed = haresCoursed;
+		result.LightningKills = lightningKills;
 		// Never hit means the whole run counts as untouched.
 		result.UndamagedSeconds = firstDamageAtSeconds < 0f ? timeSurvived : firstDamageAtSeconds;
 	}

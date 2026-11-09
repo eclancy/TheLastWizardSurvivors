@@ -89,6 +89,8 @@ public class RunResult
 	public int RevivesUsed { get; set; } = 0;
 	/// <summary>Black Hares a hound ran down in the Broken Circle (the coursing deed, which frees Laelaps).</summary>
 	public int HaresCoursed { get; set; } = 0;
+	/// <summary>Kills numbered in Lightning's ink this run (Player.DealDamageToEnemy): the Storm Petrel feat, which pays Corposant.</summary>
+	public int LightningKills { get; set; } = 0;
 	/// <summary>Seconds survived before the first hit landed; equals TimeSurvived if never hit.</summary>
 	public float UndamagedSeconds { get; set; } = 0f;
 	/// <summary>The far sky (F4, .ai/second-half.md 5): the Conjunction this run was named, empty for none.</summary>

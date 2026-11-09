@@ -190,6 +190,10 @@ public static class SpellEvolutionCatalog
 			case Folio.SpellId:
 				SetupFolioEvolutions(spell);
 				break;
+			// St Elmo's fire, loosed at nothing and turned by the edges of the view.
+			case Corposant.SpellId:
+				SetupCorposantEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -3936,6 +3940,87 @@ public static class SpellEvolutionCatalog
 			VisualTag = "CommonplaceBook",
 			SynergyTag = "Ascension / Pages",
 			SynergyDescription = "Ascension: no new element. Every kill is another page; the faster they fall, the faster it turns."
+		});
+	}
+
+	// Corposant (scripts/Corposant.cs): St Elmo's fire, a ball of storm-fire loosed at nothing that turns off the edges of
+	// the view. Every card is something more the BALL does, which is this spell's and no other's: it splits at the edge,
+	// it leaves static behind it, it burns sea-blue, it comes home to hang over him, it crowns him when he is crowded.
+	// Pure Lightning, so its level 4 offers both a deepening (Static Wake) and a branch (Spindrift, into Water - the blue
+	// that St Elmo's fire really burns, and the sea it is seen over; ValidateElementPaths), and a deepening is free (the 12%
+	// is a hybrid's price). Storm Lantern deepens again at level 8: a pure spell may reach three. Nothing here ricochets off
+	// bodies or pens anything - that is the Anvil Line's (ComboCatalog) - and nothing is named Ball Lightning, which is
+	// Stormsweep's level 4. Every number is one Corposant reads: damage through Corposant.Refresh, the count through
+	// GetProjectileCountAtLevel, Spindrift's slow through the rider every strike carries; the behaviours by id. The shares
+	// on Twin Fires and Static Wake are the node's own constants, and RegressionChecks.Corposant holds the words to them.
+	private static void SetupCorposantEvolutions(SpellData spell)
+	{
+		const float spindriftSlow = 0.7f;
+		const float spindriftSeconds = 1.5f;
+		const float lanternDamage = 1.3f;
+		const int crownBalls = 1;
+		const float crownDamage = 1.2f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.TwinFiresId,
+			DisplayName = "Twin Fires",
+			Description = "On its first bounce a ball splits into twin fires that fly off their own ways, "
+				+ $"each striking for {Corposant.TwinShare * 100f:0}% of the ball.",
+			MilestoneLevel = 4,
+			VisualTag = "TwinFires",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. Half its life it covers twice the screen."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.StaticWakeId,
+			DisplayName = "Static Wake",
+			Description = "Each ball leaves a wake of static that crackles for a moment, zapping whatever stands in it "
+				+ $"for {Corposant.WakeShare * 100f:0}% of a strike.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Lightning", 1 } },
+			VisualTag = "StaticWake",
+			SynergyTag = "Lightning / Wake",
+			SynergyDescription = "Deepens Lightning. The ground it crossed bites a moment longer."
+		});
+
+		// The element path: Water, for the sea St Elmo's fire is seen over and the blue it really burns. Its rider is the
+		// drag Water carries (ElementPaths.RiderFor), on every strike and every wake zap.
+		spell.Level4Options.Add(ElementPathOption(spell, "spindrift", "Spindrift", Element.Water, spindriftSlow, spindriftSeconds,
+			"The fire burns sea-blue and its spray drenches what it strikes",
+			"Slowed where they stand, the crowd waits in the next ball's path."));
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.StormLanternId,
+			DisplayName = "Storm Lantern",
+			// Within the card's 130 characters (SpellEvolutionOption.DescriptionBudget, RegressionChecks.ValidateCardTextBudget).
+			Description = "The edges throw each ball home: it hangs over you like a masthead light, then flies out a new way. "
+				+ $"+{(lanternDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = lanternDamage,
+			BonusElementWeights = new() { { "Lightning", 1 } },
+			VisualTag = "StormLantern",
+			SynergyTag = "Ascension / Lightning",
+			SynergyDescription = "Ascension: deepens Lightning. Every ball crosses the crowd round you on its way out and back."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.SaintsCrownId,
+			DisplayName = "Saint's Crown",
+			Description = "When you are crowded, the balls circle close round you in a crown until the crowd thins. "
+				+ $"+{crownBalls} ball every cast, +{(crownDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			ProjectileCountBonus = crownBalls,
+			DamageMultiplier = crownDamage,
+			VisualTag = "SaintsCrown",
+			SynergyTag = "Ascension / Guard",
+			SynergyDescription = "Ascension: no new element. Surrounded, the storm-fire stays with you."
 		});
 	}
 }

@@ -117,6 +117,8 @@ public static class ContentValidator
 		"res://SpellData_OrbOfAges.tres",
 		// John Dee's opener (.ai/character-fit.md section 6); everyone else earns it with the Magpie feat.
 		"res://SpellData_Folio.tres",
+		// St Elmo's fire, aimed at nothing (scripts/Corposant.cs); earned with the Storm Petrel feat.
+		"res://SpellData_Corposant.tres",
 		// The combinations (ComboCatalog): never in the level-up pool, made only by fusing two ascended spells.
 		"res://SpellData_Sagittarius.tres",
 		// The Sovereign Rite (ComboCatalog's capstone, SovereignRite): a combination like the one above since 2026-11-08.

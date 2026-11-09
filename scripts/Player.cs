@@ -56,6 +56,8 @@ public partial class Player : CharacterBody2D
 	// John Dee's opener (.ai/character-fit.md section 6): one node in the arena that carries the book and every page
 	// it throws (scripts/Folio.cs, Player.Folio.cs).
 	[Export] public PackedScene FolioScene { get; set; }
+	// St Elmo's fire (scripts/Corposant.cs, Player.Corposant.cs): one node in the arena carrying every ball loosed.
+	[Export] public PackedScene CorposantScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -1308,6 +1310,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_OrbOfAges.tres"));
 		if (!spellCatalog.ContainsKey(Folio.SpellId))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Folio.tres"));
+		if (!spellCatalog.ContainsKey(Corposant.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Corposant.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -2724,13 +2728,14 @@ public partial class Player : CharacterBody2D
 		}
 		finalDamage = Math.Max(1, finalDamage);
 
+		// The element the hit is numbered in (DamageNumberInk). GetNumberElement is cached on the spell, so this is a few
+		// reference compares - nothing allocated per hit. It also says whose a kill is for the Storm Petrel feat, below.
+		Element? inked = numberElement ?? source?.GetNumberElement();
 		if (enemy is Enemy struck)
 		{
 			if (hitFrom is Vector2 origin)
 				struck.NoteIncomingHitOrigin(origin);
-			// The number wears the element of what dealt it (DamageNumberInk). GetNumberElement is cached on the
-			// spell, so this is a few reference compares and an array read - nothing allocated per hit.
-			struck.TakeHit(finalDamage, isCrit, DamageNumberInk.For(numberElement ?? source?.GetNumberElement(), isCrit));
+			struck.TakeHit(finalDamage, isCrit, DamageNumberInk.For(inked, isCrit));
 			// The Pricking Pin marks what a crit struck - after it lands, so the crit is not raised.
 			if (isCrit)
 				PrickOnCrit(struck);
@@ -2751,6 +2756,10 @@ public partial class Player : CharacterBody2D
 			SpreadSingedLock(defeatedEnemy.GlobalPosition);
 			// The Hungry Hedge (Baba Yaga's form): what the vine kills feeds it (Player.HungryHedge.cs).
 			FeedHungryHedge(source);
+			// A kill numbered in Lightning's ink - a Lightning spell's, a spell branched into Lightning, the Lightning
+			// tier's chain - is a Lightning kill: what the Storm Petrel feat counts (it pays Corposant).
+			if (inked == Element.Lightning)
+				RunEvents.RecordLightningKill();
 		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.
@@ -4868,6 +4877,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals(TheTaking.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireTheTaking(spell, TheTakingScene);
 		else if (spell.Id.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireOrbOfAges(spell, OrbOfAgesScene);
 		else if (spell.Id.Equals(Folio.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireFolio(spell, FolioScene);
+		else if (spell.Id.Equals(Corposant.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireCorposant(spell, CorposantScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -8123,6 +8133,8 @@ public partial class Player : CharacterBody2D
 			ReleaseFataMorgana();
 		// The book lives in the arena too, with every page it has thrown (Player.Folio.cs).
 		ReleaseFolio(spell);
+		// And Corposant's node, with every ball in flight (Player.Corposant.cs).
+		ReleaseCorposant(spell);
 	}
 
 	// --- Level-up charges ---
@@ -9196,7 +9208,14 @@ public partial class Player : CharacterBody2D
 					parts.Add(before > 0.5f ? $"Range {PercentDelta(before, spell.GetRangeAtLevel(nextLevel))}" : "Longer range");
 			}
 			if (upgrade.Effect != SpellEffect.None && MathF.Abs(upgrade.EffectValue) > 0.001f)
-				parts.Add(FormatSpellEffectUpgrade(upgrade.Effect, upgrade.EffectValue));
+			{
+				// Corposant's ZoneDuration is how long a ball burns, so its line is a share of the life it had - in the
+				// player's words, never seconds, and never "zone" for a ball (Corposant.LifeAt).
+				if (upgrade.Effect == SpellEffect.ZoneDuration && spell.Id.Equals(Corposant.SpellId, StringComparison.OrdinalIgnoreCase))
+					parts.Add($"Duration {PercentDelta(Corposant.LifeAt(spell, nextLevel - 1), Corposant.LifeAt(spell, nextLevel))}");
+				else
+					parts.Add(FormatSpellEffectUpgrade(upgrade.Effect, upgrade.EffectValue));
+			}
 		}
 
 		if (parts.Count > 0)
@@ -9228,6 +9247,8 @@ public partial class Player : CharacterBody2D
 		"sleet_runes" => "Runes",
 		// Folio's projectiles are the pages a turn of the book throws (scripts/Folio.cs).
 		"folio" => "Pages",
+		// Corposant's projectiles are the balls of storm-fire a cast looses (scripts/Corposant.cs).
+		"corposant" => "Balls",
 		// The Familiar counts in its form's noun (Hounds, Crows, Cats - SpellVariant.CountNoun); this is the
 		// template's, which no run plays.
 		"familiar" => "Hounds",

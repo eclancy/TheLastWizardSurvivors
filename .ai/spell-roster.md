@@ -143,6 +143,42 @@ from Hollow Star: every tenth page the mirror opens over the thickest pack and d
 its reach to him, and every orb it brings turns a page. Earned by everyone else through the **Magpie** Feat
 (open 10 chests in a single run, `LifetimeStats.BestChestsInRun`). Built `84e24368`; numbers untuned.
 
+### Corposant - the spell aimed at nothing (2026-11-09)
+
+Sailors' word for St Elmo's fire. Eric approved it from `.ai/character-fit.md`'s queue: "a ball of storm-fire
+that bounces around the screen for a few seconds, off the edges of the visible camera view, zapping what it
+passes through". The roster's empty row was `spell-variety.md` section 2's Runetracer: **the only spell that picks
+no target, no spot and no direction** (`SpellTargetingMode.Unaimed`, new for it). Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 37 | **Corposant** (`scripts/Corposant.cs`, `Player.Corposant.cs`) | Lightning | **nothing**: balls loosed in random directions, spread evenly round a random start, turned only by **the edges of the camera's view** | timer (3.0 s to 2.6 s), every cast whatever is near | **fight in the open**: a maze wall grounds a ball where it touches | a piercing ball that strikes everything its path passes, each body at most every half second | the whole screen |
+
+- **The edges are the camera's**, read once a frame from the canvas transform (`Corposant.WorldView`), so they
+  follow the wizard and are right on the PC's 1280x720 and the phone's 720x1280 canvas at zoom 0.85. An axis turns
+  only while the ball is past that edge and still heading out (`Corposant.Bounce`): a camera that runs past a ball
+  never throws it about. Headless, the view is the canvas over the zoom, centred on him.
+- **Numbers, first guesses, untuned:** 6 a strike at level 1 to 15 at 8; one ball at 1, two at 3, three at 6; a
+  ball burns 3 s, 3.5 from level 5, 4 at 8 (`Corposant.BaseLifeSeconds` plus `ZoneDuration` lines, said on the
+  card as "Duration +17%"). About one ball out at level 1, four or five at 8.
+- **Cost:** one walk of `EnemyRegistry.Snapshot` a frame serves every ball, the wake and the crown's crowd count -
+  one position read a body whatever the count of balls - and nothing is allocated per frame (fixed pools; a struck
+  body is remembered by reference). Lightning is not warm (`LightPool.IsWarm`), so a ball lights nothing in the dark.
+- **Sound:** none new. The launch is the Lightning cast cue (the cast is always Fired) and every strike the
+  Lightning impact, throttled in `SfxPlayer`.
+
+Cards (`SpellEvolutionCatalog.SetupCorposantEvolutions`): **Twin Fires** (L4: on its first bounce a ball splits in
+two, each twin striking for 70%), **Static Wake** (L4, +Lightning: a wake of static that crackles 0.8 s and zaps
+what stands in it for 30% of a strike), **Spindrift** (L4, +Water, the element path: the fire burns sea-blue and
+its hits slow 30% for 1.5 s; +20%), **Storm Lantern** (L8, +Lightning: the edges throw each ball home, where it
+hangs over him like a masthead light, then flies out a new way; +30%), **Saint's Crown** (L8: while 8 or more are
+close round him the balls circle him in a crown until fewer than 5 are; +1 ball, +20%). Nothing ricochets off
+bodies or pens anything - that is the Anvil Line's - and nothing is named Ball Lightning (Stormsweep's level 4).
+Earned through the **Storm Petrel** Feat (defeat 500 enemies with Lightning in a single run,
+`LifetimeStats.BestLightningKillsInRun`; `.ai/achievements-and-secrets.md` section 2.1). Seen in `_UiShot` on both
+canvases and every card exercised once; `_BalanceHarness --minutes=3 --spell=corposant --character=1` fired and killed
+(22 kills in minute 1, 65% of the bot's damage by minute 3). Not played, not heard, not seen on a phone.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

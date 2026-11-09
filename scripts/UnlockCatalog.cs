@@ -219,6 +219,9 @@ public static class UnlockCatalog
 		// John Dee's opener since 2026-11-09 (.ai/character-fit.md section 6): the collector's book, earned by collecting
 		// as he does. He holds it whatever the save owns; everyone else opens ten chests in one run (the Magpie feat).
 		FromAchievement("folio", "magpie", "Open ten chests in a single run."),
+		// St Elmo's fire, aimed at nothing (scripts/Corposant.cs): earned by fighting with Lightning, the Storm Petrel feat.
+		FromAchievement("corposant", "storm_petrel",
+			$"Defeat {AchievementDefinitions.StormPetrelLightningKills} enemies with Lightning in a single run."),
 		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
 		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run."),
 		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element."),

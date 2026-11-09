@@ -1,0 +1,87 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/corposant-lightning.png" id="3_icon"]
+
+; Corposant (scripts/Corposant.cs), 2026-11-09: sailors' word for St Elmo's fire. A ball of storm-fire loosed in a random
+; direction that bounces off the edges of the camera's view for a few seconds, striking everything it passes. Pure
+; Lightning, one of the thin elements. Nobody's opener; everyone earns it with the Storm Petrel feat (Lightning kills in
+; one run). TargetingMode 7 is Unaimed - it picks no target, spot or direction - and DamageShape 1 a projectile.
+;
+; BaseDamage is ONE STRIKE of one ball on one body; a ball strikes the same body at most every half second
+; (Corposant.StrikeEvery). BaseCooldown is the cast (the ONE fire loop). BaseProjectileCount is the balls a cast looses
+; (plus Amount). The ball's life is Corposant.BaseLifeSeconds (3 s) plus the ZoneDuration lines here (Effect 13); the
+; card says it as "Duration +17%", never in seconds. No range: the edges of the view are its range.
+;
+; FIRST GUESSES, untuned. Spells start small (Eric, 2026-11-02): one ball at level 1, two at 3, three at 6, so about one
+; ball out at level 1 and four or five at level 8 (3 balls x 4 s over 2.6 s). Written out in full so
+; Player.EnsureRelevantLevelUps generates nothing of its own (ScalingTagsMask 8211: Damage, Cooldown, ProjectileCount,
+; Duration): every level adds damage and even levels shorten the cast by 0.1 s. Level 8: 15 a strike, three balls every
+; 2.6 s, each burning 4 s.
+
+[sub_resource type="Resource" id="Resource_corposant_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 1
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_corposant_lvl3"]
+script = ExtResource("2")
+Level = 3
+DamageBonus = 1
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_corposant_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 1
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_corposant_lvl5"]
+script = ExtResource("2")
+Level = 5
+DamageBonus = 1
+Effect = 13
+EffectValue = 0.5
+
+[sub_resource type="Resource" id="Resource_corposant_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 1
+CooldownBonus = -0.1
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_corposant_lvl7"]
+script = ExtResource("2")
+Level = 7
+DamageBonus = 2
+
+[sub_resource type="Resource" id="Resource_corposant_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 2
+CooldownBonus = -0.1
+Effect = 13
+EffectValue = 0.5
+
+[resource]
+script = ExtResource("1")
+Tagline = "Storm-fire bounces off the screen."
+Id = "corposant"
+Name = "Corposant"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 6
+BaseCooldown = 3.0
+BaseProjectileCount = 1
+BaseRange = 0.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_corposant_lvl2"), SubResource("Resource_corposant_lvl3"), SubResource("Resource_corposant_lvl4"), SubResource("Resource_corposant_lvl5"), SubResource("Resource_corposant_lvl6"), SubResource("Resource_corposant_lvl7"), SubResource("Resource_corposant_lvl8")])
+Description = "A ball of pale storm-fire leaves you in a random direction and bounces off the edges of the screen for a few seconds, burning through every enemy it passes. Walls ground it."
+Icon = ExtResource("3_icon")
+TargetingMode = 7
+DamageShape = 1
+ScalingTagsMask = 8211
+ElementWeights = {
+"Lightning": 1
+}

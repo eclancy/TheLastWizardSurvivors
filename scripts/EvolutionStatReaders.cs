@@ -329,6 +329,13 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"Folio.Refresh, Folio.Strike and Player.FireFolio (pages a timed turn throws plus Amount; Range is the reach a page finds its quarry in; Torn Leaf, Inkblot, Gilt Edge, Bound Volume, Commonplace Book and the Spirit Mirror by id)",
 			SpellEffect.CritDamage),
+		// St Elmo's fire (scripts/Corposant.cs): Corposant.Refresh reads the cast's numbers, Player.FireCorposant the count.
+		// Projectiles and Amount are the balls a cast looses; ZoneDuration is a ball's life (Corposant.LifeAt); every strike
+		// and wake zap passes the spell as its source, so Spindrift's slow rides it. No Range (the view's edges are its
+		// range), no Area or Scale on a card (the ball grows with the wizard's own Area), no Speed (no card sets one).
+		[Corposant.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Rider | EvolutionStat.Amount,
+			"Corposant.Refresh and Player.FireCorposant (balls a cast looses plus Amount; ZoneDuration is a ball's life; Twin Fires, Static Wake, Spindrift's repaint, Storm Lantern and Saint's Crown by id)",
+			SpellEffect.ZoneDuration, SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",
