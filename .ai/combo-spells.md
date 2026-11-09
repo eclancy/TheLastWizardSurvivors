@@ -472,6 +472,15 @@ gods open on their own Conjunctions the same way).
 
 ---
 
+**The Conjunction ladder (2026-11-09, `.ai/conjunction-progression.md` section 6)** changes how a save comes to know a
+recipe and works toward it, and nothing of the recipe itself - both parents at 8 down both named paths still. Once the
+Conjunctions lesson is learned a recipe is shown from **either** half (`ConjunctionLadder.IsShown`; section 2's "owns both
+parents" stays the rule before it, and the Feat row still reads "Conjunction: ???" until made), the missing half by its
+locked hint; one recipe may be pinned, its checklist on the pause screen and its next step in the quest corner; a level 4
+path that would name a fourth element is marked "Seals ..." beside section 2's level 8 rings. Kindred Draw (a Power) leans
+the deal toward a held parent's partner; the Archivist's lesson lets a held pair's named paths count each other's tags
+toward their element gates; Nostradamus, freed, foretells one recipe a campaign run, dealt by the far sky's favour.
+
 ## 7. Shadow Bolt - Void Lance + Contagion (fester). Built 2026-11-07
 
 Eric, 2026-11-05 (in-flight item 17): *"Shadow Bolt should become a combination spell"* - move it

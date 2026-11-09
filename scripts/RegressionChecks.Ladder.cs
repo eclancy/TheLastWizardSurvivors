@@ -26,6 +26,7 @@ public static partial class RegressionChecks
 		ValidateLadderSealMark(warnings);
 		ValidateKindredDraw(warnings);
 		ValidatePairShares(warnings);
+		ValidateForetell(warnings);
 		if (warnings.Count == before)
 			GD.Print($"ContentValidator: the Conjunction ladder, rungs I-II - {ComboCatalog.Fusions.Count()} recipes shown from one half only once learned, the pin, Suits and the level 4 seal mark agree, Kindred Draw leans and never adds.");
 	}
@@ -337,6 +338,79 @@ public static partial class RegressionChecks
 			warnings.Add($"Ladder III: '{ConjunctionLadder.PairShareDeedId}' should be the Archivist's deed and say it teaches a lesson.");
 		if (warnings.Count == before)
 			GD.Print($"ContentValidator: ladder III, the pair's share at level 7 - {string.Join(", ", table)}; never off its deed, a third Ascension, an unheld partner or a sealed recipe; never stacked with the far sky's waiver.");
+	}
+
+	// RUNG IV, Nostradamus foretells (ConjunctionLadder.Foretold): nothing before Nostradamus is freed or Conjunctions
+	// are learned; what may be foretold is exactly what the far sky may name for that wizard (never his opener, never his
+	// own spell's recipe, both parents dealable); never on the far shore, in a Boss Rush or off the road; the pin stands
+	// in until a choice is made; a press walks every candidate and nothing, and comes round.
+	private static void ValidateForetell(List<string> warnings)
+	{
+		int before = warnings.Count;
+		string choiceBefore = ConjunctionLadder.ForetoldChoice, toolBefore = ConjunctionLadder.ForetellToolOverride;
+		ConjunctionLadder.ForetellToolOverride = null;
+		try
+		{
+			string[] every = UnlockCatalog.AllSpellIds.ToArray();
+			SaveData unfreed = LadderSave(Teaching.Conjunctions, every);
+			SaveData early = LadderSave(Teaching.Apotheosis, every);
+			early.UnlockedCharacterIds.Add(ConjunctionLadder.ForetellerId);
+			SaveData earned = LadderSave(Teaching.Conjunctions, every);
+			earned.UnlockedCharacterIds.Add(ConjunctionLadder.ForetellerId);
+			StageDefinition road = StageCatalog.Campaign.FirstOrDefault(s => s.IsPlayable);
+			StageDefinition farShore = StageCatalog.FarShore.FirstOrDefault();
+			int characters = 0, foretellable = 0;
+			foreach (CharacterData character in CharacterRoster.GetAll().Where(c => c != null))
+			{
+				characters++;
+				if (ConjunctionLadder.ForetellCandidates(unfreed, character).Count > 0)
+					warnings.Add($"Ladder IV: '{character.Id}' may be foretold a recipe before Nostradamus is freed.");
+				if (ConjunctionLadder.ForetellCandidates(early, character).Count > 0)
+					warnings.Add($"Ladder IV: '{character.Id}' may be foretold a recipe before Conjunctions are learned.");
+				List<ComboDefinition> candidates = ConjunctionLadder.ForetellCandidates(earned, character);
+				List<ComboDefinition> sky = FarSky.Candidates(earned, character.Id, FarSky.OwnSpellOf(character));
+				if (!candidates.SequenceEqual(sky))
+					warnings.Add($"Ladder IV: what may be foretold for '{character.Id}' is not what the far sky may name.");
+				if (candidates.Count == 0)
+					continue;
+				foretellable++;
+				// The pin stands in until a choice is made, and only if it may be foretold.
+				ConjunctionLadder.ForetoldChoice = null;
+				earned.PinnedRecipeId = candidates[0].Id;
+				if (road != null && ConjunctionLadder.Foretold(earned, character, road, false) != candidates[0])
+					warnings.Add($"Ladder IV: the pin '{candidates[0].Id}' does not stand in for an unmade choice for '{character.Id}'.");
+				if (farShore != null && ConjunctionLadder.Foretold(earned, character, farShore, false) != null)
+					warnings.Add($"Ladder IV: '{character.Id}' is foretold a recipe on the far shore, where the sky's night wins.");
+				if (road != null && ConjunctionLadder.Foretold(earned, character, road, true) != null)
+					warnings.Add($"Ladder IV: '{character.Id}' is foretold a recipe in a Boss Rush.");
+				// A press walks every candidate, then nothing, and comes round.
+				if (road != null)
+				{
+					var seen = new List<string>();
+					for (int press = 0; press <= candidates.Count + 1; press++)
+					{
+						ConjunctionLadder.CycleForetold(earned, character, road);
+						seen.Add(ConjunctionLadder.Foretold(earned, character, road, false)?.Id ?? "-");
+					}
+					if (!candidates.All(c => seen.Contains(c.Id)) || !seen.Contains("-"))
+						warnings.Add($"Ladder IV: pressing the foretelling for '{character.Id}' does not walk every recipe and nothing ([{string.Join(",", seen)}]).");
+				}
+				string own = FarSky.OwnSpellOf(character);
+				foreach (ComboDefinition recipe in candidates)
+				{
+					if (ComboCatalog.StartsFused(recipe, character.Id) || (!string.IsNullOrEmpty(own) && recipe.Ingredients.Any(i => i.SpellId == own)))
+						warnings.Add($"Ladder IV: '{character.Id}' may be foretold '{recipe.Id}', which he opens on or which names his own spell.");
+				}
+			}
+			earned.PinnedRecipeId = string.Empty;
+			if (warnings.Count == before)
+				GD.Print($"ContentValidator: ladder IV, Nostradamus foretells - {foretellable} of {characters} wizards have a recipe to be foretold on a save with every spell; nothing before he is freed or the lesson learned, never on the far shore or a Boss Rush, the far sky's rules for what may be named.");
+		}
+		finally
+		{
+			ConjunctionLadder.ForetoldChoice = choiceBefore;
+			ConjunctionLadder.ForetellToolOverride = toolBefore;
+		}
 	}
 
 	// A recipe's parent from its resource at <paramref name="level"/>; at 8 down the named path, or its other one.

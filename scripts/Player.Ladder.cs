@@ -10,8 +10,10 @@ using TheOneHeMissed.scripts;
 // and the level 4 page's mark on a path that would make the pair name a fourth element and seal it (NoteRecipeSeals).
 // Rung II, Kindred Draw: the deal's lean toward a held parent's partner, and toward both parents' upgrades once both
 // are held (ApplyKindredDrawLean), re-weighing only cards the deal already holds - which card, never whether.
+// Rung III, the pair shares its light: a held pair's named paths count each other's tags toward their element gates
+// (EvaluateElementGateInRun). Rung IV, Nostradamus foretells: the foretold recipe, dealt by the far sky's favour.
 //
-// Neither changes ComboCatalog.Evaluate, the Ascension's gates, XP, rerolls, bans or a tag: the recipe is Eric's, both
+// None changes ComboCatalog.Evaluate, the Ascension's gates, XP, rerolls, bans or a tag: the recipe is Eric's, both
 // parents at 8 down both named paths.
 public partial class Player
 {
@@ -28,7 +30,54 @@ public partial class Player
 
 	private SaveData LadderSave => GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
 
+	// --- rung IV: Nostradamus foretells ---------------------------------------------------------------------
+	//
+	// The foretold recipe is dealt by the far sky's favour itself (Player.FarSky.cs: FavouredRecipe, FavourHolds) - its
+	// parents first when a slot is free, their upgrades always in the hand, the named Ascension first on the level 8
+	// page - and by nothing else: no Arcane Energy and no Feat (those stay the sky's, FarSkyMade), and no waiver (the
+	// far shore's alone). On the far shore the sky's night wins: a run with tonight's recipe is foretold nothing.
+
+	/// <summary>The recipe Nostradamus foretold for this run, or null (Node2DGame.StartForetold; ConjunctionLadder.Foretold).</summary>
+	public ComboDefinition ForetoldRecipe { get; private set; }
+
+	/// <summary>True once the foretold recipe was made this run.</summary>
+	public bool ForetoldMade { get; private set; }
+
+	/// <summary>Names the foretold recipe for this run. Called once, as it starts, after the far sky's - which wins.</summary>
+	public void BeginForetold(ComboDefinition recipe)
+	{
+		ForetoldRecipe = FarSkyRecipe == null ? recipe : null;
+		ForetoldMade = false;
+		if (ForetoldRecipe != null)
+			GD.Print($"FORETOLD: Nostradamus foretells {FarSky.Describe(ForetoldRecipe)}; its two spells come to the hand first");
+	}
+
+	/// <summary>Whether the foretold recipe's favour still holds - FarSkyFavourHolds' rule, for the foretold recipe.</summary>
+	public bool ForetoldFavourHolds
+	{
+		get
+		{
+			if (ForetoldRecipe == null || ForetoldMade || !ConjunctionsLearned || SovereignSpell != null)
+				return false;
+			ComboStanding standing = EvaluateCombo(ForetoldRecipe);
+			return !standing.Taken && !standing.Sealed;
+		}
+	}
+
+	// TryFuse's word, through NoteFarSkyFusion: the foretold recipe made.
+	private void NoteForetoldFusion(ComboDefinition recipe)
+	{
+		if (ForetoldRecipe == null || ForetoldMade || recipe == null
+			|| !recipe.Id.Equals(ForetoldRecipe.Id, StringComparison.OrdinalIgnoreCase))
+			return;
+		ForetoldMade = true;
+		GD.Print($"FORETOLD: {recipe.Name} made, at player level {CurrentLevel}");
+	}
+
 	// --- rung III: the pair shares its light ----------------------------------------------------------------
+
+	/// <summary>Tools only (_UiShot --seal-page): a made-up level 4 page marked as GetLevelUpOptions marks a real one.</summary>
+	public void MarkRecipeSeals(LevelUpOption option, SpellData spell) => NoteRecipeSeals(option, spell);
 
 	/// <summary>
 	/// Whether this run plays rung III (the Archivist's lesson learned; a tool's --pair-shares wins). Read once at the

@@ -14,13 +14,26 @@ using TheOneHeMissed.scripts;
 // once made (ConjunctionLadder.ShownName): until then its result is sealed, as everywhere else.
 public partial class Node2DGame
 {
-	// The pinned recipe this run plays under, read live from the save (a pin made in the Codex over the pause screen
-	// shows on the next reading), and only on a run that has learned Conjunctions (the run's own flag).
+	// The recipe this run follows: the one Nostradamus foretold for it (rung IV), else the pinned one, read live from
+	// the save (a pin made in the Codex over the pause screen shows on the next reading) - and only on a run that has
+	// learned Conjunctions (the run's own flag).
 	private ComboDefinition PinnedRecipeNow()
 	{
-		if (IsBossRush || player == null || !IsInstanceValid(player) || !player.ConjunctionsLearned)
+		if (IsBossRush || player == null || !IsInstanceValid(player))
 			return null;
-		return ConjunctionLadder.Pinned(CurrentSaveData());
+		if (player.ForetoldRecipe != null)
+			return player.ForetoldRecipe;
+		return player.ConjunctionsLearned ? ConjunctionLadder.Pinned(CurrentSaveData()) : null;
+	}
+
+	// Rung IV, Nostradamus foretells: called once from _Ready, after StartFarSky - the far sky's night wins, so a run
+	// with tonight's recipe is foretold nothing (Player.BeginForetold). ConjunctionLadder.Foretold says what, and where.
+	private void StartForetold()
+	{
+		if (player == null || !IsInstanceValid(player))
+			return;
+		player.BeginForetold(ConjunctionLadder.Foretold(CurrentSaveData(), CharacterRoster.GetByIndex(Global.SelectedCharacterIdx),
+			StageCatalog.GetByIndex(Global.SelectedStageIdx), IsBossRush));
 	}
 
 	/// <summary>The quest corner's one line for the pinned recipe, or nothing when none is pinned.</summary>
@@ -53,11 +66,14 @@ public partial class Node2DGame
 		var box = new VBoxContainer { Name = "EscapePinnedRecipe" };
 		box.AddThemeConstantOverride("separation", 4);
 		box.AddChild(BuildDetailLabel(ConjunctionLadder.Describe(recipe, CurrentSaveData()), PauseInk.Ink, ResponsiveLayout.TextRole.Body));
+		bool foretold = player.ForetoldRecipe == recipe;
+		if (foretold && !list.Made && !list.Sealed)
+			box.AddChild(BuildDetailLabel("Nostradamus foretold it: its two spells come to your hand first.", PauseInk.InkSoft));
 		foreach (RecipeCheck check in list.Lines)
 			box.AddChild(BuildChecklistLine(check));
 		if (!list.Made && !list.Sealed)
 			box.AddChild(BuildDetailLabel($"Next: {list.NextStep}", PauseInk.InkSoft));
-		return BuildEscapeSection("Pinned Conjunction", BuildInfoFrame(box, PauseInk.Face, PauseInk.Edge, focusStop: true));
+		return BuildEscapeSection(foretold ? "Foretold Conjunction" : "Pinned Conjunction", BuildInfoFrame(box, PauseInk.Face, PauseInk.Edge, focusStop: true));
 	}
 
 	// One line behind its own stat glyph (.ai/level-up-screen.md 4a), done in the done ink, closed in the flag's.

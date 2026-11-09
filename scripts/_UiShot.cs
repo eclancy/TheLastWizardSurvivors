@@ -1501,6 +1501,17 @@ public partial class _UiShot : Node
 				ladderLearned = true;
 			else if (arg.StartsWith("--pin="))
 				ladderPin = arg.Substring("--pin=".Length).Trim();
+			else if (arg.StartsWith("--foretell="))
+				ConjunctionLadder.ForetellToolOverride = arg.Substring("--foretell=".Length).Trim();
+			else if (arg == "--free-foreteller")
+				ladderFreeForeteller = true;
+			else if (arg.StartsWith("--seal-page="))
+			{
+				ladderSealSpellId = arg.Substring("--seal-page=".Length).Trim();
+				ShowMutation = true;
+				ForceLevelUp = true;
+				KeepLevelUp = true;
+			}
 			// Gameplay wants hundreds of frames before there is a crowd worth photographing, and
 			// at 1x that is ten real seconds of waiting per shot.
 			else if (arg.StartsWith("--timescale="))
@@ -3380,7 +3391,7 @@ public partial class _UiShot : Node
 				&& owner.GetEquippedSpells().Count > 0)
 			{
 				mutationShown = true;
-				SpellData spell = farSkyPageSpell ?? owner.GetEquippedSpells()[0];
+				SpellData spell = farSkyPageSpell ?? LadderSealSpell(owner) ?? owner.GetEquippedSpells()[0];
 				// --far-sky-page: the real offer, with its locks and the far sky's waiver, when the strip has one.
 				LevelUpOption real = farSkyPage
 					? owner.GetAscensionOffers().FirstOrDefault(o => o.SpellId == spell.Id && !ComboCatalog.IsComboOption(o))
@@ -3406,6 +3417,9 @@ public partial class _UiShot : Node
 					option.SpellElementTags[pair.Key.ToString()] = pair.Value;
 				if (lockBranch && option.EvolutionChoices.Count > 1)
 					option.EvolutionLockReason[option.EvolutionChoices[^1].Id] = "Requires 4 Darkness tags (1/4)";
+				// --seal-page (rung I of the Conjunction ladder): the level 4 page's "Seals ..." marks, as the real offer has them.
+				if (mutationMilestone == 4)
+					owner.MarkRecipeSeals(option, spell);
 				typeof(LevelUpMenu).GetMethod("BuildEvolutionSelectionButtons",
 						System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
 					?.Invoke(menu, new object[] { option });

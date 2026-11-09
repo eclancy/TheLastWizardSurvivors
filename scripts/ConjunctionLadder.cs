@@ -285,11 +285,12 @@ public static class ConjunctionLadder
 	public static bool? PairShareToolOverride { get; set; }
 
 	/// <summary>
-	/// The doc's fallback (section 4, decision rule 3): the partner counts at most 1 toward each named path. Off - the
-	/// rule ships at full strength (Eric's question 1, as recommended) - unless the measurement says recipes land before
-	/// pace 10. The harness's <c>--pair-shares=half</c> turns it on for one run.
+	/// The doc's fallback (section 4, decision rule 3): the partner counts at most 1 toward each named path. ON: Eric's
+	/// question 1 was "full strength; half if the bot then makes recipes before pace 10", and at full strength the planned
+	/// bot made them at 7.3-9.4 on four of six C runs (.ai/conjunction-progression.md section 6, "Measured"). The
+	/// harness's <c>--pair-shares=full</c> measures the full rule for one run.
 	/// </summary>
-	public static bool PairShareHalf { get; set; }
+	public static bool PairShareHalf { get; set; } = true;
 
 	/// <summary>
 	/// What the partner adds to a named path's element gate (rung III, idea 8): while both parents of a recipe are held,
@@ -332,6 +333,67 @@ public static class ConjunctionLadder
 			}
 		}
 		return (best, by);
+	}
+
+	// --- rung IV: Nostradamus foretells ---------------------------------------------------------------------
+
+	/// <summary>The seer whose freeing earns it (the seer's voice, the Court, chapter 12).</summary>
+	public const string ForetellerId = "nostradamus";
+
+	/// <summary>
+	/// Tools only (_BalanceHarness and _UiShot <c>--foretell=ID|off</c>): a recipe's id foretells that recipe on any
+	/// chapter, whatever the save has earned; "off" foretells nothing. Null plays by the game's rule.
+	/// </summary>
+	public static string ForetellToolOverride { get; set; }
+
+	/// <summary>
+	/// The recipe named on the world map this session: null when never chosen (the pin stands in for it, if it may be
+	/// foretold), empty for "nothing". Not saved - the choice is made before each run, and the pin is the save's.
+	/// </summary>
+	public static string ForetoldChoice { get; set; }
+
+	/// <summary>Rung IV is earned: Nostradamus is freed, and the Conjunctions lesson learned. Nothing of it is shown before.</summary>
+	public static bool ForetellEarned(SaveData save) =>
+		save != null && Teachings.HasLearned(save, Teaching.Conjunctions) && GlobalStatsManager.IsCharacterUnlocked(save, ForetellerId);
+
+	/// <summary>
+	/// What may be foretold for this wizard: exactly what the far sky may name for him (FarSky.Candidates - a fusion of
+	/// two spells, never the one he opens on, never one naming his own spell, both parents dealable from the save), so
+	/// the two never disagree on what can be made. Empty until the rung is earned.
+	/// </summary>
+	public static List<ComboDefinition> ForetellCandidates(SaveData save, CharacterData character) =>
+		!ForetellEarned(save) || character == null
+			? new List<ComboDefinition>()
+			: FarSky.Candidates(save, character.Id, FarSky.OwnSpellOf(character));
+
+	/// <summary>A campaign chapter: never a Boss Rush, never the far shore (there the sky's night wins), never off the road.</summary>
+	public static bool MayForetellOn(StageDefinition stage, bool bossRush) =>
+		!bossRush && stage != null && !StageCatalog.IsOnFarShore(stage) && StageCatalog.CampaignPositionOf(stage.Id) >= 0;
+
+	/// <summary>
+	/// The recipe a run on <paramref name="stage"/> is foretold, or null: the choice made on the world map (the pin
+	/// until one is made), if it may still be foretold for this wizard on this chapter. A tool's override wins.
+	/// </summary>
+	public static ComboDefinition Foretold(SaveData save, CharacterData character, StageDefinition stage, bool bossRush)
+	{
+		if (ForetellToolOverride != null)
+			return ForetellToolOverride.Equals(FarSky.Off, StringComparison.OrdinalIgnoreCase) ? null
+				: ComboCatalog.ForId(ForetellToolOverride) is { IsRite: false } forced ? forced : null;
+		if (!MayForetellOn(stage, bossRush))
+			return null;
+		string id = ForetoldChoice ?? Pinned(save)?.Id;
+		if (string.IsNullOrEmpty(id))
+			return null;
+		return ForetellCandidates(save, character).FirstOrDefault(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>The world map's press: the next recipe that may be foretold, then nothing, then round again.</summary>
+	public static void CycleForetold(SaveData save, CharacterData character, StageDefinition stage)
+	{
+		List<ComboDefinition> candidates = ForetellCandidates(save, character);
+		ComboDefinition now = Foretold(save, character, stage, bossRush: false);
+		int at = now == null ? -1 : candidates.IndexOf(now);
+		ForetoldChoice = at + 1 < candidates.Count ? candidates[at + 1].Id : string.Empty;
 	}
 
 	private static int Lean(List<LevelUpOption> pool, List<float> weights, HashSet<string> spellIds, float multiplier)

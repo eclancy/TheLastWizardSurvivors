@@ -736,6 +736,8 @@ public partial class Node2DGame : Node2D
 		StartChapterRules();
 		// F4, the far sky: tonight's Conjunction for this run, if any (Node2DGame.FarSky.cs).
 		StartFarSky();
+		// Rung IV of the Conjunction ladder: the recipe Nostradamus foretold, dealt by the far sky's favour (Node2DGame.Ladder.cs).
+		StartForetold();
 	}
 
 	// The chapter's rules, if it has any (ChapterRulesCatalog). A Node under the run, so it can process

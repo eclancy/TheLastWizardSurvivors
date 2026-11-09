@@ -10,10 +10,19 @@ public partial class _UiShot
 {
 	private bool ladderLearned;
 	private string ladderPin;
+	// --free-foreteller: Nostradamus freed (rung IV earned) on the shot's save, for the world map's foretelling.
+	private bool ladderFreeForeteller;
+	// --seal-page=SPELL: the level 4 page (--show-mutation) for that held spell (give it with --demo-spells), with the
+	// "Seals ..." marks rung I puts on a path that would make a shown recipe name a fourth element.
+	private string ladderSealSpellId;
+
+	private SpellData LadderSealSpell(Player owner) =>
+		string.IsNullOrEmpty(ladderSealSpellId) ? null
+			: System.Linq.Enumerable.FirstOrDefault(owner.GetEquippedSpells(), s => s != null && s.Id == ladderSealSpellId);
 
 	private void ApplyLadderShotArgs()
 	{
-		if (!ladderLearned && string.IsNullOrEmpty(ladderPin))
+		if (!ladderLearned && string.IsNullOrEmpty(ladderPin) && !ladderFreeForeteller)
 			return;
 		SaveManager.WritesDisabled = true;
 		SaveData save = CurrentSave();
@@ -28,6 +37,8 @@ public partial class _UiShot
 			foreach (Teachings.Lesson lesson in Teachings.Ladder)
 				Teachings.Teach(save, lesson);
 		}
+		if (ladderFreeForeteller && !save.UnlockedCharacterIds.Contains(ConjunctionLadder.ForetellerId))
+			save.UnlockedCharacterIds.Add(ConjunctionLadder.ForetellerId);
 		if (!string.IsNullOrEmpty(ladderPin))
 		{
 			// Through the rung's own rule, so a shot can never show a pin the game would refuse.

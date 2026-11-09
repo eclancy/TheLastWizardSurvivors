@@ -92,8 +92,11 @@ public partial class _BalanceHarness : Node
 	//                   bans a planner buys (Fate Fracture 5, Proscription 3, as --all-unlocked holds them).
 	//   --curate=N      N spells set aside in the Spell Index, as N Redactions allow - never one of --seek-combo's
 	//                   parents or the wizard's own, never below the pool's floor (GlobalStatsManager.MinimumOfferablePool).
-	//   --pair-shares[=half|off]  rung III: the pair shares its light this run whatever the save has learned (=half: the
-	//                   doc's fallback, the partner counting at most 1; =off: never). Each Ascension the share opened is
+	//   --foretell=ID|off  rung IV: Nostradamus foretells that recipe on any chapter (ConjunctionLadder.ForetellToolOverride);
+	//                   its parents dealt by the far sky's favour, without the sky's payout. FORETOLD log lines.
+	//   --pair-shares[=half|full|off]  rung III: the pair shares its light this run whatever the save has learned, at the
+	//                   strength it ships at (half since the measurement: the partner counting at most 1); =full the
+	//                   doc's first strength, =half the shipped one, =off never. Each Ascension the share opened is
 	//                   logged as a PAIR SHARES line.
 	// The summary's ladder= says what was on (kindred level and cards leaned, curated count).
 	private bool planner;
@@ -430,12 +433,14 @@ public partial class _BalanceHarness : Node
 			else if (arg == "--planner") { planner = true; Farmed = true; }
 			else if (arg.StartsWith("--curate=")) curate = Math.Max(0, int.Parse(arg.Substring(9)));
 			else if (arg.StartsWith("--kindred=")) ConjunctionLadder.KindredToolLevel = Math.Clamp(int.Parse(arg.Substring(10)), 0, ConjunctionLadder.KindredDrawLevels);
+			else if (arg.StartsWith("--foretell=")) ConjunctionLadder.ForetellToolOverride = arg.Substring(11).Trim();
 			else if (arg == "--pair-shares") ConjunctionLadder.PairShareToolOverride = true;
 			else if (arg.StartsWith("--pair-shares="))
 			{
 				string how = arg.Substring(14).Trim();
 				ConjunctionLadder.PairShareToolOverride = !how.Equals("off", StringComparison.OrdinalIgnoreCase);
-				ConjunctionLadder.PairShareHalf = how.Equals("half", StringComparison.OrdinalIgnoreCase);
+				if (how.Equals("half", StringComparison.OrdinalIgnoreCase) || how.Equals("full", StringComparison.OrdinalIgnoreCase))
+					ConjunctionLadder.PairShareHalf = how.Equals("half", StringComparison.OrdinalIgnoreCase);
 			}
 			else if (arg.StartsWith("--arcane=")) FarmedArcane = int.Parse(arg.Substring(9));
 			else if (arg.StartsWith("--stop-need=")) StopNeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
@@ -1076,6 +1081,7 @@ public partial class _BalanceHarness : Node
 		if (SeekApotheosis || SeekAscensions) TrackTier();
 		if (!string.IsNullOrEmpty(SeekCombo)) TrackCombo();
 		TrackFarSky();
+		TrackLadderMet();
 		if (SeekSovereign) TrackSovereign();
 		TrackSpellLevel((float)delta);
 		TrackAscensions();
@@ -3663,10 +3669,30 @@ public partial class _BalanceHarness : Node
 
 	private int curated;
 
+	// Every fusion the strip offers, the first pace minute it does (the guard rail, cell E: "a recipe met in at most
+	// one run in five" - met is offered, as the recipe's Feat counts it). Read once a tick; a handful of recipes.
+	private readonly Dictionary<string, float> ladderMetAtPace = new(StringComparer.OrdinalIgnoreCase);
+
+	private void TrackLadderMet()
+	{
+		if (player == null || !IsInstanceValid(player))
+			return;
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+		{
+			if (ladderMetAtPace.ContainsKey(recipe.Id))
+				continue;
+			ComboStanding standing = player.EvaluateCombo(recipe);
+			if (standing.Ready || (standing.Taken && !ComboCatalog.StartsFused(recipe, player.SelectedCharacter?.Id)))
+				ladderMetAtPace[recipe.Id] = PaceMinutesNow;
+		}
+	}
+
 	// " ladder=kindred2,leaned14,curated8"
 	private string LadderSummary() =>
 		$" ladder=kindred{player?.KindredDrawLevel ?? 0},leaned{player?.KindredLeanedCards ?? 0},curated{curated}{(planner ? ",planner" : "")}"
-		+ $",pairShares{(player?.PairSharesLearned == true ? (ConjunctionLadder.PairShareHalf ? "Half" : "On") : "Off")},opened{player?.PairSharesOpened ?? 0}";
+		+ $",pairShares{(player?.PairSharesLearned == true ? (ConjunctionLadder.PairShareHalf ? "Half" : "On") : "Off")},opened{player?.PairSharesOpened ?? 0}"
+		+ $",foretold{(player?.ForetoldRecipe != null ? "=" + player.ForetoldRecipe.Id + (player.ForetoldMade ? "@made" : "") : "-")}"
+		+ $" met=[{string.Join(",", ladderMetAtPace.Select(p => $"{p.Key}@{p.Value:0.0}"))}]";
 
 	private void TrackFarSky()
 	{
