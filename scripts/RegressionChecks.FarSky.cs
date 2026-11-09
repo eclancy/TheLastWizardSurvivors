@@ -183,9 +183,18 @@ public static partial class RegressionChecks
 			if (FarSky.ForRun(learned, wizard, far) != tonight)
 				warnings.Add($"Far sky: a run on {far.DisplayName} is not played under tonight's recipe.");
 			string card = FarSky.CardLine(learned, far, wizard);
-			if (card == null || !card.Contains(tonight.Name, StringComparison.Ordinal)
-				|| !card.Contains(tonight.First.AscensionName, StringComparison.Ordinal) || !card.Contains(tonight.Second.AscensionName, StringComparison.Ordinal))
-				warnings.Add($"Far sky: {far.DisplayName}'s card line \"{card}\" does not name tonight's {tonight.Name} and both its Ascensions.");
+			if (card == null || !card.Contains(tonight.Name, StringComparison.Ordinal))
+				warnings.Add($"Far sky: {far.DisplayName}'s card line \"{card}\" does not name tonight's {tonight.Name}.");
+			string full = FarSky.Describe(tonight);
+			if (!full.Contains(tonight.First.AscensionName, StringComparison.Ordinal) || !full.Contains(tonight.Second.AscensionName, StringComparison.Ordinal))
+				warnings.Add($"Far sky: the pause screen's line \"{full}\" does not name both of {tonight.Name}'s Ascensions.");
+			// The map card has one line to spare (FarSky.CardLine): about thirty characters on a PC's narrow card.
+			foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+			{
+				string line = $"Tonight: {recipe.Name}";
+				if (line.Length > 30)
+					warnings.Add($"Far sky: \"{line}\" is {line.Length} characters, past the one line a map card has for it (30).");
+			}
 			// The night turns with the run count, and the next night names another (the no-repeat rule).
 			int night = FarSky.Night(learned);
 			learned.Lifetime.TotalRuns = night + 1;

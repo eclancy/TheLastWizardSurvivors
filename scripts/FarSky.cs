@@ -167,13 +167,19 @@ public static class FarSky
 		recipe == null ? string.Empty
 			: $"{recipe.Name} - {recipe.First.SpellName} ({recipe.First.AscensionName}) and {recipe.Second.SpellName} ({recipe.Second.AscensionName})";
 
-	/// <summary>The line a world map card carries on every far-shore stop, or null where the sky names nothing.</summary>
+	/// <summary>
+	/// The line a world map card carries on every far-shore stop - "Tonight: The Taking" - or null where the sky names
+	/// nothing. The recipe's name alone: the card has one line to spare once a far chapter's four rewards, its fallen
+	/// warden and its longest stand are on it, and the full line (<see cref="Describe"/>) wrapped to three on a PC and two
+	/// on a phone and pushed Enter off the foot of the screen on both (2026-11-08, on F3's and F5's White Downs). The pause
+	/// screen names it in full; RegressionChecks.ValidateFarSky holds every recipe's line to one card line.
+	/// </summary>
 	public static string CardLine(SaveData save, StageDefinition stage, CharacterData character)
 	{
 		if (!StageCatalog.IsOnFarShore(stage))
 			return null;
 		ComboDefinition tonight = Tonight(save, character);
-		return tonight == null ? null : $"Tonight: {Describe(tonight)}";
+		return tonight == null ? null : $"Tonight: {tonight.Name}";
 	}
 
 	// One weighted draw, never <paramref name="exclude"/> when anything else has weight. A hash of the night, not an
