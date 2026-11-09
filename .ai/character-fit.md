@@ -57,7 +57,7 @@ A fit is judged on four things: the character's **story**, their **look**, their
 | Isbrand | Rimeblood: +9 HP a minute | ok | sustain for the tank; nothing frosty in it |
 | Levina | Quickened Cadence: -10% cooldowns | strong | lightning-quick, with her speed |
 | Gabbro | Stoneskin: -10% damage taken | strong | stone skin on the heaviest body |
-| Baba Yaga | Bone Fence: +20% knockback | good | the fence keeps visitors out |
+| Baba Yaga | Bone Fence: +20% knockback | good (since her vine shoves, 2026-11-09) | the fence keeps visitors out; it did nothing until her vine pushed |
 | Medea | Rejuvenation: +20% healing | **weak** | right story (she made old Aeson young), but healing is a trickle since the difficulty pass (`difficulty-curve.md` 5), so it is worth 2-5 HP a minute |
 | the Cumaean Sibyl | Prophecy: +3 rerolls | strong | other futures to choose from |
 | Paracelsus | Sola Dosis: +25% damage over time | strong | the dose |
@@ -157,7 +157,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 | 10 | Abe no Seimei | keeps Kindled Ward and Exorcist, unchanged | "next" | kept |
 | 11 | The Dark Wizard | keeps The Taking and Dread, unchanged. **His unlock is a mystery achievement**: The Taker Taken shows its condition (every chapter's boss on Hardcore) from the first run, and reads "???" for its name and its reward, with the seal, until done (`SealedName`/`SealedReward`, as a Conjunction's Feat reads before it is made). It was already listed under the Throne as "The Taker Taken - Frees someone": the title gave away who is taken | "do not change the dark wizard, but add his unlock condition as a mystery achievement" | built `ff5fa9a6`, validated (0 errors); the page not looked at |
 | 12 | Merlin | keeps Orb of Ages and Warding Hand, unchanged | "Next" | kept |
-| 13 | Baba Yaga | keeps Thorned Vine. **She moves flying in a mortar, holding a broom** (she joins Nimue among the floaters, `FLOATERS` in `tools/art/roster.py`, `anim_sets.hover`; the look only, her feet collider unchanged). **Bone Fence is in question**: her own vine pushes nothing (`Player.cs`: "Her own vine pushes nothing; it is a build's passive"), so +20% knockback does nothing until she takes a spell or card that shoves | "Her typical movement can be flying in a mortar holding a broom, also does thorned vine have knockback? how often is her passive useful?" | mortar queued after Folio; passive open |
+| 13 | Baba Yaga | keeps Thorned Vine. **She moves flying in a mortar, holding a broom** (she joins Nimue among the floaters, `FLOATERS` in `tools/art/roster.py`, `anim_sets.hover`; the look only, her feet collider unchanged). **Bone Fence is in question**: her own vine pushes nothing (`Player.cs`: "Her own vine pushes nothing; it is a build's passive"), so +20% knockback does nothing until she takes a spell or card that shoves . **Fixed by option A: Thorned Vine throws what it cuts aside**, along its stroke (`ThornVine.VineShoveSpeed`, 180, a first guess), for every wizard; Bone Fence keeps +20% knockback and now works from her first cast. Entangle still roots instead | "Her typical movement can be flying in a mortar holding a broom, also does thorned vine have knockback? how often is her passive useful?" / "A: vine shoves" | vine shove built `f78d8744` (not yet validated in Godot or played); mortar and broom being drawn |
 
 ---
 
