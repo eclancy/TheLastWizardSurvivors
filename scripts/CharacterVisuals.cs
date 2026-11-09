@@ -60,8 +60,9 @@ public static class CharacterVisuals
 			// The orb in the gold claw at the head of his staff (tools/art/player_archmage.py, ORB; the generator prints
 			// (13.4, 5.8)): the title figure's light, where Magic Missile leaves him (Player.CastSpellNow).
 			case "archmage": return new Vector2(13, 6);
-			// The living tip of the thorned vine curling over the head of her pestle (roster.py, yaga()).
-			case "baba_yaga": return new Vector2(16, 3);
+			// The living tip of the thorned vine curling over the top of her broom's handle (roster.py, yaga()), the
+			// centroid of its grass pixels in frame 1. Her rest pose; the hover idle lifts her two rows at most, as Nimue's.
+			case "baba_yaga": return new Vector2(14, 4);
 			// The rune of rime cut in the air before her raised hand (roster.py, morgan()): where her runes leave her.
 			case "morgan": return new Vector2(43, 15);
 			// The dose in the round-bellied flask he holds up to the light (roster.py, paracelsus()), its middle.

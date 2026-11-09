@@ -112,7 +112,7 @@ METAL_RAMP = MT0 + MT1 + MT2 + MT3
 # Lichen, the contract's sea-grey-green row (bonelight.MATERIALS["lichen"]), for Morgan le Fay's mantle: the
 # strait's mist, wet stone and weed under the bridge. A material, not an element - cloth, so the idle does not
 # pulse it - but it is in anim_sets.PLAYER_RAMPS so a hurt or a death steps it along its own five stops. Single
-# bytes past \x8a: \x90-\x94 are held for Baba Yaga's (merged in parallel), \x85 and \xa0 are whitespace.
+# bytes past \x8a: \x90-\x94 are Baba Yaga's wood (WOOD_RAMP, below), \x85 and \xa0 are whitespace.
 # hi / lit / base / shade / deep.
 LC0, LC1, LC2, LC3, LC4 = "\x95", "\x96", "\x97", "\x98", "\x99"
 PALETTE.update(dict(zip(LC0 + LC1 + LC2 + LC3 + LC4, M["lichen"])))
@@ -123,6 +123,15 @@ LICHEN_RAMP = LC0 + LC1 + LC2 + LC3 + LC4
 # a pigment: the row is the contract's maroon, the colour a doctor's gown of his century was dyed and has faded to.
 RD0, RD1, RD2, RD3, RD4 = "\x14", "\x15", "\x16", "\x17", "\x18"
 PALETTE.update({RD0: M["red"][0], RD1: M["red"][1], RD2: M["red"][2], RD3: M["red"][3], RD4: M["red"][4]})
+# Baba Yaga's wood, for her mortar and her broom's handle: the gold row, which is what leather and old wood are in
+# this palette (her pestle was drawn in it, the walking hut's thatch is its dark end), all five stops - hi / lit /
+# base / shade / deep. The printable "H", "G", "g", "u" are the same colours, but gold's ramp in anim_sets.RAMPS
+# stops at the shade, and a mortar that is "darker wood" wants the deep end the shared ramp has no character for;
+# extending that ramp would move every other sprite's hurt and death frames. So her wood is its own five bytes,
+# the \x90-\x94 held for her, in anim_sets.PLAYER_RAMPS like the lichen's and the red's.
+WD0, WD1, WD2, WD3, WD4 = "\x90", "\x91", "\x92", "\x93", "\x94"
+PALETTE.update(dict(zip(WD0 + WD1 + WD2 + WD3 + WD4, M["gold"])))
+WOOD_RAMP = WD0 + WD1 + WD2 + WD3 + WD4
 
 
 # Robe cloth per wizard. Four different MATERIAL ROWS, not four tints of one - the first pass
@@ -2596,123 +2605,225 @@ def sibyl(phase=None):
     return g.rows()
 
 
-def yaga(phase=None):
+def yaga(phase=None, wind=0.0, drift=0.0, lift=0):
     """Thorned Vine. Baba Yaga, the witch of the deep wood in the Slavic tales: a hut on hen's legs behind
-    a fence of bone, who tests whoever comes to her door and pays the ones who pass.
+    a fence of bone, who tests whoever comes to her door and pays the ones who pass - and who goes about the
+    wood in a wooden mortar, flying, and sweeps away her tracks behind her with a broom.
 
     DRAWN SERIOUS (.ai/chapter-wizards.md question 5): tall, gaunt and iron-grey, never a cackling hag. She
-    is the tallest figure in the cast after the Frostweaver and the narrowest - a column a third as wide as
-    she is tall, stooped a little at the shoulders the way a tall old woman is, her face set and level.
+    is the narrowest figure in the cast - a column a third as wide as she is tall, stooped a little at the
+    shoulders the way a tall old woman is, her face set and level.
 
-    The vine bursts out of the ground beside the pack, so she is the one figure CALLING SOMETHING UP: her
-    near arm reaching down and out, long fingers spread over a thorned shoot rising out of the earth to
-    meet them - the only figure in the cast whose spell comes from below. In her far hand, planted, the
-    pestle she steers her mortar with, taller than she is, the club of its head at the top; a thorned vine
-    climbs it, and its living tip curls out over the head. The tip and the shoot are the spell, grass's
-    ramp, with one bead of poison on a thorn: the only things on her that give off light.
+    SHE FLIES IN HER MORTAR (Eric, 2026-11-09: "Her typical movement can be flying in a mortar holding a
+    broom"), and so she is the second of the floaters after Nimue (FLOATERS, anim_sets.hover): she never
+    steps. She stands in a heavy mortar carved from one log, which hides her from the hips down - a thick
+    lip whose top catches the key light, the dark of its mouth showing beside her, a band of notches cut
+    round it, a split and a knot in the grain, a heavier foot - and the whole of it hangs two rows above the
+    soft contact shadow, which never touches it. Her wood (WOOD_RAMP, the gold row, which is what leather and
+    old wood are in this palette: her old pestle, the hut's thatch) from its deep end, so it is the darkest
+    thing on her and reads as old wood rather than brass.
 
-    The rescued wear no pigment: a long coat in linen's dark end (the moss-grey of the deep wood) to the
-    ground, a shawl of iron-grey (steel's shade) fringed at the point, a kerchief of stone's near-black,
-    and her own hair iron-grey, loose over the shoulder. Bone-Leg, as the tales call her: the far foot
-    under the hem is bone.
+    In her far hand, the broom: a long handle of the same wood, held the way the pestle was held, its foot
+    trailing down and behind her, and the twigs bound to it in a bundle that splays - from the light end of
+    her wood, paler than the log, so broom and mortar stay two things at play size. They hang behind the
+    mortar at rest and stream back when she moves (`drift`), each twig on its own flutter.
+    A thorned vine climbs the handle, its dead stem in linen's deep end with a thorn at every turn, and its
+    living tip curls out over the top of the handle with one bead of poison on a thorn under it: the spell,
+    grass's ramp, and the ONLY thing on her that gives off light. (It used to have a second, the shoot coming
+    up out of the ground under her hand; a figure off the ground has no ground under her hand, and the rule
+    is one light.) Her near arm still reaches down and out, over the rim, long fingers spread toward the
+    ground the vine comes out of - the only figure whose spell comes from below.
+
+    The rescued wear no pigment: a long coat in linen's dark end (the moss-grey of the deep wood), a shawl of
+    iron-grey (steel's shade) fringed at the point, a kerchief of stone's near-black, and her own hair
+    iron-grey, loose down her back. (Bone-Leg, the far foot that was bone under the hem, is inside the
+    mortar now.)
+
+    `wind` (0..1) is where the twigs are in their flutter; `drift` (0..1) how hard she is moving, which
+    streams them back and leans her into it; `lift` how many rows she is risen off her rest, which the shadow
+    answers by narrowing. All three at rest is the portrait pose. `phase` is accepted for the walk's signature
+    and ignored: she does not step (anim_sets.hover draws her moving).
     """
     mid, lit, dark = ROBES["yaga"]
     g = G(48)
     CX = 25
+    TAU = 2.0 * math.pi
 
-    # THE COAT: long and narrow, to the ground, its hem ragged; a little fuller behind, where she stoops.
-    mass(g, [(17, 21, 30), (24, 20, 31), (32, 19, 32), (40, 18, 33), (46, 17, 34)], mid, lit, dark)
-    fold(g, [(23, 20), (22, 31), (20, 46)], dark, lit)
-    fold(g, [(28, 22), (29, 33), (31, 46)], dark, lit)
-    fold(g, [(25, 33), (25, 44)], "A", None)
-    fold(g, [(21, 38), (22, 43)], "A", None)
-    tatters(g, [(46, 17, 19), (46, 26, 28), (46, 32, 34)], "A", "E", "o")
-    for (bx, by) in ((24, 40), (30, 37), (20, 34), (27, 28)):
+    def ripple(k, amp=1.0):
+        # One twig's flutter: each out of step with the next, so the ripple runs across the fan.
+        return amp * math.sin(TAU * (wind + 0.29 * k))
+
+    # THE MORTAR: a hollowed log, seen a little from above, so its mouth is an ellipse and every line round
+    # it - the lip, the band of notches, the foot - bows down through the middle. That bow is what makes it
+    # read as round at this size: the same mortar drawn with straight rows read as a crate. Her wood from its
+    # deep end: the shade only where the key reaches it and the base only on the lip and a few streaks, so it
+    # is old dark wood, not brass.
+    MX = 25.0                       # its middle
+    LIP, LIP_IN = 10.0, 7.6         # the lip's half-width, outside and in
+    MY, MB, MB_IN = 28.0, 2.4, 1.5  # the mouth's middle row and its half-depth, outside and in
+    TOP, BOT = 9.0, 7.2             # the body's half-width under the lip and at the foot
+    FY, FB = 38.5, 1.8              # the foot's middle row and the depth of its bow
+
+    def bow(dx, half, depth):
+        # How far below its middle row an ellipse's front edge lies, dx from the middle.
+        return depth * math.sqrt(max(0.0, 1.0 - (dx / half) ** 2))
+
+    # Its mouth, behind her: the far half of the lip, lit where it turns to the key, and the dark inside -
+    # the far wall in shadow under the lip, then nothing. Only what shows beside her is ever seen.
+    for y in range(int(MY - MB) - 1, int(MY) + 3):
+        for x in range(int(MX - LIP) - 1, int(MX + LIP) + 2):
+            dx = x - MX
+            if (dx / LIP) ** 2 + ((y - MY) / MB) ** 2 > 1.0:
+                continue
+            if (dx / LIP_IN) ** 2 + ((y - MY) / MB_IN) ** 2 <= 1.0:
+                g.set(x, y, WD4 if y < MY - 0.6 else "o")
+            elif y < MY:
+                g.set(x, y, WD1 if dx < -LIP + 0.5 else (WD2 if dx < -2 else WD3))
+                if g.get(x - 1, y) == ".":
+                    g.set(x - 1, y, "W")
+
+    # THE COAT: long and narrow, from the shoulders into the mortar; a little fuller behind, where she stoops.
+    mass(g, [(17, 21, 30), (24, 20, 31), (30, 19, 32)], mid, lit, dark)
+    fold(g, [(23, 20), (22, 29)], dark, lit)
+    fold(g, [(28, 22), (29, 30)], dark, lit)
+    for (bx, by) in ((27, 28), (21, 26)):
         g.set(bx, by, "A")                                         # old stains and darns
         g.set(bx + 1, by, "e")
-    if phase is None:
-        far_shown, near_shown = True, True
-        hem = 0
-    else:
-        # A tall woman's long, slow step: the hem swings toward the leading foot, and that foot shows
-        # under it - the shod one, or the bone. The pestle and the arms are drawn after, so they hold.
-        c, _ln, _lf = stride(phase)
-        hem = int(round(1.4 * c))
-        sway(g, 34, 1.4 * c)
-        far_shown, near_shown = c < 0.4, c > -0.4
-    # BONE-LEG: the far foot, bone to the ankle under the lifted hem, the toes long.
-    if far_shown:
-        fx = 20 + hem
-        g.set(fx + 1, 43, "s")
-        g.set(fx + 1, 44, "k")
-        g.set(fx + 2, 44, "n")
-        g.span(45, fx, fx + 3, "s")
-        g.set(fx, 45, "S")
-        g.set(fx + 3, 45, "n")
-        g.span(46, fx - 1, fx + 4, "k")
-        g.set(fx - 1, 46, "s")
-        g.set(fx + 1, 46, "n")
-        g.set(fx + 3, 46, "n")
-        g.span(44, fx - 1, fx, "o")                                # the hem's shadow over it
-    # The near foot: a bast shoe, dark, its toe out past the hem.
-    if near_shown:
-        nx = 29 + hem
-        g.set(nx + 3, 44, "o")
-        g.span(45, nx, nx + 3, "N")
-        g.span(46, nx, nx + 4, "j")
-        g.set(nx, 45, "p")
-        g.set(nx + 1, 46, "p")
-        g.set(nx + 4, 45, "J")
-        g.set(nx + 2, 45, "J")
 
     # THE SHAWL: iron-grey over both shoulders, to a point at her back, fringed along its edges.
     mass(g, [(15, 21, 29), (17, 19, 31), (20, 18, 32), (23, 19, 31), (26, 21, 28), (28, 23, 26)], "R", "r", "q")
     fold(g, [(22, 17), (21, 23)], "q", "r")
     fold(g, [(26, 17), (25, 26)], "q", None)
     fold(g, [(30, 18), (29, 24)], "q", "r")
-    for (fx2, fy2) in ((19, 24), (20, 26), (22, 28), (23, 29), (26, 29), (28, 27), (30, 25), (31, 24)):
+    for (fx2, fy2) in ((19, 24), (20, 26), (22, 27), (28, 27), (30, 25), (31, 24)):
         g.set(fx2, fy2, "q")                                       # the fringe, knotted, uneven
         g.set(fx2, fy2 + 1, "o" if (fx2 + fy2) % 3 else "R")
-    g.set(24, 30, "R")
-    g.set(25, 31, "q")
 
-    # THE FAR ARM, up and across to the pestle: a dark sleeve and a long hand round the wood.
-    mass(g, [(17, 17, 21), (20, 15, 20), (23, 14, 18)], mid, lit, dark, rim=False)
-    fold(g, [(19, 19), (16, 22)], dark, None)
+    # Its front, over her: the near half of the lip, its face, the shadow it throws, the body narrowing a
+    # little to a groove and the heavier foot it stands on in the air.
+    band = {}
+    for x in range(int(MX - LIP), int(MX + LIP) + 1):
+        dx = x - MX
+        lip_front = MY + bow(dx, LIP, MB)
+        inner = MY + bow(dx, LIP_IN, MB_IN) if abs(dx) < LIP_IN else MY - 1
+        # The lip's top, the near half: between the mouth and the outer edge.
+        for y in range(int(round(inner)) + 1, int(round(lip_front)) + 1):
+            if y >= MY:
+                g.set(x, y, WD1 if dx < -LIP + 0.5 else (WD2 if dx < 3 else WD3))
+        # The lip's face, two rows; then the shadow it throws on the body.
+        y0 = int(round(lip_front)) + 1
+        u = dx / LIP
+        for y in (y0, y0 + 1):
+            g.set(x, y, WD2 if u < -0.85 else (WD3 if u < -0.2 else WD4))
+        if abs(dx) <= TOP:
+            g.set(x, y0 + 2, "o")
+        # The body, down to the foot's bow.
+        foot = FY + bow(dx, BOT, FB)
+        for y in range(y0 + 3, int(round(foot)) + 1):
+            t = (y - (MY + 4.0)) / (FY - MY - 4.0)
+            half = TOP + (BOT - TOP) * max(0.0, min(1.0, t))
+            if abs(dx) > half + 0.25:
+                continue
+            u = dx / half
+            g.set(x, y, WD2 if u < -0.88 else (WD3 if u < -0.5 else WD4))
+        band[x] = (y0, int(round(foot)))
+    for (x, (y0, y1)) in band.items():
+        for y in range(y0, y1 + 1):
+            if g.get(x, y) != "." and g.get(x - 1, y) == ".":
+                g.set(x - 1, y, "W")
+    # The grain: long streaks down the log, each broken where the wood checked - lit ones on the key side, a
+    # stop darker beyond it - never two the same length.
+    for (gx, y0, y1, ch) in ((18, 35, 38, WD2), (19, 34, 36, WD4), (21, 34, 39, WD3), (23, 37, 40, WD3),
+                             (24, 34, 35, "o"), (26, 35, 40, WD3), (28, 34, 37, "o"), (30, 36, 40, WD3),
+                             (32, 34, 36, WD3)):
+        for y in range(y0, y1 + 1):
+            if g.get(gx, y) in (WD2, WD3, WD4):
+                g.set(gx, y, ch)
+    # The carved band round it, bowed like the lip: notches cut into the wood, a slant catching the light on
+    # its upper edge over a dark cut, spaced the way a knife spaces them rather than a ruler.
+    for nx in (17, 20, 23, 27, 30, 32):
+        ny = 34 + int(round(bow(nx - MX, TOP, MB)))
+        g.set(nx, ny, WD2 if nx < 22 else WD3)
+        g.set(nx + 1, ny + 1, "o")
+    # A split running down from the lip, and a knot.
+    g.line(25, 34, 26, 37, "o")
+    g.set(20, 39, "o")
+    g.set(19, 38, WD2)
+    # The groove under the body and the heavier foot, bowed with it.
+    for x in range(int(MX - BOT) - 1, int(MX + BOT) + 2):
+        dx = x - MX
+        fy = int(round(FY + bow(dx, BOT + 1.0, FB))) + 1
+        g.set(x, fy, "o")
+        g.set(x, fy + 1, WD2 if dx < -BOT + 0.5 else (WD3 if dx < -2 else WD4))
+        g.set(x, fy + 2, WD4 if dx < 3 else "o")
+    g.set(int(MX - BOT) - 2, int(FY) + 2, "W")
 
-    # THE PESTLE, planted: worn wood taller than she is, narrow below and swelling to the club of its
-    # grinding head at the top.
-    shaft(g, 13, 46, 13, 9, "g", "u", "J", width=2)
-    g.set(13, 46, "u")
-    g.set(14, 46, "J")
-    mass(g, [(4, 12, 14), (5, 11, 15), (9, 10, 15), (11, 12, 14)], "u", "g", "J")
-    g.span(11, 12, 14, "J")
-    g.set(13, 7, "J")                                               # a split in the grain
-    g.set(12, 8, "J")
-    g.set(14, 5, "J")
-    hand(g, 14, 22)
-    hand(g, 12, 23)
-    g.set(15, 24, "i")
-    # THE VINE climbing it: a dark stem crossing the wood in a slow spiral, a thorn at every turn, and
-    # one bead of poison on a thorn. Dead wood of the vine is linen's deep end; only the living tip and
-    # leaves are grass, so only they breathe with the idle (RAMPS below).
-    for (y, flip) in ((40, 1), (34, -1), (28, 1), (17, -1), (12, 1)):
-        g.line(13 - flip * 2, y + 1, 13 + flip * 2, y - 1, "A")
-        g.set(13 + flip * 3, y - 2, "o")                            # the thorn
-        g.set(13 - flip * 3, y + 2, "E")
-    g.set(10, 33, "'")                                              # a leaf
-    g.set(9, 32, "`")
-    g.set(17, 16, "'")
-    g.set(18, 15, "`")
-    g.set(16, 11, "(")                                              # the poison, on a thorn
-    g.set(17, 10, ")")
-    # The living tip, curling out over the head.
-    for (tx, ty, tc) in ((14, 3, "`"), (15, 2, "'"), (16, 2, ","), (17, 3, "'"), (17, 4, "B"), (16, 5, ","),
-                         (11, 3, "`"), (10, 2, "'"), (9, 3, ","), (18, 5, "`")):
+    # THE FAR ARM, up and across to the broom: a dark sleeve and a long hand round the handle.
+    mass(g, [(17, 17, 21), (20, 14, 20), (23, 12, 17)], mid, lit, dark, rim=False)
+    fold(g, [(19, 19), (15, 22)], dark, None)
+
+    # THE BROOM: a long handle of the mortar's wood, held below the top like a staff, its foot down and
+    # behind her, and the twigs bound to it there. Upper end first, so the hand closes over it.
+    HX0, HY0, HX1, HY1 = 14, 6, 9, 34
+
+    def handle_x(y):
+        return HX0 + (HX1 - HX0) * (y - HY0) / float(HY1 - HY0)
+
+    shaft(g, HX0, HY0, HX1, HY1, WD2, WD3, WD4, width=2)
+    g.set(HX0, HY0, WD3)
+    g.set(HX0 + 1, HY0, WD4)
+    # THE TWIGS: birch, bound to the handle's foot in a bundle that swells below the binding and then
+    # splays into twigs, each a line out to its own tip - laid on the handle's slant at rest, swung back on
+    # the air as she moves. Her wood from its light end: dry twigs are paler than the log and the handle,
+    # which keeps the broom's head one material and the mortar another at play size. (Birch twigs are
+    # red-brown; drawn in russet they read as a red smudge on the 48 cell, in the gold row as a broom.)
+    lean = -0.16 - 0.42 * drift
+    bx, by = 9.0, 36.0
+    sx, sy = math.sin(lean), math.cos(lean)
+    for i, hw in enumerate((2.0, 2.4, 2.8)):
+        cx, cy = bx + sx * i, by + sy * i
+        g.span(int(round(cy)), cx - hw, cx + hw, WD3)
+        g.set(cx - hw, cy, WD2)
+        g.set(cx + hw, cy, WD4)
+    g.set(bx + sx, by + sy, WD4)
+    ex, ey = bx + sx * 2.6, by + sy * 2.6
+    for k in range(7):
+        theta = lean + (k - 3) * 0.2 + 0.09 * ripple(k) * (0.4 + drift)
+        length = 5.2 - 0.4 * abs(k - 3) + (0.6 if k in (1, 4) else 0.0)
+        x0 = ex + (k - 3) * 0.8
+        x1 = x0 + length * math.sin(theta)
+        y1 = ey + length * math.cos(theta)
+        tone = (WD2, WD3, WD2, WD4, WD3, WD2, WD3)[k]
+        g.line(x0, ey, x1, y1, tone)
+        g.set(x1, y1, WD2 if tone != WD2 else (WD1 if k < 3 else WD3))   # each tip, a stop off its stem
+    # The binding: withy wound round, its lit turn on the key side.
+    g.span(34, 7, 11, "e")
+    g.set(7, 34, "l")
+    g.set(11, 34, "E")
+    g.span(35, 7, 11, "E")
+    g.set(7, 35, "e")
+    g.set(9, 35, "A")
+    g.set(6, 34, "W")
+    # THE VINE climbing the handle: a dark stem crossing the wood in a slow spiral, a thorn at every turn.
+    # Dead wood of the vine is linen's deep end; only the living tip is grass, so only it breathes.
+    for (y, flip) in ((30, 1), (24, -1), (17, 1), (11, -1)):
+        hx = handle_x(y)
+        g.line(hx - flip * 2, y + 1, hx + flip * 2, y - 1, "A")
+        g.set(hx + flip * 3, y - 2, "o")                            # the thorn
+        g.set(hx - flip * 3, y + 2, "E")
+    hand(g, 12, 21)
+    hand(g, 11, 23)
+    g.set(13, 24, "i")
+    # The living tip, curling out over the top of the handle, and the poison, one bead on a thorn under it.
+    for (tx, ty, tc) in ((14, 5, "`"), (14, 4, "'"), (15, 3, ","), (16, 3, "'"), (17, 4, "B"), (17, 5, ","),
+                         (16, 6, "`"), (13, 4, "`"), (12, 3, "'"), (11, 3, ","), (10, 4, "`")):
         g.set(tx, ty, tc)
+    g.set(16, 8, "o")
+    g.set(17, 8, "(")
+    g.set(17, 9, ")")
 
-    # THE NEAR ARM, reaching down and out: the sleeve falling from it, a bony forearm, and the long
-    # fingers spread over the ground.
+    # THE NEAR ARM, reaching down and out over the rim: the sleeve falling from it, a bony forearm, and the
+    # long fingers spread toward the ground.
     mass(g, [(17, 29, 32), (21, 30, 34), (25, 32, 36), (27, 33, 37)], mid, lit, dark, rim=False)
     fold(g, [(31, 19), (34, 25)], dark, lit)
     g.line(33, 27, 37, 27, "A")                                     # the sleeve's mouth, dark inside
@@ -2722,21 +2833,6 @@ def yaga(phase=None):
                            (40, 29, "f"), (41, 30, "h"), (42, 31, "i")):
         g.set(fx3, fy3, fc)
 
-    # THE SHOOT: a thorned vine coming up out of the earth to her hand - the spell. A tear in the ground
-    # at its root, the stem in grass's edge, two leaves, its tip lit.
-    for (sx, sy, sc) in ((41, 46, "`"), (41, 45, "`"), (42, 44, "`"), (42, 43, "'"), (41, 42, "`"),
-                         (40, 41, "`"), (40, 40, "'"), (41, 39, "`"), (41, 38, ","), (40, 37, "'"),
-                         (39, 36, ","), (39, 35, "B"), (38, 34, ",")):
-        g.set(sx, sy, sc)
-    for (lx, ly, lc) in ((43, 42, "'"), (44, 41, "`"), (39, 39, "'"), (38, 38, "`"), (42, 37, "`")):
-        g.set(lx, ly, lc)
-    for (ox, oy) in ((40, 44), (43, 40), (42, 39)):
-        g.set(ox, oy, "o")                                          # thorns
-    g.span(46, 39, 44, "u")                                         # the ground torn open
-    g.set(38, 46, "J")
-    g.set(44, 46, "J")
-    g.set(42, 46, "g")
-
     # THE HEAD: long and gaunt, the brow low, looking out level past her reaching hand. Not a hag's
     # grin: the mouth is set.
     head(g, CX, 9, 2.6, brow="low", gaze=1, mouth="set", eye="narrow")
@@ -2745,28 +2841,46 @@ def yaga(phase=None):
     g.set(CX + 2, 13, "I")
     g.span(15, 24, 26, "i")                                         # the neck, in shadow
     g.set(26, 15, "I")
-    # THE KERCHIEF: stone's near-black, over the crown and tied at the nape, its ends hanging.
+    # THE KERCHIEF: stone's near-black, over the crown and tied at the nape, its ends hanging - and lifting
+    # back off her neck on the air as she flies.
     mass(g, [(5, 22, 28), (7, 21, 29), (9, 21, 22), (13, 20, 21)], "N", "p", "j")
     g.span(8, 22, 29, "N")
     g.span(9, 28, 29, "j")
     fold(g, [(23, 6), (27, 5)], "j", "p", side=(0, -1))
     g.set(20, 12, "J")                                              # the knot
     g.set(19, 13, "N")
-    g.line(19, 14, 18, 17, "j")
+    back = int(round(1.5 * drift + 0.5 * drift * ripple(8)))
+    g.line(19, 14, 18 - back, 17 - back, "j")
     g.set(20, 15, "J")
     # HER HAIR, iron-grey and loose from under the kerchief: long down her back on the far side, past the
-    # shawl's edge - the break in her outline between the shawl and the pestle that is nobody else's - and
-    # a few strands over the near shoulder.
+    # shawl's edge, into the mortar's mouth - the break in her outline between the shawl and the broom that
+    # is nobody else's - and a few strands over the near shoulder.
     for (x0, y0, x1, y1, ch) in ((21, 11, 18, 27, "r"), (20, 12, 17, 25, "t"), (22, 12, 19, 28, "R"),
                                  (19, 13, 16, 23, "R"), (21, 14, 19, 26, "q")):
         g.line(x0, y0, x1, y1, ch)
-    for (hx2, hy2, hc) in ((18, 28, "q"), (16, 24, "r"), (17, 26, "R"), (19, 29, "R")):
+    for (hx2, hy2, hc) in ((16, 24, "r"), (17, 26, "R")):
         g.set(hx2, hy2, hc)
     g.line(29, 10, 31, 18, "r")
     g.line(28, 11, 30, 19, "t")
     g.set(31, 19, "R")
     g.set(30, 20, "q")
-    contact(g, 10, 44)
+
+    # Risen: every row of her up by `lift`, and leaning into the way she flies while she moves - the upper
+    # body a column ahead of the mortar. The shadow is laid after both, so it stays on the ground.
+    if lift:
+        g.g = g.g[lift:] + [["."] * g.cell for _ in range(lift)]
+    if drift:
+        g.g = [(row[-1:] + row[:-1]) if y < 24 - lift else row for y, row in enumerate(g.g)]
+    # THE SHADOW: soft, under where the mortar hangs, never touching it - the occlusion line on the
+    # contract's row, its ends broken by the dither, and a dithered row over its middle; narrower the higher
+    # she is.
+    half = 9 - (1 if lift >= 2 else 0)
+    for x in range(CX - half, CX + half + 1):
+        d = abs(x - CX)
+        if d < half - 1 or (x + lift) % 2 == 0:
+            g.set(x, 47, "o")
+        if d <= half - 3 and x % 2 == 1:
+            g.set(x, 46, "o")
     return g.rows()
 
 
@@ -4026,8 +4140,9 @@ WIZARDS = [("pyromancer", pyromancer), ("frostweaver", frostweaver),
            ("maliang", maliang)]
 
 # The ones who float (anim_sets.hover): drawn whole at any height and any flutter, so their idle bobs and their
-# walk drifts instead of breathing and stepping. Nimue (.ai/endgame-castle.md decision 11).
-FLOATERS = {"nimue"}
+# walk drifts instead of breathing and stepping. Nimue (.ai/endgame-castle.md decision 11), and Baba Yaga in her
+# flying mortar (Eric, 2026-11-09).
+FLOATERS = {"nimue", "yaga"}
 ENEMIES = [("swarmer", swarmer), ("runner", runner), ("bruiser", bruiser),
            ("shielder", shielder), ("skullsentry", skullsentry), ("lunger", lunger),
            ("slammer", slammer), ("exploder", exploder), ("summoner", summoner),

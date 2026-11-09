@@ -76,8 +76,11 @@ PLAYER_RAMPS = RAMPS + [
     "\x80\x81\x82\x83\x84",
     "\x86\x87\x88\x89\x8a",
     # lichen - Morgan le Fay's mantle (roster.LICHEN_RAMP), the contract's sea-grey-green row: \x95-\x99, since
-    # \x90-\x94 are held for Baba Yaga's, merged in parallel.
+    # \x90-\x94 are Baba Yaga's (below).
     "\x95\x96\x97\x98\x99",
+    # wood - Baba Yaga's mortar and broom handle (roster.WOOD_RAMP): the gold row's five stops on bytes of their
+    # own, because the shared "HGgu" stops at the shade and her mortar is drawn from the deep end.
+    "\x90\x91\x92\x93\x94",
 ]
 
 
@@ -261,8 +264,6 @@ WALK_BOB = {"pyromancer": 2, "stormcaller": 2, "vainamoinen": 2,
             "frostweaver": 1, "geomancer": 1, "tituba": 1, "seimei": 1, "sibyl": 1,
             # Lamed by a king: the far leg in its brace hardly bends, so the walk is a heavy one.
             "wayland": 1,
-            # A tall old woman's long, slow step under a coat to the ground.
-            "yaga": 1,
             # A heavy man's planted step under a physician's gown.
             "paracelsus": 1,
             # An old man's measured step under a long physician's gown.
@@ -326,6 +327,8 @@ def walk(pose_fn, bob=2, anchor=WALK_ANCHOR):
 # DRIFTS (no step at all; the cloth streams further back, she leans into it, and a shallower, quicker bob).
 # The contract's anchor still holds on every frame: the lowest pixel is the shadow's occlusion line on row
 # cell-1, which is where the ground is; her feet are simply not on it.
+# Baba Yaga is the second (Eric, 2026-11-09: "Her typical movement can be flying in a mortar holding a broom"):
+# roster.yaga takes the same three arguments, and what streams on her is the broom's twigs, not cloth.
 HOVER_IDLE_FRAMES = 12
 HOVER_MOVING_FRAMES = 8
 

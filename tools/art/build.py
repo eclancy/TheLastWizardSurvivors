@@ -165,7 +165,8 @@ def build_roster():
 
     for name, fn in roster.WIZARDS:
         pose = fn()
-        # One who floats (roster.FLOATERS, Nimue) bobs and drifts instead (anim_sets.hover).
+        # One who floats (roster.FLOATERS: Nimue, Baba Yaga in her mortar) bobs and drifts instead
+        # (anim_sets.hover).
         floating = anim_sets.hover(fn) if name in roster.FLOATERS else None
         idle = floating[0] if floating else roster.idle(pose)
         # Numbered single frames for the idle, because CharacterData.Portrait points at frame one
