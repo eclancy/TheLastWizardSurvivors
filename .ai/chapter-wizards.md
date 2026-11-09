@@ -334,7 +334,7 @@ nobody can know she is there - she is **secret until `stage_9`**, counted at the
   here is a body: two sprites sorted at their feet, no collision, never in "enemies".
 - **Her unlock** is the site's derived Road deed, "The Tithe Paid", secret until `stage_9`, counted at the Throne only;
   locked hint "Counted with the grain in the Fallow Fields." Quest-log prisoner "the one in the granary", held line
-  "Someone is kept in the reeve's granary, counted with the grain."; freed line "{0} has walked out of the granary." Her
+  "Someone is kept in the reeve's granary, counted with the grain."; freed line "{0} is free from her prison." (Eric, 2026-11-08; was "{0} has walked out of the granary.") Her
   freeing reel (`freed.py` `WIZARDS`, `Freeings.WizardIds`): `freed-medea-mid.png`, she turned to the Archmage, her sun
   burning again over her palm.
 - **Her clue.** `HintCue.Smoke`, a new last row of `hint-cues.png` (every row before it unchanged, byte for byte): wisps
