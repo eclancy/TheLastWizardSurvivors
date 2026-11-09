@@ -144,3 +144,40 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
   damage.
 - **The Eye of Ra's flare gets a better look**: "lets upgrade imhotep's flare to look more interesting".
   The first build's thin pale ring with spokes was faint, and a blinded body showed nothing. Building.
+
+| # | wizard | verdict | Eric's words | status |
+|---|---|---|---|---|
+| 7 | Väinämöinen | keeps Bramble Seed and Song of Making, unchanged. The kantele passive (section 4) stays a proposal | "next" | kept |
+| 8 | John Dee | **opens on a new spell, Folio**, and keeps Scattered Library. **Hollow Star becomes nobody's opener**. His Apotheosis, The Spirit Mirror (*pull*), moves onto Folio | "I don't think hollow star feels like a good spell for him - what spell could feel like his? can we trade hollow star to someone else, like someone who did more with science/stars, and have something that feels more like his?" / "I like your suggestions - how would john dee produce the first orb if he only fires when he picks up an orb? also, can we still keep his spirit mirror finale to work with this?" / "yes" | building (section 6) |
+
+---
+
+## 6. Folio - John Dee's spell (decided 2026-11-09)
+
+**Why.** Hollow Star's only tie to Dee was the word *pull*. What Dee is, in his life and in this game, is a
+**collector**: the largest library in England, at Mortlake, looted while he was abroad; freed here by
+opening 100 chests; his passive the scattered library that elites carry. His spell should be paid for by
+what he gathers.
+
+**The spell.** *Folio* (working name kept), Arcane + Darkness - the scholar's magic and his black mirror.
+
+| axis | Folio |
+|---|---|
+| aim | nearest enemy (a page flies to it) |
+| cadence | **what he gathers**: the book turns a page on its own every 2 s (first guess), and **every orb he picks up turns one more at once**. No other spell fires on pickups (`spell-variety.md` section 2, "What decides when it fires") |
+| demand | go and gather: the orbs he collects are his rate of fire |
+| payload | a page that flies at an enemy and cuts it |
+| band | mid |
+
+- **The first orb** (Eric's question): the page every 2 s is the floor that gets the first kills; gathering
+  only quickens it. With no enemy in reach, turned pages wait in the book, up to 5, rather than being lost.
+- **Starts small** (Eric's rule): level 1 throws one page a turn; levels add pages, edge and a faster turn.
+- **His Apotheosis stays The Spirit Mirror (verb *pull*, his already)**, rebuilt on Folio: *every tenth page,
+  his black mirror opens over the thickest pack and draws every orb and flask in its reach to him - and every
+  orb it brings turns a page*. A storm of pages. The mirror deepens Darkness, as the form did on Hollow Star.
+  A save that saw the old form keeps it seen (as Imhotep's did, `SaveData.MovedAscensions`).
+- **Hollow Star** stays a spell anyone can earn and stays in Ra's Orrery (`second-half.md` 3.2); no wizard
+  opens on it, so Dee may now fuse The Taking. A future star-gazer wizard could take it: **Tycho Brahe**, the
+  astronomer-astrologer-alchemist who saw the new star of 1572 (and wore a metal nose) - a separate job.
+- **Open when built:** the one achievement that earns Folio for everyone else (a chest feat, e.g. open 10
+  chests in one run), its level 4 and level 8 cards, its icon and look.
