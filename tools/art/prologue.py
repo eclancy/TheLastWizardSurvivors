@@ -441,7 +441,7 @@ def _mask_at(pixels, k, facing):
 
 
 def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=True, dim=False,
-                  warm=None, toward=None, contact=True):
+                  warm=None, toward=None, contact=True, shade=None):
     """One of the game's wizards as a silhouette, his feet on (cx, yb), h tall if he stood upright.
 
     who: a ROSTER entry. strip/frame: which of his frames - idle to stand, moving to walk, the death's
@@ -449,6 +449,7 @@ def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=
     own ramp; dim: it is out, a dull stone where it was. warm: a ramp to dither a little of onto him
     (the fire in the moot). toward: (dx, dy[, colour]) to rim the edges facing a light. contact: False
     for a figure off the ground (the throne's lifted four), which has no contact line under him.
+    shade(s, left, top): a pass over his own pixels, on his scratch layer, before he is laid down.
     Returns (light, front): where his light is, and the front of him at his waist (where a chain
     would hold him), in frame pixels; either may be None."""
     prefix, carried, burns = who
@@ -473,6 +474,8 @@ def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=
                     s.set(x, y, warm[4])
     left = int(round(cx - (CELL / 2.0) * k)) - 2
     top = int(round(yb - (CELL - 1) * k)) - 2
+    if shade:
+        shade(s, left, top)
     # The contact line: what of him touches the ground, on the ground row, in occlusion.
     feet = [x for x in range(s.w) for y in range(max(0, s.h - 4 - int(k)), s.h) if s.px[x, y][3]]
     over(c, s, left, top)
@@ -1532,15 +1535,19 @@ def p_moot():
 # the foreground. remove the purple wizard, since he is the wizard that you are, and you do not get captures by him".
 #
 # So FOUR: the starters the Archmage frees in the break, in the break's order left to right (FREED_FOUR) - never Dee,
-# whose grey robe and violet light read as the player. They stand on the far side of the moot's circle, on the crest
-# where its ground meets the sky, CAST IN SHADOW against the glow of his sun: occlusion shapes told apart by their
-# outlines - the Pyromancer's lantern and cape, the Geomancer's bulk and fork, the Frostweaver's crown and trident, the
-# Stormcaller's hair and raised fork - and each with nothing on him in colour but his own light. HE is in the
-# FOREGROUND, the nearest thing to the camera, between us and them, with his back to us. A silhouette has no front, so
-# the picture says it: the black sun is beyond him, behind his head, the only light on him comes from there, and his
-# raised hand reaches up into the scene, toward them. Then he takes them one at a time, from the far one to the
-# nearest: his reach leaves his hand, a hoop of his violet closes on one and lifts it into the sky over the circle,
-# where it hangs in a glow of his light while its own light streams back across the sky into his hand.
+# whose grey robe and violet light read as the player. And his third pass: "when the dark wizard lifts the wizards into
+# the air, they should still be at the stone circles. you can also show the colored dark silhouettes when he lifts
+# them." So they stand IN THE MOOT'S RING, round its cold ward, the ring's far stones standing tall behind them and
+# leaning outward, its near ones thrown down flat toward us - the place of panel 1, seen from behind him. Standing,
+# they are CAST IN SHADOW against the glow of his sun: occlusion shapes told apart by their outlines - the
+# Pyromancer's lantern and cape, the Geomancer's bulk and fork, the Frostweaver's crown and trident, the Stormcaller's
+# hair and raised fork - with nothing on them in colour but their own lights. HE is in the FOREGROUND, the nearest
+# thing to the camera, between us and them, with his back to us. A silhouette has no front, so the picture says it:
+# the black sun is beyond him, behind his head, the only light on him comes from there, and his raised hand reaches up
+# into the scene, toward them. Then he takes them one at a time, from the far one to the nearest: his reach leaves
+# his hand, a hoop of his violet closes on one - and in that light his own colour comes up on him, dark and shaded,
+# the moot's red, green, blue or gold (THRONE_LIFTED) - and lifts him out of the ring into the sky over it, where he
+# hangs in a glow of the dark wizard's light while his own light streams back into the hand.
 #
 # The box is the break's: every frame is the whole mid layer inside it, and the still mid layer is empty there. Every
 # edge and size a multiple of 8, so the dissolve's Bayer threshold matches pixel for pixel.
@@ -1556,22 +1563,31 @@ THRONE_COLUMNS = 8
 # the moot's panel gave it against him (eleven of his 64ths), so its corona rings his collar of points.
 THRONE_HIM = (604, 700, 300)
 THRONE_SUN = (606, 437, 52)
-# The crest of the far side of the circle, where the four stand against the sky: its height at x.
+# The moot's ring in the middle distance, beyond him and to our left: its centre and radii. Its stones stand round
+# this ellipse, the cold ward lies in its middle, and the four stand inside it.
+THRONE_RING = (404, 462, 196, 44)
+THRONE_WARD = (404, 474, 60, 11)
+# Where the ring's far stones stand, by x on its far arc: two to the left of the four, three in the gaps between
+# them, none behind his head, where a stone would break the eclipse.
+THRONE_FAR_STONES = [228, 274, 353, 403, 453]
 
-
-def _throne_crest(x):
-    return 452 + math.sin(x * 0.012 + 0.6) * 5 + math.sin(x * 0.037 + 2.0) * 2
-
-
-# The four, in the order he takes them, far to near: (who, standing on the crest at x, held in the air (x, yb),
-# height, facing, the moment the hoop closes). Facing him, each a step apart so no two outlines touch and merge.
-# The first hoop closes at 1.25 s, so the circle stands whole and still for a beat after the dissolve in (his reach,
-# THRONE_REACH, leaves his hand 0.15 s before it); then one every 0.65 s. The last comes to rest at 4.8 s, and
-# the dissolve to the tide begins at 5.2.
-THRONE_FOUR = [(PYRO, 328, (332, 372), 48, 1, 1.25),
-               (GEO, 378, (376, 336), 48, 1, 1.9),
-               (FROST, 428, (428, 326), 48, 1, 2.55),
-               (STORM, 478, (478, 350), 48, 1, 3.2)]
+# The four, in the order he takes them, far to near: (who, standing in the ring (x, yb), held in the air (x, yb),
+# height, facing, the moment the hoop closes). Facing him, on the ward's far side, each a step apart so no two
+# outlines touch and merge. The first hoop closes at 1.25 s, so the circle stands whole and still for a beat after
+# the dissolve in (his reach, THRONE_REACH, leaves his hand 0.15 s before it); then one every 0.65 s. The last comes
+# to rest at 4.8 s, and the dissolve to the tide begins at 5.2.
+THRONE_FOUR = [(PYRO, (328, 456), (332, 372), 48, 1, 1.25),
+               (GEO, (378, 452), (376, 336), 48, 1, 1.9),
+               (FROST, (428, 452), (428, 326), 48, 1, 2.55),
+               (STORM, (478, 456), (478, 350), 48, 1, 3.2)]
+# Each one's colour once his hoop has him: (the row, the stop he is filled with, the stop his lit side takes). Dark and
+# shaded, as Eric asked ("the colored dark silhouettes"), not the moot's flat fill: a stop of his own row whose
+# brightness is near the other three's (the red row is the darkest, so the Pyromancer sits two stops above the
+# rest), his lit side one stop up toward the hand, his far side let back to occlusion.
+THRONE_LIFTED = {"pyromancer": (R, 2, 1), "geomancer": (M["verdant"], 4, 3), "frostweaver": (M["azure"], 4, 3),
+                 "stormcaller": (G, 4, 3)}
+# Seconds his colour takes to come up once the hoop has closed: half of him at once, all of him after this.
+THRONE_COLOUR_IN = 0.12
 # The hoop closing: seconds from its flash on the ground to his feet leaving it.
 THRONE_GRIP = 0.3
 # A lift eases in and out (a smoothstep, steepest at 1.5 times its average) and never climbs faster than this,
@@ -1583,9 +1599,44 @@ THRONE_STREAM = 1.5
 
 
 def _throne_ground(entry):
-    """Where a wizard stands before he is taken: (x, his feet on the crest)."""
-    x = entry[1]
-    return x, int(round(_throne_crest(x)))
+    """Where a wizard stands in the ring before he is taken: (x, his feet)."""
+    return entry[1]
+
+
+def _lifted_shade(row, stop, lit, toward, held, colour):
+    """A wizard's own pixels in the throne, before he is laid down (roster_figure's shade). Standing, cast in shadow:
+    occlusion with a rim of violet on the edge that faces his sun. Held, his colour comes up (`colour` 0 to 1, half
+    his pixels and then all): his row's `stop`, a band of its `lit` stop three pixels deep behind the violet rim on
+    the side toward the hand, and two pixels of occlusion along the far side, so he reads as a turned form and not
+    a flat fill."""
+    def shade(s, left, top):
+        px = s.px
+        if held and colour > 0.0:
+            dx = 1 if toward[0] > 0.33 else (-1 if toward[0] < -0.33 else 0)
+            dy = 1 if toward[1] > 0.33 else (-1 if toward[1] < -0.33 else 0)
+            fill, up, occ = rgb(row[stop]), rgb(row[lit]), rgb(OCC)
+
+            def depth(x, y, sx, sy, most):
+                for d in range(1, most + 1):
+                    qx, qy = x + sx * d, y + sy * d
+                    if not (0 <= qx < s.w and 0 <= qy < s.h) or not px[qx, qy][3]:
+                        return d
+                return most + 1
+            paint = []
+            for y in range(s.h):
+                for x in range(s.w):
+                    if not px[x, y][3] or not dith(x + left, y + top, colour):
+                        continue
+                    if depth(x, y, dx, dy, 4) <= 4:
+                        paint.append((x, y, up))
+                    elif depth(x, y, -dx, -dy, 2) <= 2:
+                        paint.append((x, y, occ))
+                    else:
+                        paint.append((x, y, fill))
+            for (x, y, col) in paint:
+                px[x, y] = col
+        edge_light(s, V[1], toward)
+    return shade
 
 
 def _throne_lift(entry):
@@ -1691,7 +1742,7 @@ def _reach(c, src, dst, t, at):
 
 def _throne_frame(t, him, statics):
     """The mid layer at panel time t, in three passes: (ground, four, front). The ground is the shadows out of
-    his hem and the marks the hoops leave on the crest; the four are the wizards - on the crest, in his hoop,
+    his hem and the marks the hoops leave in the ring; the four are the wizards - in the ring, in his hoop,
     rising, or hung in the sky with their light streaming to his hand - and his grip on them; the front is him,
     the nearest thing to the camera, the orb in his hand and his reach out of it. p_throne darkens the ground
     and the front by the panel's vignette and the four by none, and lays them in that order."""
@@ -1711,7 +1762,7 @@ def _throne_frame(t, him, statics):
     for (i, e, x, y, lu, v, level) in poses:
         who, h, f, at = e[0], e[3], e[4], e[5]
         lights[i] = light_at(who, x, y, h, "idle" if t < at else "death", 0, f)
-        # The crest where each was taken: the mark the hoop left closing.
+        # The ground where each was taken: the mark the hoop left closing.
         if t >= at:
             gx, gy = _throne_ground(e)
             _hoop(c, gx, gy + 1, 0.42 * h, 0.1 * h, True, V[3], V[3])
@@ -1743,13 +1794,16 @@ def _throne_frame(t, him, statics):
                     if (d // 2 + k) % 3 == 0:
                         continue
                     four.set(sx_, y + d, DK[3] if d < ln * 0.5 else V[3])
-        # Cast in shadow: occlusion, his outline caught in violet on the edge that faces the light - his sun's
-        # beyond the circle while he stands, his grip's toward the hand once it has him. A stop above the sky band,
-        # or the rim is lost against it.
+        # Standing, cast in shadow, his outline caught in violet on the edge that faces his sun beyond the ring; once
+        # the hoop has him, his own colour comes up in its light, dark and shaded, lit toward the hand (a stop above
+        # the sky band, the rim, or it is lost against it).
         to = ((ox - x), (oy - cyw)) if held else ((THRONE_SUN[0] - x), (THRONE_SUN[1] - 40 - cyw))
         n = math.hypot(*to) or 1.0
+        row, stop, lit = THRONE_LIFTED[who[0]]
+        colour = 0.0 if not held else (0.5 if t - at < THRONE_COLOUR_IN else 1.0)
         roster_figure(four, who, x, y, h, [OCC, OCC], strip="death" if held else "idle", frame=0, facing=f,
-                      lit=False, toward=(to[0] / n, to[1] / n, V[1]), contact=not held or lu <= 0.0)
+                      lit=False, contact=not held or lu <= 0.0,
+                      shade=_lifted_shade(row, stop, lit, (to[0] / n, to[1] / n), held, colour))
         if held:
             for dy in (0, 1):
                 _hoop(four, x, hy_ + dy, rx, ry, True, DK[0] if flash else DK[1], DK[1] if flash else DK[2])
@@ -1768,32 +1822,60 @@ def _throne_frame(t, him, statics):
 def p_throne():
     """2. "He came here first." The moot's circle, its fire out, and over it his first full look: a silhouette in the
     foreground with his back to us, the only figure in the game that sheds dark light, his black sun behind his head.
-    Beyond him, on the far crest of the circle, the four disciplines cast in shadow against the sky - until he lifts
-    them into it one after another (animated: THRONE_BOX), each in a hoop of his violet, and draws their light into
-    his hand."""
+    Beyond him, in the moot's ring of stones, the four disciplines cast in shadow against the sky - until he lifts
+    them out of it one after another (animated: THRONE_BOX), each in a hoop of his violet that brings his own colour
+    up on him, dark and shaded, and draws their light into his hand."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 470, [OCC, OCC, S[4], V[4], V[3]])
     stars(back, (0, 0, FW, 320), 160, 4, colors=[S[0], V[1], V[0]])
     sun_x, sun_y, sun_r = THRONE_SUN
     # The sky over the circle lit by his sun, a band of violet pigment the four stand against: without it they were
     # occlusion on the night.
-    back.radial(sun_x - 150, 452, 330, 130, [V[2], V[2], V[3], V[3], V[4], None])
+    back.radial(sun_x - 150, 440, 330, 130, [V[2], V[2], V[3], V[3], V[4], None])
     black_sun(back, sun_x, sun_y, sun_r, rays=40, seed=5)
-    # The far side of the circle: a low rise of heath, its crest the line the four stand on, a few of its stones
-    # thrown down outward along it.
-    hills(back, _throne_crest, [V[4], S[4], S[4]], 60, lit=V[2])
-    back.vramp(512, FH - 1, [S[4], S[4], OCC, OCC])
-    heath(back, 456, 840, 1800, 6, [(S[4], V[4]), (OCC, V[4]), (OCC, S[4])],
-          keep_out=lambda x, y: y < _throne_crest(x) + 3)
-    for i, (x, w, h, lean, br) in enumerate([(232, 12, 30, -0.45, True), (290, 10, 22, -0.3, False),
-                                             (520, 11, 24, 0.35, True), (566, 12, 28, 0.5, False)]):
-        standing_stone(back, x, _throne_crest(x) + 2, w, h, 700 + i, lean=lean, broken=br,
-                       ramp=[S[3], S[4], S[4], OCC, OCC], toward=(-0.6 if x > 430 else 0.6, -0.8, V[2]))
-    # The near side of the ring, round him: its stones thrown flat, outward toward us.
-    for i, (x, y, w, h, lean, br) in enumerate([(206, 600, 34, 90, -0.75, True), (344, 640, 30, 70, -0.6, False),
-                                                (766, 610, 34, 84, 0.7, True)]):
-        standing_stone(back, x, y, w, h, 720 + i, lean=lean, broken=br, ramp=[S[3], S[4], OCC, OCC, OCC],
-                       toward=(0.4 if x < 480 else -0.4, -0.9, V[3]))
+    # The heath beyond the ring, and the ring's ground. The land falls away behind him, so his sun is not cut to a
+    # dome by it and its corona still rings his head.
+    far_land = ridge_fn(420, 7, 11, 0.9)
+    hills(back, lambda x: far_land(x) + max(0.0, x - 500) * 0.55, [V[4], S[4], S[4]], 50, lit=V[2])
+    back.vramp(470, FH - 1, [S[4], S[4], OCC, OCC])
+    heath(back, 424, 840, 1800, 6, [(S[4], V[4]), (OCC, V[4]), (OCC, S[4])])
+    rcx, rcy, rrx, rry = THRONE_RING
+    # The ring's floor, lit by his sun beyond it: violet pigment, cold, where the moot's was gold.
+    back.radial(rcx, rcy + 6, rrx + 30, rry + 22, [V[3], V[3], V[4], V[4], None])
+    # The ring of standing stones (the moot's, panel 1): the far ones still standing behind the four, leaning outward
+    # from him; the near ones thrown down flat, outward toward us. None behind his head, where they would break the
+    # eclipse; drawn far to near round the cold ward.
+    # The far ones are placed, not spaced round: a stone standing straight behind one of the four ran on out of his
+    # outline like a tall hat, so the tall ones stand to the left of them and the rest rise in the gaps between
+    # their heads.
+    stones = []
+    rng = random.Random(707)
+    for i in range(12):
+        a = i * 6.28318 / 12.0 + 0.13
+        if math.sin(a) >= 0:
+            stones.append((rcy + math.sin(a) * rry, rcx + math.cos(a) * rrx, False, i, rng.random(), rng.random()))
+    for i, x in enumerate(THRONE_FAR_STONES):
+        y = rcy - rry * math.sqrt(max(0.0, 1.0 - ((x - rcx) / float(rrx)) ** 2))
+        stones.append((y, x, True, 20 + i, rng.random(), rng.random()))
+    wx, wy, wrx, wry = THRONE_WARD
+    stones.append((wy, None, None, None, 0, 0))
+    for (y, x, far, i, r1, r2) in sorted(stones, key=lambda s: s[0]):
+        if x is None:
+            # The moot's ward, where the fire burned: gone cold, its lines in stone, the fire's ash in the middle.
+            ward(back, wx, wy, wrx, wry, A=[S[2], S[3], S[3], S[3]], pool=False)
+            back.disc(wx, wy + 1, 11, 3.5, S[4])
+            back.disc(wx - 2, wy, 6, 2.2, OCC)
+            continue
+        out = 1 if x > rcx else -1
+        if far:
+            # A head taller than the four, as the moot's stones stand over its wizards; the ones in the gaps between
+            # them a little less, so they rise between the heads without crowding them.
+            tall = (64 + r2 * 16) if x < 310 else (54 + r2 * 8)
+            standing_stone(back, x, y, 15 + r1 * 5, tall, 700 + i, lean=out * (0.06 + r1 * 0.1),
+                           broken=r2 < 0.3, ramp=[S[2], S[3], S[4], OCC, OCC], toward=(1, -0.5, V[2]))
+        else:
+            standing_stone(back, x, y, 18 + r1 * 6, 46 + r2 * 12, 700 + i, lean=out * (0.7 + r1 * 0.2),
+                           broken=True, ramp=[S[3], S[4], S[4], OCC, OCC], toward=(1, -0.6, V[3]))
 
     # Him, once: the frames lay him and his orb over the four.
     cx, yb, hh = THRONE_HIM

@@ -13,7 +13,7 @@ choice below comes from it.
 | # | Panel (`name`) | Line | What it is |
 |---|---|---|---|
 | 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it four of the game's own wizards (below) - the disciplines, standing square round the fire - each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
-| 2 | He comes (`throne`) | *He came here first.* | **Animated** (2026-11-08, Eric: *"it's hard to see what he's doing in the background, it should show him lifting each of the wizards into the air to capture them"*, then *"the silhouette of 4 wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard, since he is the wizard that you are"*; below). **Only his silhouette**, in the foreground and with his back to us: a tall cowled shape inside a collar of points, his black sun behind his head as an eclipse, one arm raised and reaching up into the scene. No face, folds, trim or keys; the shadow running out of his hem has eyes in it. Beyond him, on the far crest of the moot's circle (its stones thrown down outward), the four disciplines - the four the break frees, in its order - stand cast in shadow against his sun's glow, each with nothing on him in colour but his own light. Then he takes them one at a time, far to near: his reach leaves his hand, a hoop of his violet closes on one and lifts it into the sky, where it hangs in his grip while its light streams back into his hand. They end in an arc that curves down into the hand. Never Dee, whose grey robe and violet light read as the player, who is never taken. |
+| 2 | He comes (`throne`) | *He came here first.* | **Animated** (2026-11-08, Eric: *"it's hard to see what he's doing in the background, it should show him lifting each of the wizards into the air to capture them"*, then *"the silhouette of 4 wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard, since he is the wizard that you are"*, then *"when the dark wizard lifts the wizards into the air, they should still be at the stone circles. you can also show the colored dark silhouettes when he lifts them"*; below). **Only his silhouette**, in the foreground and with his back to us: a tall cowled shape inside a collar of points, his black sun behind his head as an eclipse, one arm raised and reaching up into the scene. No face, folds, trim or keys; the shadow running out of his hem has eyes in it. Beyond him, the moot's ring of standing stones round its cold ward - the far stones tall behind and between them, the near ones thrown down outward - and in it the four disciplines (the four the break frees, in its order), cast in shadow against his sun's glow, each with nothing on him in colour but his own light. Then he takes them one at a time, far to near: his reach leaves his hand, a hoop of his violet closes on one, his own colour comes up on him in its light - the moot's red, green, blue or gold, dark and shaded - and he is lifted out of the ring into the sky, where he hangs in the dark wizard's grip while his light streams back into the hand. They end in an arc over the empty ring that curves down into the hand. Never Dee, whose grey robe and violet light read as the player, who is never taken. |
 | 3 | The tide (`tide`) | - | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture). His shadows over the land: a village at the foot of a hill, still lit and quiet for a breath - then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope toward the village, every body on its own lane with its feet on the ground, growing as it comes, the front rank striding up big by the village as the panel ends. The last frame is the old still: the flood arrived. Every one of them wears his mark in its eyes. |
 | 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards - six of them, the secret three among them, never Dee - led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
@@ -63,10 +63,13 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   (`roster_figure` / `silhouette` in the generator: the 48 cell's pixels, contact line and sparks
   dropped, smoothed onto the panel's grid, filled flat, lit only at the anchor where his own element
   sits in the sprite). Which frames: idle in the moot and in panel 2 while he stands, the first frame of
-  his death strip once the hoop has him (the flinch), his walk in panel 4. In panel 2 they are cast in
-  shadow - occlusion, a rim of violet on the edge that faces the light, and nothing in colour but each one's
+  his death strip once the hoop has him (the flinch), his walk in panel 4. In panel 2, standing, they are cast
+  in shadow - occlusion, a rim of violet on the edge that faces the light, and nothing in colour but each one's
   own light - and told apart by outline alone: the Pyromancer's lantern and cape, the Geomancer's bulk and
-  fork, the Frostweaver's crown and trident, the Stormcaller's hair and raised fork. **The moot and panel 2
+  fork, the Frostweaver's crown and trident, the Stormcaller's hair and raised fork. Once the hoop has one,
+  his own colour comes up on him, dark and shaded (`THRONE_LIFTED`): a dark stop of his robe's row (the red
+  row two stops higher than the others, for an even brightness), a band one stop up on the side toward the
+  hand, the far side let back to occlusion, the violet rim kept. **The moot and panel 2
   show only the four disciplines**, whose silhouettes a fresh save already shows. Tituba, Vainamoinen and
   Laelaps are secret until their chapters open (`.ai/side-events.md`, "Secret wizards"), and the prologue
   plays before any chapter has; only the procession shows them, because Eric chose it (2026-11-01, "Show
@@ -142,31 +145,38 @@ which animates its whole flood, about 23 (446 KB on disk - flat colours compress
 are rendered once per (kind, size, seed, light) and pasted along their lanes (`creature_fig`,
 `_TIDE_CACHE`), or the 45 frames would re-draw 1,600 creatures each.
 
-**The throne's lifting** (`THRONE_BOX`, 264x232 at 296,240: the four from the crest into the sky, his raised
-arm and orb, the streams and his reach; its still mid layer is empty inside it, the break's pattern). Two
+**The throne's lifting** (`THRONE_BOX`, 264x232 at 296,240: the four from the ring into the sky, his raised
+arm and orb, the streams and his reach; its still mid layer is empty inside it, the break's pattern). Three
 passes made it. The first (de26e32c) lifted five round his head in their robes' colours, him small at the
 back of the circle; Eric: *"the silhouette of 4 wizards, cast in shadow, in the background, with the dark
-wizard in the foreground. remove the purple wizard"*. So now: **him in the foreground** (`THRONE_HIM`, 300 art
+wizard in the foreground. remove the purple wizard"*. The second (4dbe1c33) stood the four on a bare far
+crest; Eric: *"they should still be at the stone circles. you can also show the colored dark silhouettes
+when he lifts them"*. So now: **him in the foreground** (`THRONE_HIM`, 300 art
 pixels tall, cut by the frame's foot, on the right), his back to us - a silhouette has no front, so the
 picture says it: his black sun is beyond him, behind his head (`THRONE_SUN`, at the moot's proportion, so its
 corona rings his collar of points), the only light on him comes from there, and his raised hand reaches up
 and to our left into the scene. `dark_wizard` fills the closed gaps inside his shape before its rims are drawn:
 drawn this large, the rim round two gaps between his mantle's points read as a pair of eyes looking out of his
-back. **The four in the background** (`THRONE_FOUR`, 48 tall, a step apart so no two outlines touch and merge)
-on the far crest of the circle, cast in shadow against a band of his sun's violet on the sky. It runs at
+back. The land falls away behind him, so it does not cut his sun to a dome. **The moot's ring** (`THRONE_RING`)
+in the middle distance, its cold ward in the middle (`THRONE_WARD`): the near stones thrown down outward, the
+far ones standing a head taller than the four and leaning outward, placed (`THRONE_FAR_STONES`) to the left of
+them and in the gaps between their heads, because a stone straight behind one ran on out of his outline like a
+tall hat. **The four in the ring** (`THRONE_FOUR`, 48 tall, a step apart so no two outlines touch and merge),
+cast in shadow against a band of his sun's violet on the sky; each one's colour comes up, dark and shaded
+(`THRONE_LIFTED`), as his hoop closes - half his pixels for the first 0.12 s, then all of him. It runs at
 **12 frames a second**, not 8: at 8 a rise went up in jumps the eye could not follow as one movement. Each
 lift is a smoothstep held under 120 art px/s (`THRONE_LIFT`, ten a frame), and the panel is held **5.9 s**,
 not 5.2, so four of them fit one after another with a still beat before the first and a rest after the
 last. The clock, in panel seconds: the circle stands whole and still until his reach leaves his hand at
 1.1 s; the hoops close at 1.25 (the Pyromancer, farthest), 1.9 (the Geomancer), 2.55 (the Frostweaver) and
-3.2 (the Stormcaller, nearest his hand), each foot leaving the crest 0.3 s after its hoop; the last comes to
+3.2 (the Stormcaller, nearest his hand), each foot leaving the ring 0.3 s after its hoop; the last comes to
 rest at 4.8 s, and the dissolve to the tide begins at 5.2. From each hoop on, that wizard's light streams out
 of his staff into the orb in the raised hand, which grows with every light it takes, and the staff burns down
 to half (still its own colour, so each is still known by his light). The frames are the whole mid layer in
 three passes: the ground (his hem's shadows, the hoops' marks) and the front (him, the orb, his reach) under
 the panel's full vignette, so they meet the still layer at the box's edge without a seam, and the four and his
 grip on them under none, because the vignette's dither at any strength set a lattice of stone dots over a
-flat shape. 46 unique frames of 71 ticks: about 11 MB of texture while the panel is up (190 KB on disk). No
+flat shape. 46 unique frames of 71 ticks: about 11 MB of texture while the panel is up (210 KB on disk). No
 impact beat: the tide's burst, a few seconds on, is the one that is his.
 
 ## The scene
@@ -283,7 +293,7 @@ sit mid-hold at frames 138, 411 (the throne, animated), 714 (the tide, animated)
 break, animated: see `.ai/cutscenes.md`), 1818 and 2064; frame 255 is mid-dissolve from the first to the
 second, and the whole thing ends at about frame 2322. The throne starts dissolving in at frame 234, so its
 moment `t` seconds in is frame `234 + 60t`: `--frames=300 --burst=8,34` (above) takes it at 1.1, 1.7, 2.2,
-2.8, 3.4, 3.9, 4.5 and 5.1 s (the four on the crest; the first in his hoop; the first up and the second
+2.8, 3.4, 3.9, 4.5 and 5.1 s (the four in the ring; the first in his hoop; the first up and the second
 taken; the third taken; the third rising and the last taken; the last rising; all four held; at rest before
 the dissolve), and frame 567 is mid-dissolve from it into the tide. The tide starts dissolving in at frame
 546, so its moment `t` seconds in is frame `546 + 60t`: `--frames=642 --burst=5,42` takes the rush at 1.6,
