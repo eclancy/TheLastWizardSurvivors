@@ -2387,6 +2387,230 @@ def secret_voice_below():
 
 
 # ---------------------------------------------------------------------------
+# the White Downs (stage_14, .ai/second-half.md 4.2): the hunt
+# ---------------------------------------------------------------------------
+# Chalk downland at night under no moon, Artemis's seat held by his shadow. Its cast is a hunt, its boss the
+# Unstrung Hunter, who draws a great bow on you along a line that follows you, and its side event stalks her
+# silver hind. Four sounds: the chapter's hint, the boss's draw and loose, and the hind bolting.
+
+def _ring_s(n, tau):
+    """exp(-t / tau) in real time over n samples: a decay that is the same speed however long the buffer."""
+    k = 1.0 / max(1.0, tau * S.SR)
+    return [math.exp(-i * k) for i in xrange(n)]
+
+
+def _hunting_horn(freq, dur, seed, sag=0.0, waver=0.0):
+    """One note of a hunting horn: a straight brass tube with no valves - the chapter's own horn (hunt_horn in
+    tools/audio/music_downs.py), here at the effects' rate. The lips speak each note with a scoop up from 30
+    cents under in 25 ms and a breath of tongue (a band of noise at 800 Hz, gone in 12 ms), so repeated notes
+    articulate; a saw and a narrow pulse through a lowpass that opens with the note's loudness, as brass does,
+    driven a little for the bell's rasp and lowpassed again after the drive (audio-direction 6). `sag` lets
+    the last third of the note fall that many cents as the breath gives out - the hunting horn's wail - and
+    `waver` is a slow unsteady vibrato of that many cents, a tired player's."""
+    n = S.n_samples(dur)
+    scoop = max(1, S.n_samples(0.025))
+    sag_from = int(n * 0.62)
+    grow = max(1, S.n_samples(0.2))
+    w = 2.0 * math.pi * 4.3 / S.SR
+    f = [0.0] * n
+    for i in xrange(n):
+        c = 0.0
+        if i < scoop:
+            x = 1.0 - i / float(scoop)
+            c -= 30.0 * x * x
+        if sag and i > sag_from:
+            x = (i - sag_from) / float(max(1, n - sag_from))
+            c -= sag * x * x
+        if waver:
+            c += waver * math.sin(w * i + seed) * min(1.0, i / float(grow))
+        f[i] = freq * (2.0 ** (c / 1200.0))
+    env = S.adsr(dur, a=0.02, d=0.1, s=0.78, r=min(0.14, dur * 0.3))
+    src = S.mix(S.gain(S.osc("saw", f, dur), 0.6),
+                S.gain(S.osc("pulse", [x * 1.002 for x in f], dur, duty=0.38, phase=0.3), 0.4))
+    cutoff = [min(2600.0, freq * (1.8 + 4.0 * e)) for e in env]
+    v = S.lowpass(S.lowpass(src, cutoff, 0.85), cutoff, 0.85)
+    v = S.drive(S.env_mul(v, env), 1.6)
+    tongue = S.env_mul(S.bandpass(S.osc("noise", 0, dur, seed=seed), 800.0, 2.0), _ring_s(n, 0.012))
+    return S.lowpass(S.mix(v, S.gain(tongue, 0.25)), 2600.0, 0.707)
+
+
+# The horn's call: (onset s, length s, semitones from A4, gain, sag cents, waver cents). If StageHintCue marks
+# the notes on screen, it reads these onsets - change one, change both.
+_HUNT_HORN_CALL = [
+    (0.06, 0.07, 0, 0.75, 0.0, 0.0),       # A4, doubled: four notes tongued fast
+    (0.15, 0.07, 0, 0.75, 0.0, 0.0),
+    (0.24, 0.07, 0, 0.8, 0.0, 0.0),
+    (0.33, 0.07, 0, 0.8, 0.0, 0.0),
+    (0.42, 0.50, 0, 1.0, 40.0, 6.0),       # A4 held, sagging as the breath goes
+    (1.00, 1.00, -7, 0.86, 110.0, 10.0),   # D4, a fifth under, wavering and falling away
+]
+
+
+def hint_hunt_horn():
+    """The White Downs: a hunting horn, far off on the downs, blown for a hunt that has lost its quarry.
+
+    The chapter's own horn (_hunting_horn, the score's hunt_horn) calling as a huntsman does: A4 "doubled" -
+    four notes tongued fast - then held, sagging at its end as the breath goes, then a long D4 a fifth under,
+    wavering and falling further away, more than a semitone by its end. A call with no answer; both notes are
+    in the chapter's six (music_downs.py). Across open downland it comes back off the next hill (an echo at
+    0.5 s, two taps) into a wide night with little else to reflect from: 220 Hz to 2.2 kHz, a short open room.
+    Not wave_warning (two low saws swelling on A2 and E3, no articulation) and not the caravan's bell (struck,
+    five strikes level): brass, tongued, held, falling. Nothing under 200 Hz. The onsets are _HUNT_HORN_CALL.
+
+    Its pitch was chosen by measurement. The same call on B4 falling to E4 was 0.081 from hint_caravan_bell
+    (E4 is the tin bell's 330 Hz), on E5 to B4 0.109 from hint_paper_wind (whose whistle sits at 640-760 Hz,
+    round E5), and on D5 to A4 0.074 from card_select; on A4 to D4 the nearest sound in the set is 0.19 away."""
+    items = [(_hunting_horn(_hz(semi), dur, 1301 + i, sag, waver), t, g)
+             for i, (t, dur, semi, g, sag, waver) in enumerate(_HUNT_HORN_CALL)]
+    out = S.pad(S.layer(items), 2.5)
+    out = S.delay(out, 0.5, feedback=0.35, mix=0.4, taps=2)
+    return S.dc_block(_far(out, low=220.0, high=2200.0, size=0.6, mix=0.28, damp=0.55))
+
+
+def hunter_draw():
+    """The Unstrung Hunter drawing his great bow, at the start of its 1.4 s wind-up: a long strain that rises,
+    and a cold thread tightening over it. Three parts, all climbing together for 1.32 s and let go only by
+    hunter_loose:
+
+      the limbs   a heavy bow's wood straining: stick-slip, a train of tiny clicks whose rate climbs from 22 to
+                  74 a second as the draw comes back, rung through two low wooden resonances that rise with
+                  the tension (230 to 330 Hz, 560 to 760 Hz). spell_bow_draw, the player's, is one band of
+                  metallic noise at 620-1300 Hz for 0.45 s; this is three times as long, an octave and more
+                  lower, and made of clicks, so it creaks where that one hisses.
+      the string  the bowstring taking the weight: a low buzz rising from 98 to 147 Hz (G2 to D3), a saw and
+                  a sine lowpassed under 900 Hz. Never under 85 Hz: the sub band is the boss roar's.
+      the thread  his arcane, cold: two sines near 1.3 kHz drifting apart as it tightens, so they beat faster
+                  and faster - 2 a second to 13 - while the pair rises a fourth to 1.76 kHz, coming in late.
+                  The arcane cast is two triangles at a fixed 17 Hz tremolo sweeping 430 to 980 Hz; this is
+                  pure, higher, and its shimmer accelerates, which is what tension sounds like.
+
+    It ends at full draw, not decayed - the strain simply stops, as the loose takes it."""
+    dur = 1.32
+    n = S.n_samples(dur)
+    clicks = [0.0] * n
+    t = 0.0
+    k = 0
+    while t < dur:
+        i = int(t * S.SR)
+        if i < n:
+            clicks[i] = 1.0 if k % 2 == 0 else -0.8
+        x = t / dur
+        t += 1.0 / (22.0 + 52.0 * x * x + 5.0 * math.sin(t * 31.0))
+        k += 1
+    limbs = S.mix(S.bandpass(clicks, S.sweep(dur, 230.0, 330.0, 1.2), 6.0),
+                  S.gain(S.bandpass(clicks, S.sweep(dur, 560.0, 760.0, 1.2), 8.0), 0.5))
+    limbs = S.env_mul(limbs, S.ramp(n, 0.2, 1.0, 1.2))
+    sf = S.sweep(dur, 98.0, 147.0, 1.4)
+    string = S.mix(S.osc("saw", sf, dur), S.gain(S.osc("sine", sf, dur, phase=0.25), 0.6))
+    string = S.highpass(S.lowpass(string, 900.0, 0.8), 85.0)
+    string = S.env_mul(string, S.ramp(n, 0.0, 1.0, 1.0))
+    base = S.sweep(dur, 1320.0, 1760.0, 1.5)
+    beat = S.sweep(dur, 2.0, 13.0, 1.6)
+    thread = S.mix(S.osc("sine", base, dur),
+                   S.osc("sine", [base[i] + beat[i] for i in xrange(n)], dur, phase=0.3))
+    thread = S.env_mul(S.lowpass(thread, 4000.0), S.ramp(n, 0.0, 1.0, 2.0))
+    out = S.mix(limbs, S.gain(string, 0.4), S.gain(thread, 0.22))
+    return S.dc_block(S.reverb(out, size=0.5, damp=0.5, mix=0.12))
+
+
+def hunter_loose():
+    """The Unstrung Hunter's great arrow loosed, at the end of his wind-up: the string let go and the arrow
+    gone past. Three parts in 0.62 s:
+
+      the twang   the heavy string slapping home and humming: a low string at D3 (147 Hz, where the draw left
+                  it) that holds its pitch, sagging a semitone, and flaps - its pitch and its level wobbling
+                  at 19 Hz, the wobble gone in a fifth of a second, which is what makes a twang a twang and
+                  not a pluck - a saw under a FIXED lowpass at 650 Hz, so it buzzes low and dark the whole
+                  way down. Over it a dry thwack of the string on the grip (30 ms of noise at 900 Hz).
+      the whirr   the arrow: the fletching of a great shaft tearing the air as it spins - a narrow band of
+                  noise falling from 700 to 420 Hz, chopped by the vanes 38 times a second slowing to 24,
+                  swelling in over 50 ms and dying away over half a second.
+      the thread  his arcane let go: the draw's two-sine thread struck once more at 1.76 kHz and falling a
+                  fifth in 0.16 s as it snaps loose.
+
+    Four drafts, each a different construct, because three collided: a saw pluck under a lowpass closing
+    from 1.8 kHz (the grass element's own construct, 0.066 from cast_grass); a falling whoosh over a falling
+    tone (spell_beam_end's, 0.076); a round triangle string falling 147 to 98 Hz under the whirr (a hit's
+    thud, 0.091-0.104 from player_hurt). spell_bow_release, the player's, is a bright snap, a small string
+    and a RISING whoosh in 0.3 s. Deep and dry: nothing under 85 Hz, the top cut at 3.6 kHz."""
+    dur = 0.62
+    td = 0.56
+    tn = S.n_samples(td)
+    pitch = S.sweep(td, 147.0, 139.0, 0.5)
+    wob = _ring_s(tn, 0.09)
+    flap = [math.sin(2.0 * math.pi * 19.0 * i / S.SR) for i in xrange(tn)]
+    tf = [pitch[i] * (1.0 + 0.05 * wob[i] * flap[i]) for i in xrange(tn)]
+    twang = S.mix(S.osc("saw", tf, td), S.gain(S.osc("sine", tf, td, phase=0.2), 0.7))
+    twang = S.lowpass(twang, 650.0, 0.9)
+    twang = S.env_mul(twang, [(1.0 - 0.45 * wob[i] * (0.5 + 0.5 * flap[i])) * e
+                              for i, e in enumerate(S.expdecay(tn, 3.0))])
+    thwack = S.env_mul(S.bandpass(S.osc("noise", 0, 0.03, seed=1331), 900.0, 1.6),
+                       S.expdecay(S.n_samples(0.03), 6.0))
+    rd = 0.56
+    rn = S.n_samples(rd)
+    vane_rate = S.sweep(rd, 38.0, 24.0, 0.8)
+    vanes = S.osc("sine", vane_rate, rd)
+    whirr = S.bandpass(S.osc("noise", 0, rd, seed=1333), S.sweep(rd, 700.0, 420.0, 0.7), 2.6)
+    whirr = S.env_mul(whirr, [0.25 + 0.75 * max(0.0, v) ** 1.5 for v in vanes])
+    sw = S.n_samples(0.05)
+    whirr = S.env_mul(whirr, S.ramp(sw, 0.0, 1.0) + S.decay(rn - sw, 1.7))
+    thd = 0.16
+    tb = S.sweep(thd, 1760.0, 1175.0, 0.6)
+    thread = S.mix(S.osc("sine", tb, thd), S.osc("sine", [x + 13.0 for x in tb], thd, phase=0.3))
+    thread = S.env_mul(thread, S.expdecay(S.n_samples(thd), 5.0))
+    out = S.layer([
+        (twang, 0.0, 1.0),
+        (thwack, 0.0, 0.5),
+        (whirr, 0.03, 0.8),
+        (thread, 0.0, 0.18),
+    ])
+    out = S.highpass(S.lowpass(S.pad(out, dur), 3600.0, 0.707), 85.0)
+    return S.dc_block(S.reverb(out, size=0.5, damp=0.5, mix=0.12))
+
+
+# The hind's bound: (onset s, gain) of each hoof striking the turf, in the pairs a deer's bound makes (the
+# hind feet together, then the fore), each pair softer as she goes.
+_HIND_HOOVES = [(0.24, 1.0), (0.275, 0.8), (0.40, 0.78), (0.43, 0.62), (0.58, 0.52), (0.61, 0.4)]
+
+
+def hind_bolt():
+    """Artemis's silver hind startled - the stalk's side event: she looked up and saw him move - and gone. A
+    deer's alarm first: a sharp blow of air through the nose, noise through two nasal resonances (620 Hz and
+    1.5 kHz) shut off hard after a tenth of a second, with a short voiced bark inside it - a hind's, not a
+    hound's: a rough buzz falling from 380 to 250 Hz through an "aw", 90 ms. Then she bounds: six strikes of
+    hoof on chalk turf in the pairs a deer's bound makes (_HIND_HOOVES), each a soft low thud (a short body
+    falling 170 to 110 Hz) with the turf giving under it (a damp crunch round 500 Hz), and on the first of
+    each pair the click of a hoof on flint (6 ms at 2.1 kHz); each pair softer and duller than the last, as
+    she goes. Not escort_cough (a man's cough, a glottal burst and a bark at 118 Hz, then breath): higher,
+    nasal, cut off dead, and followed by feet. Nothing under 100 Hz, the top cut at 3.4 kHz."""
+    sd = 0.13
+    sn = S.n_samples(sd)
+    noise = S.osc("noise", 0, sd, seed=1351)
+    snort = S.mix(S.bandpass(noise, 620.0, 2.5), S.gain(S.bandpass(noise, 1500.0, 3.0), 0.7))
+    na = S.n_samples(0.006)
+    nh = S.n_samples(0.05)
+    snort = S.env_mul(snort, S.ramp(na, 0.0, 1.0) + [1.0] * nh + S.decay(sn - na - nh, 2.0))
+    bd = 0.09
+    bark = _vowel(S.sweep(bd, 380.0, 250.0, 0.6), bd,
+                  [(700.0, 3.0, 1.0), (1150.0, 5.0, 0.6), (2500.0, 8.0, 0.1)],
+                  vibrato=0.03, rate=31.0, attack=0.004, release=0.03, seed=1353)
+    items = [(snort, 0.0, 1.0), (bark, 0.01, 0.75)]
+    hd = 0.07
+    hn = S.n_samples(hd)
+    for k, (t, g) in enumerate(_HIND_HOOVES):
+        thud = S.env_mul(S.osc("sine", S.sweep(hd, 170.0, 110.0, 0.5), hd), S.expdecay(hn, 6.0))
+        crunch = S.lowpass(S.bandpass(S.osc("noise", 0, hd, seed=1361 + k), 500.0, 1.0), 1600.0)
+        hoof = S.mix(thud, S.gain(S.env_mul(crunch, S.expdecay(hn, 8.0)), 0.6))
+        if k % 2 == 0:
+            tick = S.bandpass(S.osc("noise", 0, 0.006, seed=1371 + k), 2100.0, 4.0)
+            hoof = S.mix(hoof, S.gain(S.env_mul(tick, S.decay(S.n_samples(0.006), 2.0)), 0.35))
+        items.append((S.lowpass(hoof, 3400.0 - 500.0 * (k // 2)), t, g))
+    out = S.pad(S.layer(items), 0.75)
+    out = S.highpass(S.lowpass(out, 3400.0), 100.0)
+    return S.dc_block(S.reverb(out, size=0.45, damp=0.55, mix=0.14))
+
+
+# ---------------------------------------------------------------------------
 # registry
 # ---------------------------------------------------------------------------
 # (filename stem, category, peak target in dBFS, builder, loops)
@@ -2549,4 +2773,16 @@ REGISTRY += [
     # distance - the quiet end of the once-a-minute row beside secret_found, a voice from far down rather than a
     # sting, and under the meta_unlock that follows it once it has finished.
     ("secret_voice_below",  "secret", -8.0,  secret_voice_below,  False),
+
+    # The White Downs (stage_14). The hint sits with the others: four a run at most, far off, a dB under the
+    # voices as the caravan's bell is, because a horn carries. The Unstrung Hunter's draw and loose come every
+    # few seconds while he lives: the loose - the moment the arrow flies - where the maw's open sits, between
+    # the once-a-second and once-a-minute rows; the draw two dB under it, a swell with no transient to cut the
+    # swarm with, so the loose is the one heard. Both filed with the enemies so --confuse holds them against
+    # the boss sounds. The hind bolting is a mistake made a few times a stalk at most, played at her:
+    # lantern_catch's row, filed with the hints as that one is.
+    ("hint_hunt_horn",      "hint",   -10.0, hint_hunt_horn,      False),
+    ("hunter_draw",         "enemy",  -11.0, hunter_draw,         False),
+    ("hunter_loose",        "enemy",  -9.0,  hunter_loose,        False),
+    ("hind_bolt",           "hint",   -9.0,  hind_bolt,           False),
 ]
