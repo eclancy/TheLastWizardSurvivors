@@ -615,8 +615,8 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   chapter, so only the Throne counts him.
 - **Morgan le Fay** (2026-11-03), the enchantress of Avalon, the queen in the black barge: upright into the wind
   off the strait, her hair and a lichen-green mantle streamed back, the spell's rune of rime before her raised
-  palm. Opens on **Sleet Runes** (Ice+Wind, R2). Passive *Avalon*: the first extra life a run spends heals to
-  full, not half. Freed by lighting the lamps ahead of her barge under the Last Bridge (`.ai/unlock-puzzles.md` 3.7);
+  palm. Opens on **Sleet Runes** (Ice+Wind, R2). Passive *Glamour* (since 2026-11-09; it was *Avalon*): 1 in 10
+  blows strike a mirage of her instead. Freed by lighting the lamps ahead of her barge under the Last Bridge (`.ai/unlock-puzzles.md` 3.7);
   counted at the Throne's gate only.
 - **The Cumaean Sibyl** (2026-11-02), the prophetess of Cumae, old, hooded, a bronze jar of arcane light on
   her crook. Opens on **Arcane Explosion** - which, alone, keeps its own time until she holds a second spell.

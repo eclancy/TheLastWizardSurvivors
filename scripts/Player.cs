@@ -988,10 +988,10 @@ public partial class Player : CharacterBody2D
 		// not damage, not speed, the strength of every push. Her own vine throws what it cuts aside since 2026-11-09
 		// (ThornVine.VineShoveSpeed; Eric chose it over a new passive, .ai/character-fit.md), so it works from her first cast.
 		"knockback_20",
-		// Morgan le Fay (.ai/chapter-wizards.md 4.9): Avalon - the first extra life a run spends heals to full, not
-		// half, as the isle she carried the dying king to healed him. An axis no other wizard owns: not a heal over
-		// time (the Frostweaver), not a death refused (the Archmage) - what an extra life is worth, once.
-		"first_fall_full",
+		// Morgan le Fay (.ai/chapter-wizards.md 4.9): Glamour since 2026-11-09 - one blow in ten strikes a mirage of her
+		// instead (Player.Mirage.cs). An axis no other wizard owns: a dodge of her own, where Overlooked refuses one death
+		// and the Scabbard slows the bites. It replaced Avalon, "first_fall_full", which needed a revive she rarely held.
+		"glamour_evasion_10",
 		// Paracelsus (.ai/chapter-wizards.md 4.4): Sola Dosis - "the dose alone makes the poison". Every poison tick on
 		// an enemy bites a quarter harder (Enemy.PlayerPoisonScale), whichever spell or item laid it. Damage over time is
 		// poison in this game: no other status takes health on a clock. An axis no other wizard owns: not the hit
@@ -1084,8 +1084,8 @@ public partial class Player : CharacterBody2D
 			case "knockback_20":
 				Enemy.PlayerKnockbackScale = 1f + CharacterBoneFenceKnockbackBonus;
 				return true;
-			case "first_fall_full":
-				characterAvalon = true;
+			case "glamour_evasion_10":
+				characterGlamourEvasion = CharacterGlamourEvasion;
 				return true;
 			case "dot_25":
 				Enemy.PlayerPoisonScale = 1f + CharacterSolaDosisBonus;
@@ -3013,7 +3013,8 @@ public partial class Player : CharacterBody2D
 
 		if (amount > 0)
 		{
-			float dodgeChance = Math.Min(0.75f, GetDarknessEvasionPercent() + boonEvasionPercent + familiarGrants.Evasion);
+			float dodgeChance = Math.Min(0.75f, GetDarknessEvasionPercent() + boonEvasionPercent + familiarGrants.Evasion
+				+ characterGlamourEvasion);
 			if (dodgeChance > 0.0f && combatRng.Randf() < dodgeChance)
 			{
 				PlayBlurDodgeEffect();
@@ -3126,9 +3127,9 @@ public partial class Player : CharacterBody2D
 			{
 				RunEvents.RecordRevive();
 				extraLives--;
-				// Spending an extra life is a heal, not a death. Only the branch below is a death. Half the bar -
-				// or, the first time a run spends one under Avalon (Morgan le Fay, Player.Mirage.cs), the whole of
-				// it. After Overlooked's step on purpose: a blow the Archmage's passive turned aside never gets here.
+				// Spending an extra life is a heal, not a death. Only the branch below is a death. Half the bar
+				// (ExtraLifeHeal). After Overlooked's step on purpose: a blow the Archmage's passive turned aside never
+				// gets here.
 				SfxPlayer.Global(SfxCatalog.PlayerHeal);
 				CurrentHP = ExtraLifeHeal();
 				return;

@@ -1227,7 +1227,8 @@ met by the bot, which cannot be hurt); nothing on the phone.
   alternative under R1: **Stormsweep** (the storm on the water); the form works for either facing spell.
 - **Form: Fata Morgana (double).** *"A mirage of you walks beside you facing the other way and casts
   behind you. Enemies near it chase it."* Tagline: *"Half of them chase a ghost."*
-- **Passive: Avalon**, the first fall of a run heals to full, not half.
+- **Passive: Glamour** since 2026-11-09: 1 in 10 blows strike a mirage of her instead (it was **Avalon**, the first
+  fall of a run healing to full, which waited on a revive she rarely held; `.ai/character-fit.md`).
 - **Freed by: keep pace.** The barge drifts under the span toward the gate, its one lantern seen through
   gaps in the deck. Stay within 260 px of it for its drift (about 1,200 px, 50 s: slower than him, ahead
   of the collapse). Fall behind or run ahead and the lantern dims; out of reach 6 s and it drifts back to
@@ -1257,7 +1258,9 @@ met by the bot, which cannot be hurt); nothing on the phone.
   it, which keeps her apart from the Frostweaver's trident (a first draft's raised-arm stave read as one).
   Sheets written by `build_roster`'s wizard loop for her name only; her freeing reel is `freed.py`'s row and
   `Freeings.WizardIds`.
-- **Avalon** (`first_fall_full`): the first extra life a run spends heals to full, not half (`Player.ExtraLifeHeal`,
+- **Replaced 2026-11-09 by Glamour** (`glamour_evasion_10`, `Player.Mirage.cs`: 10% added to the dodge roll in
+  `TakeDamage` step 2; Eric: "glamour", over making Avalon her own revive; `.ai/character-fit.md`). What follows is
+  the record of Avalon as it was. **Avalon** (`first_fall_full`): the first extra life a run spends heals to full, not half (`Player.ExtraLifeHeal`,
   read in `TakeDamage`'s step 10). After the Archmage's Overlooked in the pipeline, so a blow Overlooked turns
   aside never spends a life - but a character has one passive, so the two never meet in a run. On the healing
   ledger as two lines: "an extra life" (every revive's half, which the ledger never counted) and "Avalon" (the

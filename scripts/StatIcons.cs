@@ -110,7 +110,9 @@ public static class StatIcons
 		if (t.Contains("max hp") || t.Contains("max health") || t.EndsWith(" hp"))
 			return "heart";
 		// "misses": The Archmage's Overlooked, "the blow that would end you misses" - a hit avoided, as a dodge is.
-		if (t.Contains("evasion") || t.Contains("dodge") || t.Contains("ignores one hit") || t.Contains(" misses"))
+		// "mirage": Morgan le Fay's Glamour, "1 in 10 blows strike a mirage of you instead" - a dodge.
+		if (t.Contains("evasion") || t.Contains("dodge") || t.Contains("ignores one hit") || t.Contains(" misses")
+			|| t.Contains("mirage"))
 			return "evasion";
 		if (t.Contains("luck") || t.Contains("chest") || t.Contains("relic") || t.Contains("reward"))
 			return "luck";

@@ -1604,9 +1604,6 @@ public partial class _BalanceHarness : Node
 		// bolts cut on the line - once the form has cut.
 		if (SpiritualWeapon.StatSevers > 0)
 			GD.Print($"HARNESS SEVER m={row.Minute} {SpiritualWeapon.SeverLine()}");
-		// Avalon (her passive): the first fall it healed to full, once it has.
-		if (player.AvalonAtSeconds >= 0f)
-			GD.Print($"HARNESS AVALON m={row.Minute} at={player.AvalonAtSeconds:0.0}s");
 		// The Dose (Paracelsus): how many carriers each generation has had, and how many last carriers it has finished.
 		if (Contagion.DoseInfectedByGeneration[1] > 0)
 			GD.Print($"HARNESS DOSE m={row.Minute} by generation={string.Join("/", Contagion.DoseInfectedByGeneration)} last={Contagion.LastCarriersDosed}");

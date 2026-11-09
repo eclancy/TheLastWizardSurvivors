@@ -65,7 +65,7 @@ A fit is judged on four things: the character's **story**, their **look**, their
 | Imhotep | Surveyor: +20% pickup reach | good | the surveyor |
 | Wayland | Wings: +10% speed | strong | the wings he made, on a lamed leg |
 | Ma Liang | Paint What Is Needed: a flask once, below 25% | strong | he paints what is needed |
-| Morgan le Fay | Avalon: the first revive heals to full | **weak in play** | perfect story, but it does nothing unless she holds a revive (Phoenix Oath, or the cat's Nine Lives) |
+| Morgan le Fay | Avalon: the first revive heals to full (Glamour since 2026-11-09) | **weak in play** | perfect story, but it does nothing unless she holds a revive (Phoenix Oath, or the cat's Nine Lives) |
 | Nostradamus | Foresight: wind-ups show 15% longer | strong | foresight |
 | Tituba | Patience: +15% duration | good | patience |
 | Väinämöinen | Song of Making: +10% area | ok | a flat stat; the song is not in it |
@@ -158,6 +158,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 | 11 | The Dark Wizard | keeps The Taking and Dread, unchanged. **His unlock is a mystery achievement**: The Taker Taken shows its condition (every chapter's boss on Hardcore) from the first run, and reads "???" for its name and its reward, with the seal, until done (`SealedName`/`SealedReward`, as a Conjunction's Feat reads before it is made). It was already listed under the Throne as "The Taker Taken - Frees someone": the title gave away who is taken | "do not change the dark wizard, but add his unlock condition as a mystery achievement" | built `ff5fa9a6`, validated (0 errors); the page not looked at |
 | 12 | Merlin | keeps Orb of Ages and Warding Hand, unchanged | "Next" | kept |
 | 13 | Baba Yaga | keeps Thorned Vine. **She moves flying in a mortar, holding a broom** (she joins Nimue among the floaters, `FLOATERS` in `tools/art/roster.py`, `anim_sets.hover`; the look only, her feet collider unchanged). **Bone Fence is in question**: her own vine pushes nothing (`Player.cs`: "Her own vine pushes nothing; it is a build's passive"), so +20% knockback does nothing until she takes a spell or card that shoves . **Fixed by option A: Thorned Vine throws what it cuts aside**, along its stroke (`ThornVine.VineShoveSpeed`, 180, a first guess), for every wizard; Bone Fence keeps +20% knockback and now works from her first cast. Entangle still roots instead | "Her typical movement can be flying in a mortar holding a broom, also does thorned vine have knockback? how often is her passive useful?" / "A: vine shoves" | vine shove built `f78d8744` (not yet validated in Godot or played); mortar and broom being drawn |
+| 14 | Morgan le Fay | keeps Sleet Runes (Ice + Wind is the weather her mirage forms in: cold air over cold sea). **Avalon is replaced by Glamour: 1 in 10 blows strike a mirage of her instead** - a dodge added to the roll in `TakeDamage` step 2 (`Player.Mirage.cs`, `glamour_evasion_10`), so a turned blow shows the Blur's ghosts. Avalon needed a revive she rarely held | "i like your avalon passive suggestion" / (asked: Glamour, or Avalon as her own revive?) "glamour" | built; not yet validated in Godot or played |
 
 ---
 
