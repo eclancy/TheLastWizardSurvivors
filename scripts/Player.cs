@@ -707,10 +707,11 @@ public partial class Player : CharacterBody2D
 	// Far-Shooting (Artemis, .ai/second-half.md 3.2): the share added to every spell's reach - how far it finds its
 	// target and how far its shot flies to it (SpellData.ReachScale, read through GetReachAtLevel).
 	public const float CharacterFarShootingReachBonus = 0.15f;
-	// Rejuvenation (Medea): the share added to every heal (Heal), and the carry that keeps a one-point heal's share.
-	public const float CharacterRejuvenationBonus = 0.20f;
-	private float characterHealingBonus = 0f;
-	private float rejuvenationCarry = 0f;
+	// The Salve (Medea, since 2026-11-09): the share taken off every enemy bolt that lands on her (TakeBoltDamage, read
+	// in TakeDamage after the signal). incomingIsBolt is true only while TakeBoltDamage is inside TakeDamage.
+	public const float CharacterSalveBoltReduction = 0.30f;
+	private bool characterSalve = false;
+	private bool incomingIsBolt = false;
 	private bool chestPhylacteryActive = false;
 	private int chestEssenceChaliceKills = 0;
 
@@ -1007,10 +1008,12 @@ public partial class Player : CharacterBody2D
 		// (PickupReach). An axis no other wizard owns: not his speed (Wings), not a pull of the swarm (Hollow Star),
 		// only how far his hands reach for what the fight drops.
 		"pickup_reach_20",
-		// Medea (.ai/chapter-wizards.md 4.2): Rejuvenation - the sorceress who made old Aeson young again in her
-		// cauldron, and every heal she takes is a fifth more (Heal). An axis no other wizard owns: not a heal of its
-		// own (the healing budget, .ai/difficulty-curve.md section 5, gives her none), the worth of every other one.
-		"healing_20",
+		// Medea (.ai/chapter-wizards.md 4.2): the Salve since 2026-11-09 - the charm she gave Jason against the bulls'
+		// fire, and enemy bolts deal her 30% less (TakeBoltDamage). It helps the stand her Solar Flare asks for, where a
+		// shooter is what punishes standing still (Eric: "maybe just that ranged attacks deal 30% less, because it helps
+		// with the standing still theme she has"). It replaced Rejuvenation, "healing_20", +20% of every heal, worth 2-5
+		// HP a minute once healing was made scarce (.ai/character-fit.md).
+		"bolt_damage_30",
 		// Nimue (.ai/endgame-castle.md decision 11): the Scabbard - "ye shall lose no blood, be ye never so sore
 		// wounded" - a body pressed against her bites a quarter less often (Player.Scabbard.cs). An axis no other
 		// wizard owns: not a share of every hit (the Geomancer), not a chance of none (evasion), not a death refused
@@ -1096,8 +1099,8 @@ public partial class Player : CharacterBody2D
 			case "pickup_reach_20":
 				characterPickupReachScale = 1f + CharacterSurveyorReachBonus;
 				return true;
-			case "healing_20":
-				characterHealingBonus = CharacterRejuvenationBonus;
+			case "bolt_damage_30":
+				characterSalve = true;
 				return true;
 			case "bite_interval_25":
 				characterScabbard = true;
@@ -2590,6 +2593,23 @@ public partial class Player : CharacterBody2D
 	/// no DamageTaken and no reaction. Asked by EnemyProjectile before it calls TakeDamage. Always false
 	/// for a character without the passive, and for a dead one.
 	/// </summary>
+	/// <summary>
+	/// An enemy bolt landing on him (EnemyProjectile): TakeDamage, told the blow is a bolt so Medea's Salve can lighten
+	/// it. Everything else - the dodge, the signal, armour, the shield - is TakeDamage's as for any blow.
+	/// </summary>
+	public void TakeBoltDamage(int amount)
+	{
+		incomingIsBolt = true;
+		try
+		{
+			TakeDamage(amount);
+		}
+		finally
+		{
+			incomingIsBolt = false;
+		}
+	}
+
 	public bool TryCatchBolt()
 	{
 		if (characterBoltCatchChance <= 0f || IsDead || combatRng.Randf() >= characterBoltCatchChance)
@@ -3062,6 +3082,10 @@ public partial class Player : CharacterBody2D
 			NotifyStormguardStruck();
 
 		int mitigated = Math.Max(0, amount);
+		// The Salve (Medea): an enemy bolt lands 30% lighter. After the signal, as every reduction is (a reactive boon
+		// answers being struck), and floored at 1 as armour is: it lightens a bolt, it never deletes one.
+		if (incomingIsBolt && characterSalve && mitigated > 0)
+			mitigated = Math.Max(1, Mathf.RoundToInt(mitigated * (1f - CharacterSalveBoltReduction)));
 		// One reduction step, not three. Applied before the shield pool so a shield absorbs what
 		// actually would have landed.
 		float armor = GetArmorPercent();
@@ -3444,18 +3468,6 @@ public partial class Player : CharacterBody2D
 	public void Heal(int amount)
 	{
 		int adjustedAmount = Math.Max(0, Mathf.RoundToInt(amount * (1.0f + chestHealingBonusPercent)));
-		// Rejuvenation (Medea): a fifth more of every heal, from every source that heals through here - the flask, the
-		// Light tier's banked share, the Grass tier, every regeneration line (RegenPerSecondNow, a point at a time), the
-		// relics, the boons, the cat's purr, the events' heals. The fraction is CARRIED, as AddXp carries XP: a one-point
-		// regeneration tick is most of what heals a run now, and rounding 1.2 per tick would round the passive away.
-		// Not a revive (TakeDamage sets the bar to half itself): a life is not a heal. Nobody else reaches the carry, so
-		// every other wizard's healing is exactly what it was.
-		if (characterHealingBonus > 0f && adjustedAmount > 0)
-		{
-			rejuvenationCarry += adjustedAmount * (1f + characterHealingBonus);
-			adjustedAmount = (int)rejuvenationCarry;
-			rejuvenationCarry -= adjustedAmount;
-		}
 		if (GameStats.TrackHealing)
 			GameStats.RecordHealing(HealCallerName(), adjustedAmount);
 		int headroom = Math.Max(0, MaxHP - CurrentHP);

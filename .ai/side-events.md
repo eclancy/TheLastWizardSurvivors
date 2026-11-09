@@ -643,7 +643,8 @@ chapter's line in `SideEventDirector` is a list, its original event first:
   round his dry tomb at once, the Sands' second event; secret until the Sands open; counted at the Throne's gate only.
 - **Medea** (2026-11-03), the sorceress of Colchis, granddaughter of the Sun, drawn serious: upright, a madder mantle
   over a sea-green peplos, a bronze diadem, a small sun in her open hand and a bronze sickle in the other. Opens on
-  **Solar Flare** (two elements, R2). Passive *Rejuvenation*: +20% healing from every source. Freed by paying the
+  **Solar Flare** (two elements, R2). Passive *The Salve* (since 2026-11-09; it was *Rejuvenation*, +20% healing): enemy bolts
+  deal her 30% less. Freed by paying the
   Tithe-Reeve's scale a level's XP, the Fallow Fields' second event; secret until the Fields open (`stage_9`),
   counted at the Throne's gate only.
 - **Ma Liang** (2026-11-03), the boy of the Chinese tale whose brush made real whatever he painted, drawn young and

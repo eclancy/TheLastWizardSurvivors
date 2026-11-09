@@ -292,7 +292,9 @@ the bot makes as her uses; nothing on the phone.
   what it strikes turns on its neighbours for three seconds."* Tagline: *"One stone, and they fight."*
   Elites are struck, not turned; bosses as the rule says. Needs a new enemy state (attack the nearest
   other enemy), the largest code cost in this doc.
-- **Passive: Rejuvenation**, +20% healing from every source.
+- **Passive: The Salve** since 2026-11-09: enemy bolts deal her 30% less - the charm she gave Jason against the bulls'
+  fire, and a help to the stand her Solar Flare asks for (Eric: "maybe just that ranged attacks deal 30% less, because it
+  helps with the standing still theme she has"; `.ai/character-fit.md`). It was **Rejuvenation**, +20% healing.
 - **Freed by: pay.** The Tithe-Reeve's great scale stands in the granary yard. From arrival, every XP orb
   that falls within 320 px of it drifts into its pan instead of to him. When the pan holds one level's XP
   at that moment of the run, the beam drops and the granary opens. Walking off keeps what is paid. No
@@ -318,7 +320,10 @@ nobody can know she is there - she is **secret until `stage_9`**, counted at the
   across her in one diagonal to the near hip; a thin bronze diadem with the Sun's disc on it over black hair; dried herbs
   at her girdle. 0.98 edges/px. New bytes: lichen as `\x8b-\x8f`; the red row is merlin_concepts' `\x14-\x18`, reused
   byte for byte.
-- **Her passive, Rejuvenation** (`healing_20`): +20% to every heal that comes through `Player.Heal` - the flask, the
+- **Replaced 2026-11-09 by the Salve** (`bolt_damage_30`: `EnemyProjectile` lands through `Player.TakeBoltDamage`,
+  which lightens the blow by 30% after the `DamageTaken` signal and before armour, floored at 1). Rejuvenation went
+  because +20% of a trickle is a trickle: 2-5 HP a minute. What follows is the record of it as it was.
+  **Her passive, Rejuvenation** (`healing_20`): +20% to every heal that comes through `Player.Heal` - the flask, the
   Light tier's banked share, the Grass tier, every regeneration line (a point at a time), the relics, the boons, the
   cat's purr, the events' heals - with the fraction **carried** (`rejuvenationCarry`), as `AddXp` carries XP, because
   most of what heals a run now is one-point regeneration ticks and 1.2 rounds back to 1. Not a revive (a life is not a

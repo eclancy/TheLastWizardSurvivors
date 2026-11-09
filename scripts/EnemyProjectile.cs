@@ -155,8 +155,14 @@ public partial class EnemyProjectile : Area2D
 		spent = true;
 		// Zero when a weakened shooter's roll came up empty (Enemy.ScaleOutgoingDamage, issue #66).
 		// The bolt still breaks on the player; it just lands like a dodge.
+		// The player through TakeBoltDamage, so a passive that answers bolts (Medea's Salve) knows this was one.
 		if (Damage > 0)
-			body.Call("TakeDamage", Damage);
+		{
+			if (body is Player struck)
+				struck.TakeBoltDamage(Damage);
+			else
+				body.Call("TakeDamage", Damage);
+		}
 		QueueFree();
 	}
 

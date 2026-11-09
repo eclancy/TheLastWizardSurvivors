@@ -121,7 +121,7 @@ public static class StatIcons
 		if (t.Contains("when struck") || t.Contains("touching") || t.Contains("thorn") || t.Contains("retaliat"))
 			return "thorns";
 		if (t.Contains("shield") || t.Contains("armor") || t.Contains("armour") || t.Contains("defense")
-			|| t.Contains("damage taken"))
+			|| t.Contains("damage taken") || t.Contains("less damage"))
 			return "shield";
 		if (t.Contains("damage") || t.StartsWith("dmg "))
 			return "damage";

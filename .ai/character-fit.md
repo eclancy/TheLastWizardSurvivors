@@ -58,7 +58,7 @@ A fit is judged on four things: the character's **story**, their **look**, their
 | Levina | Quickened Cadence: -10% cooldowns | strong | lightning-quick, with her speed |
 | Gabbro | Stoneskin: -10% damage taken | strong | stone skin on the heaviest body |
 | Baba Yaga | Bone Fence: +20% knockback | good (since her vine shoves, 2026-11-09) | the fence keeps visitors out; it did nothing until her vine pushed |
-| Medea | Rejuvenation: +20% healing | **weak** | right story (she made old Aeson young), but healing is a trickle since the difficulty pass (`difficulty-curve.md` 5), so it is worth 2-5 HP a minute |
+| Medea | Rejuvenation: +20% healing (the Salve since 2026-11-09) | **weak** | right story (she made old Aeson young), but healing is a trickle since the difficulty pass (`difficulty-curve.md` 5), so it is worth 2-5 HP a minute |
 | the Cumaean Sibyl | Prophecy: +3 rerolls | strong | other futures to choose from |
 | Paracelsus | Sola Dosis: +25% damage over time | strong | the dose |
 | Abe no Seimei | Exorcist: +15% damage to elites | strong | the exorcist |
@@ -162,6 +162,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 | 15 | Paracelsus | keeps Contagion and Sola Dosis, unchanged | "next" | kept |
 | 16 | Nostradamus | keeps Starfall and Foresight, unchanged | "Next" | kept |
 | 17 | Imhotep | keeps Scorching Ray (decided above) and Surveyor. **His rays leave from the sun on his raised palm**, not his body's centre - for every wizard, from their own light (`Player.StaffTipLocal`), as Magic Missile and Cinderbreath already do | "Implement your visual suggestion, then next" | built `6abcfc4b`, validated (0 errors); not played |
+| 18 | Medea | keeps Solar Flare. **Rejuvenation is replaced by the Salve: enemy bolts deal her 30% less** - the charm she gave Jason against the bulls' fire, and a help to standing still, which her flare asks for and shooters punish. Bolts only (`EnemyProjectile` through `Player.TakeBoltDamage`, after the signal, before armour, floored at 1): burning ground is rare, so it was left out | "i like the salve idea, but how often is burning ground relevant? maybe just that ranged attacks deal 30% less, because it helps with the \"standing still\" theme she has?" | built, validated (0 errors); not played |
 
 ---
 
