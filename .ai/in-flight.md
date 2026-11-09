@@ -1028,6 +1028,12 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     frame (the "one locked thing on show at a time" rule, `.ai/slow-start.md`), the starters (original characters,
     no history - leave out, or give them in-world lore), and the real people's entries kept respectful and sourced
     (`.ai/chapter-wizards.md` 1618, "Real people").
+64. **The far shore as a DLC** (Eric, 2026-11-09: *"make a note that 'far shores' will be designed as a 'DLC' when we
+    release this as an actual game"*). Not now: when the commercial release is planned. Until then every far-shore
+    piece keeps itself separable from the base game (its own order, files and marked blocks; nothing on the road
+    needing it) - `.ai/second-half.md`, the note under its status, lists what a DLC will need designing then (an
+    ownership check beside `StageGate.FarShore`, a store product per platform, what a player without it sees past
+    the Throne, and which shared systems stay in the base game).
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 

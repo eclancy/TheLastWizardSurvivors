@@ -20,6 +20,16 @@ minutes (section 9, "The far shore runs twenty minutes").**
 Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
+**The far shore is to be a DLC** (Eric, 2026-11-09: *"make a note that 'far shores' will be designed as a 'DLC' when we
+release this as an actual game"*). Today it ships inside every free build, behind its gate (`StageGate.FarShore`). For
+the commercial release it is to be designed and sold as downloadable content apart from the base game, so keep it
+separable as it is built: its own order (`FarShoreOrder`, never appended to `CampaignOrder`), its own chapters, gods,
+Conjunctions, far sky and reel E in their own files and marked blocks, and nothing on the road that needs it (the base
+game must end, whole, at the Throne and Taken Back). What a DLC needs that is not designed yet - an ownership check
+beside the gate, the store's own product per platform (Steam, Google Play), what a player without it sees on the map
+past the Throne (reel E promises the far shore), and what of the half's shared systems (endless mode excludes it; the
+far sky, the twenty-minute run) belong to the base game - is for when the release is planned (`.ai/in-flight.md` 64).
+
 Read first: `.ai/world-and-tone.md` (the premise this extends, the enemy palette, why the player is alone),
 `.ai/combo-spells.md` (the Conjunctions, sections 2, 4 and 6), `.ai/dark-wizard-playable.md` section 6 (the
 one wizard who opens on a Conjunction), `.ai/endgame-castle.md` 6.4 and 7.3 (the ending, and four chapter
