@@ -449,7 +449,7 @@ question. `RegressionChecks.ValidateStageHints` warns on any line that contains 
 | chapter | site | voice | sound (cue) | lines, in order (the last repeats) |
 |---|---|---|---|---|
 | Enchanted Forest | `the_grove` | sound | `hint_grove_whisper` (leaves) | "Leaves whispering, though there is no wind." / "The whisper again. Something out there still grows." / "Fainter now, the whispering. It has not stopped." |
-| Cursed Dungeon | `gaolers_key` | **speech** (Tituba, unnamed) | `hint_cell_cry` (echo) | "Help! Is someone there?" / "Please - I can hear you. I am down here!" / "I have been patient so long. Please, this way." / "Do not leave me here. Not again." |
+| Cursed Dungeon | `gaolers_key` | **speech** (Tituba, unnamed) | `hint_cell_cry` (echo) | "Help! Is someone there?" / "Please - I can hear you. I am down here!" / "I have been patient for so long. Please, this way." / "Do not leave me here. Not again." |
 | Blighted Swamp | `bog_lanterns` | sound | `hint_lantern_flare` (wisp) | "Far off, a cold light flares and gutters." / "The cold light again. Nothing living lit it." / "It is still burning out there." |
 | Frozen Waste | `the_thaw` | sound (Väinämöinen, unnamed) | `hint_ice_song` (song) | "The ice groans. Under it, faintly, someone is singing." / "The song again, slow and deep, from under the ice." / "The singing is weaker now." |
 | Scorched Sands | `caravan_master` | sound | `hint_caravan_bell` (bell) | "A caravan bell, somewhere out on the sand." / "The bell again. Something walks the old road." / "The bell is still moving. It does not stop." |
