@@ -321,10 +321,16 @@ public partial class Familiar : Node2D, IPaintsElementPath
 
 	// MA LIANG'S CROW IS AN INK PAINTING COME ALIVE (Eric, 2026-11-09, .ai/character-fit.md section 5, row 21: "redoing the
 	// crow familiar to be brush paintings"). The boy of the tale painted birds and they flew off the paper, so when HE casts
-	// the Familiar his crow - and each look it grows into - is drawn in black ink with dry-brush edges over a pale wash, a
-	// painter's red seal on its hat (tools/art/familiar.py, "MA LIANG'S CROW"). Every other wizard's crow stays the
-	// creature of light. Only the drawing: the same cell, the same strike, the same flight, and its motes and pecks and
-	// The Painted Door stay his light, as the trace of the dotted door and the painted flask are - his ink is his light.
+	// the Familiar his crow - and each look it grows into - is painted in ink, a painter's red seal on its hat
+	// (tools/art/familiar.py, "MA LIANG'S CROW"). Every other wizard's crow stays the creature of light. Only the drawing: the
+	// same cell, the same strike, the same flight, and its motes and pecks and The Painted Door stay his light, as the trace
+	// of the dotted door and the painted flask are - his ink is his light.
+	//
+	// WATERCOLOUR (Eric, the same day: "the art-drawn crow familiar should also look significantly different, almost
+	// watercolor style ink blots"). The ink looks are the one sanctioned departure from the Bonelight contract
+	// (.ai/art-direction.md, "Ink: the one sanctioned departure"; tools/art/ink_wash.py): translucent washes, a bleed that
+	// fades out past the shape, real alpha. So they are drawn with plain blending (IsInkLook, ApplyFrames) and not through
+	// SpellInk's dither, which reads every translucent pixel as coverage and would break the washes into opaque specks.
 	/// <summary>The wizard whose crow is painted in ink.</summary>
 	public const string InkPainterId = "ma_liang";
 
@@ -347,6 +353,10 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		Look.GriffinStorm => Look.GriffinStormInk,
 		_ => l,
 	};
+
+	// A look painted in ink (InkLook's results): a watercolour with real alpha, drawn without the dither.
+	private static bool IsInkLook(Look l) => l is Look.CrowInk or Look.StormcrowInk or Look.RavenInk or Look.MorriganInk
+		or Look.MorriganStormInk or Look.GriffinInk or Look.GriffinStormInk;
 
 	private enum State : byte { Heel, Chase, Crouch, Leap, Bite, Howl, BlinkOut, BlinkIn, Swoop, Catch, Rise }
 	private enum BlinkWhy : byte { Arrive, Stuck, Leash, Inside, Dismiss }
@@ -847,6 +857,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		// it. Its shadow is drawn in its own cell, so over a body it falls on the body, as a shadow does.
 		h.Sprite.ZAsRelative = !flies;
 		h.Sprite.ZIndex = flies ? DrawLayers.Air : 0;
+		// Ink is a watercolour (IsInkLook): plain blending keeps its washes translucent, and its blink fades the ink
+		// rather than dissolving it pixel by pixel. Every other look keeps the dither the contract allows.
+		h.Sprite.Material = IsInkLook(l) ? null : SpellInk.DitherByTexel;
 		h.Sprite.Play(AnimIdle);
 		h.Anim = AnimIdle;
 	}
