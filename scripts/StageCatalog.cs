@@ -67,6 +67,14 @@ public sealed class StageDefinition
 	/// the road opens it - and <see cref="GlobalStatsManager.IsStageEarned"/> adds this rule.
 	/// </summary>
 	public bool AfterCampaign { get; init; }
+	/// <summary>
+	/// How long the run is: real seconds until the survival clock stops and the boss walks in. Every road
+	/// chapter is <see cref="StageCatalog.RoadRunSeconds"/>, the far shore's are
+	/// <see cref="StageCatalog.FarShoreRunSeconds"/>. Read it through <see cref="StageCatalog.VictorySecondsFor"/>,
+	/// never off a definition and never as a literal: the run (Node2DGame.TimerVictorySeconds), the pace clock and
+	/// the XP curve that follows it (.ai/run-pacing.md section 12) all take it from there.
+	/// </summary>
+	public float RunSeconds { get; init; } = StageCatalog.RoadRunSeconds;
 }
 
 /// <summary>
@@ -84,6 +92,26 @@ public sealed class StageDefinition
 /// </remarks>
 public static class StageCatalog
 {
+	/// <summary>A road chapter's run, and the reference run every pacing number was tuned on (Node2DGame.ReferenceRunSeconds): fifteen minutes.</summary>
+	public const float RoadRunSeconds = 900f;
+
+	/// <summary>
+	/// A far-shore chapter's run: twenty minutes, the boss at 20:00. Eric, 2026-11-08, after the far sky's element
+	/// waiver: "okay lets let the waiver land ... still make the far shore longer". The half is "excuses to keep trying
+	/// new spell combinations on new maps", so the longer night is more time with the combination once it is made -
+	/// not an earlier one: the pace clock stretches with it, and the XP curve with that, so a far-shore run reaches every
+	/// moment of the road's at the same share of its length (.ai/run-pacing.md section 12). Every chapter in
+	/// FarShoreOrder sets it; RegressionChecks.ValidateRunLengths holds that, and the road at RoadRunSeconds.
+	/// </summary>
+	public const float FarShoreRunSeconds = 1200f;
+
+	/// <summary>
+	/// THE run length: real seconds until the survival clock stops and the boss arrives, for this chapter. The one
+	/// accessor everything on a run's path reads (Node2DGame.ResolveRunLength, the XP curve, the tools); a stage id it
+	/// does not know is a road run.
+	/// </summary>
+	public static float VictorySecondsFor(string stageId) => GetById(stageId)?.RunSeconds ?? RoadRunSeconds;
+
 	private static readonly StageDefinition[] Stages =
 	{
 		new()
@@ -297,6 +325,7 @@ public static class StageCatalog
 			// Its own ground (F3): cropped turf on chalk, flint, and the barrows standing on it as walls.
 			EnvironmentKind = StageEnvironmentKind.WhiteDowns,
 			Gate = StageGate.FarShore,
+			RunSeconds = FarShoreRunSeconds,
 			// Playable 2026-11-08, its to-do line gone once F2 (Artemis) and F5 (its place on the map) merged; the far
 			// shore's gate still keeps it shut to any save that has not taken the Throne back.
 			IsPlayable = true,
@@ -312,6 +341,7 @@ public static class StageCatalog
 			// Stand-in ground: the Swamp's standing water and reed.
 			EnvironmentKind = StageEnvironmentKind.Swamp,
 			Gate = StageGate.PreviousBoss,
+			RunSeconds = FarShoreRunSeconds,
 			IsPlayable = false,
 		},
 		new()
@@ -325,6 +355,7 @@ public static class StageCatalog
 			// Stand-in ground: the Forest's, for its hedges.
 			EnvironmentKind = StageEnvironmentKind.Forest,
 			Gate = StageGate.PreviousBoss,
+			RunSeconds = FarShoreRunSeconds,
 			IsPlayable = false,
 		},
 		new()
@@ -338,6 +369,7 @@ public static class StageCatalog
 			// Stand-in ground: the Sands'. Its darkness and the dawn on the pace clock are F8's (section 7).
 			EnvironmentKind = StageEnvironmentKind.Desert,
 			Gate = StageGate.PreviousBoss,
+			RunSeconds = FarShoreRunSeconds,
 			IsPlayable = false,
 		},
 		new()
@@ -351,6 +383,7 @@ public static class StageCatalog
 			// Stand-in ground: the Frozen Waste's, high and bare.
 			EnvironmentKind = StageEnvironmentKind.Ice,
 			Gate = StageGate.PreviousBoss,
+			RunSeconds = FarShoreRunSeconds,
 			IsPlayable = false,
 		},
 		new()
@@ -365,6 +398,7 @@ public static class StageCatalog
 			// Emberdeep is his forge, this is a god's put out (section 4.2).
 			EnvironmentKind = StageEnvironmentKind.Castle,
 			Gate = StageGate.PreviousBoss,
+			RunSeconds = FarShoreRunSeconds,
 			IsPlayable = false,
 		},
 	};
