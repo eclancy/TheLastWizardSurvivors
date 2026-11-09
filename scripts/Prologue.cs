@@ -26,7 +26,7 @@ using TheOneHeMissed.scripts;
 /// whole screen pixels. Only the caption and the skip prompt fade - type on its own layer, as the
 /// title's prompt does.</para>
 ///
-/// <para><b>Three panels move</b> (the tide's rush, the hiding, the break): a box of the mid layer is swapped frame by frame
+/// <para><b>Four panels move</b> (the five lifted, the tide's rush, the hiding, the break): a box of the mid layer is swapped frame by frame
 /// on a clock from an atlas, <c>&lt;name&gt;-anim.png</c>, by the timeline in <c>&lt;name&gt;-anim.json</c>
 /// (<see cref="AnimSpec"/>) - the title's frame-swap, never a tint. Any panel the generator gives the
 /// pair to animates the same way.</para>
@@ -176,8 +176,18 @@ public partial class Prologue : Control
 		// meet.'"). With the next panel's line it is the Broken Circle's own note word for word (ChapterNotes,
 		// stage_10), so the player who reaches the stones has heard it before.
 		new("moot", 4.6f, "The stones where we used to meet.", new Vector2(-4f, 0f), new Vector2(-10f, 0f), new Vector2(-26f, 0f)),
-		// Him, rising over it, the light going out of them and into his hand.
-		new("throne", 5.2f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, -12f), new Vector2(0f, 10f)),
+		// HE LIFTS THEM, ONE BY ONE (Eric, 2026-11-08, of the panel as it was - his silhouette filling the frame and
+		// the five dark specks at his feet: "it's hard to see what he's doing in the background, it should show him
+		// lifting each of the wizards into the air to capture them"). Its box animates (tools/art/prologue.py,
+		// THRONE_BOX, 12 frames a second): the moot's five round its cold ward, him at the back of the circle; from
+		// 1.25 s, one every 0.6 s, his reach leaves his hand, a hoop of his violet closes on one and lifts it into
+		// the air, where it hangs while its light streams into his hand; the last, the Pyromancer, lifted past him
+		// to hang over his sun and at rest by 6.0 s. HELD 7.0 s, not 5.2: five lifts the eye can follow one after
+		// another (each under 150 art px/s), a still beat before the first and a third of a second after the last
+		// before the dissolve - at 5.2 they had to overlap into one rush or move faster than the eye. No impact
+		// (rule 1): the tide's burst, a few seconds on, is the one that is his. Back and mid drift as ONE, so a
+		// wizard standing on the ground never slides on it; the slow tilt up follows the rise.
+		new("throne", 7.0f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, 4f), new Vector2(0f, 10f)),
 		// His shadows over the land, coming down on a village that is still lit. THE RUSH (Eric, 2026-11-05: the
 		// army must rush over the horizon; the old beat slid the whole crowd across a still picture as one layer):
 		// its box animates (tools/art/prologue.py, TIDE_BOX) - the slope empty for a breath, heads behind the
