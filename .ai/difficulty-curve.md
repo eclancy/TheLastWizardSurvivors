@@ -474,3 +474,44 @@ Everything above is one bot on one machine; these are what only playing answers.
    1280x720 (`_UiShot`); nothing else on the phone was checked.
 8. **A real save's first load** at schema 20: the Ascension kept, and the Fate Fracture and Emberheart
    refunds arriving as Arcane Energy.
+
+## 12. The night: endless (2026-11-09)
+
+A run that keeps the vigil at its warden's fall (`.ai/endless-mode.md`) plays on past this curve, so one more
+number sits on top of the chapter's row and the preset there: **the night's strength**
+(`EndlessCatalog.HealthStrength` / `DamageStrength`), read from the minutes of the pace clock since the first
+warden fell. It multiplies ordinary spawn health (so every elite built from a spawn), the Warden's health at its
+spawn, the returning warden's (his chapter health times the square root of the strength as he arrives) and
+`EnemyDamageScale` (every hit, through `Enemy.ScaleOutgoingDamage`, so Weaken still answers it). Nothing else
+moves: the cap, the burst window, the spawn interval, the elites and the Warden's clock are the first night's
+15:00 field, made of tougher bodies. The first night itself is exactly the chapter as this doc tuned it.
+
+**As tuned (E5):**
+
+```
+m <= 15 (night 2)         health 1 + 0.12 m          damage 1 + 0.03 m
+15 < m <= 60 (nights 3-5) x1.09 a minute             x1.04 a minute
+m > 60 (the wall)         x1.25 a minute             x1.10 a minute
+returning warden          his chapter health x sqrt(health strength)
+```
+
+**Why it is shaped so.** The design's first values climbed linearly for an hour (+8% health and +2% damage a
+minute) and compounded only after. Measured on the whole-road farmed save - the only save endless is open to -
+with the ordinary policy, they never closed in: the Forest held to 1:37:00 on the clock at x31 health and the
+Emberdeep to 1:26:00 at x13, swarm pressure at zero the whole way and the wizard taking almost no damage. A night
+pays two to four levels a minute (XP is held at its x2.5, but the field keeps dying at the spawn supply, about 420
+a minute), and every level past a full book is Marginalia's +2% spell damage: the build grows about 5% of itself a
+minute, as fast as a linear strength. Compounding x1.09 from the third night still let the Forest bot kill x653
+bodies at the supply at 1:33, so the hour-past-the-fall wall compounds x1.25; and the returning warden, who rode
+the whole strength, became a seven-minute fight in the Emberdeep's fourth night and an unwinnable one in its fifth,
+so he takes its square root (a single body meets area damage once). `.ai/endless-mode.md` 7.3 has the tables.
+
+**The healing budget** (section 5) is untouched: no new heal. Marginalia's 30% heal is the one a night keeps
+growing; it was not measurable here (the `--immortal` bots run with a 100,000-point bar, so the heal they are
+offered is that bar's), and on these builds the field died before it reached the wizard (0 HP lost a minute
+in most minutes). Whether it outruns the night's damage on a build that is falling behind is a playtest's.
+
+**Where it ends, measured** (`.ai/endless-mode.md` 7.3): the strongest builds measured - the whole-road farmed save,
+ordinary and planned, on the Forest - hold every night at swarm pressure zero and close at the wall, about 1:28 and
+1:33 on the clock; the Emberdeep's ordinary build holds four nights and meets its fifth warden at 1:15. Nothing
+before 15:00 moves: the first night is this doc's chapter, its multipliers and its healing budget, untouched.
