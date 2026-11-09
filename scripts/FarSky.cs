@@ -79,7 +79,9 @@ public static class FarSky
 		why = string.Empty;
 		if (recipe == null || recipe.IsRite)
 		{
-			why = "not a recipe of two spells";
+			// The Rite became a fusion of two spells on 2026-11-08 (.ai/sovereign-spell.md); it is still never tonight's
+			// recipe, because it is the capstone that silences the rest of the loadout.
+			why = "the Sovereign Rite, the capstone, is never tonight's recipe";
 			return false;
 		}
 		if (ComboCatalog.StartsFused(recipe, characterId))
