@@ -149,6 +149,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 |---|---|---|---|---|
 | 7 | Väinämöinen | keeps Bramble Seed and Song of Making, unchanged. The kantele passive (section 4) stays a proposal | "next" | kept |
 | 8 | John Dee | **opens on a new spell, Folio**, and keeps Scattered Library. **Hollow Star becomes nobody's opener**. His Apotheosis, The Spirit Mirror (*pull*), moves onto Folio | "I don't think hollow star feels like a good spell for him - what spell could feel like his? can we trade hollow star to someone else, like someone who did more with science/stars, and have something that feels more like his?" / "I like your suggestions - how would john dee produce the first orb if he only fires when he picks up an orb? also, can we still keep his spirit mirror finale to work with this?" / "yes" | building (section 6) |
+| 9 | Laelaps | keeps Cyclone Slash and Fated to Catch, unchanged. (Re-drawing the blades as a hound and fox of wind, the endless chase, stays an unasked idea) | "next" | kept |
 
 ---
 
