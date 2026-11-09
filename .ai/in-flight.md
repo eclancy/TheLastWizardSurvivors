@@ -1015,6 +1015,19 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     - **This chat's name:** done 2026-11-08.
     - Before the public steps: the USPTO check of the name (classes 9 and 41), and an icon and screenshots that look
       nothing like the "Wizard Survivors" Play app's, per the 2026-11-07 store-title discussion.
+63. **A historical gallery** (Eric, 2026-11-09, for the week of 2026-11-16: *"we should have a historical gallery,
+    with a short description of the history of all the characters unlocked in the game. we will work on that next
+    week."*). A page that shows each character the save has unlocked with a short, factual account of the real
+    history or legend behind them (Tituba, Väinämöinen, Abe no Seimei, Wayland, the Cumaean Sibyl, Laelaps, Baba Yaga,
+    Morgan le Fay, Paracelsus, Nostradamus, Imhotep, Medea, Ma Liang, Nimue, Merlin, John Dee, and the gods as they
+    come - Artemis first). Not designed yet. Start from what exists: each wizard's "Who." line in
+    `.ai/chapter-wizards.md` (the history is already researched there), the gods' in `.ai/second-half.md` section 3,
+    the Evolution Codex and the Achievements page as the nearest menus, and the Court's in-world Gallery of covered
+    portraits (`.ai/endgame-castle.md` 5.4) - a different thing, but its uncovering is a possible tie-in. Open for
+    Eric: where it lives (main menu, the Codex, the character select), whether a locked character shows a sealed
+    frame (the "one locked thing on show at a time" rule, `.ai/slow-start.md`), the starters (original characters,
+    no history - leave out, or give them in-world lore), and the real people's entries kept respectful and sourced
+    (`.ai/chapter-wizards.md` 1618, "Real people").
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
