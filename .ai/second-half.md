@@ -1217,9 +1217,11 @@ gate is all that is missing. Either changes what "the recipe is unchanged" means
   F3's chapter): "Tonight: The Taking" under the longest stand, above What he keeps here, Enter whole on both canvases.
   Before that, `f4-map-card-{pc,phone}` (a scratch with the White Downs flipped playable and a stop added to
   `worldmap.json`, before F5's map existed) and the first `f4-map-card-real-pc` showed the full line wrapping into Enter.
-- `git merge-tree` against `main-ff86ni` after F5's and F3's merges: clean (once the far sky's beats left `Prologue.cs`
-  for `Prologue.FarSky.cs` - both pieces had added their beats beside `RiteBeats`). `.ai/second-half.md` was written on
-  the trunk's copy (with F3's and F5's notes) so its three edits and this note merge as additions.
+- `git merge-tree` against `main-ff86ni` after F5's and F3's merges: the code is clean (once the far sky's beats left
+  `Prologue.cs` for `Prologue.FarSky.cs` - both pieces had added their beats beside `RiteBeats`). **This file is not**:
+  the trunk changed the same places (the status line, the F3 and F5 rows either side of F4's, the end of the file). F4's
+  copy was written on the trunk's, with F3's and F5's notes in it, and differs from it only by F4's lines - so the
+  merge takes F4's side of `.ai/second-half.md` whole, unless the trunk's copy has moved again since (2026-11-08).
 
 **Not run, and needs a person's eyes.** The far sky has never been taught, named on a map stop or made by a person:
 Artemis is rekindled by F3's warden, and nobody has played that run with F4 in. The measurement's real-chapter rows
