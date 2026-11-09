@@ -266,14 +266,14 @@ public partial class Node2DGame
 	private static string EndlessMidSentence(string name) =>
 		name != null && name.StartsWith("The ", StringComparison.Ordinal) ? "the " + name.Substring(4) : name ?? string.Empty;
 
-	// The warden, sent again: the chapter's own, at half its chapter health times the night's strength now.
+	// The warden, sent again: the chapter's own, at his chapter health times the square root of the night's strength now.
 	private void SendReturningWarden()
 	{
 		BossDefinition? warden = BossCatalog.ForStageIndex(Global.SelectedStageIdx);
 		if (warden == null)
 			return;
 		TickEndlessStrength();
-		float scale = EndlessCatalog.ReturningWardenShare * endlessHealthStrength;
+		float scale = EndlessCatalog.ReturningWardenScale(EndlessNightMinutes);
 		if (!SpawnBoss(warden, scale))
 		{
 			// SpawnBoss has said why. The night goes on rather than stalling on a warden that cannot come.

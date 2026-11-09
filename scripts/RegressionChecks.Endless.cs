@@ -267,18 +267,22 @@ public static partial class RegressionChecks
 			lastHealth = health;
 			lastDamage = damage;
 		}
-		if (EndlessCatalog.WallMinutes <= 0f || EndlessCatalog.HealthCompoundPerMinute <= 1f || EndlessCatalog.DamageCompoundPerMinute <= 1f)
-			warnings.Add("Endless: the wall must come after a linear climb and compound past it.");
+		// The order of the three stretches: a climb, then compounding, then the wall compounding harder still.
+		if (EndlessCatalog.ClimbMinutes <= 0f || EndlessCatalog.WallMinutes <= EndlessCatalog.ClimbMinutes
+			|| EndlessCatalog.HealthCompoundPerMinute <= 1f || EndlessCatalog.DamageCompoundPerMinute <= 1f
+			|| EndlessCatalog.WallHealthPerMinute <= EndlessCatalog.HealthCompoundPerMinute
+			|| EndlessCatalog.WallDamagePerMinute <= EndlessCatalog.DamageCompoundPerMinute)
+			warnings.Add("Endless: the strength must climb, then compound, then compound harder past the wall, in that order.");
 		// Past the wall the step a minute is larger than the linear one: it is a wall, not a gentler slope.
 		float linearStep = EndlessCatalog.HealthPerMinute;
 		float wallStep = EndlessCatalog.HealthStrength(EndlessCatalog.WallMinutes + 1f) - EndlessCatalog.HealthStrength(EndlessCatalog.WallMinutes);
 		if (wallStep <= linearStep)
 			warnings.Add($"Endless: a minute past the wall adds x{wallStep:0.000} health, no more than the linear x{linearStep:0.000}.");
 		// "Every run is over by about an hour and a half" (question 3): at 90:00 on the clock the field is far past what
-		// the strongest farmed build measured held (x31 at 1:37:00 under the first values, E5).
+		// the strongest farmed build measured held (x653 at 1:33:17, still killing at the spawn supply, E5).
 		float at90 = EndlessCatalog.HealthStrength(75f);
-		if (at90 < 40f)
-			warnings.Add($"Endless: at 90:00 on the clock enemies carry x{at90:0.0} health; a farmed build held x31 - the wall must have closed in.");
+		if (at90 < 2000f)
+			warnings.Add($"Endless: at 90:00 on the clock enemies carry x{at90:0.0} health; a farmed build held x653 - the wall must have closed in.");
 		if (EndlessCatalog.ArcaneCap <= 0)
 			warnings.Add($"Endless: the Arcane cap is {EndlessCatalog.ArcaneCap}; it must be positive.");
 		if (EndlessCatalog.ReturningWardenShare <= 0f || EndlessCatalog.WardenBonusShare <= 0f || EndlessCatalog.WardenBonusShare > 1f)
@@ -286,8 +290,8 @@ public static partial class RegressionChecks
 		if (EndlessCatalog.MaxLooseOrbs <= 0 || EndlessCatalog.VigilHoldSeconds <= 0f)
 			warnings.Add("Endless: the loose-orb fold and the vigil's hold must be positive.");
 		// A returning warden is never weaker than the first, and each is stronger than the last (section 1.4).
-		float second = EndlessCatalog.ReturningWardenShare * EndlessCatalog.HealthStrength(15f);
-		float third = EndlessCatalog.ReturningWardenShare * EndlessCatalog.HealthStrength(30f);
+		float second = EndlessCatalog.ReturningWardenScale(15f);
+		float third = EndlessCatalog.ReturningWardenScale(30f);
 		if (second < 1f || third <= second)
 			warnings.Add($"Endless: the returning wardens are x{second:0.00} and x{third:0.00} the first's; never weaker than him, each stronger than the last.");
 	}

@@ -106,69 +106,101 @@ public static class EndlessCatalog
 	// health, the Warden's, the returning warden's, and every hit an enemy lands (Node2DGame.EnemyDamageScale, through
 	// Enemy.ScaleOutgoingDamage, so Weaken still works on it).
 	//
-	//   health(m) = 1 + 0.12 m      for m <= 15, then health(15) x 1.09^(m - 15)
-	//   damage(m) = 1 + 0.03 m      for m <= 15, then damage(15) x 1.04^(m - 15)
+	// Three stretches of one curve, m the minutes past the first fall:
 	//
-	// The second night climbs +180% health and +45% damage; from the third on the strength compounds, about x3.6
-	// health and x1.8 damage a night.
+	//   the second night (m <= 15)     health 1 + 0.12 m              damage 1 + 0.03 m
+	//   nights three to five (<= 60)   x1.09 a minute                 x1.04 a minute
+	//   the wall (past 60)             x1.25 a minute                 x1.10 a minute
 	//
-	// TUNED 2026-11-09 (E5, .ai/endless-mode.md section 7). The design's first values - +8% and +2% a minute, the
-	// wall an hour past the first fall at x1.08 - never caught a farmed build: a whole-road save (the only kind that
-	// has endless open) on the ordinary policy held the Forest to 1:37:00 at x31 health and the Emberdeep to 1:26:00
-	// at x13, swarm pressure never above zero, because a night pays two to four levels a minute and every one past a
-	// full book is +2% spell damage (Marginalia), about +5% of the build a minute - as fast as a linear climb. Only a
-	// strength that compounds outruns a build that grows linearly, so it compounds from the third night.
+	// The second night climbs +180% health and +45% damage; the next three compound, about x3.6 health and x1.8
+	// damage a night (x135 and x8.5 by 1:15:00 on the clock); past that the wall doubles health every three minutes,
+	// x28 by 1:30:00.
+	//
+	// TUNED 2026-11-09 (E5, .ai/endless-mode.md section 7.3), in two steps, on the whole-road farmed save (the only
+	// kind that has endless open) with the ordinary policy:
+	//   - The design's first values (+8% and +2% a minute, compounding x1.08 only an hour past the fall) never caught
+	//     it: the Forest held to 1:37:00 at x31 health, the Emberdeep to 1:26:00 at x13, swarm pressure zero. A night
+	//     pays two to four levels a minute and each past a full book is +2% spell damage (Marginalia) - the build
+	//     grows about as fast as any linear strength - and its area spells kill a capped field at the spawn supply
+	//     (about 420 a minute) with room to spare.
+	//   - Compounding x1.09 from the third night: the Forest held every night to 1:33:17 at x653, still killing at the
+	//     supply, its field at the cap from night 6. So past an hour the strength is a wall in fact, not in name.
 
-	/// <summary>Enemy health added a minute, of the first night's, until the wall.</summary>
+	/// <summary>Enemy health added a minute in the second night, of the first night's.</summary>
 	public const float HealthPerMinute = 0.12f;
 
-	/// <summary>Enemy damage added a minute, until the wall.</summary>
+	/// <summary>Enemy damage added a minute in the second night.</summary>
 	public const float DamagePerMinute = 0.03f;
 
-	/// <summary>
-	/// The wall (question 3, decided): minutes past the first fall after which the strength compounds rather than
-	/// climbs - health doubling about every eight minutes - so every run is over by about an hour and a half on the
-	/// clock whatever it has built. Fifteen since E5 (it was sixty): see the tuning note above.
-	/// </summary>
-	public const float WallMinutes = 15f;
+	/// <summary>Minutes past the first fall the linear climb lasts: the second night.</summary>
+	public const float ClimbMinutes = 15f;
 
-	/// <summary>Health's step a minute past the wall.</summary>
+	/// <summary>Health's step a minute from the third night to the wall.</summary>
 	public const float HealthCompoundPerMinute = 1.09f;
 
-	/// <summary>Damage's step a minute past the wall.</summary>
+	/// <summary>Damage's step a minute from the third night to the wall.</summary>
 	public const float DamageCompoundPerMinute = 1.04f;
+
+	/// <summary>
+	/// The wall (question 3, decided): minutes past the first fall after which the strength doubles every few minutes,
+	/// so every run is over by about an hour and a half on the clock whatever it has built. An hour, as designed; what
+	/// it compounds by is E5's (see above).
+	/// </summary>
+	public const float WallMinutes = 60f;
+
+	/// <summary>Health's step a minute past the wall: doubling about every three minutes.</summary>
+	public const float WallHealthPerMinute = 1.25f;
+
+	/// <summary>Damage's step a minute past the wall.</summary>
+	public const float WallDamagePerMinute = 1.10f;
 
 	/// <summary>The night's health multiplier <paramref name="minutes"/> past the first fall. 1 at the fall and before it.</summary>
 	public static float HealthStrength(float minutes) =>
-		Strength(minutes, HealthPerMinute, HealthCompoundPerMinute);
+		Strength(minutes, HealthPerMinute, HealthCompoundPerMinute, WallHealthPerMinute);
 
 	/// <summary>The night's damage multiplier <paramref name="minutes"/> past the first fall. 1 at the fall and before it.</summary>
 	public static float DamageStrength(float minutes) =>
-		Strength(minutes, DamagePerMinute, DamageCompoundPerMinute);
+		Strength(minutes, DamagePerMinute, DamageCompoundPerMinute, WallDamagePerMinute);
 
-	private static float Strength(float minutes, float perMinute, float compound)
+	private static float Strength(float minutes, float perMinute, float compound, float wall)
 	{
 		float m = Math.Max(0f, minutes);
-		if (m <= WallMinutes)
-			return 1f + perMinute * m;
-		return (1f + perMinute * WallMinutes) * MathF.Pow(compound, m - WallMinutes);
+		float climbed = 1f + perMinute * Math.Min(m, ClimbMinutes);
+		if (m <= ClimbMinutes)
+			return climbed;
+		float compounded = climbed * MathF.Pow(compound, Math.Min(m, WallMinutes) - ClimbMinutes);
+		return m <= WallMinutes ? compounded : compounded * MathF.Pow(wall, m - WallMinutes);
 	}
 
 	/// <summary>
 	/// "+120% health, +30% damage": the strength as the pause screen says it, in player words (percentages, never a
 	/// raw multiplier; .ai/level-up-screen.md 4a).
 	/// </summary>
+	/// <remarks>Past ten times, a multiple ("x135 health"): "+13,432%" is a number nobody reads.</remarks>
 	public static string DescribeStrength(float health, float damage) =>
-		$"enemies +{Math.Max(0, (int)MathF.Round((health - 1f) * 100f))}% health, +{Math.Max(0, (int)MathF.Round((damage - 1f) * 100f))}% damage";
+		$"enemies {DescribeMultiple(health)} health, {DescribeMultiple(damage)} damage";
+
+	private static string DescribeMultiple(float multiple) =>
+		multiple >= 10f ? $"x{multiple:N0}" : $"+{Math.Max(0, (int)MathF.Round((multiple - 1f) * 100f))}%";
 
 	// --- The returning warden (section 1.4) ------------------------------------------------------------------------
 
 	/// <summary>
-	/// Of the chapter's warden health, the share a returning warden brings - times the night's health strength at the
-	/// moment he arrives. Since E5 the second night's warden is 1.4 times the first's, the third's 5.1, the fourth's 18.6.
-	/// Target: a fight of one to three minutes for the build that reached it.
+	/// Of the chapter's warden health, the share a returning warden brings - times the SQUARE ROOT of the night's
+	/// health strength as he arrives (<see cref="ReturningWardenScale"/>). Target: a fight of one to three minutes for
+	/// the build that reached it.
 	/// </summary>
-	public const float ReturningWardenShare = 0.5f;
+	/// <remarks>
+	/// E5 moved it second, as the design said to. Half the chapter health times the whole strength was the design's;
+	/// on the compounding night it made the Emberdeep's fourth warden a seven-minute fight (x18.6) and its fifth (x68,
+	/// 34 million) one the farmed build could not finish, which holds the clock for good. A single body is not a field:
+	/// area damage, the build's real growth, reaches one target only once. Now the second night's warden is 1.7 times
+	/// the first's, the third's 3.2, the fourth's 6.1, the fifth's 11.6.
+	/// </remarks>
+	public const float ReturningWardenShare = 1f;
+
+	/// <summary>A returning warden's health over his chapter health, <paramref name="minutes"/> past the first fall.</summary>
+	public static float ReturningWardenScale(float minutes) => ReturningWardenShare * MathF.Sqrt(HealthStrength(minutes));
 
 	/// <summary>
 	/// Real seconds of no trickle after a kept vigil: Boss Rush's breather (Node2DGame.BossRushBreatherSeconds) - long
