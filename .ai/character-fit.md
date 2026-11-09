@@ -132,18 +132,22 @@ opportunity for feedback."* His feedback on each is recorded here as it comes.
 | 3 | Isbrand, the Frostweaver | **Cone of Cold aims the way the player faces**, not at the nearest enemy, for every wizard who holds it (`spell-variety.md` phase 1, the facing family); keeps Rimeblood, his steady trickle of health, the only starter sustain now that healing is scarce | "implement your suggestion." and, of the whole pass: "you do not need to run the balance bots for these changes" | built `b99ffbc8`: every cone takes the facing (Arctic Blast's half-moon, Zero Point's relayed cone); tagline "A freezing cone where you face." Walking away fires it away from the chase: needs a playtest |
 | 4 | Levina, the Stormcaller | keeps Chain Lightning and Quickened Cadence, unchanged | "next" | kept |
 | 5 | Gabbro, the Geomancer | keeps Obsidian Spike and Stoneskin, unchanged | "next" | kept |
-| 6 | Tituba | keeps Riptide and Patience. **Her cell line reads "I have been patient for so long. Please, this way."** (was "patient so long"). **Riptide's level 4 offers a choice of which way the tide runs**: Breaker pushes what it strikes out along its run, and a new card, Undertow, drags it back in toward her; Spring Tide's current follows the way the player chose | "Tituba's Line change: I have been patient for so long" / "her spell upgrade options should include ways that the tide can drag enemies in OR push them out." / "keep everything else about tituba" | line changed; Undertow building |
+| 6 | Tituba | keeps Riptide and Patience. **Her cell line reads "I have been patient for so long. Please, this way."** (was "patient so long"). **Riptide's level 4 offers a choice of which way the tide runs**: Breaker pushes what it strikes out along its run, and a new card, Undertow, drags it back in toward her; Spring Tide's current follows the way the player chose | "Tituba's Line change: I have been patient for so long" / "her spell upgrade options should include ways that the tide can drag enemies in OR push them out." / "keep everything else about tituba" | built: the line `7f86c7da`; Undertow `f34887ea` (`riptide_reactive_catalyst`, Breaker's strength pointed home, letting go a body's width short of her; Spring Tide's current runs home after Undertow). Elites are moved by Undertow exactly as Breaker already throws them; bosses only lean. Not yet seen in play |
 
 Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 
 - **Scorching Ray's rays are staggered**: as the count grows, the rays of one cast leave one after another,
   with a slight random spread in the gaps, rather than all at once - "giving a more chaotic feel". For
-  every wizard who holds it. Building.
+  every wizard who holds it. Built `d4b8ef4f`: the first ray at once, then about 0.095 s apart, +-30%, the
+  whole spread at most half the cooldown; a ray whose target died re-picks.
 - **Scorching Ray keeps three rays at level 1**: "scorching ray can start with 3 rays, we balance it on
   damage." The count is not cut to meet "spells start small"; if the ray needs balancing it is done on its
   damage.
 - **The Eye of Ra's flare gets a better look**: "lets upgrade imhotep's flare to look more interesting".
-  The first build's thin pale ring with spokes was faint, and a blinded body showed nothing. Building.
+  The first build's thin pale ring with spokes was faint, and a blinded body showed nothing. Built
+  `71fdeae8` (`SunFlare.cs`, `sun_flare.gdshader`): a white-hot disc, a gold light front landing on the
+  blind radius, 8 to 12 turning god-rays, the wedjat flashing gold at the centre, a LightPool flash in the dark
+  chapters; every blinded body wears a flickering four-armed gold glint, a seared elite a burst of sun-fire.
 
 | # | wizard | verdict | Eric's words | status |
 |---|---|---|---|---|
