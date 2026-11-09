@@ -4914,6 +4914,26 @@ def _(sp, c):
     O(sp, thrown)
 
 
+@card("riptide_reactive_catalyst")
+def _(sp, c):
+    """Undertow (2026-11-09, the drag-in card against Breaker's push out): Breaker's picture turned round - the wave
+    rolling on to the right, and a quarry caught in its backwash pulled back to the left, toward the caster, the
+    water's lines trailing after it and the chevrons pointing home."""
+    reset(sp)
+    sp.place = Place(0.66, at=(21.0, 19.0))
+
+    def dragged(cv, x):
+        w = E["water"]
+        quarry(cv, 7, 9, 3.4)
+        for (y, x0, x1) in ((7, 12, 17), (10, 12, 18), (13, 11, 16)):
+            cv.hline(x0, x1, y, w[1] if y == 10 else w[2])
+        for k, xx in enumerate((11, 7)):
+            for d in range(-3, 4):
+                cv.set(xx + abs(d) * 0.8 - 3, 21 + d, w[0] if k == 0 else w[1])
+        m_drops(cv, w, [(3, 14), (9, 4), (2, 6)])
+    O(sp, dragged)
+
+
 @card("riptide_hyper_acceleration")
 def _(sp, c):
     """Groundswell: the wave building as it runs - small off the hand, swelling, breaking big."""

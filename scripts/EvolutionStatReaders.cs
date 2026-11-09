@@ -201,7 +201,7 @@ public static class EvolutionStatReaders
 		// The four bolts' own cards (BoltEvolutions, 2026-10-29) are behaviours read by id; their numbers
 		// ride on the fields below.
 		["gale_blade"] = R(Bolt, "ElementalBolt (Returning; Eddy, Hooked Throw, Live Wire, Thunderhead and Squall by id)", BoltEffects),
-		["riptide"] = R(Bolt, "ElementalBolt, RiptideWave and Player.FireBoltSpell (Knockback is Breaker's; Groundswell and Trident by id)", BoltEffects),
+		["riptide"] = R(Bolt, "ElementalBolt, RiptideWave and Player.FireBoltSpell (Knockback is Breaker's throw out and Undertow's drag in, ElementalBolt.DragTowardCaster; Groundswell, Undertow and Trident by id)", BoltEffects),
 		["molten_shard"] = R(Bolt, "ElementalBolt, MoltenSlag and Player.FireBoltSpell (projectiles are Forge Swarm's forged shards; Slag Trail, Splitting Shard, Magma Core and Caldera by id)", BoltEffects),
 		// The one bolt that reads Amount (more arrows a volley); the other three never have.
 		["hunters_draw"] = R(Bolt | EvolutionStat.Amount, "ElementalBolt, ArrowRain and Player.LooseHuntersVolley (Amount is more arrows a volley; Knockback is Heavy Draw's, on a full draw; Running Shot, Barbed, Rain of Arrows and Hunter's Mark by id)", BoltEffects),

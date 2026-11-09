@@ -2805,14 +2805,22 @@ public static class SpellEvolutionCatalog
 	private static void SetupRiptideEvolutions(SpellData spell)
 	{
 		Color sea = new Color(0.55f, 0.82f, 1.0f);
+		// PUSH OUT OR DRAG IN (Eric, 2026-11-09, on Tituba: "her spell upgrade options should include ways that the tide
+		// can drag enemies in OR push them out"). Breaker is the push, and says so plainly; Undertow is the drag, at the
+		// same strength reversed toward her (BoltEvolutions.UndertowId, ElementalBolt.DragTowardCaster). Four level 4
+		// cards: the mutation page lays out more than three (LevelUpMenu's narrower cards).
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
-			"The wave throws everything it breaks over back along its run. +35% damage, and a wave 30% bigger.",
-			"Water / Knockback", "Clears a lane, and shoves the pack back into the next wave's path.",
+			"The wave throws everything it strikes out, away from you. +35% damage, and a wave 30% bigger.",
+			"Water / Push", "Clears a lane, and shoves the pack back into the next wave's path.",
 			o => { Renamed(o, "Breaker", "Breaker", sea); o.DamageMultiplier = 1.35f; o.ScaleMultiplier = 1.3f; o.KnockbackBonus = 100f; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
 			$"The wave grows as it runs, from {BoltEvolutions.GroundswellStart * 100f:0}% to {BoltEvolutions.GroundswellEnd * 100f:0}% of its size. -25% cooldown, 25% faster.",
 			"Water / Distance", "Fire it long: the farther the pack, the wider the water that reaches it.",
 			o => { Renamed(o, "Groundswell", "Groundswell", sea); o.CooldownMultiplier = 0.75f; o.SpeedMultiplier = 1.25f; }));
+		spell.Level4Options.Add(Branch(spell, DefaultBranch.ReactiveCatalyst,
+			"The wave's backwash drags everything it strikes back toward you. +20% damage.",
+			"Water / Pull", "Gathers the pack in for your close spells, and into the next wave's path.",
+			o => { Renamed(o, "Undertow", "Undertow", sea); o.DamageMultiplier = 1.2f; o.KnockbackBonus = 100f; }));
 		AddElementPath(spell);
 		// A TIDAL WAVE (2026-10-27, "riptide size should end up being a huge portion of the screen per
 		// shot"), named for what it is since 2026-10-29: Tidal Wall. x3 of a level 8 wave (224 px) is about

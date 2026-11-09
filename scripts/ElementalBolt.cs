@@ -217,7 +217,7 @@ public partial class ElementalBolt : Area2D
 
 	// --- Which evolutions this bolt carries (BoltEvolutions), read once at the shot ---
 	private bool slagTrail, splitOnHit, magmaCore, caldera;
-	private bool groundswell, tidalWall;
+	private bool groundswell, tidalWall, undertow;
 	private bool barbed;
 	private bool eddy, hooked, liveWire, thunderhead, squall;
 
@@ -306,6 +306,7 @@ public partial class ElementalBolt : Area2D
 		caldera = s.HasEvolution(BoltEvolutions.CalderaId);
 		groundswell = s.HasEvolution(BoltEvolutions.GroundswellId);
 		tidalWall = s.HasEvolution(BoltEvolutions.TidalWallId);
+		undertow = s.HasEvolution(BoltEvolutions.UndertowId);
 		barbed = s.HasEvolution(BoltEvolutions.BarbedId);
 		eddy = cast && s.HasEvolution(BoltEvolutions.EddyId);
 		hooked = s.HasEvolution(BoltEvolutions.HookedThrowId);
@@ -1062,11 +1063,41 @@ public partial class ElementalBolt : Area2D
 			// Breaker and Heavy Draw: thrown along the line the bolt was travelling. The stagger and the
 			// shove together, as Solar Flare's Blinding Flash gives them - it reels, then goes.
 			float shove = knockbackSpeed * KnockbackScale;
-			if (shove > 0f && direction != Vector2.Zero)
+			if (shove > 0f && undertow)
+				DragTowardCaster(struck, shove);
+			else if (shove > 0f && direction != Vector2.Zero)
 				struck.ApplyKnockback(direction * shove);
 			if (StaggerSeconds > 0f)
 				struck.ApplyShock(StaggerSeconds);
 		}
+	}
+
+	// UNDERTOW (BoltEvolutions.UndertowId): the backwash drags what the wave strikes back toward the caster, at the
+	// strength Breaker throws it out with, through the same Enemy.ApplyKnockback - so an elite comes as far as Breaker
+	// would have thrown it and a boss only leans (Enemy.CapsCrowdControl). Never past arm's length of her: the drag is
+	// cut so a body comes to rest UndertowStopShort from where she stands, and one already that close is not dragged.
+	// Toward where she is now, not along the wave's line, so a body the wave caught off her line still comes to her.
+	// Enemy.ApplyKnockback holds its speed for 0.45 s and eases the last 30% out: KnockbackTravel seconds of full speed.
+	private const float KnockbackTravel = 0.45f * 0.85f;
+
+	private void DragTowardCaster(Enemy struck, float shove)
+	{
+		bool hasCaster = PlayerRef != null && IsInstanceValid(PlayerRef);
+		Vector2 toward = hasCaster ? PlayerRef.GlobalPosition - struck.GlobalPosition : -direction;
+		float distance = toward.Length();
+		if (distance < 0.01f)
+			return;
+		float speed = shove;
+		if (hasCaster)
+		{
+			float room = distance - BoltEvolutions.UndertowStopShort;
+			if (room <= 0f)
+				return;
+			float travel = shove * KnockbackTravel;
+			if (travel > room)
+				speed = shove * room / travel;
+		}
+		struck.ApplyKnockback(toward / distance * speed);
 	}
 
 	private void ConfigureArcVisual(float visualLength)

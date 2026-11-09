@@ -5329,6 +5329,8 @@ public partial class Player : CharacterBody2D
 					GrowLength = (bolt as ElementalBolt)?.Range ?? 0f,
 					// The water fills behind the crest at the crest's own pace, not ahead of it.
 					FloodSpeed = (bolt as ElementalBolt)?.Speed ?? 0f,
+					// The current runs the way her wave moves what it strikes: toward her after Undertow, out otherwise.
+					Inward = spell.HasEvolution(BoltEvolutions.UndertowId),
 				};
 				GetParent().AddChild(TagSpell(lane));
 				lane.GlobalPosition = GlobalPosition;
