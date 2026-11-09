@@ -422,6 +422,8 @@ public partial class _BalanceHarness : Node
 			// the bot reads is real time, and every fight adds to it. Each arrival and fall is logged
 			// as a BOSS RUSH line by the run itself.
 			else if (arg == "--boss-rush") Global.BossRush = true;
+			// --endless, --leave-at=N (_BalanceHarness.Endless.cs).
+			else if (TryParseEndlessArg(arg)) { }
 		}
 		// --seek-sovereign plans as --seek-ascensions does, unless --policy=ordinary asks for the ordinary build.
 		if (SeekSovereign && !OrdinaryPolicy)
@@ -497,6 +499,8 @@ public partial class _BalanceHarness : Node
 
 		if (Explore || giveRelics.Length > 0 || grantBoons.Length > 0)
 			SaveManager.WritesDisabled = true;
+		// --endless: the save, whichever it is now, made one that can hold this chapter through the night.
+		OpenEndlessOnSave();
 		ApplyFarSkyArg();
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
@@ -1070,6 +1074,9 @@ public partial class _BalanceHarness : Node
 				bossDownAt = elapsed;
 				GD.Print($"HARNESS boss down at t={elapsed:0}s ({elapsed / 60f:0.0} min), level {player.CurrentLevel}");
 			}
+			// --endless: the vigil instead, and the night goes on (_BalanceHarness.Endless.cs).
+			if (KeepEndlessVigil(won))
+				return;
 			won.EnterVictoryPortal();
 			Finish("beat the boss");
 			return;
@@ -2979,7 +2986,7 @@ public partial class _BalanceHarness : Node
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}{EndlessSummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -3832,6 +3839,7 @@ public partial class _BalanceHarness : Node
 			$"  stage        : {Global.SelectedStageIdx}; spawned " + string.Join(", ", spawnedByType.Select(p => $"{p.Key} {p.Value}")),
 		};
 		lines.AddRange(DropLedger());
+		lines.AddRange(EndlessReportLines());
 		lines.AddRange(HealingLedgerLines());
 		if (PickEvery > 1)
 			lines.Add($"  weak picks   : took one level-up in {PickEvery}; skipped {weakSkips} of {weakLevelUpsSeen}");

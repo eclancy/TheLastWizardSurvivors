@@ -87,6 +87,18 @@ public static class EndlessCatalog
 		return warden != null && save.Lifetime != null && save.Lifetime.HasDefeatedBoss(warden.Id);
 	}
 
+	// --- The chapter's own victory time ----------------------------------------------------------------------------
+
+	/// <summary>
+	/// THE SHIM every "past the boss" rule of endless reads: when this chapter's warden walks in, in real seconds of run
+	/// clock. The pace clamp (Node2DGame.PaceMinutes), the returning warden's quarter hour and the first night's end
+	/// (Node2DGame.Endless.cs) all come through here and nowhere else, never a literal 900 or TimerVictorySeconds read
+	/// beside it. Today the reference run, 900 on every chapter (Node2DGame.TimerVictorySeconds' value); the far shore's
+	/// per-chapter run length (StageCatalog.VictorySecondsFor, another piece's) is to be pointed at from here when the
+	/// two merge - one line.
+	/// </summary>
+	public static float ChapterVictorySeconds(string stageId) => global::Node2DGame.ReferenceRunSeconds;
+
 	// --- The night's strength (section 1.5) -----------------------------------------------------------------------
 	//
 	// One number grows: the night's strength, read from m, the minutes of the pace clock since the first warden fell.
@@ -171,6 +183,27 @@ public static class EndlessCatalog
 
 	/// <summary>Of each returning warden's ArcaneVictoryBonus, the share a night pays (Boss Rush's ArcaneBonusShare).</summary>
 	public const float WardenBonusShare = 0.5f;
+
+	/// <summary>
+	/// The later nights' purse before the cap: <paramref name="minutes"/> of clock past the first night at
+	/// <paramref name="perMinute"/> (Node2DGame.ArcanePerMinuteSurvived) through the run's own <paramref name="multiplier"/>,
+	/// plus the returning wardens' shares already summed. No level term: it would pay for levels a night makes cheap.
+	/// </summary>
+	public static int NightPurseEarned(int minutes, int perMinute, float multiplier, int wardenArcane) =>
+		(int)MathF.Round(Math.Max(0, minutes) * perMinute * multiplier) + Math.Max(0, wardenArcane);
+
+	/// <summary>What the later nights pay: <see cref="NightPurseEarned"/>, at most <see cref="ArcaneCap"/>.</summary>
+	public static int NightPurse(int earned) => Math.Clamp(earned, 0, ArcaneCap);
+
+	// --- The ledger (section 3.1) ----------------------------------------------------------------------------------
+
+	/// <summary>
+	/// THE LEDGER RULE: what the save learns from a run. Once the vigil has been kept, the first night's result (taken
+	/// as the victory it was, the moment the first vigil was kept); the run itself otherwise. Node2DGame.FinishRunAndReward
+	/// hands this - never the live run - to everything that writes the save: the lifetime totals, the achievements, the
+	/// chapter it opens, the telemetry, and the Arcane payout's first-night part. The results screen shows the live run.
+	/// </summary>
+	public static RunResult LedgerFor(RunResult live, RunResult firstNight) => firstNight ?? live;
 
 	// --- What a long night leaves behind (section 4.1) --------------------------------------------------------------
 

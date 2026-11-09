@@ -14,6 +14,181 @@ public static partial class RegressionChecks
 		ValidateEndlessChapters(warnings);
 		ValidateEndlessStrength(warnings);
 		ValidateEndlessUnlock(warnings);
+		ValidateEndlessClamp(warnings);
+		ValidateEndlessLedger(warnings);
+		ValidateEndlessPurse(warnings);
+		ValidateEndlessFeats(warnings);
+	}
+
+	// The clamp (section 1.6): past the chapter's victory time, the pace minutes every growing reader reads hold there -
+	// spawn health, the Warden, the XP multiplier - and before it nothing moves. Measured on a real Node2DGame, never
+	// added to the tree, its clock set by hand.
+	private static void ValidateEndlessClamp(List<string> warnings)
+	{
+		const System.Reflection.BindingFlags Private = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+		System.Reflection.FieldInfo clock = typeof(Node2DGame).GetField("timeElapsed", Private);
+		System.Reflection.PropertyInfo minutes = typeof(Node2DGame).GetProperty("PaceMinutes", Private);
+		if (clock == null || minutes == null)
+		{
+			warnings.Add("Endless: Node2DGame has no timeElapsed or PaceMinutes to check the clamp against.");
+			return;
+		}
+		var probe = new Node2DGame();
+		try
+		{
+			float victory = probe.EndlessVictorySeconds;
+			clock.SetValue(probe, victory * 0.5f);
+			float before = (float)minutes.GetValue(probe);
+			if (!Mathf.IsEqualApprox(before, victory * 0.5f / probe.RunPace / 60f))
+				warnings.Add($"Endless: halfway through the first night the pace reads {before:0.00} minutes; the clamp must not move it.");
+			clock.SetValue(probe, victory * 3f);
+			float after = (float)minutes.GetValue(probe);
+			float held = victory / probe.RunPace / 60f;
+			if (!Mathf.IsEqualApprox(after, held))
+				warnings.Add($"Endless: in the third night the pace reads {after:0.00} minutes; spawn health, the Warden and XP must hold at {held:0.00}.");
+			float xp = probe.XpPaceMultiplier;
+			float xpHeld = 1f + Mathf.Max(0f, probe.XpGrowthPerPaceMinute) * held;
+			if (!Mathf.IsEqualApprox(xp, xpHeld))
+				warnings.Add($"Endless: the XP multiplier reads x{xp:0.00} in the third night; it must hold at its victory-time x{xpHeld:0.00}.");
+		}
+		finally
+		{
+			probe.Free();
+		}
+	}
+
+	// THE LEDGER (section 3.1): a run that kept the vigil and died in the third night feeds the save exactly what a portal
+	// exit at the first fall would have - every lifetime total, deed, chapter clear and telemetry row - and a vault found
+	// in the night is still recorded. And the night itself would have earned more had it been read, so the check bites.
+	private static void ValidateEndlessLedger(List<string> warnings)
+	{
+		StageDefinition forest = StageCatalog.GetById(EndlessCatalog.RoadChapterIds[0]);
+		BossDefinition warden = forest != null ? BossCatalog.ForStageIndex(forest.Index) : null;
+		if (warden == null)
+			return;
+		SaveData baseline = EndlessSampleSave(takenBack: true);
+		RunResult firstNight = new()
+		{
+			Outcome = RunOutcome.Victory, StageId = forest.Id, BossId = warden.Id, CharacterId = "aedan",
+			BalancePresetId = GlobalStatsManager.BalancePresetDefault,
+			TimeSurvived = 905f, FinalPlayerLevel = 31, EnemiesKilled = 1400, UndamagedSeconds = 60f,
+		};
+		RunResult wholeNight = new()
+		{
+			Outcome = RunOutcome.Defeat, StageId = forest.Id, BossId = string.Empty, CharacterId = "aedan",
+			BalancePresetId = GlobalStatsManager.BalancePresetDefault,
+			TimeSurvived = 2480f, FinalPlayerLevel = 54, EnemiesKilled = 6100, UndamagedSeconds = 600f,
+		};
+
+		SaveData Fed(RunResult run)
+		{
+			SaveData copy = SaveData.FromVariant(baseline.ToGodotDictionary());
+			copy.RecordRunTelemetry(run);
+			AchievementManager.ApplyRunAchievements(copy, run);
+			return copy;
+		}
+		string Json(SaveData save) => Godot.Json.Stringify(save.ToGodotDictionary());
+
+		string kept = Json(Fed(EndlessCatalog.LedgerFor(wholeNight, firstNight)));
+		string portal = Json(Fed(firstNight));
+		if (kept != portal)
+			warnings.Add("Endless: a run that kept the vigil and fell in the third night writes a different save than leaving by the portal at the first fall would have (the ledger, section 3.1).");
+		if (Json(Fed(wholeNight)) == portal)
+			warnings.Add("Endless: the ledger check is vacuous - the whole night would have written the same save as its first night.");
+		if (!ReferenceEquals(EndlessCatalog.LedgerFor(wholeNight, null), wholeNight))
+			warnings.Add("Endless: a run that kept no vigil must hand the save its own result.");
+
+		// Places count: a vault found in the night (completed on the spot, as SecretDirector.Found does) stays found
+		// and its deed stays done through the run's end.
+		SecretDefinition vault = SecretCatalog.Defined.FirstOrDefault(s => s.IsBuilt);
+		if (vault != null)
+		{
+			SaveData found = SaveData.FromVariant(baseline.ToGodotDictionary());
+			string deed = AchievementDefinitions.SecretDeedId(vault.Id);
+			AchievementManager.Complete(found, deed);
+			AchievementManager.ApplyRunAchievements(found, EndlessCatalog.LedgerFor(wholeNight, firstNight));
+			if (!found.HasFoundSecret(vault.Id) || !GlobalStatsManager.IsAchievementUnlocked(found, deed))
+				warnings.Add($"Endless: the secret '{vault.Id}', found in a night, is not recorded once the run ends.");
+		}
+	}
+
+	// The purse (section 3.2): capped, and a night always pays less a minute than replaying a chapter does - worked from
+	// CalculateArcaneReward's terms with no multipliers on either side, for every endless chapter's own warden.
+	private static void ValidateEndlessPurse(List<string> warnings)
+	{
+		if (EndlessCatalog.NightPurse(EndlessCatalog.NightPurseEarned(100000, 8, 3f, 100000)) != EndlessCatalog.ArcaneCap)
+			warnings.Add($"Endless: a very long night pays past the cap of {EndlessCatalog.ArcaneCap}.");
+		if (EndlessCatalog.NightPurse(EndlessCatalog.NightPurseEarned(-5, 8, 1f, 0)) != 0)
+			warnings.Add("Endless: a night of no minutes pays something.");
+		foreach (string id in EndlessCatalog.RoadChapterIds)
+		{
+			StageDefinition stage = StageCatalog.GetById(id);
+			BossDefinition boss = stage != null ? BossCatalog.ForStageIndex(stage.Index) : null;
+			if (boss == null)
+				continue;
+			// An ordinary clear: base 20, fifteen minutes at 8, level 30 at 2, the boss's bonus, over 15 minutes and a
+			// four-minute fight. A later night: fifteen minutes at 8 and half the bonus, over 15 minutes and a two-minute fight.
+			float clear = (20f + 15f * 8f + 30f * 2f + boss.ArcaneVictoryBonus) / 19f;
+			float night = EndlessCatalog.NightPurseEarned(15, 8, 1f, (int)MathF.Round(boss.ArcaneVictoryBonus * EndlessCatalog.WardenBonusShare)) / 17f;
+			if (night >= clear)
+				warnings.Add($"Endless: a night in the {stage.DisplayName} pays {night:0.0} a minute, no less than a clear's {clear:0.0} - it could be farmed.");
+		}
+	}
+
+	// The three Feats: listed only once endless is open, never an unlock, counted on Default or harder and never in the
+	// Sketchbook, and each completed by the record it names.
+	private static void ValidateEndlessFeats(List<string> warnings)
+	{
+		SaveData closed = EndlessSampleSave(takenBack: false);
+		SaveData open = EndlessSampleSave(takenBack: true);
+		foreach (string id in EndlessCatalog.FeatIds)
+		{
+			AchievementDefinition feat = AchievementDefinitions.GetById(id);
+			if (feat == null)
+			{
+				warnings.Add($"Endless: the Feat '{id}' is not in AchievementDefinitions.");
+				continue;
+			}
+			if (feat.Visibility != AchievementVisibility.Endless || AchievementDefinitions.IsListed(feat, closed) || !AchievementDefinitions.IsListed(feat, open))
+				warnings.Add($"Endless: '{id}' is not hidden until the Throne is taken back and listed after.");
+			if (!string.IsNullOrWhiteSpace(feat.SpellUnlockId) || !string.IsNullOrWhiteSpace(feat.BoonUnlockId)
+				|| !string.IsNullOrWhiteSpace(feat.CharacterUnlockId) || feat.CurrencyReward <= 0)
+				warnings.Add($"Endless: '{id}' must pay Arcane Energy and never an unlock (section 3.3).");
+			if (feat.CompletesInRun)
+				warnings.Add($"Endless: '{id}' is measured from the records, not completed in the run.");
+		}
+
+		EndlessRecord Rec(string stage, int wardens, string preset = GlobalStatsManager.BalancePresetDefault) =>
+			new() { StageId = stage, CharacterId = "aedan", PresetId = preset, WardensFelled = wardens, NightsReached = wardens, ClockSeconds = wardens * 900f };
+		bool Done(SaveData save, string id) => AchievementDefinitions.GetById(id)?.IsComplete(AchievementContext.ForSave(save)) == true;
+
+		SaveData two = EndlessSampleSave(takenBack: true);
+		EndlessCatalog.Record(two, Rec(EndlessCatalog.RoadChapterIds[0], 2));
+		if (!Done(two, EndlessCatalog.IntoTheNightId) || Done(two, EndlessCatalog.LongWatchId))
+			warnings.Add("Endless: a second warden felled completes Into the Night and not The Long Watch.");
+		SaveData offRoad = EndlessSampleSave(takenBack: true);
+		EndlessCatalog.Record(offRoad, Rec(EndlessCatalog.SketchbookId, 5));
+		EndlessCatalog.Record(offRoad, Rec(EndlessCatalog.RoadChapterIds[1], 5, GlobalStatsManager.BalancePresetCasual));
+		if (Done(offRoad, EndlessCatalog.IntoTheNightId))
+			warnings.Add("Endless: a night in the Sketchbook or on Casual counts toward a Feat.");
+		SaveData every = EndlessSampleSave(takenBack: true);
+		foreach (string id in EndlessCatalog.RoadChapterIds.Take(EndlessCatalog.RoadChapterIds.Count - 1))
+			EndlessCatalog.Record(every, Rec(id, 2, GlobalStatsManager.BalancePresetHardcore));
+		if (Done(every, EndlessCatalog.EveryVigilKeptId))
+			warnings.Add("Endless: Every Vigil Kept completes one chapter short.");
+		EndlessCatalog.Record(every, Rec(EndlessCatalog.RoadChapterIds[^1], 4));
+		if (!Done(every, EndlessCatalog.EveryVigilKeptId) || !Done(every, EndlessCatalog.LongWatchId))
+			warnings.Add("Endless: every road chapter held a second time does not complete Every Vigil Kept (or four wardens The Long Watch).");
+
+		// The record keeps the better of two runs: more wardens, or as many in a longer clock.
+		SaveData kept = new();
+		EndlessCatalog.Record(kept, Rec("stage_0", 3));
+		if (EndlessCatalog.Record(kept, Rec("stage_0", 2)) || kept.EndlessRecords.Count != 1 || kept.EndlessRecords[0].WardensFelled != 3)
+			warnings.Add("Endless: a worse night replaced a record.");
+		// And the save keeps it through a round trip.
+		SaveData back = SaveData.FromVariant(kept.ToGodotDictionary());
+		if (back.EndlessRecords.Count != 1 || back.EndlessRecords[0].WardensFelled != 3 || back.HasKeptVigil != kept.HasKeptVigil)
+			warnings.Add("Endless: the records do not survive the save's round trip.");
 	}
 
 	// Every endless chapter is playable, on the road or the Sketchbook, has a warden with a scene of its own, and is

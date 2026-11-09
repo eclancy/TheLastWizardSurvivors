@@ -43,6 +43,14 @@ public sealed class RunReport
 	public int BossRushTotal { get; set; }
 	/// <summary>The rush's whole length in real seconds, fights included (the run clock stops for them).</summary>
 	public float BossRushSeconds { get; set; }
+	/// <summary>Endless (.ai/endless-mode.md 3.4): the night the run stood in, 0 for a run that kept no vigil - the screen's test.</summary>
+	public int EndlessNight { get; set; }
+	/// <summary>The run clock it reached (the timer the player watched; fights stop it).</summary>
+	public float EndlessClockSeconds { get; set; }
+	/// <summary>Wardens felled in the run, the first night's included.</summary>
+	public int EndlessWardensFelled { get; set; }
+	/// <summary>It beat the record this wizard held on this chapter and preset when the run began.</summary>
+	public bool EndlessNewRecord { get; set; }
 
 	// --- the rewards --------------------------------------------------------------------------
 	/// <summary>The run's own Arcane Energy payout (CalculateArcaneReward), already in the purse.</summary>
@@ -93,6 +101,11 @@ public sealed class ArcaneRewardBreakdown
 	/// <summary>The far sky's flat bonus for making tonight's Conjunction (FarSky.ArcaneBonus), and its name.</summary>
 	public int FarSkyBonus { get; set; }
 	public string FarSkyName { get; set; } = string.Empty;
+	/// <summary>Endless: the later nights' purse (Node2DGame.EndlessArcane) - minutes past the first night, returning wardens felled, what was paid, and whether the cap trimmed it.</summary>
+	public int NightMinutes { get; set; }
+	public int NightWardens { get; set; }
+	public int NightBonus { get; set; }
+	public bool NightCapped { get; set; }
 	/// <summary>Arcane Energy finished Unlocks entries paid, on top of the run's own payout.</summary>
 	public int UnlockBonus { get; set; }
 }

@@ -59,25 +59,13 @@ public partial class Node2DGame : Node2D
 	/// <remarks>Hook 6: a chapter's rules may pin it (ChapterRules.PinnedPaceSeconds - the Throne's end state).</remarks>
 	public float PaceSeconds => chapterRules?.PinnedPaceSeconds ?? timeElapsed / RunPace;
 
-	/// <summary>
-	/// THE CHAPTER'S OWN VICTORY TIME, in real seconds of run clock: when its warden walks in. The one accessor every
-	/// "past the boss" rule reads - endless's clamp below, its returning warden's quarter hour, its first night's end
-	/// (Node2DGame.Endless.cs) - so a chapter whose run is not fifteen minutes (the far shore's twenty) moves them all
-	/// by changing what this returns, never a literal 900 or TimerVictorySeconds read beside it. Today
-	/// TimerVictorySeconds, which is 900 on every chapter; the reference run's length where a chapter has no clock
-	/// (the Throne sets it to 0: its procession brings him).
-	/// </summary>
-	public float ChapterVictorySeconds => TimerVictorySeconds > 0f ? TimerVictorySeconds : ReferenceRunSeconds;
-
-	/// <summary>The same moment on the pace clock: where everything that grows with the run stops growing.</summary>
-	public float ChapterVictoryPaceSeconds => ChapterVictorySeconds / RunPace;
-
 	// Held at the chapter's victory time (.ai/endless-mode.md 1.6): the three readers that would keep growing past the
 	// boss - spawn health's per-minute line, the Warden's 1 + 0.22 x minutes and the XP multiplier - stop where the
 	// boss stops the clock today. It changes nothing before then (the clock never ran past it until endless), so every
 	// measured table in .ai/run-pacing.md stands. Raw PaceSeconds still runs on: the elite schedule and the Warden's
-	// clock read it, and a night needs both.
-	private float PaceMinutes => Mathf.Clamp(PaceSeconds, 0.0f, ChapterVictoryPaceSeconds) / 60.0f;
+	// clock read it, and a night needs both. The victory time is read through endless's one shim
+	// (EndlessVictoryPaceSeconds, Node2DGame.Endless.cs; EndlessCatalog.ChapterVictorySeconds).
+	private float PaceMinutes => Mathf.Clamp(PaceSeconds, 0.0f, EndlessVictoryPaceSeconds) / 60.0f;
 	// Fallbacks only. The spawn ring is measured from the visible rectangle now (see
 	// GetSpawnRadiusForDirection); these are what it falls back to if the camera cannot be read.
 	[Export] public float SpawnMinDistance { get; set; } = 250.0f;
@@ -754,6 +742,8 @@ public partial class Node2DGame : Node2D
 		StartChapterRules();
 		// F4, the far sky: tonight's Conjunction for this run, if any (Node2DGame.FarSky.cs).
 		StartFarSky();
+		// Endless: whether this run can go on past its warden (Node2DGame.Endless.cs).
+		InitEndless();
 	}
 
 	// The chapter's rules, if it has any (ChapterRulesCatalog). A Node under the run, so it can process
@@ -3528,6 +3518,9 @@ public partial class Node2DGame : Node2D
 		{
 			if (IsBossRush)
 				SkipToNextBossRushArrival();
+			// Endless: in a night, the next warden now (Node2DGame.Endless.cs).
+			else if (InEndlessNight && !bossFightActive)
+				timeElapsed = Mathf.Max(timeElapsed, NextEndlessWardenSeconds);
 			else if (!bossPhaseTriggered && TimerVictorySeconds > 0f)
 				timeElapsed = TimerVictorySeconds;
 			GetViewport().SetInputAsHandled();
@@ -3680,6 +3673,8 @@ public partial class Node2DGame : Node2D
 		TickBossEntrance(d);
 		TickVictoryPortalAndPointers();
 		TickBossRush(d);
+		// Endless: the vigil's hold, the night's strength and its returning warden (Node2DGame.Endless.cs).
+		TickEndless(d);
 		if (TickBossPhaseStart())
 			return;
 
@@ -3766,7 +3761,8 @@ public partial class Node2DGame : Node2D
 			return;
 
 		runTimerLastSecond = totalSeconds;
-		runTimerLabel.Text = FormatTime(timeElapsed);
+		// Endless: "Night 2 · 21:40" in a night (Node2DGame.Endless.cs).
+		runTimerLabel.Text = EndlessTimerText() ?? FormatTime(timeElapsed);
 	}
 
 	// ONE RUN MENU AT A TIME (issue #44's timing pass, 2026-10-28). The level-up and chest screens each
@@ -4532,6 +4528,8 @@ public partial class Node2DGame : Node2D
 			sections.AddChild(BuildRunSummarySection());
 			// F4, the far sky: tonight's Conjunction on a far-shore run (Node2DGame.FarSky.cs).
 			if (BuildFarSkySection() is Control farSky) sections.AddChild(farSky);
+			// Endless: the night and what it has made of the field (Node2DGame.Endless.cs).
+			if (BuildEndlessSection() is Control night) sections.AddChild(night);
 			sections.AddChild(BuildCharacterPassiveSection());
 			// "Your ... this run", in the Spell Index's own words (Attacks, Passives): this tab is
 			// the spells in hand, the Spell Index tab is every spell there is, and the two headings
@@ -5614,7 +5612,8 @@ public partial class Node2DGame : Node2D
 		float rampProgress = SpawnHealthRampMinutes > 0.0f
 			? Mathf.Min(1.0f, minutesElapsed / SpawnHealthRampMinutes)
 			: 1.0f;
-		spawnHealth = (SpawnBaseHealth + (minutesElapsed * SpawnHealthPerMinute * rampProgress)) * presetSpawnHealthScale;
+		// Endless: the night's strength on top (1 outside a night; Node2DGame.Endless.cs).
+		spawnHealth = (SpawnBaseHealth + (minutesElapsed * SpawnHealthPerMinute * rampProgress)) * presetSpawnHealthScale * endlessHealthStrength;
 	}
 
 	/// <param name="at">
@@ -6108,7 +6107,8 @@ public partial class Node2DGame : Node2D
 			// Scales with run length the same way ordinary spawns do, so a late Warden is still
 			// a threat rather than a speed bump.
 			float minutesElapsed = PaceMinutes;
-			typedWarden.Health = Mathf.RoundToInt(typedWarden.Health * (1f + minutesElapsed * 0.22f) * presetElitePowerScale * chapterElitePowerScale);
+			// Endless: the night's strength on top (1 outside a night).
+			typedWarden.Health = Mathf.RoundToInt(typedWarden.Health * (1f + minutesElapsed * 0.22f) * presetElitePowerScale * chapterElitePowerScale * endlessHealthStrength);
 			// The run's recurring miniboss always carries a chest: four a run, at 5:15, 8:00, 10:45
 			// and 13:30. (Rockem in the Sketchbook, the same slot.)
 			typedWarden.ChestSource = ChestSourceWarden;
@@ -6498,8 +6498,12 @@ public partial class Node2DGame : Node2D
 		victoryBossId = bossId;
 		GD.Print($"Boss defeated: {bossId}. Level cleared; the way home opens.");
 		player?.GrantInvincibility(BossVictoryDelaySeconds + 0.5f);
-		PlaceChestNear(BossChestPoint(fellAt), ChestSourceBoss);
+		// Endless: a night whose relics are all held sets out no chest of dead cards (Node2DGame.Endless.cs).
+		if (!EndlessChestPoolDry())
+			PlaceChestNear(BossChestPoint(fellAt), ChestSourceBoss);
 		OpenVictoryPortal(fellAt);
+		// Endless: on a run that can go on, the vigil beside the way home (Node2DGame.Endless.cs).
+		OfferVigil(fellAt, BossCatalog.GetById(bossId));
 	}
 
 	// The boss's chest is set out a body's width from where it fell, towards the player, so it rises
@@ -6621,6 +6625,10 @@ public partial class Node2DGame : Node2D
 			if (!pays)
 				return;
 		}
+
+		// Endless: once a night's relics are all held, a carrier carries nothing (Node2DGame.Endless.cs).
+		if (EndlessChestPoolDry())
+			return;
 
 		PlaceChestNear(carrier.GlobalPosition, carrier.ChestSource);
 	}
@@ -7458,6 +7466,10 @@ public partial class Node2DGame : Node2D
 	{
 		if (offers == null || GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData data)
 			return;
+		// Endless (question 4, decided): a Conjunction first made in a night is not recorded; its Feat waits for a run
+		// that makes it in the first night. He may still take it in this run.
+		if (InEndlessNight)
+			return;
 		foreach (LevelUpOption offer in offers)
 		{
 			if (!ComboCatalog.IsComboOption(offer))
@@ -7571,17 +7583,25 @@ public partial class Node2DGame : Node2D
 		// the player was holding at the end.
 		RunEvents.RecordElementCounts(BuildElementCountSnapshot());
 		RunEvents.ApplyToRunResult(result, timeElapsed);
+		// Endless: what the save learns is the first night (the ledger, Node2DGame.Endless.cs); the results show the
+		// whole run. On every run that kept no vigil the two are one and the same.
+		RunResult ledger = LedgerOr(result);
 
-		int reward = CalculateArcaneReward(result);
+		int reward = CalculateArcaneReward(ledger);
+		if (!ReferenceEquals(ledger, result))
+		{
+			result.ArcaneRewardMultiplier = ledger.ArcaneRewardMultiplier;
+			result.ArcaneRewardBreakdown = ledger.ArcaneRewardBreakdown;
+		}
 		int totalCurrency = AwardArcaneEnergy(reward);
 		WritePlaytestRunLog(result, reward, totalCurrency);
 		GameStats.RecordRunResult(result);
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
 		if (saveManager != null)
 		{
-			saveManager.Data.RecordRunTelemetry(result);
+			saveManager.Data.RecordRunTelemetry(ledger);
 			saveManager.Data.HasSeenGameplayOnboarding = true;
-			runUnlocks = AchievementManager.ApplyRunAchievements(saveManager.Data, result);
+			runUnlocks = AchievementManager.ApplyRunAchievements(saveManager.Data, ledger);
 			// Deeds already paid mid-run (RecordAchievementNow) are not re-paid above, so they are added here.
 			runUnlocks.AchievementNames.InsertRange(0, runAchievementNames);
 			runUnlocks.CurrencyAwarded += runAchievementCurrency;
@@ -7590,7 +7610,11 @@ public partial class Node2DGame : Node2D
 			// Found in the world first - they happened before the run ended - then what the run's
 			// totals earned, then what the boss opened, then the paths the run revealed.
 			runUnlocks.Entries.InsertRange(0, runDiscoveryEntries);
-			ApplyBossVictoryUnlocks(saveManager.Data, result, runUnlocks);
+			ApplyBossVictoryUnlocks(saveManager.Data, ledger, runUnlocks);
+			// Endless: the run that first takes the Throne back lists the mode it opened; a run that kept a vigil
+			// writes its last record (Node2DGame.Endless.cs).
+			ApplyEndlessOpenedEntry(saveManager.Data, runUnlocks);
+			RecordEndlessRun(saveManager.Data);
 			// The lessons this run owes (Teachings, Node2DGame.Lessons.cs): a teacher found in it, or the Rite
 			// owned now. Listed here; taught by their reel, which plays before the results.
 			GatherOwedLessons(saveManager.Data, runUnlocks);
@@ -7602,6 +7626,7 @@ public partial class Node2DGame : Node2D
 		// back for the defeat's few seconds (Node2DGame.Defeat.cs), and a player who quits during them
 		// has lost nothing; the paused tree is the "game freezes" of that sequence.
 		RunReport report = BuildRunReport(result, reward, totalCurrency);
+		FillEndlessReport(report);
 		GetTree().Paused = true;
 		if (outcome == RunOutcome.Defeat && BeginDefeatSequence(report))
 			return;
@@ -7706,6 +7731,10 @@ public partial class Node2DGame : Node2D
 	/// </remarks>
 	private RunResult SnapshotRunResult()
 	{
+		// Endless: past the first night the run so far IS the first night (the ledger, Node2DGame.Endless.cs), so the
+		// pause tab and the achievement watch read it and nothing measured completes mid-night.
+		if (endlessLedger != null)
+			return endlessLedger;
 		RunResult snapshot = bossVictoryPending
 			? BuildRunResult(RunOutcome.Victory, victoryBossId)
 			: BuildRunResult(RunOutcome.Defeat, string.Empty);
@@ -7843,8 +7872,10 @@ public partial class Node2DGame : Node2D
 
 	private int CalculateArcaneReward(RunResult result)
 	{
-		int minutesSurvived = Mathf.FloorToInt(timeElapsed / 60.0f);
-		int playerLevel = player?.CurrentLevel ?? 1;
+		// Read from the result it is paying for, not the live run: the same numbers on every run, and on one that kept
+		// the vigil the first night's (the ledger), whose own payout this is (Node2DGame.Endless.cs).
+		int minutesSurvived = Mathf.FloorToInt(result.TimeSurvived / 60.0f);
+		int playerLevel = Math.Max(1, result.FinalPlayerLevel);
 		int baseReward = BaseArcaneReward + (minutesSurvived * ArcanePerMinuteSurvived) + (playerLevel * ArcanePerPlayerLevel);
 		// The results screen shows the payout part by part. Each part is RECORDED here as the
 		// arithmetic below uses it, never recomputed elsewhere, so the breakdown cannot disagree
@@ -7906,6 +7937,8 @@ public partial class Node2DGame : Node2D
 		}
 		// F4, the far sky: tonight's Conjunction made, flat and after the multipliers as the boss's bonus is.
 		computed += FarSkyArcane(result, breakdown);
+		// Endless: the later nights' purse, capped, flat after the first night's own payout (Node2DGame.Endless.cs).
+		computed += EndlessArcane(breakdown, rewardMultiplier);
 
 		return Math.Max(1, computed);
 	}
