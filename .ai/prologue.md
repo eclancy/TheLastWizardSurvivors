@@ -12,10 +12,10 @@ choice below comes from it.
 
 | # | Panel (`name`) | Line | What it is |
 |---|---|---|---|
-| 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it five of the game's own wizards (below), each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
+| 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it four of the game's own wizards (below) - the disciplines, standing square round the fire - each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
 | 2 | He comes (`throne`) | *He came here first.* | **Animated** (2026-11-08, Eric: *"it's hard to see what he's doing in the background, it should show him lifting each of the wizards into the air to capture them"*, then *"the silhouette of 4 wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard, since he is the wizard that you are"*; below). **Only his silhouette**, in the foreground and with his back to us: a tall cowled shape inside a collar of points, his black sun behind his head as an eclipse, one arm raised and reaching up into the scene. No face, folds, trim or keys; the shadow running out of his hem has eyes in it. Beyond him, on the far crest of the moot's circle (its stones thrown down outward), the four disciplines - the four the break frees, in its order - stand cast in shadow against his sun's glow, each with nothing on him in colour but his own light. Then he takes them one at a time, far to near: his reach leaves his hand, a hoop of his violet closes on one and lifts it into the sky, where it hangs in his grip while its light streams back into his hand. They end in an arc that curves down into the hand. Never Dee, whose grey robe and violet light read as the player, who is never taken. |
 | 3 | The tide (`tide`) | - | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture). His shadows over the land: a village at the foot of a hill, still lit and quiet for a breath - then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope toward the village, every body on its own lane with its feet on the ground, growing as it comes, the front rank striding up big by the village as the panel ends. The last frame is the old still: the flood arrived. Every one of them wears his mark in its eyes. |
-| 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
+| 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards - six of them, the secret three among them, never Dee - led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
 | 6 | The break (`break`) | *You rescued them, and they stand with you.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it, their own lights coming back. |
 | 7 | The five (`five`) | *Four are free. The rest still wait for you.* | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
@@ -57,7 +57,7 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   the far side let back to occlusion (`form_light`). How much of it a body gets goes by its size
   (`_Fig.lod`): the tide's flood stays shapes. The procession's knight carries his spear sloped back,
   because upright its head stood in front of the tower and was lost.
-- **The wizards are the game's own, and never a secret one.** Eric, 2026-11-01, of the anonymous
+- **The wizards are the game's own, and never Dee.** Eric, 2026-11-01, of the anonymous
   robe-and-hat figure that stood in panels 1, 2 and 4: *"In the intro, the wizard silhouettes look
   goofy. Use the silhouettes of the characters in the game."* Each is now cut from his real sprite
   (`roster_figure` / `silhouette` in the generator: the 48 cell's pixels, contact line and sparks
@@ -66,11 +66,15 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   his death strip once the hoop has him (the flinch), his walk in panel 4. In panel 2 they are cast in
   shadow - occlusion, a rim of violet on the edge that faces the light, and nothing in colour but each one's
   own light - and told apart by outline alone: the Pyromancer's lantern and cape, the Geomancer's bulk and
-  fork, the Frostweaver's crown and trident, the Stormcaller's hair and raised fork. **Only the five whose silhouette a fresh save already shows** -
-  the four disciplines and John Dee. Tituba, Vainamoinen and Laelaps are secret until their chapters
-  open (`.ai/side-events.md`, "Secret wizards"), and the prologue plays before any chapter has, so it
-  would print the answer before the question. Dee's orb is the darkness ramp in the game; here it burns
-  arcane, because darkness as light is the dark wizard's alone.
+  fork, the Frostweaver's crown and trident, the Stormcaller's hair and raised fork. **The moot and panel 2
+  show only the four disciplines**, whose silhouettes a fresh save already shows. Tituba, Vainamoinen and
+  Laelaps are secret until their chapters open (`.ai/side-events.md`, "Secret wizards"), and the prologue
+  plays before any chapter has; only the procession shows them, because Eric chose it (2026-11-01, "Show
+  them": "every" has to mean every, and a dark shape on a ridge names nobody). **Never John Dee** (Eric,
+  2026-11-08, of panel 2: *"remove the purple wizard, since he is the wizard that you are, and you do not
+  get captures by him"*, then *"Yes, remove him"* for the moot and the procession): his grey robe and violet
+  light read as the player, and the player is never taken. He stood behind the moot's fire and walked fifth
+  in the chain; the four in the moot now stand square round the fire, and the chain closed up behind him.
 - **The player is the light.** The hiding and the road have one warm light each, and it is his; the
   break and the five are where his light gives the four theirs back.
 

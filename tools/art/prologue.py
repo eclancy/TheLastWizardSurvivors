@@ -342,26 +342,25 @@ def standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=None, warm=None, toward=
 # at whatever size the panel needs - filled flat, rimmed by the light of the panel, and lit only at
 # the staff or the hand that carries his light in the game.
 #
-# WHICH OF THEM: the moot and the fall show the wizards a fresh save already sees - the four
-# disciplines and John Dee. The procession ("He took every wizard who might rival him", once "He took
-# them all") shows every one of them, the secret three as well: Tituba, Vainamoinen and Laelaps are
+# WHICH OF THEM: the moot and the fall show the four disciplines, the wizards a fresh save already sees
+# and the four the Archmage frees in the break. The procession ("He took every wizard who might rival
+# him", once "He took them all") shows the secret three as well: Tituba, Vainamoinen and Laelaps are
 # secret on the character select until their chapters open (UnlockCatalog's secretUntilStage), and Eric
-# chose to show them here anyway (2026-11-01, "Show them") - "every" has to mean every, and a dark shape
-# on a ridge names nobody.
+# chose to show them here anyway (2026-11-01, "Show them") - a dark shape on a ridge names nobody.
+# NEVER JOHN DEE (Eric, 2026-11-08, "remove the purple wizard, since he is the wizard that you are, and you
+# do not get captures by him", then "Yes, remove him" for the moot and the procession): his grey robe and
+# violet light read as the player, and the player is never taken.
 CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
 CELL = 48
 # The rows a wizard stands in on his cell: feet on row 46, the contact line on 47, the hat near row 2.
 CELL_STAND = 46.0
 
-# (sprite prefix, the ramp his light is in the sprite, the ramp it burns here). Dee's orb is the
-# darkness ramp in the game, but in the prologue that ramp as light is the dark wizard's alone
-# (.ai/prologue.md, rules), so here Dee burns arcane.
+# (sprite prefix, the ramp his light is in the sprite, the ramp it burns here).
 PYRO = ("pyromancer", "fire", "fire")
 FROST = ("frostweaver", "ice", "ice")
 STORM = ("stormcaller", "lightning", "lightning")
 GEO = ("geomancer", "earth", "earth")
-DEE = ("dee", "darkness", "arcane")
-ROSTER = [PYRO, FROST, STORM, GEO, DEE]
+ROSTER = [PYRO, FROST, STORM, GEO]
 # The three the player frees, for the procession only (above). Tituba's staff head is her water,
 # Vainamoinen's his grass; Laelaps carries no light of his own, so his falls back to his middle unless
 # the gold of his collar star is found.
@@ -512,9 +511,8 @@ def light_at(who, cx, yb, h, strip="idle", frame=0, facing=1):
 
 
 # In the moot, before the fall, each wears the deep end of their own colour - the only time the prologue
-# lets them have one - so the circle reads as five different people at a glance, not five shadows.
-ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4],
-        "dee": ST[4]}
+# lets them have one - so the circle reads as four different people at a glance, not four shadows.
+ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4]}
 
 
 EYE = (AR[0], AR[1])
@@ -1429,7 +1427,7 @@ def ward(c, cx, cy, rx, ry, A=None, ground=None, pool=True):
 # =========================================================================== panels
 def p_moot():
     """1. The circle where the wizards met, before. Every wizard's light is still in the world:
-    a fire in the middle of a warded ring, and round it their staves, each a different element.
+    a fire in the middle of a warded ring, and round it the four disciplines' staves, each a different element.
     The last time the screen holds more than one warm light."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 400, [OCC, S[4], V[4], V[3], V[2]])
@@ -1476,9 +1474,13 @@ def p_moot():
         y = fy - 4 + math.sin(a) * 60
         depth = (y - (fy - 64)) / 128.0
         items.append((y, "stone", x, depth, 900 + i))
-    # Five of the game's wizards round the fire, each staff burning his own element. None stands at the
-    # front centre, where he would cover the fire; the one behind it holds his light up over it.
-    for i, (a, who) in enumerate([(0.85, PYRO), (2.2, FROST), (3.25, STORM), (4.71, DEE), (5.55, GEO)]):
+    # Four of the game's wizards round the fire, each staff burning his own element: the disciplines, the four
+    # he takes in the next panel and the Archmage frees in the break. Dee stood behind the fire until Eric,
+    # 2026-11-08, of his grey robe and violet light: "Yes, remove him" - he reads as the player, who is never
+    # taken. The four stand square round the fire, a quarter turn apart and half a quarter off the way in, each
+    # close to where he stood among five, so the ring holds no gap where Dee was. None stands at the front
+    # centre, where he would cover the fire.
+    for i, (a, who) in enumerate([(0.79, PYRO), (2.36, FROST), (3.93, STORM), (5.50, GEO)]):
         x = fx + math.cos(a) * 128
         y = fy + math.sin(a) * 32
         items.append((y, "wizard", x, who, 0))
@@ -2123,7 +2125,7 @@ def p_tide():
 def p_taken():
     """4. "He took every wizard who might rival him." The game's wizards led away along a ridge against his light, bound
     wrist to wrist by his chain, their staves dark, their light drawn out of them toward the tower.
-    Silhouettes only, of every wizard in the game, the three the player frees included (Eric)."""
+    Silhouettes only, the three the player frees included (Eric), and never Dee, who reads as the player."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 560, [OCC, S[4], V[4], V[3], V[3], V[2]])
     stars(back, (0, 0, FW, 300), 140, 13, colors=[K[2], V[0]])
@@ -2144,12 +2146,14 @@ def p_taken():
         if ridge(x + 1) < ridge(x - 1):
             mid.set(x, top, V[4])
     order = [("knight", 0), ("wiz", 0), ("wiz", 1), ("bruiser", 0), ("wiz", 2), ("wiz", 3), ("shielder", 0),
-             ("wiz", 4), ("wiz", 5), ("caster", 0), ("wiz", 6), ("runner", 0)]
-    # Seven of the game's wizards, walking (each a different frame of his own walk), staves dark,
-    # Tituba, Vainamoinen and Laelaps among the first four. Twelve figures where there were ten, so they
-    # walk a little closer together; and the wizards walk near the head of the line, by the tower,
-    # because the phone's canvas crops the panel's sides and shows the head of it, not the tail.
-    taken = [(TITUBA, 2), (FROST, 1), (VAINAMOINEN, 6), (LAELAPS, 4), (DEE, 5), (PYRO, 3), (STORM, 7)]
+             ("wiz", 4), ("caster", 0), ("wiz", 5), ("runner", 0)]
+    # Six of the game's wizards, walking (each a different frame of his own walk), staves dark,
+    # Tituba, Vainamoinen and Laelaps among the first four; and the wizards walk near the head of the line,
+    # by the tower, because the phone's canvas crops the panel's sides and shows the head of it, not the
+    # tail. Dee walked fifth until Eric, 2026-11-08: "Yes, remove him" (his grey robe and violet light read
+    # as the player, who is never taken); his place closed up, the line one figure shorter at its tail,
+    # which is off the left of every screen, so no gap shows where he walked.
+    taken = [(TITUBA, 2), (FROST, 1), (VAINAMOINEN, 6), (LAELAPS, 4), (PYRO, 3), (STORM, 7)]
     x = 600
     rng = random.Random(17)
     wrists = []
