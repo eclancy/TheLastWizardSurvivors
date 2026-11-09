@@ -985,7 +985,8 @@ public partial class Player : CharacterBody2D
 		"missed_once",
 		// Baba Yaga (.ai/chapter-wizards.md 4.1): Bone Fence - her hut stands behind a fence of bone, and whatever her
 		// spells shove or drag is thrown that much harder (Enemy.PlayerKnockbackScale). An axis no other wizard owns:
-		// not damage, not speed, the strength of every push. Her own vine pushes nothing; it is a build's passive.
+		// not damage, not speed, the strength of every push. Her own vine throws what it cuts aside since 2026-11-09
+		// (ThornVine.VineShoveSpeed; Eric chose it over a new passive, .ai/character-fit.md), so it works from her first cast.
 		"knockback_20",
 		// Morgan le Fay (.ai/chapter-wizards.md 4.9): Avalon - the first extra life a run spends heals to full, not
 		// half, as the isle she carried the dying king to healed him. An axis no other wizard owns: not a heal over
