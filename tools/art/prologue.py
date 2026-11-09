@@ -27,7 +27,7 @@ meets the scene's black ground invisibly. Nothing is ever stretched to fit.
 LAYERS. Each panel is back (opaque) + mid + fore (transparent), so Prologue.cs can drift them at
 different rates. The drift is a few art pixels over the whole panel; every layer is drawn out to
 the frame edge so a drift never uncovers anything. A panel may also have one animated box of its
-mid layer, <name>-anim.png and <name>-anim.json (write_anim; the five lifted one by one, the tide's
+mid layer, <name>-anim.png and <name>-anim.json (write_anim; the four lifted one by one, the tide's
 rush, the hiding's searchers and the break's chain).
 """
 
@@ -342,26 +342,25 @@ def standing_stone(c, x, yb, w, h, seed, lean=0.0, ramp=None, warm=None, toward=
 # at whatever size the panel needs - filled flat, rimmed by the light of the panel, and lit only at
 # the staff or the hand that carries his light in the game.
 #
-# WHICH OF THEM: the moot and the fall show the wizards a fresh save already sees - the four
-# disciplines and John Dee. The procession ("He took every wizard who might rival him", once "He took
-# them all") shows every one of them, the secret three as well: Tituba, Vainamoinen and Laelaps are
+# WHICH OF THEM: the moot and the fall show the four disciplines, the wizards a fresh save already sees
+# and the four the Archmage frees in the break. The procession ("He took every wizard who might rival
+# him", once "He took them all") shows the secret three as well: Tituba, Vainamoinen and Laelaps are
 # secret on the character select until their chapters open (UnlockCatalog's secretUntilStage), and Eric
-# chose to show them here anyway (2026-11-01, "Show them") - "every" has to mean every, and a dark shape
-# on a ridge names nobody.
+# chose to show them here anyway (2026-11-01, "Show them") - a dark shape on a ridge names nobody.
+# NEVER JOHN DEE (Eric, 2026-11-08, "remove the purple wizard, since he is the wizard that you are, and you
+# do not get captures by him", then "Yes, remove him" for the moot and the procession): his grey robe and
+# violet light read as the player, and the player is never taken.
 CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
 CELL = 48
 # The rows a wizard stands in on his cell: feet on row 46, the contact line on 47, the hat near row 2.
 CELL_STAND = 46.0
 
-# (sprite prefix, the ramp his light is in the sprite, the ramp it burns here). Dee's orb is the
-# darkness ramp in the game, but in the prologue that ramp as light is the dark wizard's alone
-# (.ai/prologue.md, rules), so here Dee burns arcane.
+# (sprite prefix, the ramp his light is in the sprite, the ramp it burns here).
 PYRO = ("pyromancer", "fire", "fire")
 FROST = ("frostweaver", "ice", "ice")
 STORM = ("stormcaller", "lightning", "lightning")
 GEO = ("geomancer", "earth", "earth")
-DEE = ("dee", "darkness", "arcane")
-ROSTER = [PYRO, FROST, STORM, GEO, DEE]
+ROSTER = [PYRO, FROST, STORM, GEO]
 # The three the player frees, for the procession only (above). Tituba's staff head is her water,
 # Vainamoinen's his grass; Laelaps carries no light of his own, so his falls back to his middle unless
 # the gold of his collar star is found.
@@ -442,15 +441,14 @@ def _mask_at(pixels, k, facing):
 
 
 def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=True, dim=False,
-                  warm=None, toward=None, contact=True, shade=None):
+                  warm=None, toward=None, contact=True):
     """One of the game's wizards as a silhouette, his feet on (cx, yb), h tall if he stood upright.
 
     who: a ROSTER entry. strip/frame: which of his frames - idle to stand, moving to walk, the death's
     third to be brought to his knees. body: [fill, unused]. lit: his light burns at its anchor in its
     own ramp; dim: it is out, a dull stone where it was. warm: a ramp to dither a little of onto him
     (the fire in the moot). toward: (dx, dy[, colour]) to rim the edges facing a light. contact: False
-    for a figure off the ground (the throne's lifted five), which has no contact line under him.
-    shade(s, left, top): a pass over his own pixels, on his scratch layer, before he is laid down.
+    for a figure off the ground (the throne's lifted four), which has no contact line under him.
     Returns (light, front): where his light is, and the front of him at his waist (where a chain
     would hold him), in frame pixels; either may be None."""
     prefix, carried, burns = who
@@ -475,8 +473,6 @@ def roster_figure(c, who, cx, yb, h, body, strip="idle", frame=0, facing=1, lit=
                     s.set(x, y, warm[4])
     left = int(round(cx - (CELL / 2.0) * k)) - 2
     top = int(round(yb - (CELL - 1) * k)) - 2
-    if shade:
-        shade(s, left, top)
     # The contact line: what of him touches the ground, on the ground row, in occlusion.
     feet = [x for x in range(s.w) for y in range(max(0, s.h - 4 - int(k)), s.h) if s.px[x, y][3]]
     over(c, s, left, top)
@@ -515,9 +511,8 @@ def light_at(who, cx, yb, h, strip="idle", frame=0, facing=1):
 
 
 # In the moot, before the fall, each wears the deep end of their own colour - the only time the prologue
-# lets them have one - so the circle reads as five different people at a glance, not five shadows.
-ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4],
-        "dee": ST[4]}
+# lets them have one - so the circle reads as four different people at a glance, not four shadows.
+ROBE = {"pyromancer": R[4], "frostweaver": M["azure"][4], "stormcaller": G[4], "geomancer": M["verdant"][4]}
 
 
 EYE = (AR[0], AR[1])
@@ -1276,6 +1271,24 @@ def dark_wizard(c, cx, yb, h):
         for xx in range(s.w):
             if s.px[xx, yy][3]:
                 s.set(xx, yy, OCC)
+    # Closed gaps inside the shape - between the mantle's points and the cloak - filled in, so the rims below
+    # light only the true outline. Drawn large (the throne puts him in the foreground, 2026-11-08) the rim round
+    # two of those gaps was a pair of violet eyes looking out of his back at us.
+    outside = set()
+    todo = [(xx, yy) for xx in range(s.w) for yy in (0, s.h - 1)] + [(xx, yy) for yy in range(s.h) for xx in (0, s.w - 1)]
+    while todo:
+        q = todo.pop()
+        if q in outside or s.px[q[0], q[1]][3]:
+            continue
+        outside.add(q)
+        for (ddx, ddy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = q[0] + ddx, q[1] + ddy
+            if 0 <= nx < s.w and 0 <= ny < s.h and (nx, ny) not in outside:
+                todo.append((nx, ny))
+    for yy in range(s.h):
+        for xx in range(s.w):
+            if not s.px[xx, yy][3] and (xx, yy) not in outside:
+                s.set(xx, yy, OCC)
     orb = (hx - 0.2 * u, hy - 4.6 * u)
     shoulder = int(oy - 44 * u)
     edge_light(s, DK[1], (0, -1), box=(0, 0, s.w, shoulder + 2 * u), inner=DK[3])
@@ -1414,7 +1427,7 @@ def ward(c, cx, cy, rx, ry, A=None, ground=None, pool=True):
 # =========================================================================== panels
 def p_moot():
     """1. The circle where the wizards met, before. Every wizard's light is still in the world:
-    a fire in the middle of a warded ring, and round it their staves, each a different element.
+    a fire in the middle of a warded ring, and round it the four disciplines' staves, each a different element.
     The last time the screen holds more than one warm light."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 400, [OCC, S[4], V[4], V[3], V[2]])
@@ -1461,9 +1474,13 @@ def p_moot():
         y = fy - 4 + math.sin(a) * 60
         depth = (y - (fy - 64)) / 128.0
         items.append((y, "stone", x, depth, 900 + i))
-    # Five of the game's wizards round the fire, each staff burning his own element. None stands at the
-    # front centre, where he would cover the fire; the one behind it holds his light up over it.
-    for i, (a, who) in enumerate([(0.85, PYRO), (2.2, FROST), (3.25, STORM), (4.71, DEE), (5.55, GEO)]):
+    # Four of the game's wizards round the fire, each staff burning his own element: the disciplines, the four
+    # he takes in the next panel and the Archmage frees in the break. Dee stood behind the fire until Eric,
+    # 2026-11-08, of his grey robe and violet light: "Yes, remove him" - he reads as the player, who is never
+    # taken. The four stand square round the fire, a quarter turn apart and half a quarter off the way in, each
+    # close to where he stood among five, so the ring holds no gap where Dee was. None stands at the front
+    # centre, where he would cover the fire.
+    for i, (a, who) in enumerate([(0.79, PYRO), (2.36, FROST), (3.93, STORM), (5.50, GEO)]):
         x = fx + math.cos(a) * 128
         y = fy + math.sin(a) * 32
         items.append((y, "wizard", x, who, 0))
@@ -1507,104 +1524,87 @@ def p_moot():
     return layers
 
 
-# HE LIFTS THEM, ONE BY ONE (Eric, 2026-11-08, of the panel as it was: "'he came here first' it's hard to see
-# what he's doing in the background, it should show him lifting each of the wizards into the air to capture
-# them"). It was his silhouette filling the frame under the black sun and the five dimmed at his feet along the
-# bottom of it - dark specks behind the caption, with motes of their light going up into his hand - and nothing
-# said what he was doing to them. Now the five are the subject and the panel is animated (the break's
-# machinery, write_anim): the moot's circle with its fire out and its ward gone cold, the five standing round
-# it where panel 1 left them, each staff still burning its own light, and him at the back of it - smaller than
-# he was, his hand already raised. Then he takes them, one at a time: a hoop of his violet closes on the ground
-# under one, climbs to its waist and lifts it into the air, where it hangs in his grip while its light runs out
-# of its staff and into his hand, whose orb grows with every light it takes. The outer two first, then the
-# inner two, and last the Pyromancer from the front of the ring, lifted up past him to hang over his black sun.
+# HE LIFTS THEM, ONE BY ONE. Eric, 2026-11-08, of the panel as it first was: "'he came here first' it's hard to see
+# what he's doing in the background, it should show him lifting each of the wizards into the air to capture them" -
+# his silhouette filled the frame and the wizards were dark specks at his feet behind the caption. The first answer
+# lifted five of them round his head in their robes' colours; his second pass, the same day: "the animation for 'he
+# came here first' should have the silhouette of 4 wizards, cast in shadow, in the background, with the dark wizard in
+# the foreground. remove the purple wizard, since he is the wizard that you are, and you do not get captures by him".
 #
-# The box is the break's: every frame is the whole mid layer inside it, and the still mid layer is empty
-# there. Every edge and size a multiple of 8, so the dissolve's Bayer threshold matches pixel for pixel.
-THRONE_BOX = (296, 232, 664, 544)
-# Twelve a second, not the other panels' eight: a lift is a whole figure crossing up to two hundred art pixels,
-# and at eight frames a second it went up in jumps the eye could not follow as one rise (rule 5).
+# So FOUR: the starters the Archmage frees in the break, in the break's order left to right (FREED_FOUR) - never Dee,
+# whose grey robe and violet light read as the player. They stand on the far side of the moot's circle, on the crest
+# where its ground meets the sky, CAST IN SHADOW against the glow of his sun: occlusion shapes told apart by their
+# outlines - the Pyromancer's lantern and cape, the Geomancer's bulk and fork, the Frostweaver's crown and trident, the
+# Stormcaller's hair and raised fork - and each with nothing on him in colour but his own light. HE is in the
+# FOREGROUND, the nearest thing to the camera, between us and them, with his back to us. A silhouette has no front, so
+# the picture says it: the black sun is beyond him, behind his head, the only light on him comes from there, and his
+# raised hand reaches up into the scene, toward them. Then he takes them one at a time, from the far one to the
+# nearest: his reach leaves his hand, a hoop of his violet closes on one and lifts it into the sky over the circle,
+# where it hangs in a glow of his light while its own light streams back across the sky into his hand.
+#
+# The box is the break's: every frame is the whole mid layer inside it, and the still mid layer is empty there. Every
+# edge and size a multiple of 8, so the dissolve's Bayer threshold matches pixel for pixel.
+THRONE_BOX = (296, 240, 560, 472)
+# Twelve a second, not the other panels' eight: a lift carries a whole figure a hundred art pixels and more, and at
+# eight frames a second it went up in jumps the eye could not follow as one rise (rule 5).
 THRONE_FPS = 12
 # The panel's hold in Prologue.cs (Beats, "throne"); the frames cover it, the last held after.
-THRONE_SECONDS = 7.0
+THRONE_SECONDS = 5.9
 THRONE_COLUMNS = 8
-# Him: (x, the foot of his hem, height). Half the height he was, and at the back of the circle rather than over
-# the whole frame, so his act and not his bulk is the picture; his black sun behind his head.
-THRONE_HIM = (480, 480, 136)
-THRONE_SUN = (482, 366, 24)
-# The moot's circle under him: its centre and radii, where the fire burned and the ward was drawn.
-THRONE_RING = (480, 506, 148, 28)
-# The five, in the order he takes them: (who, standing on the ring (x, yb), held in the air (x, yb), height,
-# facing, the moment the hoop closes). Round the ring as the moot had them - the Stormcaller on the left, the
-# Frostweaver in front of her, the Geomancer on the right - and held in an arc round his head, high in the frame
-# and clear of the caption's band (PC rows ~555-580), the last over his sun. A third taller than the moot drew
-# them, so each reads as a wizard at a glance on either screen.
-# The first hoop closes at 1.25 s, so the circle stands whole and still for a beat after the dissolve in (and
-# his reach, THRONE_REACH, leaves his hand 0.15 s before it); then one every 0.6 s. The last comes to rest at
-# about 6.0 s, a third of a second before the dissolve to the tide begins.
-THRONE_FIVE = [(STORM, (338, 500), (342, 412), 66, 1, 1.25),
-               (GEO, (622, 500), (618, 412), 66, -1, 1.85),
-               (FROST, (398, 526), (392, 356), 70, 1, 2.45),
-               (DEE, (562, 526), (570, 356), 70, -1, 3.05),
-               (PYRO, (480, 532), (482, 330), 72, 1, 3.65)]
+# Him: (x, the foot of his hem, height). In the foreground on the right, cut by the frame's foot, his raised hand up
+# and to our left over the circle. His black sun is behind his head, an eclipse seen from behind him, at the size
+# the moot's panel gave it against him (eleven of his 64ths), so its corona rings his collar of points.
+THRONE_HIM = (604, 700, 300)
+THRONE_SUN = (606, 437, 52)
+# The crest of the far side of the circle, where the four stand against the sky: its height at x.
+
+
+def _throne_crest(x):
+    return 452 + math.sin(x * 0.012 + 0.6) * 5 + math.sin(x * 0.037 + 2.0) * 2
+
+
+# The four, in the order he takes them, far to near: (who, standing on the crest at x, held in the air (x, yb),
+# height, facing, the moment the hoop closes). Facing him, each a step apart so no two outlines touch and merge.
+# The first hoop closes at 1.25 s, so the circle stands whole and still for a beat after the dissolve in (his reach,
+# THRONE_REACH, leaves his hand 0.15 s before it); then one every 0.65 s. The last comes to rest at 4.8 s, and
+# the dissolve to the tide begins at 5.2.
+THRONE_FOUR = [(PYRO, 328, (332, 372), 48, 1, 1.25),
+               (GEO, 378, (376, 336), 48, 1, 1.9),
+               (FROST, 428, (428, 326), 48, 1, 2.55),
+               (STORM, 478, (478, 350), 48, 1, 3.2)]
 # The hoop closing: seconds from its flash on the ground to his feet leaving it.
 THRONE_GRIP = 0.3
 # A lift eases in and out (a smoothstep, steepest at 1.5 times its average) and never climbs faster than this,
-# art pixels a second - twelve and a half a frame at THRONE_FPS - nor takes less than THRONE_LIFT_MIN.
-THRONE_LIFT = 150.0
+# art pixels a second - under ten a frame at THRONE_FPS - nor takes less than THRONE_LIFT_MIN.
+THRONE_LIFT = 120.0
 THRONE_LIFT_MIN = 1.3
 # Seconds a light takes from his staff to the hand.
 THRONE_STREAM = 1.5
-# Each one's robe: (its row, the stop he is filled with). The moot dressed them in the rows' deep end, ROBE; here
-# they stand higher up them, lit by their own staves and his sun, and his grip lights them a stop more. The
-# stops are picked for an even brightness, so no one of the five sinks into the dark: the red row is the
-# darkest, and the Pyromancer at its stop 3 (luminance 20) was a near-black shape beside the others' 60-72.
-THRONE_ROBE = {"pyromancer": (R, 1), "frostweaver": (M["azure"], 3), "stormcaller": (G, 3),
-               "geomancer": (M["verdant"], 3), "dee": (ST, 3)}
 
 
-def _grip_shade(row, stop, toward, held):
-    """A wizard's own pixels in the throne, before he is laid down (roster_figure's shade): the edge that faces
-    the light rimmed in the violet his light makes - his sun's while he stands, his grip's once it holds him -
-    and, held, a band of the cloth a stop up its own row behind that rim, three pixels deep, so the light turns
-    round the form. (A dither of the lighter stop over the whole fill was tried and read as a net over him.)"""
-    def shade(s, left, top):
-        if held:
-            dx = 1 if toward[0] > 0.33 else (-1 if toward[0] < -0.33 else 0)
-            dy = 1 if toward[1] > 0.33 else (-1 if toward[1] < -0.33 else 0)
-            up = rgb(row[stop - 1])
-            px = s.px
-            band = []
-            for y in range(s.h):
-                for x in range(s.w):
-                    if not px[x, y][3]:
-                        continue
-                    for d in (1, 2, 3, 4):
-                        qx, qy = x + dx * d, y + dy * d
-                        if not (0 <= qx < s.w and 0 <= qy < s.h) or not px[qx, qy][3]:
-                            band.append((x, y))
-                            break
-            for (x, y) in band:
-                px[x, y] = up
-        edge_light(s, V[1] if held else V[2], toward)
-    return shade
+def _throne_ground(entry):
+    """Where a wizard stands before he is taken: (x, his feet on the crest)."""
+    x = entry[1]
+    return x, int(round(_throne_crest(x)))
 
 
 def _throne_lift(entry):
     """When a wizard's feet leave the ground, and how long the lift takes to bring him to where he hangs."""
-    _who, g, a, _h, _f, at = entry
+    g = _throne_ground(entry)
+    a, at = entry[2], entry[5]
     dist = math.hypot(a[0] - g[0], a[1] - g[1])
     return at + THRONE_GRIP, max(THRONE_LIFT_MIN, 1.5 * dist / THRONE_LIFT)
 
 
 def _throne_still():
     """The moment the last of them comes to rest: from then on nothing in the box moves."""
-    return max(sum(_throne_lift(e)) for e in THRONE_FIVE)
+    return max(sum(_throne_lift(e)) for e in THRONE_FOUR)
 
 
 def _throne_pose(entry, t):
     """(x, yb, u, v) of a wizard at panel time t: u the lift's progress 0-1, v its speed in art px/s."""
-    _who, (gx, gy), (ax, ay), _h, _f, _at = entry
+    gx, gy = _throne_ground(entry)
+    ax, ay = entry[2]
     lift, dur = _throne_lift(entry)
     u = min(1.0, max(0.0, (t - lift) / dur))
     s = u * u * (3.0 - 2.0 * u)
@@ -1690,54 +1690,40 @@ def _reach(c, src, dst, t, at):
 
 
 def _throne_frame(t, him, statics):
-    """The mid layer at panel time t, in two passes: (ground, actors). The ground is the shadows out of his
-    hem, the marks the hoops left, him, his orb and what passes behind him; the actors are the five - on the
-    ground, in his hoop, rising, or hung in the air with their light streaming into his hand - and his grip on
-    them. p_throne darkens the two by different vignettes and lays the actors over the ground."""
+    """The mid layer at panel time t, in three passes: (ground, four, front). The ground is the shadows out of
+    his hem and the marks the hoops leave on the crest; the four are the wizards - on the crest, in his hoop,
+    rising, or hung in the sky with their light streaming to his hand - and his grip on them; the front is him,
+    the nearest thing to the camera, the orb in his hand and his reach out of it. p_throne darkens the ground
+    and the front by the panel's vignette and the four by none, and lays them in that order."""
     c = Cv(FW, FH)
-    act = Cv(FW, FH)
+    four = Cv(FW, FH)
+    front = Cv(FW, FH)
     over(c, statics)
-    cx, yb, hh = THRONE_HIM
     ox, oy, u = him["orb"]
     poses = []
-    for i, e in enumerate(THRONE_FIVE):
-        who, g, a, h, f, at = e
+    for i, e in enumerate(THRONE_FOUR):
         x, y, lu, v = _throne_pose(e, t)
         # How much of his light is left in him: all of it until the hoop closes, then drawn out of him - to half,
         # which still burns in its own colour, so each is still known by his light when the panel ends.
-        level = 1.0 - 0.5 * min(1.0, max(0.0, (t - at - 0.3) / 2.4))
+        level = 1.0 - 0.5 * min(1.0, max(0.0, (t - e[5] - 0.3) / 2.4))
         poses.append((i, e, x, y, lu, v, level))
-    # The ground where each was taken: the mark the hoop left closing.
-    for (i, e, x, y, lu, v, level) in poses:
-        who, (gx, gy), a, h, f, at = e
-        if t >= at:
-            _hoop(c, gx, gy + 1, 0.42 * h, 0.1 * h, True, V[3], V[3])
-            _hoop(c, gx, gy + 1, 0.42 * h, 0.1 * h, False, V[3], V[3])
     lights = {}
     for (i, e, x, y, lu, v, level) in poses:
-        who, g, a, h, f, at = e
+        who, h, f, at = e[0], e[3], e[4], e[5]
         lights[i] = light_at(who, x, y, h, "idle" if t < at else "death", 0, f)
-    # What passes from the right of him and from over his head goes BEHIND him to the raised hand: in front,
-    # the streams ran across his face.
-    for (i, e, x, y, lu, v, level) in poses:
-        who, (gx, gy), a, h, f, at = e
-        if gx > cx + 4:
-            _reach(c, (ox, oy), (gx, gy - 0.1 * h), t, at)
-        if t >= at + 0.15 and x >= cx - 4:
-            _stream(c, lights[i], (ox, oy), at + 0.15, t, 510 + i, E[who[2]], level, 26 + i * 4)
-    over(c, him["body"])
-    taken = sum(1 for (i, e, x, y, lu, v, level) in poses if t >= e[5] + 0.15 + THRONE_STREAM)
-    black_sun(c, ox, oy, 1.7 * u * (1.0 + 0.16 * taken))
-    # His grip, behind all five so no glow is ever laid over a wizard: a glow of his light behind each one he
-    # holds - the dark light that is his alone, on the only figures he has ever lit with it.
-    for (i, e, x, y, lu, v, level) in poses:
-        who, (gx, gy), a, h, f, at = e
+        # The crest where each was taken: the mark the hoop left closing.
         if t >= at:
-            act.radial(x, y - 0.5 * h, 0.66 * h, 0.72 * h, [DK[3], DK[3], DK[3], V[3], None])
-        if gx <= cx + 4:
-            _reach(act, (ox, oy), (gx, gy - 0.1 * h), t, at)
-    for (i, e, x, y, lu, v, level) in sorted(poses, key=lambda p: p[1][1][1]):
-        who, (gx, gy), a, h, f, at = e
+            gx, gy = _throne_ground(e)
+            _hoop(c, gx, gy + 1, 0.42 * h, 0.1 * h, True, V[3], V[3])
+            _hoop(c, gx, gy + 1, 0.42 * h, 0.1 * h, False, V[3], V[3])
+    # His grip, behind all four so no glow is ever laid over a wizard: a glow of his light behind each one he holds -
+    # the dark light that is his alone, on the only figures he has ever lit with it.
+    for (i, e, x, y, lu, v, level) in poses:
+        h, at = e[3], e[5]
+        if t >= at:
+            four.radial(x, y - 0.5 * h, 0.66 * h, 0.72 * h, [DK[3], DK[3], DK[3], V[3], None])
+    for (i, e, x, y, lu, v, level) in poses:
+        who, h, f, at = e[0], e[3], e[4], e[5]
         held = t >= at
         cyw = y - 0.5 * h
         if held:
@@ -1746,96 +1732,105 @@ def _throne_frame(t, him, statics):
             hy_ = (y + 1) + (y - 0.42 * h - (y + 1)) * (grip * grip * (3 - 2 * grip))
             rx, ry = 0.5 * h * (1.3 - 0.3 * grip), 0.12 * h
             flash = t - at < 0.18
-            _hoop(act, x, hy_, rx, ry, False, DK[1], DK[2])
+            _hoop(four, x, hy_, rx, ry, False, DK[1], DK[2])
         if held and lu < 1.0 and v > 20.0:
             # The rise said under him as well as by the figure (rule 1's speed lines, in his light): streaks
             # falling away under the feet, longer the faster he goes.
-            ln = min(26.0, v * 0.16)
+            ln = min(22.0, v * 0.16)
             for k, dx in enumerate((-0.22, 0.0, 0.2)):
                 sx_ = x + dx * h
                 for d in range(2, int(ln), 2):
                     if (d // 2 + k) % 3 == 0:
                         continue
-                    act.set(sx_, y + d, DK[3] if d < ln * 0.5 else V[3])
-        rim_to = ((ox - x), (oy - cyw)) if held else ((cx - x), (THRONE_SUN[1] - cyw))
-        n = math.hypot(*rim_to) or 1.0
-        row, stop = THRONE_ROBE[who[0]]
-        roster_figure(act, who, x, y, h, [row[stop], OCC], strip="death" if held else "idle", frame=0,
-                      facing=f, lit=False, contact=not held or lu <= 0.0,
-                      shade=_grip_shade(row, stop, (rim_to[0] / n, rim_to[1] / n), held))
+                    four.set(sx_, y + d, DK[3] if d < ln * 0.5 else V[3])
+        # Cast in shadow: occlusion, his outline caught in violet on the edge that faces the light - his sun's
+        # beyond the circle while he stands, his grip's toward the hand once it has him. A stop above the sky band,
+        # or the rim is lost against it.
+        to = ((ox - x), (oy - cyw)) if held else ((THRONE_SUN[0] - x), (THRONE_SUN[1] - 40 - cyw))
+        n = math.hypot(*to) or 1.0
+        roster_figure(four, who, x, y, h, [OCC, OCC], strip="death" if held else "idle", frame=0, facing=f,
+                      lit=False, toward=(to[0] / n, to[1] / n, V[1]), contact=not held or lu <= 0.0)
         if held:
             for dy in (0, 1):
-                _hoop(act, x, hy_ + dy, rx, ry, True, DK[0] if flash else DK[1], DK[1] if flash else DK[2])
-        _staff_light(act, lights[i], h, E[who[2]], level)
+                _hoop(four, x, hy_ + dy, rx, ry, True, DK[0] if flash else DK[1], DK[1] if flash else DK[2])
+        _staff_light(four, lights[i], h, E[who[2]], level)
+        if t >= at + 0.15:
+            _stream(four, lights[i], (ox, oy), at + 0.15, t, 510 + i, E[who[2]], level, 22 + i * 6)
+    over(front, him["body"])
+    taken = sum(1 for (i, e, x, y, lu, v, level) in poses if t >= e[5] + 0.15 + THRONE_STREAM)
+    black_sun(front, ox, oy, 1.7 * u * (1.0 + 0.16 * taken))
     for (i, e, x, y, lu, v, level) in poses:
-        who, g, a, h, f, at = e
-        if t >= at + 0.15 and x < cx - 4:
-            _stream(act, lights[i], (ox, oy), at + 0.15, t, 510 + i, E[who[2]], level, 26 + i * 4)
-    return c, act
+        gx, gy = _throne_ground(e)
+        _reach(front, (ox, oy), (gx, gy - 0.1 * e[3]), t, e[5])
+    return c, four, front
 
 
 def p_throne():
-    """2. "He came here first." The moot's circle, its fire out, under him: his first full look, as a
-    silhouette, and the only figure in the game that sheds dark light. The stones of the ring are thrown down
-    outward and the five stand round its cold ward as panel 1 left them - until he lifts them into the air one
-    after another (animated: THRONE_BOX), each in a hoop of his violet, and draws their light into his hand."""
+    """2. "He came here first." The moot's circle, its fire out, and over it his first full look: a silhouette in the
+    foreground with his back to us, the only figure in the game that sheds dark light, his black sun behind his head.
+    Beyond him, on the far crest of the circle, the four disciplines cast in shadow against the sky - until he lifts
+    them into it one after another (animated: THRONE_BOX), each in a hoop of his violet, and draws their light into
+    his hand."""
     back, mid, fore = frame(True), frame(), frame()
-    sky(back, 0, 420, [OCC, OCC, S[4], V[4], V[3]])
-    stars(back, (0, 0, FW, 300), 160, 4, colors=[S[0], V[1], V[0]])
+    sky(back, 0, 470, [OCC, OCC, S[4], V[4], V[3]])
+    stars(back, (0, 0, FW, 320), 160, 4, colors=[S[0], V[1], V[0]])
     sun_x, sun_y, sun_r = THRONE_SUN
+    # The sky over the circle lit by his sun, a band of violet pigment the four stand against: without it they were
+    # occlusion on the night.
+    back.radial(sun_x - 150, 452, 330, 130, [V[2], V[2], V[3], V[3], V[4], None])
     black_sun(back, sun_x, sun_y, sun_r, rays=40, seed=5)
-    hills(back, ridge_fn(400, 10, 11), [V[4], S[4], OCC], 40, lit=V[3])
-    back.vramp(410, FH - 1, [V[4], S[4], OCC, OCC])
-    heath(back, 412, 840, 2200, 6, [(S[4], V[4]), (OCC, V[4]), (OCC, S[4])])
-    rcx, rcy, rrx, rry = THRONE_RING
-    # The circle's ground, lit by his sun from behind him: violet pigment, cold, where the moot's was gold.
-    back.radial(rcx, rcy, rrx + 110, rry + 40, [V[3], V[3], V[4], V[4], None])
-    # The moot's ward, where the fire burned: gone cold, its lines in stone, the fire's ash in the middle.
-    ward(back, rcx, rcy, 62, 15, A=[S[2], S[3], S[3], S[3]], pool=False)
-    back.disc(rcx, rcy + 1, 12, 4, S[4])
-    back.disc(rcx - 2, rcy, 7, 2.5, OCC)
-    # The stones of the ring, thrown down outward from him.
-    for i, (x, y, w, h, lean, br) in enumerate([(262, 470, 20, 54, -0.35, True), (330, 446, 16, 40, -0.2, False),
-                                                (630, 446, 16, 42, 0.22, True), (702, 468, 21, 56, 0.4, False),
-                                                (180, 520, 30, 80, -0.55, True), (790, 520, 30, 76, 0.5, True)]):
-        standing_stone(back, x, y, w, h, 700 + i, lean=lean, broken=br, ramp=[S[3], S[4], S[4], OCC, OCC],
-                       toward=(-0.6 if x > 480 else 0.6, -0.8, DK[3]))
+    # The far side of the circle: a low rise of heath, its crest the line the four stand on, a few of its stones
+    # thrown down outward along it.
+    hills(back, _throne_crest, [V[4], S[4], S[4]], 60, lit=V[2])
+    back.vramp(512, FH - 1, [S[4], S[4], OCC, OCC])
+    heath(back, 456, 840, 1800, 6, [(S[4], V[4]), (OCC, V[4]), (OCC, S[4])],
+          keep_out=lambda x, y: y < _throne_crest(x) + 3)
+    for i, (x, w, h, lean, br) in enumerate([(232, 12, 30, -0.45, True), (290, 10, 22, -0.3, False),
+                                             (520, 11, 24, 0.35, True), (566, 12, 28, 0.5, False)]):
+        standing_stone(back, x, _throne_crest(x) + 2, w, h, 700 + i, lean=lean, broken=br,
+                       ramp=[S[3], S[4], S[4], OCC, OCC], toward=(-0.6 if x > 430 else 0.6, -0.8, V[2]))
+    # The near side of the ring, round him: its stones thrown flat, outward toward us.
+    for i, (x, y, w, h, lean, br) in enumerate([(206, 600, 34, 90, -0.75, True), (344, 640, 30, 70, -0.6, False),
+                                                (766, 610, 34, 84, 0.7, True)]):
+        standing_stone(back, x, y, w, h, 720 + i, lean=lean, broken=br, ramp=[S[3], S[4], OCC, OCC, OCC],
+                       toward=(0.4 if x < 480 else -0.4, -0.9, V[3]))
 
-    # Him, once: the frames lay him and his orb over the streams behind him and under the five.
+    # Him, once: the frames lay him and his orb over the four.
     cx, yb, hh = THRONE_HIM
     body = Cv(FW, FH)
     hx, hy, u = dark_wizard(body, cx, yb, hh)
     him = {"body": body, "orb": (hx, hy, u)}
-    # Shadow running out of his hem across the ground: what he leaves becomes what serves him.
+    # Shadow running out of his hem across the near ground: what he leaves becomes what serves him.
     statics = Cv(FW, FH)
     rng = random.Random(91)
     for i in range(26):
         a = math.pi * (0.04 + 0.92 * rng.random())
-        ln = 50 + rng.random() * 170
-        x0, y0 = cx + math.cos(a) * 30, yb
+        ln = 60 + rng.random() * 200
+        x0, y0 = cx + math.cos(a) * 50, yb - 14
         pts = []
         for k in range(24):
             t = k / 23.0
             pts.append((x0 + math.cos(a) * ln * t * 1.6, y0 + math.sin(a) * ln * t * 0.3 + math.sin(t * 7 + i) * 3))
         for k in range(len(pts) - 1):
-            wd = 2.0 * (1 - k / 23.0) + 0.6
+            wd = 2.6 * (1 - k / 23.0) + 0.6
             sk._stroke(statics, pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], wd, wd * 0.8, OCC)
         if rng.random() < 0.55:
             ex, ey = pts[-1]
             statics.set(ex, ey - 2, EYE[0])
             statics.set(ex + 2, ey - 2, EYE[1])
 
-    # The ground takes the panel's vignette, as finish() gives the rest of the mid layer, so it meets the still
-    # layer at the box's edge without a seam. The five take none of it: they never leave the middle of the frame,
-    # and the vignette's dither, at any strength, set a lattice of stone dots over their flat robes (at a fifth
-    # of it, one pixel in 32, still a grid on screen).
+    # The ground and he take the panel's vignette, as finish() gives the rest of the mid layer, so they meet the
+    # still layer at the box's edge without a seam. The four take none of it: they never leave the middle of the
+    # frame, and the vignette's dither at any strength set a lattice of stone dots over flat shapes.
     t_of = frame_t(0.8, CY - 10)
     x0, y0, x1, y1 = THRONE_BOX
 
     def mid_at(t):
-        c, act = _throne_frame(t, him, statics)
+        c, four, front = _throne_frame(t, him, statics)
         darken(c, t_of, [S[4], OCC], box=THRONE_BOX)
-        over(c, act)
+        darken(front, t_of, [S[4], OCC], box=THRONE_BOX)
+        over(c, four)
+        over(c, front)
         return c
 
     still = _throne_still()
@@ -1849,7 +1844,7 @@ def p_throne():
     over(mid, mid_at(0.0))
     mid.img.paste((0, 0, 0, 0), (x0, y0, x1, y1))
     mid.px = mid.img.load()
-    heath(fore, 640, 840, 700, 19, [(OCC, S[4]), (OCC, OCC)], scale=1.8)
+    heath(fore, 660, 840, 600, 19, [(OCC, S[4]), (OCC, OCC)], scale=1.8)
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.8, cy=CY - 10)
     layers["anim"] = frames
@@ -2130,7 +2125,7 @@ def p_tide():
 def p_taken():
     """4. "He took every wizard who might rival him." The game's wizards led away along a ridge against his light, bound
     wrist to wrist by his chain, their staves dark, their light drawn out of them toward the tower.
-    Silhouettes only, of every wizard in the game, the three the player frees included (Eric)."""
+    Silhouettes only, the three the player frees included (Eric), and never Dee, who reads as the player."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 560, [OCC, S[4], V[4], V[3], V[3], V[2]])
     stars(back, (0, 0, FW, 300), 140, 13, colors=[K[2], V[0]])
@@ -2151,12 +2146,14 @@ def p_taken():
         if ridge(x + 1) < ridge(x - 1):
             mid.set(x, top, V[4])
     order = [("knight", 0), ("wiz", 0), ("wiz", 1), ("bruiser", 0), ("wiz", 2), ("wiz", 3), ("shielder", 0),
-             ("wiz", 4), ("wiz", 5), ("caster", 0), ("wiz", 6), ("runner", 0)]
-    # Seven of the game's wizards, walking (each a different frame of his own walk), staves dark,
-    # Tituba, Vainamoinen and Laelaps among the first four. Twelve figures where there were ten, so they
-    # walk a little closer together; and the wizards walk near the head of the line, by the tower,
-    # because the phone's canvas crops the panel's sides and shows the head of it, not the tail.
-    taken = [(TITUBA, 2), (FROST, 1), (VAINAMOINEN, 6), (LAELAPS, 4), (DEE, 5), (PYRO, 3), (STORM, 7)]
+             ("wiz", 4), ("caster", 0), ("wiz", 5), ("runner", 0)]
+    # Six of the game's wizards, walking (each a different frame of his own walk), staves dark,
+    # Tituba, Vainamoinen and Laelaps among the first four; and the wizards walk near the head of the line,
+    # by the tower, because the phone's canvas crops the panel's sides and shows the head of it, not the
+    # tail. Dee walked fifth until Eric, 2026-11-08: "Yes, remove him" (his grey robe and violet light read
+    # as the player, who is never taken); his place closed up, the line one figure shorter at its tail,
+    # which is off the left of every screen, so no gap shows where he walked.
+    taken = [(TITUBA, 2), (FROST, 1), (VAINAMOINEN, 6), (LAELAPS, 4), (PYRO, 3), (STORM, 7)]
     x = 600
     rng = random.Random(17)
     wrists = []
@@ -2967,7 +2964,7 @@ def p_road():
 PANELS = [("moot", p_moot), ("throne", p_throne), ("tide", p_tide), ("taken", p_taken),
           ("missed", p_missed), ("break", p_break), ("five", p_five), ("road", p_road)]
 
-# The animated panels' boxes, clocks and atlas widths (write_anim): the five lifted one by one, the
+# The animated panels' boxes, clocks and atlas widths (write_anim): the four lifted one by one, the
 # tide's rush over the crest, the hiding's searchers, and the chain breaking.
 ANIMS = {"missed": (MISSED_BOX, MISSED_FPS, MISSED_COLUMNS), "break": (BREAK_BOX, BREAK_FPS, 4),
          "tide": (TIDE_BOX, TIDE_FPS, TIDE_COLUMNS), "throne": (THRONE_BOX, THRONE_FPS, THRONE_COLUMNS)}
@@ -3029,7 +3026,7 @@ def write_anim(name, frames, out=None):
 
 # The moments a panel's preview strip shows, in seconds, and the rows it crops, where the ticks and rows below
 # do not suit it: the throne's action fills the square both screens show, from its top.
-PREVIEW_AT = {"throne": ([0.8, 1.6, 2.4, 3.4, 4.6, 6.6], (240, 600))}
+PREVIEW_AT = {"throne": ([0.8, 1.6, 2.3, 3.0, 3.8, 5.4], (240, 600))}
 
 
 def preview_anim(name, layers, frames, ticks, rows=(360, 600)):
