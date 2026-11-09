@@ -311,6 +311,12 @@ public partial class _UiShot : Node
 	// --show-ascension: the same page at milestone 8, the Ascension choice. Same reflection route,
 	// so the two evolution pages can be compared side by side.
 	private int mutationMilestone = 4;
+	// --far-sky-page (F4, decision 10; pair with --far-sky=ID on a far-shore --stage): tonight's first parent is put in
+	// the book at its card cap, the wizard at level 18, and the page shown is the REAL Ascension offer
+	// (Player.GetAscensionOffers) rather than --show-ascension's made-up one, so the far sky's waived path carries its
+	// line ("The far sky waives its element") and the page's other paths keep their element locks.
+	private bool farSkyPage;
+	private SpellData farSkyPageSpell;
 	// --show-variant=SPELL_ID: the page of a spell's forms (SpellData.Variants; LevelUpMenu.Variants.cs)
 	// over a forced level-up. The hand is re-dealt as that spell's own card (Player.BuildNewSpellOffer,
 	// whether or not the save owns the spell), and the card is PRESSED through the menu's own path - the
@@ -1411,13 +1417,18 @@ public partial class _UiShot : Node
 			}
 			else if (arg == "--demo-unlocks")
 				demoUnlocks = true;
-			else if (arg == "--show-ascension")
+			else if (arg == "--show-ascension" || arg == "--far-sky-page")
 			{
 				ShowMutation = true;
 				mutationMilestone = 8;
 				ForceLevelUp = true;
 				KeepLevelUp = true;
+				farSkyPage |= arg == "--far-sky-page";
 			}
+			// --far-sky-setup: --far-sky-page's state (the parent at its cap, the wizard at 18) without the page, for
+			// --open-codex=<parent id>, whose Ascension row then carries the waiver.
+			else if (arg == "--far-sky-setup")
+				farSkyPage = true;
 			else if (arg == "--pad-y")
 				padY = true;
 			else if (arg == "--open-pause")
@@ -3363,8 +3374,15 @@ public partial class _UiShot : Node
 				&& owner.GetEquippedSpells().Count > 0)
 			{
 				mutationShown = true;
-				SpellData spell = owner.GetEquippedSpells()[0];
-				var option = new LevelUpOption
+				SpellData spell = farSkyPageSpell ?? owner.GetEquippedSpells()[0];
+				// --far-sky-page: the real offer, with its locks and the far sky's waiver, when the strip has one.
+				LevelUpOption real = farSkyPage
+					? owner.GetAscensionOffers().FirstOrDefault(o => o.SpellId == spell.Id && !ComboCatalog.IsComboOption(o))
+					: null;
+				if (farSkyPage)
+					GD.Print(real == null ? "_UiShot: --far-sky-page found no real Ascension offer; showing the made-up page"
+						: $"_UiShot: --far-sky-page - real offer, waived [{string.Join(",", real.ElementGateWaived)}], locked [{string.Join(",", real.EvolutionLockReason.Keys)}]");
+				var option = real ?? new LevelUpOption
 				{
 					SpellId = spell.Id,
 					DisplayName = spell.Name,
@@ -3577,6 +3595,19 @@ public partial class _UiShot : Node
 			{
 				scrolled = true;
 				ScrollAll(GetTree().Root);
+			}
+			// --far-sky-page: tonight's first parent at its card cap and the wizard past the Ascension's level gate.
+			if (farSkyPage && farSkyPageSpell == null && frames >= WarmupFrames / 4
+				&& FindNodeOfType<Player>(GetTree().Root) is Player sky && sky.FarSkyRecipe != null)
+			{
+				ComboIngredient parent = sky.FarSkyRecipe.First;
+				if (!sky.GetEquippedSpells().Any(s => s != null && s.Id == parent.SpellId))
+					sky.TryAddOrLevelSpell(parent.SpellId);
+				farSkyPageSpell = sky.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id == parent.SpellId);
+				if (farSkyPageSpell != null)
+					farSkyPageSpell.CurrentLevel = Player.CardLevelCap(farSkyPageSpell);
+				sky.CurrentLevel = System.Math.Max(sky.CurrentLevel, Player.AscensionMinimumPlayerLevel + 1);
+				GD.Print($"_UiShot: --far-sky-page - {farSkyPageSpell?.Name ?? parent.SpellId} at level {farSkyPageSpell?.CurrentLevel}, player level {sky.CurrentLevel}");
 			}
 			if ((demoPlayerLevel > 0 || demoSpellLevel > 0 || demoSpells.Length > 0 || demoEvolutions.Length > 0 || demoCombo != null || demoSovereign != null) && !demoApplied && frames >= WarmupFrames / 4
 				&& FindNodeOfType<Player>(GetTree().Root) is Player demo && demo.GetEquippedSpells().Count > 0)

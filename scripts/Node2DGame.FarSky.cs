@@ -22,9 +22,10 @@ public partial class Node2DGame
 		if (player == null || !IsInstanceValid(player))
 			return;
 		SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+		StageDefinition stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
 		farSkyRecipe = IsBossRush ? null
-			: FarSky.ForRun(save, CharacterRoster.GetByIndex(Global.SelectedCharacterIdx), StageCatalog.GetByIndex(Global.SelectedStageIdx));
-		player.BeginFarSky(farSkyRecipe);
+			: FarSky.ForRun(save, CharacterRoster.GetByIndex(Global.SelectedCharacterIdx), stage);
+		player.BeginFarSky(farSkyRecipe, !IsBossRush && StageCatalog.IsOnFarShore(stage));
 	}
 
 	/// <summary>The run's end: tonight's Conjunction made pays its bonus, recorded on the breakdown. 0 otherwise.</summary>

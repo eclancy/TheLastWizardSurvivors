@@ -704,6 +704,14 @@ public partial class LevelUpMenu
 			// Two linked rings when a recipe the save knows names this path (ComboCatalog).
 			if (BuildConjunctionMark(option.SpellId, evo.Id, onPlate: true) is Control conjunctionMark)
 				extras.Add(conjunctionMark);
+			// Open only because the far sky waives its element gate (Player.FarSkyWaivesElementGate): it says so, in the
+			// Joins line's ink and register, with the met tick.
+			if (option.ElementGateWaived?.Contains(evo.Id) == true)
+			{
+				Control waived = BuildRequirementGlyphText(FarSky.WaiverLine, "done", CardFamilyArt.AscensionAdvice, expand: true);
+				waived.Name = $"FarSkyWaiver_{evo.Id}";
+				extras.Add(waived);
+			}
 			// No advice line: it put both paths below a 1280x720 screen (BuildEvolutionOptionCard).
 		}
 

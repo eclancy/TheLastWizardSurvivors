@@ -8844,8 +8844,10 @@ public partial class Player : CharacterBody2D
 			AscensionRequirement elementGate = EvaluateElementGate(evo, spell, counts);
 			if (elementGate != null)
 			{
+				// Waived by the far sky (Player.FarSky.cs) only where it would otherwise stand unmet, so the row says so.
+				elementGate.Waived = !elementGate.Met && FarSkyWaivesElementGate(spell.Id, evo.Id);
 				info.Requirements.Add(elementGate);
-				string gate = DescribeUnmetElementGate(evo, spell, counts);
+				string gate = elementGate.Waived ? null : DescribeUnmetElementGate(evo, spell, counts);
 				if (gate != null)
 					info.UnmetRequirements.Add(gate);
 			}
@@ -8891,6 +8893,13 @@ public partial class Player : CharacterBody2D
 			string unmet = DescribeUnmetElementGate(evo, spell, currentCounts);
 			if (unmet == null)
 				continue;
+
+			// Tonight's recipe's named path on a far-shore run (Player.FarSky.cs): open, and the page says why.
+			if (FarSkyWaivesElementGate(spell?.Id, evo.Id))
+			{
+				option.ElementGateWaived.Add(evo.Id);
+				continue;
+			}
 
 			option.EvolutionLockReason[evo.Id] = unmet;
 		}

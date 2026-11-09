@@ -30,6 +30,7 @@ public static partial class RegressionChecks
 			ValidateFarSkyWeighting(warnings);
 			ValidateFarSkyShown(warnings);
 			ValidateFarSkyLessonAndFeats(warnings);
+			ValidateFarSkyWaiver(warnings);
 		}
 		finally
 		{
@@ -289,5 +290,72 @@ public static partial class RegressionChecks
 		});
 		if (!every.IsComplete(AchievementContext.ForSave(madeAll)) || every.IsComplete(AchievementContext.ForSave(madeAllButOne)))
 			warnings.Add("Far sky: Every Conjunction Known is not met by every recipe made, or is met one short.");
+	}
+
+	// THE WAIVER (decision 10, Eric 2026-11-08: "Waive element gate"): FarSky.WaivesElementGate opens exactly tonight's
+	// recipe's two named paths, each on its own parent, on a far-shore run while the recipe is live - and nothing else:
+	// never on the road, never a third path (a parent's other Ascensions, or a named path on the wrong parent), never
+	// another recipe's, never the Rite, never once the recipe is made or sealed. Player.FarSkyWaivesElementGate puts the
+	// run's state to it (live is FarSkyFavourHolds: not made, not sealed); the spell's card cap and player level 17 are
+	// untouched by it and stay in Player.GetAscensionOffers.
+	private static void ValidateFarSkyWaiver(List<string> warnings)
+	{
+		List<SpellData> spells = ContentValidator.LoadAllSpells().ToList();
+		int opened = 0, refused = 0;
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+		{
+			foreach (ComboIngredient named in recipe.Ingredients)
+			{
+				if (!FarSky.WaivesElementGate(recipe, true, true, named.SpellId, named.AscensionId))
+					warnings.Add($"Far sky waiver: '{recipe.Id}' on the far shore does not waive {named.SpellName}'s {named.AscensionName}.");
+				else
+					opened++;
+				// Off the far shore; made or sealed.
+				if (FarSky.WaivesElementGate(recipe, false, true, named.SpellId, named.AscensionId))
+					warnings.Add($"Far sky waiver: '{recipe.Id}' waives {named.AscensionName} on the road.");
+				if (FarSky.WaivesElementGate(recipe, true, false, named.SpellId, named.AscensionId))
+					warnings.Add($"Far sky waiver: '{recipe.Id}' still waives {named.AscensionName} once made or sealed.");
+				refused += 2;
+
+				// A third path: every other level 8 option of this parent.
+				SpellData template = spells.FirstOrDefault(s => s.Id.Equals(named.SpellId, StringComparison.OrdinalIgnoreCase));
+				foreach (SpellEvolutionOption other in ComboCatalog.Level8OptionsOf(template, named))
+				{
+					if (other == null || other.Id.Equals(named.AscensionId, StringComparison.OrdinalIgnoreCase))
+						continue;
+					refused++;
+					if (FarSky.WaivesElementGate(recipe, true, true, named.SpellId, other.Id))
+						warnings.Add($"Far sky waiver: '{recipe.Id}' waives {named.SpellName}'s other path '{other.Id}'.");
+				}
+				// The named path on the other parent's spell.
+				ComboIngredient partner = ComboCatalog.PartnerOf(recipe, named.SpellId);
+				if (partner != null && !partner.SpellId.Equals(named.SpellId, StringComparison.OrdinalIgnoreCase))
+				{
+					refused++;
+					if (FarSky.WaivesElementGate(recipe, true, true, partner.SpellId, named.AscensionId))
+						warnings.Add($"Far sky waiver: '{recipe.Id}' waives {named.AscensionName} on {partner.SpellName}, which it does not name there.");
+				}
+			}
+			// Another recipe's named paths, unless this recipe names the very same path.
+			foreach (ComboDefinition other in ComboCatalog.Fusions.Where(r => r != recipe))
+				foreach (ComboIngredient theirs in other.Ingredients)
+				{
+					bool shared = recipe.Ingredients.Any(i => i.SpellId == theirs.SpellId && i.AscensionId == theirs.AscensionId);
+					if (shared)
+						continue;
+					refused++;
+					if (FarSky.WaivesElementGate(recipe, true, true, theirs.SpellId, theirs.AscensionId))
+						warnings.Add($"Far sky waiver: '{recipe.Id}' waives '{other.Id}''s {theirs.AscensionName}.");
+				}
+		}
+		ComboDefinition rite = ComboCatalog.Rite;
+		if (rite != null && rite.Ingredients.Any(i => FarSky.WaivesElementGate(rite, true, true, i.SpellId, i.AscensionId)))
+			warnings.Add("Far sky waiver: the Sovereign Rite waives an element gate; the sky names fusions of two spells only.");
+		if (FarSky.WaivesElementGate(null, true, true, "starfall", Starfall.ConstellationId))
+			warnings.Add("Far sky waiver: with no recipe named, a gate is waived.");
+		if (string.IsNullOrWhiteSpace(FarSky.WaiverLine) || FarSky.WaiverLine.Any(char.IsDigit) || FarSky.WaiverLine.Contains('_'))
+			warnings.Add($"Far sky waiver: the card's line \"{FarSky.WaiverLine}\" must be words a player reads - no number, no code word.");
+		GD.Print($"RegressionChecks: the far sky's waiver - {opened} named paths opened on the far shore, {refused} cases refused "
+			+ "(the road, made or sealed, a third path, the wrong parent, another recipe's path)");
 	}
 }

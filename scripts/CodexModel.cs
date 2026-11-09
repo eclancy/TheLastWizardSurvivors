@@ -897,7 +897,11 @@ public sealed class CodexModel
 					chips.Add(new CodexChip { Text = $"You {Math.Min(gate.Have, gate.Need)}/{gate.Need}", Met = gate.Met, Have = gate.Have, Need = gate.Need });
 					break;
 				case AscensionRequirementKind.Element:
-					chips.AddRange(ElementChips(gate, measured: true));
+					// Tonight's recipe's named path on the far shore (FarSky.WaiverLine): met, and says why.
+					if (gate.Waived)
+						chips.Add(new CodexChip { Text = FarSky.WaiverLine, Met = true });
+					else
+						chips.AddRange(ElementChips(gate, measured: true));
 					break;
 				case AscensionRequirementKind.Learned:
 					// Where it is learned (Teachings.SealedLine), when the gate says.
