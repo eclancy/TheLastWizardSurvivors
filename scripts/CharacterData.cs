@@ -28,8 +28,9 @@ public partial class CharacterData : Resource
     /// Apotheosis is the final form OF (ApotheosisDefinition.VariantId), or empty. Nimue opens on Spiritual Weapon as
     /// the Sword (.ai/endgame-castle.md decision 11) because Excalibur ends the Sword. Read from the catalog rather
     /// than kept here, so the two can never disagree: a form holds for the run, and a wizard opened in another
-    /// would never meet his gate. Empty for a spell with no forms, which every other wizard opens on, and for a wizard
-    /// who chooses his form each run (ChoosesStartingForm).
+    /// would never meet his gate. Ma Liang opens on the Familiar as the crow (The Painted Door) the same way, since
+    /// 2026-11-09. Empty for a spell with no forms, which every other wizard opens on, and for a wizard who chooses his
+    /// form each run (ChoosesStartingForm).
     /// </summary>
     public string StartingFormId =>
         StartingSpellResource?.HasVariants == true && !ChoosesStartingForm
@@ -37,10 +38,10 @@ public partial class CharacterData : Resource
 
     /// <summary>
     /// True for a wizard who chooses the form of his starting spell on his run's first screen instead of opening in
-    /// his Apotheosis's form: Ma Liang (.ai/chapter-wizards.md 4.8), whose design takes the Familiar "as the dog or the
-    /// cat" too, though only the crow has a final form. Nimue keeps the Sword (.ai/endgame-castle.md decision 11). The
-    /// two branches that built them each made their own rule general; this is which wizard follows which (Player.MaLiang.cs,
-    /// ChoosesOpeningForm).
+    /// his Apotheosis's form (Player.ChoosesOpeningForm, Node2DGame.OpeningForm.cs). NO WIZARD SETS IT since
+    /// 2026-11-09: it was Ma Liang's, who chose dog, crow or cat though only the crow has a final form, and he now opens
+    /// on the crow every run as Nimue opens on the Sword (Eric: "he automatically starts with a crow familiar";
+    /// .ai/character-fit.md section 5, row 21). The page it opens is kept, working and unused.
     /// </summary>
     [Export] public bool ChoosesStartingForm { get; set; } = false;
 

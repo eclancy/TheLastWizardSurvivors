@@ -383,9 +383,10 @@ public static class ApotheosisCatalog
 		// it strikes - whatever ordinary body stands on it steps out of a second door far across the field
 		// (Familiar.PaintedDoorId, Familiar.PaintedDoor.cs). Nothing is pulled (pull), drowned in a current (flood), held
 		// (hold) or lured (double): the knot is moved, and it deals nothing of its own. Elites, minibosses and bosses are
-		// never moved. ONE FORM'S: he opens on the Familiar and chooses its form each run (Node2DGame.OpeningForm.cs), and
-		// only the crow - the tale's painted birds - has a final form; as the dog or the cat he has none, and his card says
-		// so. Arcane, the Familiar's only element; no card on the crow trades it away (Stormcrow adds Lightning beside it).
+		// never moved. ONE FORM'S: only the crow - the tale's painted birds - has a final form, and he opens on the Familiar
+		// as the crow every run (CharacterData.StartingFormId reads this VariantId, as Nimue's Sword does), painted in ink
+		// (Familiar.PaintsInInk). He chose dog, crow or cat until 2026-11-09 (.ai/character-fit.md section 5, row 21).
+		// Arcane, the Familiar's only element; no card on the crow trades it away (Stormcrow adds Lightning beside it).
 		// No visual scale: the doors are drawn at one size.
 		new()
 		{

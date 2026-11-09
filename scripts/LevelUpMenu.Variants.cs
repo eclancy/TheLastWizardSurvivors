@@ -27,13 +27,13 @@ public partial class LevelUpMenu
 	/// <summary>True while the page of a spell's forms is up.</summary>
 	public bool ShowingVariantPage => pendingVariantOption != null;
 
-	// The run's first screen for a wizard who opens on a spell with forms (Node2DGame.OpeningForm.cs): the page with no
-	// hand behind it, so no Back.
+	// The run's first screen for a wizard who chooses the form of the spell he opens on (Node2DGame.OpeningForm.cs; none
+	// does since Ma Liang opens on the crow, 2026-11-09): the page with no hand behind it, so no Back.
 	private bool openingFormsOnly;
 
 	/// <summary>
-	/// The page of <paramref name="option"/>'s forms as the run's first screen, for a wizard who opens on a spell with
-	/// forms (Ma Liang's Familiar, .ai/chapter-wizards.md 4.8). The hand behind it is the one card, so a tool that reads
+	/// The page of <paramref name="option"/>'s forms as the run's first screen, for a wizard who chooses the form of the
+	/// spell he opens on (CharacterData.ChoosesStartingForm; Ma Liang's Familiar until 2026-11-09). The hand behind it is the one card, so a tool that reads
 	/// the offered options (GetOfferedOptions, LevelUpOption.AutoChoice) answers it as it answers any page of forms;
 	/// there is no Back, no Reroll, no Skip - the spell is his, only its form is open.
 	/// </summary>

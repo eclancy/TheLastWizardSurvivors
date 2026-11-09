@@ -893,8 +893,9 @@ public partial class Player : CharacterBody2D
 		// never fused for him (Player.Combinations.cs, AddStartingConjunction).
 		if (ComboCatalog.ForId(startingSpellId) is ComboDefinition opening && ComboCatalog.StartsFused(opening, selectedCharacter.Id))
 			AddStartingConjunction(opening, selectedCharacter.IsLegendaryStart);
-		// A wizard who opens on a spell with forms chooses the form on the run's first screen (Ma Liang's Familiar,
-		// Player.MaLiang.cs): the spell is owed until then, and Node2DGame opens the page before anything moves.
+		// A wizard marked to choose the form of his spell chooses it on the run's first screen (Player.MaLiang.cs): the
+		// spell is owed until then, and Node2DGame opens the page before anything moves. None is marked since Ma Liang
+		// opens on the crow (2026-11-09); every wizard on a spell with forms opens in his Apotheosis's form below.
 		else if (ChoosesOpeningForm(selectedCharacter) && string.IsNullOrEmpty(SpellVariants.Split(startingSelection).VariantId))
 			OweOpeningForm(startingSpellId, selectedCharacter.IsLegendaryStart);
 		else if (!string.IsNullOrWhiteSpace(startingSpellId))

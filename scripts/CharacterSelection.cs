@@ -409,8 +409,8 @@ public partial class CharacterSelection : Control
 		SpellData spell = character?.StartingSpellResource;
 		if (spell == null)
 			return null;
-		// Null for a wizard who chooses his form each run (Ma Liang's Familiar, CharacterData.ChoosesStartingForm):
-		// his card shows the spell's own picture, not one form of it.
+		// Null for a wizard who chooses his form each run (CharacterData.ChoosesStartingForm; none since Ma Liang opens on
+		// the crow): his card shows the spell's own picture, not one form of it.
 		return character.StartingForm?.Icon ?? spell.Icon;
 	}
 
@@ -514,14 +514,17 @@ public partial class CharacterSelection : Control
 		return grid;
 	}
 
-	// The form's name in the ember register. For a wizard whose final form belongs to one form of a spell he chooses each
-	// run (Ma Liang: the Familiar's crow, .ai/chapter-wizards.md 4.8), the line under it says which, and that the other
-	// forms have none - taken as the dog or the cat, he never meets it, and the card is the only place that can say so.
+	// The form's name in the ember register. For a wizard whose final form belongs to one form of a spell he CHOOSES each
+	// run (Player.ChoosesOpeningForm), the line under it says which, and that the other forms have none - taken in
+	// another, he would never meet it, and the card is the only place that can say so. Nobody chooses since 2026-11-09:
+	// Ma Liang, for whom it was written ("As the crow; the dog and the cat have none"), opens on the crow, and his card's
+	// spell line says so ("Familiar - Crow", StartingSpellName); a wizard fixed to his form (Nimue too) needs no line.
 	private static Control BuildApotheosisValue(CharacterData character, ApotheosisDefinition apotheosis)
 	{
 		Label name = CodexRows.MakeText($"\u2736 {apotheosis.Form.DisplayName}", ResponsiveLayout.TextRole.Body, CardFamilyArt.ApotheosisTitle);
 		SpellData spell = character.StartingSpellResource;
-		if (string.IsNullOrEmpty(apotheosis.VariantId) || spell == null || !spell.HasVariants)
+		if (string.IsNullOrEmpty(apotheosis.VariantId) || spell == null || !spell.HasVariants
+			|| !Player.ChoosesOpeningForm(character))
 			return name;
 		string Short(SpellVariant v) => (string.IsNullOrWhiteSpace(v.ShortName) ? v.DisplayName : v.ShortName).ToLowerInvariant();
 		SpellVariant own = spell.FindVariant(apotheosis.VariantId);
