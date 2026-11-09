@@ -870,8 +870,11 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     both orders, `ValidateFarShore`, and a marked block in each shared registry for F1-F10 so the slices can be
     built in parallel. **F1 built and merged 2026-11-08** (df82ecb5, squashed: the agent branch's commit carried
     another session's message through a shared scratchpad; "F1, built" in `second-half.md`): a god is data -
-    `UnlockCatalog.FromGod`, any recipe an opener, `SeatClear`, the rekindled reel's far-shore ground. **Building
-    now, in parallel: F2 (Artemis) and F3 (the White Downs)**; then F5 (reel E and the map), F4 after F2.
+    `UnlockCatalog.FromGod`, any recipe an opener, `SeatClear`, the rekindled reel's far-shore ground. **F2 built
+    and merged 2026-11-08, after 0.21.0** (Artemis, roster index 23; "F2, built"): hidden until the White Downs
+    open. **Building now, in parallel: F3 (the White Downs), F5 (reel E and the map), F4 (the far sky).**
+    **0.21.0 released 2026-11-08** (c29952c2): the new name, Imhotep's and Tituba's puzzles, the new update
+    address; all three `version.json` addresses checked serving it.
     Agents now each get a scratch folder of their own: sharing one, two rewrote each other's `commit-msg.txt`
     and `godot.sh`.
 54. **Wording and card fixes** (Eric, 2026-11-06): Waywiser - say what "slowest spell" means
