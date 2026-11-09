@@ -2956,6 +2956,14 @@ public partial class _BalanceHarness : Node
 		return lines;
 	}
 
+	// The highest level reached by game second t (1 before the first level-up).
+	private int LevelAt(float t) => levelReachedAt.Count == 0 ? 0 : levelReachedAt.Where(p => p.Value <= t).Select(p => p.Key).DefaultIfEmpty(1).Max();
+
+	// When this run's boss arrives: the chapter's own run length (StageCatalog.VictorySecondsFor), as the run read it.
+	private float RunLengthSeconds => game is Node2DGame run && IsInstanceValid(run) && run.TimerVictorySeconds > 0f
+		? run.TimerVictorySeconds
+		: StageCatalog.VictorySecondsFor(StageCatalog.GetByIndex(Global.SelectedStageIdx)?.Id);
+
 	// One line a script can turn into a table.
 	private string AscensionSummaryLine()
 	{
@@ -2972,7 +2980,10 @@ public partial class _BalanceHarness : Node
 			+ $" maxPressure={(paceLedger.Count > 0 ? paceLedger.Max(r => r.Pressure) : 0f):0.00}"
 			+ $" folds={paceLedger.Sum(r => r.Folds)} round={paceLedger.Sum(r => r.SentRound)}{ShadowSummary()}"
 			+ $" meta={metaLabel} boss={BossSummary()} overrun={(overrunAt < 0f ? "-" : $"{overrunAt / 60f:0.0}")}"
-			+ $" at15={(levelReachedAt.Count == 0 ? 0 : levelReachedAt.Where(p => p.Value <= 900f).Select(p => p.Key).DefaultIfEmpty(1).Max())}"
+			+ $" at15={LevelAt(900f)}"
+			// The build the boss meets, at the chapter's own arrival (StageCatalog.VictorySecondsFor: 15:00 on the road, 20:00 on
+			// the far shore); run= is that length in minutes. at15 stays the level at fifteen real minutes, comparable across both.
+			+ $" run={RunLengthSeconds / 60f:0.#} atBoss={LevelAt(RunLengthSeconds)}"
 			+ $"{HealthLedgerSummary()}{HealingSummary()}"
 			+ $" ascOffered={(ascensionFirstOfferedAt.Count == 0 ? "-" : $"{ascensionFirstOfferedAt.Values.Min() / 60f:0.0}")}"
 			+ $" ascensions={ascensionsTaken.Count} at=[{string.Join(",", ascensionsTaken.Select(a => $"{a.At / 60f:0.0}"))}]"
@@ -3562,9 +3573,12 @@ public partial class _BalanceHarness : Node
 
 	// --- --far-sky (.ai/second-half.md section 5: "Measured before it ships") -----------------------------------
 	// Every time below is the run's PACE minute (Node2DGame.PaceSeconds), which is what the doc's "by about minute
-	// 10" means: on a fifteen-minute run it is the clock, on a pinned chapter it is not.
+	// 10" means: on a fifteen-minute run it is the clock, on a pinned chapter it is not - and on the far shore's
+	// twenty-minute run (StageCatalog.FarShoreRunSeconds) pace minute 10 is real 13:20, so the made time is also
+	// given in real minutes (madeReal=).
 
 	private float farSkyMadeAtPace = -1f;
+	private float farSkyMadeAtReal = -1f;
 	private float farSkyOfferedAtPace = -1f;
 	private readonly Dictionary<string, float> farSkyInBookAtPace = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<string, float> farSkyAscendedAtPace = new(StringComparer.OrdinalIgnoreCase);
@@ -3616,6 +3630,7 @@ public partial class _BalanceHarness : Node
 		if (made && farSkyMadeAtPace < 0f)
 		{
 			farSkyMadeAtPace = pace;
+			farSkyMadeAtReal = elapsed / 60f;
 			GD.Print($"HARNESS FAR SKY {recipe.Name} made at pace minute {pace:0.0} (t={elapsed:0}s), player level {player.CurrentLevel}"
 				+ $", favour {(player.FarSkyRecipe != null ? "on" : "off")}");
 			if (stopWhenMade)
@@ -3633,7 +3648,7 @@ public partial class _BalanceHarness : Node
 		string Each(Dictionary<string, float> at) => string.Join(",", recipe.Ingredients.Select(i =>
 			$"{i.SpellId}@{(at.TryGetValue(i.SpellId, out float t) ? $"{t:0.0}" : "-")}"));
 		return $" farSky={recipe.Id} favour={(player?.FarSkyRecipe != null ? "on" : "off")} inBook=[{Each(farSkyInBookAtPace)}]"
-			+ $" ascended=[{Each(farSkyAscendedAtPace)}] offeredPace={At(farSkyOfferedAtPace)} madePace={At(farSkyMadeAtPace)}"
+			+ $" ascended=[{Each(farSkyAscendedAtPace)}] offeredPace={At(farSkyOfferedAtPace)} madePace={At(farSkyMadeAtPace)} madeReal={At(farSkyMadeAtReal)}"
 			+ $" favoured={player?.FarSkyFavouredCards ?? 0}";
 	}
 

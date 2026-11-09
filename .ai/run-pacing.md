@@ -38,6 +38,11 @@ Ascensions, levelling every 50-75 s in the last five minutes (and at level 17 in
 Section 10 has the design, the knobs and the before/after tables; it also corrects how this doc's
 runs should be made on a shared machine (`--fixed-fps 30`, 10.5).
 
+**Since 2026-11-09: the far shore runs 20 minutes, the road 15** (Eric: *"still make the far shore
+longer"*). A run's length is the chapter's, read through `StageCatalog.VictorySecondsFor(stageId)`;
+the pace clock stretches with it (`RunPace` 4/3 there) and the XP curve follows (13 + 60 a level on
+the far shore, 10 + 45 on the road, untouched). Section 12.
+
 ## 1. The three clocks
 
 | clock | what it is | read through | moves with run length? |
@@ -890,3 +895,146 @@ minutes of them). Level 21 itself came at 8.6-10.8 in those runs, level 20 as ea
 - **No dead level-ups** in any run. Only the Forest and one seed were measured, and the bot levels
   faster than a person; re-measure with the other chapters before reading the ordinary-player row
   into these.
+
+## 12. The far shore runs twenty minutes (2026-11-09)
+
+Eric was asked whether twenty-minute far-shore runs would make the far sky's Conjunctions reliable. Measured,
+time alone would not - the named Ascensions' element gates were the brake - so he chose the element waiver
+(`.ai/second-half.md` section 8, decision 10), and then: *"okay lets let the waiver land ... still make the far
+shore longer"*. So **every far-shore chapter (`StageCatalog.FarShoreOrder`, stage_14 to stage_19) runs twenty
+minutes, the boss at 20:00, and every road chapter - the castle and the Sketchbook with it - stays at fifteen.**
+
+### 12.1 Where the length lives
+
+| piece | where |
+|---|---|
+| the length | `StageDefinition.RunSeconds`, default `StageCatalog.RoadRunSeconds` (900); the far shore's six set `StageCatalog.FarShoreRunSeconds` (1200, commented with Eric's words) |
+| the one accessor | **`StageCatalog.VictorySecondsFor(stageId)`** - everything on a run's path reads it; an unknown id is a road run. Endless mode's shim points at it |
+| the run's clock | `Node2DGame.TimerVictorySeconds` defaults to `ChapterRunLength` (-1) and is read from the chapter first in `_Ready` (`ResolveRunLength`, `Node2DGame.RunLength.cs`), once the player is known and before the chapter's rules (the Throne still sets 0 in its `RunStarted`). **A tool that sets it before the add keeps its own** (`_BossProbe`'s six seconds) |
+| what follows it unedited | `RunPace` (4/3 on the far shore) and so `PaceSeconds`, every paced number and the XP multiplier; the boss's arrival (`TickBossPhaseStart`); the HUD timer, which counts up and stops at 20:00; the results screen's "Boss at 20:00" and its bar (`RunReport.BossArrivalSeconds`); F4 skip-to-boss and `_UiShot --rush-steps` |
+| the XP curve | `Node2DGame.XpCurveForRun` - 12.2 |
+| the validator | `RegressionChecks.ValidateRunLengths` (`RegressionChecks.RunLength.cs`): every chapter off the far shore at 900 and every far chapter at 1200, the road's run equal to `ReferenceRunSeconds` (so `RunPace` is exactly 1 there), the fallback, and the curve untouched at 900 and proportional above it. It prints "run lengths - 14 chapters at 15 minutes, 6 far-shore chapters at 20; XP curves 15 min: 10 + 45, 20 min: 13 + 60" |
+| the tools | `_BalanceHarness`'s summary gains `run=` (the length, minutes) and `atBoss=` (the level the boss meets, at the chapter's own arrival; `at15=` stays the level at fifteen real minutes); its far-sky fields gain `madeReal=` beside `madePace=`. `_BossProbe` says which clock it shortened. `_UiShot --all-unlocked` records each chapter's victory at its own boss time, so a far stop's "Longest stand" reads 20:00 |
+
+### 12.2 What moved, and the XP curve
+
+**Everything on the pace clock moved with the run** (section 1: compare against `PaceSeconds`, advance by
+`delta / RunPace`, multiply a first time by `RunPace`) and nothing in it was edited: with `RunPace` 4/3 the first
+elite comes at 3:00 rather than 2:15 and the gaps between elites are a third longer (so a run still sends the same
+number, and carries the same chests); the Warden at 3:20 and then every 3:40; creature introductions, the horde's
+speed ramp, spawn health (the same 156 x the chapter's multiplier at 20:00 as at 15:00), the swarm's start (2:40),
+the first formation (1:40), the music's lead, the chapter's hints, and the XP multiplier (x2.5 at the boss, at
+20:00). The Apotheosis floor travels as a share too: 7.5 minutes of 15 is **10 of 20**.
+
+**What is real seconds stayed** (section 2's R rows): the burst window (70 a 10 s), the trickle's gap read at its
+pace minute, the formation rhythm (15 s), the grace after a level-up, the swarm's rise and fall, the potion and
+bell spacing - and three that a person reads, all left on purpose: **Arcane Energy a minute** (8) pays the four
+extra minutes, about 32 more for a full run, at the same rate a minute played; **Survivor** (ten real minutes) and
+**Untouchable** (three) mean the same minutes everywhere. **Fixed**: the enemy cap (140), boss health (the Unstrung
+Hunter's 420,000), the chapter's difficulty row (the castle's, `second-half.md` decision 11) and the level gates
+(17 and 21).
+
+**Why the XP curve had to move, and by how much.** Section 3.3 is why the gates do not follow the clock: XP is
+kills, the kill rate is the spawner's, and the spawner's rates are read at a pace minute but paid in real seconds.
+Stretch the pace clock and every one of those rates - the trickle at pace minute m, the burst ceiling, the formation
+rhythm - is the same at the same SHARE of the run, while the run is 4/3 as long. So a far-shore run spawns 4/3 as
+many bodies, and a build that keeps up kills 4/3 as many and banks **4/3 the XP at every share of the run**, exactly,
+the paced XP multiplier included. Left alone it would reach level 17 and 21 at about the same *real* minutes as on
+the road - a third sooner by share - and meet its boss about seven levels richer (12.3 measures it). Strategy B
+(section 5: keep the gates, move the step) solved for a stretched run rather than a shortened one is therefore one
+rule: **every level costs `RunPace` times as much**. `Node2DGame.XpCurveForRun` scales both terms and rounds:
+**13 + 60 a level on the far shore**, against the road's 10 + 45, which it never writes (the scale is exactly 1
+there). It is read from the chapter (`ChapterRunSeconds`), not from `TimerVictorySeconds`, so a tool's short clock
+or the Throne's 0 never touches it; `--xp-first` / `--xp-step` still override it for a run.
+
+What it leaves a little short: the carriers that come a fixed number of times a run - elites (and their chests),
+Wardens, the ghost - pay the same count across a longer run, so in levels each is worth three quarters of what it is
+on the road. They are a small part of a run's XP - about 6% for a build that keeps the field clear, 12-13% for a slow
+one that sits at the cap (the far sky's Laelaps runs, 10-12 minibosses by its recipe) - so a far-shore build runs about
+1.5-3% of its XP, a fraction of a level, behind share. Nothing was done about it: it is under the run-to-run noise
+(12.4, 12.5), and closing it exactly would be one line in `Enemy.DropXp` (a miniboss's 50 times
+`Node2DGame.XpCurveScale`), left for whoever finds it matters.
+
+### 12.3 Measured: the White Downs at fifteen and at twenty
+
+`.ai/difficulty-curve.md` 1.1's protocol, as F3 ran it (`_BalanceHarness --stage=14 --farmed --survivor --immortal
+--policy=ordinary --stop-overrun=60 --character=3 --seed=1234 --timescale=1`, `--fixed-fps 30`): the Stormcaller on
+the far shore's farmed save (the whole road behind it, 35 spells and 8 boons from deeds, 8,525 of 8,750 Arcane on
+Powers, Sage Spiral at its cap). **Before** is the same run on the tree before this change (`main-ff86ni` at b42667af,
+a 15-minute run on 10 + 45, `--minutes=20`); **after** is this one (20 minutes, 13 + 60, `--minutes=24` so the fight
+fits). One run each. Minutes are real; the share is of the run's own length.
+
+| | before: 15-minute run | after: 20-minute run |
+|---|---|---|
+| level 10 / 17 / 20 / 23 / 26 / 29 at | 2.9 / 5.5 / 6.4 / 7.2 / 8.3 / 9.2 | 3.8 / 7.2 / 8.4 / 9.7 / 10.9 / 11.7 |
+| ... as a share of the run | 0.19 / 0.37 / 0.43 / 0.48 / 0.55 / 0.61 | 0.19 / 0.36 / 0.42 / 0.49 / 0.55 / 0.59 |
+| level 21 (the Apotheosis gate) | about 6.7 (0.45) | about 8.8 (0.44) |
+| level when the boss arrives | **48**, at 15:00 | **49**, at 20:00 |
+| the same XP on the road's curve (10 + 45) | - | would have been **56** at 20:00, level 17 at about 6.0 |
+| the Unstrung Hunter (420,000) | down at 18.9, a 3.9-minute fight | 90% of him gone in the first four minutes (the run's end); on course for about 4.4 |
+| spawned / killed, whole run | 5,029 / 5,022 | 6,951 / 6,942 |
+| spawned before the boss | 4,990 | 6,920 (x1.39 - about the 4/3 a run a third longer sends, 12.2) |
+| XP banked by the boss | 50,447 | 68,311 (x1.35) |
+| most swarm pressure; overrun | 0.11; none | 0.02; none |
+| HP lost / offered by heals / by regeneration, a minute | 12.2 / 9.8 / 31.6 | 3.6 / 14.3 / 28.0 |
+| health multiple needed (`need`) | x0.3 | x0.1 |
+
+**Every level came at the same share of the run, to within a few hundredths, and the warden met a level-49 build
+where the fifteen-minute run brought a level-48 one** - the same strength, which is what the curve is for. Without it
+the same kills would have bought level 17 at about 6.0 (0.30 of the run) and level 56 at the boss. The longer night
+is no harder by any measure the bot has (pressure, damage taken and the health it needed all fell, a direction only:
+one run each, and the survivor bot's damage swings a good deal between runs); the healing budget pays out over four
+more minutes at about the same rate a minute. F3's own 15-minute run on its branch (L15 45, level 17 at 5.5, level 21
+at 7.3, the Hunter down at 18.1) reads the same way as the before column.
+
+### 12.4 Measured: the road did not move
+
+`_BalanceHarness --stage=0 --character=1 --seed=1234 --all-unlocked --immortal --timescale=1 --minutes=15`,
+`--fixed-fps 30` - the Pyromancer in the Enchanted Forest, once on the tree before the change and twice after it (the
+harness is not deterministic run to run: the spawner and the level-up rolls follow the seed, but spells and enemies
+keep generators of their own, so the same build's two runs differ too):
+
+| run | level at minutes 1-15 | spawned / killed | level 17 / 20 / 23 / 29 at | XP curve |
+|---|---|---|---|---|
+| before | 3, 6, 8, 11, 13, 16, 18, 20, 22, 24, 26, 28, 30, 31, 34 | 5,686 / 5,478 | 6.3 / 7.6 / 9.2 / 12.4 | 10 + 45 |
+| after, run 1 | 3, 5, 8, 11, 13, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34 | 5,836 / 5,642 | 6.3 / 7.6 / 9.2 / 12.1 | 10 + 45 |
+| after, run 2 | 4, 6, 8, 11, 13, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34 | 5,757 / 5,553 | 6.2 / 7.6 / 9.3 / 12.4 | 10 + 45 |
+
+Not identical to the frame, and could not be: the two runs of the *after* build differ from each other (minute 1,
+minute 2, 79 spawns) by as much as either differs from the before. Within that noise the road's timeline is unchanged
+- level 34 at 15:00 in all three, the gates at the same minutes - and the reason it must be is structural: on the road
+`VictorySecondsFor` is 900, so `TimerVictorySeconds` is the 900 it always was, `RunPace` is exactly 1, and
+`ResolveRunLength` never writes the curve (`ValidateRunLengths` holds both).
+
+### 12.5 Measured: the far sky's recipes at twenty minutes
+
+The far sky's target travels as a share too: "by about minute 10" of fifteen is **by about pace minute 10, real
+13:20** of twenty (`.ai/second-half.md` section 5). Re-measured with F4's table (the White Downs, Laelaps,
+`--all-unlocked --immortal --seek-combo=<recipe> --timescale=3 --minutes=20`, `--far-sky --stop-when-made`, seeds 1234
+and 7, one favour-off control) **with `--fixed-fps 30` added** - so every rendered frame is 0.1 s of game time - and
+each run repeated on the tree before the change as its control. Without the fixed frame this shared machine drew
+frames of 0.24-0.40 s of game time at timescale 3, and the one run made that way (Shadow Bolt, 1234) made its recipe
+at pace 8.5 where the fixed-frame run of the same seed made it at 10.9: the frame, not the run length, was the
+largest thing in the number. `.ai/second-half.md` section 9, "The far shore runs twenty minutes", has the table. In
+short: **every recipe that was made was made at about the same share as on the fifteen-minute run** - Shadow Bolt and
+The Taking at pace 10.2-11.5 (real 13.6-15.3) against 9.2-10.9 before, a gap of -0.4 to +1.7 pace minutes from the
+same seed, both signs, inside what one seed swings from the next; every one at player level 19, as F4 found. And
+**Sagittarius still never reaches player level 17**: level 12 and 11 at 20:00, against 11 and 13 at 15:00 before. The
+extra five minutes buy it nothing, because the curve follows the run: that is the point of 12.2, and it is why the
+longer night was never the fix for the slow recipes (the waiver was, for the element gates; nothing yet is, for the
+level gate).
+
+### 12.6 Not measured, and what needs eyes
+
+- **One run a cell.** Every row above is one seed; the bot swings a level or two between seeds and between runs of one
+  seed (12.4). The Downs' share column agreeing to a few hundredths is the strongest single result; the far sky's
+  gaps are inside the noise, not proof of none.
+- **The far shore's other five chapters** are stand-ins and unplayable; each inherits twenty minutes from its block's
+  `RunSeconds` line when it is built, and should be measured then (its boss's health was a first guess for a fifteen-
+  minute build anyway).
+- **The Hunter's fight** at twenty minutes was not seen to its end (90% in four minutes); the boss probe's fight is
+  unchanged (it shortens the clock and bleeds him on a timer).
+- **Whether twenty minutes feels long** - the first far-shore night now runs a third longer than anything on the road,
+  with the same density curve stretched over it, and nobody has played one. Eric's word was "longer"; how the middle
+  ten minutes of a stretched run feel is a playtest question.
+- **The phone**, where a third more minutes is a third more battery and heat.

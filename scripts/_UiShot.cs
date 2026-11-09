@@ -2108,7 +2108,8 @@ public partial class _UiShot : Node
 		{
 			GlobalStatsManager.UnlockStage(data, stage.Id);
 			if (BossCatalog.ForStageIndex(stage.Index) is BossDefinition boss)
-				data.Lifetime.Absorb(new RunResult { Outcome = RunOutcome.Victory, BossId = boss.Id, StageId = stage.Id, TimeSurvived = 900f });
+				// Won at the chapter's own boss time (StageCatalog.VictorySecondsFor): 15:00 on the road, 20:00 across the water.
+				data.Lifetime.Absorb(new RunResult { Outcome = RunOutcome.Victory, BossId = boss.Id, StageId = stage.Id, TimeSurvived = StageCatalog.VictorySecondsFor(stage.Id) });
 		}
 		foreach (SecretDefinition secret in SecretCatalog.All)
 			data.RecordSecretFound(secret.Id);

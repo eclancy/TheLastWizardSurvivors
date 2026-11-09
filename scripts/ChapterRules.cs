@@ -3,7 +3,8 @@ using TheOneHeMissed.scripts;
 
 // A CHAPTER'S OWN RULES (.ai/endgame-castle.md 1.9).
 //
-// Every chapter on the road is the same run on different ground: survive fifteen minutes, kill the boss,
+// Every chapter on the road is the same run on different ground: survive fifteen minutes (twenty on the far
+// shore: StageCatalog.VictorySecondsFor, a length and not a rule, so no hook), kill the boss,
 // walk into the portal. The castle's are not - the bridge is travelled under a collapsing span, the Court
 // is explored, the Throne is a build and a procession - and each of those needs Node2DGame to ask the
 // chapter something at a few fixed points. Writing each chapter's answer into Node2DGame would put four

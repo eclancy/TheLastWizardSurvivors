@@ -73,6 +73,8 @@ public static partial class RegressionChecks
 		ValidateDungeonMove(warnings);
 		ValidateGateReachability(warnings);
 		ValidateFarShore(warnings);
+		// Every chapter's run length: the road 15 minutes, the far shore 20 (RegressionChecks.RunLength.cs).
+		ValidateRunLengths(warnings);
 		ValidateAchievementMigration(warnings);
 		ValidateRetiredChargeRefund(warnings);
 		ValidateDifficultyMigration(warnings);
