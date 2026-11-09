@@ -1941,7 +1941,19 @@ def p_throne():
 # feet on the ground, growing as it comes; and the front rank strides up big by the village as the
 # panel ends. The final frame is the old still - the flood arrived - held under the dissolve to the
 # procession. Prologue.cs drifts back and mid as one, so the crowd never slides on the ground it runs.
-TIDE_BOX = (400, 328, 960, 600)
+#
+# A TOWN OVERRUN (Eric, 2026-11-08: "show a town being overrun by shadows, with the people running away. the tower
+# should be in the distant background with the glowing eye", and the panel moved after "He took every wizard who
+# might rival him." under its own line, "There was no one left to defend them."). The village at the hill's foot
+# is a town now, nearer and bigger, its windows lit; the flood no longer stops at its edge but pours into it,
+# over the houses of its right half, and out of its left half its people run - small figures with the town's light
+# on their backs, fleeing out of the picture ahead of the shadows. The tower stands far off on the horizon, its
+# eye burning. Everything sits above row 548, clear of the line on a PC, and the box runs from the PC's left
+# edge, where the townsfolk run, to its right one.
+TIDE_BOX = (240, 328, 800, 600)
+# The lowest feet in the flood, and the furthest right a body halts: the line's band below, the box's edge beyond.
+TIDE_FLOOR = 540.0
+TIDE_RIGHT = 790.0
 TIDE_FPS = 8
 # The panel's hold in Prologue.cs (Beats, "tide"); the frames cover it, the last held after.
 TIDE_SECONDS = 5.6
@@ -1967,19 +1979,19 @@ def _tide_bodies(crest, front_x):
     C = v0 / a
     kinds = ["swarmer", "swarmer", "swarmer", "runner", "bruiser", "shielder", "caster", "knight", "hound"]
     halts = []
-    for _ in range(1500):
-        y = 372 + rng.random() ** 1.1 * 228
-        x = front_x(y) + rng.random() ** 0.8 * (FW + 40 - front_x(y))
+    for _ in range(1300):
+        y = 372 + rng.random() ** 1.1 * (TIDE_FLOOR - 372)
+        x = front_x(y) + rng.random() ** 0.8 * (TIDE_RIGHT - front_x(y))
         if y < crest(x) + 4:
             continue
-        halts.append((x, min(y, 594.0), False))
+        halts.append((x, min(y, TIDE_FLOOR), False))
     for _ in range(90):                                 # the broken front, a few strides out
-        y = 400 + rng.random() * 190
-        halts.append((front_x(y) - rng.random() * 26, min(y, 594.0), True))
+        y = 400 + rng.random() * (TIDE_FLOOR - 410)
+        halts.append((front_x(y) - rng.random() * 26, min(y, TIDE_FLOOR), True))
     bodies = []
     for (xh, yh, stray) in halts:
         h_at = 7.0 + (yh - 372.0) * 0.09
-        xh = max(xh, 406.0 + h_at)                      # whole bodies inside the box's left edge
+        xh = max(xh, TIDE_BOX[0] + 6.0 + h_at)          # whole bodies inside the box's left edge
         x0 = xh
         for _ in range(3):                              # the lane's crest: the fall line, inverted
             x0 = xh + TIDE_FLOW * (yh - crest(x0))
@@ -2021,7 +2033,7 @@ def _tide_pose(b, t):
         else:
             y = min(b["yh"] + 3.0, b["yh"] + (tt - b["travel"]) * 2.2)
             v = 2.2
-        y = min(y, 594.0)
+        y = min(y, TIDE_FLOOR)
     h = 7.0 + max(0.0, y - 372.0) * 0.09 + b["jh"]
     x = b["x0"] - TIDE_FLOW * (y - b["y0"]) + math.sin(t * 0.9 + b["ph"]) * 1.4
     yb = y + (1.0 - rise) * h
@@ -2079,24 +2091,71 @@ def _tide_dust(c, fr, x, yb, h, v):
         c.hline(x + 4, x + 8 + fr.random() * 4.0, yb - h * 0.45, S[4])
 
 
-# The front rank, nearest the village: the seven big enough to name, exactly where the still always
-# had them - but they ARRIVE, striding out of the mass over the last seconds, growing as they come.
+# The front rank, in the town's streets: the seven big enough to name - and they ARRIVE, striding out of the mass
+# over the last seconds, growing as they come.
 TIDE_RANK = [("hound", 0, 30), ("runner", 14, 44), ("swarmer", 34, 40), ("bruiser", 6, 58),
              ("caster", 40, 54), ("knight", 22, 62), ("shielder", 48, 50)]
 
 
+def _townsfolk(c, x, yb, h, stride, kind):
+    """One of the town's people running from it, facing left: a dark figure leaning into the run, in one of
+    two strides (legs apart, or passing), the town's light behind it caught along its back. kind: "walker"
+    (bare-headed), "cloak" (a cloak flying behind), "bundle" (a pack on the back) or "child" (drawn as is, small)."""
+    u = h / 20.0
+    s = Cv(int(h * 1.4) + 8, int(h * 1.2) + 8)
+    ox, oy = int(h * 0.6) + 4, int(h * 1.1) + 3
+
+    def limb(a, b, wd):
+        for d in range(int(round(wd))):
+            s.line(a[0] + d, a[1], b[0] + d, b[1], OCC)
+    hip = (ox + 0.6 * u, oy - 9.0 * u)
+    neck = (ox - 2.4 * u, oy - 15.6 * u)
+    # The body a solid, leaning wedge, shoulders wider than the hips, and a head big enough to read as one.
+    s.poly([(neck[0] - 2.2 * u, neck[1]), (neck[0] + 2.2 * u, neck[1] + 0.4 * u),
+            (hip[0] + 1.8 * u, hip[1] + 0.6 * u), (hip[0] - 1.8 * u, hip[1] + 0.2 * u)], OCC)
+    s.disc(neck[0] - 1.0 * u, neck[1] - 2.4 * u, 2.3 * u, 2.4 * u, OCC)
+    if stride:
+        legs = [((ox - 5.0 * u), oy), ((ox + 5.4 * u), oy - 2.4 * u)]
+        arms = [(neck[0] - 4.6 * u, neck[1] + 4.6 * u), (neck[0] + 4.0 * u, neck[1] + 4.6 * u)]
+    else:
+        legs = [(ox + 0.2 * u, oy), (ox + 2.8 * u, oy - 4.8 * u)]
+        arms = [(neck[0] - 1.8 * u, neck[1] + 5.8 * u), (neck[0] + 1.4 * u, neck[1] + 5.4 * u)]
+    for (fx, fy) in legs:
+        knee = ((hip[0] + fx) * 0.5 + (1.4 * u if fx > hip[0] else -0.4 * u), (hip[1] + fy) * 0.5)
+        limb(hip, knee, max(2, 1.8 * u))
+        limb(knee, (fx, fy), max(2, 1.6 * u))
+    for (ax, ay) in arms:
+        limb((neck[0], neck[1] + 1.0 * u), (ax, ay), max(1, 1.3 * u))
+    if kind == "cloak":
+        s.poly([(neck[0] + 0.6 * u, neck[1]), (neck[0] + 2.6 * u, neck[1] + 0.4 * u),
+                (hip[0] + 8.0 * u, hip[1] + 3.0 * u), (hip[0] + 2.0 * u, hip[1] + 2.0 * u)], OCC)
+    elif kind == "bundle":
+        s.disc(neck[0] + 2.8 * u, neck[1] + 3.2 * u, 3.0 * u, 2.8 * u, OCC)
+    elif kind == "walker":
+        # a skirt or a long coat to the knee
+        s.poly([(hip[0] - 2.0 * u, hip[1]), (hip[0] + 2.2 * u, hip[1]), (hip[0] + 3.6 * u, hip[1] + 5.0 * u),
+                (hip[0] - 3.4 * u, hip[1] + 5.0 * u)], OCC)
+    # The town behind them: its light on their backs, one pixel, and nowhere else.
+    edge_light(s, G[3], (1, 0))
+    over(c, s, int(round(x)) - ox, int(round(yb)) - oy)
+
+
 def p_tide():
-    """3. His shadows over the land. A village at the foot of a hill, still lit; over the crest
-    behind it, from the tower on the horizon, a tide of the things he raised bursts and comes
-    down the slope toward it (animated: TIDE_BOX). Up close they are the chapters' kinds - cowl,
-    horns, spear, shield, the caster's loose orb - and every one of them wears his mark in its
-    eyes. Massed, they are a dark flood with a thousand of those eyes in it."""
+    """4. "There was no one left to defend them." His shadows over the land. A town at the foot of a hill,
+    still lit; over the crest behind it, from the tower on the horizon with its eye burning, a tide of the
+    things he raised bursts and comes down the slope and into it (animated: TIDE_BOX), over the houses of its
+    near half, while its people run from the other. Up close they are the chapters' kinds - cowl, horns, spear,
+    shield, the caster's loose orb - and every one of them wears his mark in its eyes. Massed, they are a dark
+    flood with a thousand of those eyes in it."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 400, [OCC, S[4], V[4], V[3], V[2], V[2]])
     stars(back, (0, 0, FW, 300), 300, 8, colors=[K[1], K[2], V[0]])
     tx, ty = 636, 356
     hills(back, ridge_fn(352, 7, 31, 0.8), [V[3], V[4], S[4]], 24, lit=V[2])
-    tower(back, tx, ty, 72, seed=3)
+    tower(back, tx, ty, 72, seed=3, lit=False)
+    # His eye over the tower (Eric: "the tower should be in the distant background with the glowing eye"): the
+    # black sun at its crown, larger than the tower's own and burning, rays and all.
+    black_sun(back, tx - 72 * 0.11 * 0.15, ty - 72 * 1.08, 6.5, rays=16, seed=12)
 
     def crest(x):
         return 456 - (x - 160) * 0.12 + math.sin(x * 0.03) * 4 + math.sin(x * 0.011 + 1) * 8
@@ -2106,37 +2165,67 @@ def p_tide():
           keep_out=lambda x, y: y < crest(x) + 3)
     back.vramp(560, FH - 1, [S[4], S[4], OCC, OCC], x0=0)
     heath(back, 560, 840, 1400, 9, [(OCC, S[4]), (OCC, V[4])], scale=1.4)
+    # THE TIDE: everything right of a leading edge that runs from the crest down into the town - at the
+    # end. Until then it RUSHES: the frames below, over an empty slope (the mid layer holds nothing inside
+    # the box; the searching machinery is the hiding's, write_anim).
+    def front_x(y):
+        return 540 - (y - 380) * 0.75 + math.sin(y * 0.05) * 8
+
     rng = random.Random(55)
-    # the village at the hill's foot, lit; the houses nearest the tide already dark
+    # THE TOWN at the hill's foot, a street's depth of houses and a hall with a spire: their windows lit where
+    # the flood has not yet reached, dark where it has (the flood is drawn over those). Its light on the ground
+    # between them, and on the backs of the people running from it.
+    back.radial(410, 488, 150, 40, [G[4], G[4], None])
     houses = []
-    for k in range(16):
-        hx = 300 + rng.random() * 190
-        hy = 528 + rng.random() * 34 - (hx - 300) * 0.04
-        houses.append((hy, hx))
+    for k in range(22):
+        hx = 322 + rng.random() * 236
+        hy = 452 + rng.random() * 60
+        houses.append((hy, hx, rng.random(), rng.random(), rng.random()))
+    houses.append((482.0, 392.0, -1.0, 0.5, 0.5))      # the hall
     houses.sort()
-    for (hy, hx) in houses:
-        wd = 9 + rng.random() * 7
-        ht = 6 + rng.random() * 3
+    for (hy, hx, r1, r2, r3) in houses:
+        near = (hy - 452) / 60.0
+        hall = r1 < 0
+        wd = (26 if hall else 14 + near * 12 + r1 * 6)
+        ht = (18 if hall else 8 + near * 7 + r2 * 3)
+        roof = (10 if hall else 6 + near * 4)
         back.rect(hx - wd / 2, hy - ht, hx + wd / 2, hy, S[3])
         back.rect(hx + wd * 0.1, hy - ht, hx + wd / 2, hy, S[4])
-        back.poly([(hx - wd / 2 - 2, hy - ht), (hx + wd / 2 + 2, hy - ht), (hx + 1, hy - ht - 7)], OCC)
-        back.line(hx - wd / 2 - 2, hy - ht, hx + 1, hy - ht - 7, V[4])
+        back.poly([(hx - wd / 2 - 2, hy - ht), (hx + wd / 2 + 2, hy - ht), (hx + 1, hy - ht - roof)], OCC)
+        back.line(hx - wd / 2 - 2, hy - ht, hx + 1, hy - ht - roof, V[4])
         back.hline(hx - wd / 2, hx + wd / 2, hy + 1, OCC)
-        if hx < 440 and rng.random() < 0.85:
-            wx = hx - wd * 0.2
-            back.radial(wx, hy - ht * 0.5, 7, 5, [G[3], G[4], None])
-            back.set(wx, hy - ht * 0.5, G[1])
-            back.set(wx + 1, hy - ht * 0.5, G[2])
-    for _ in range(26):                                 # trees among the houses
-        x = 280 + rng.random() * 230
-        y = 520 + rng.random() * 50
+        if hall:                                       # its spire
+            back.poly([(hx - 3, hy - ht - roof + 2), (hx + 4, hy - ht - roof + 2), (hx + 1, hy - ht - roof - 22)], OCC)
+            back.line(hx - 3, hy - ht - roof + 2, hx + 1, hy - ht - roof - 22, V[4])
+        if hx < front_x(hy) - 8:
+            for wn in range(1 if not hall else 3):
+                wx = hx - wd * 0.3 + wn * 7 + r3 * 2
+                wy = hy - ht * 0.5
+                back.radial(wx, wy, 7, 5, [G[3], G[4], None])
+                back.rect(wx, wy - 1, wx + 1, wy + 1, G[1])
+                back.set(wx + 1, wy, G[2])
+    for _ in range(18):                                 # trees among the houses
+        x = 310 + rng.random() * 250
+        y = 458 + rng.random() * 58
         sk._clump(back, x, y, 6, 5, 22, rng, OCC, S[4])
 
-    # THE TIDE: everything right of a leading edge that runs from the crest down to the village -
-    # at the end. Until then it RUSHES: the frames below, over an empty slope (the mid layer holds
-    # nothing inside the box; the searching machinery is the hiding's, write_anim).
-    def front_x(y):
-        return 548 - (y - 380) * 0.55 + math.sin(y * 0.05) * 8
+    # THE TOWN'S PEOPLE, running: out of its streets on the side the flood has not reached, away from it to
+    # the left and down the slope toward us, growing as they come - inside the square both screens show, so a
+    # phone sees them run too. One after another, never faster than they could be followed, and never into the
+    # line's band below row 548.
+    rf = random.Random(61)
+    folk = []
+    for i in range(16):
+        t0 = 0.3 + i * 0.27 + rf.random() * 0.15
+        y0 = 466 + rf.random() * 44
+        x0 = front_x(y0) - 8 - rf.random() * 46
+        kind = pick(rf, ["walker", "cloak", "bundle", "walker", "child"])
+        # Each runs to where he is when the panel ends, spread across the edge of the town's light (on a phone's
+        # canvas too, which ends at column 300), and never faster than 30 art px a second.
+        x_end = 300 + rf.random() * 110
+        vx = min(30.0, max(10.0, (x0 - x_end) / (TIDE_SECONDS - t0)))
+        vy = 7 + rf.random() * 6
+        folk.append((t0, x0, y0, vx, vy, kind, rf.random()))
 
     bodies = _tide_bodies(crest, front_x)
     light = (tx, ty - 78)
@@ -2145,7 +2234,7 @@ def p_tide():
         """The front rank's stride in: eased from up the slope, settling where the still had it, a
         slow creep after - and rimmed in stone hi (.ai/side-events.md), as the still rimmed it:
         against the dark mass behind them the full soft rim drew an outline round each."""
-        yf = 548 + dy
+        yf = 476 + dy * 0.75
         xf = front_x(yf) + 8 + i * 30
         t0 = 2.9 + i * 0.14
         if t < t0:
@@ -2187,15 +2276,25 @@ def p_tide():
                 _tide_paste(c, who, x, yb, h, rise, crest, light)
                 if rise >= 1.0:
                     _tide_dust(c, fr, x, yb, h, v)
-        return c
+        # The townsfolk on their own canvas, laid down after the vignette: it dotted their one-pixel rims away.
+        people = Cv(FW, FH)
+        for (t0, x0, y0, vx, vy, kind, ph) in sorted(folk, key=lambda f: f[2]):
+            if t < t0:
+                continue
+            x = max(268.0, x0 - vx * (t - t0))
+            yb = min(546.0, y0 + vy * (t - t0))
+            h = (0.72 if kind == "child" else 1.0) * (17.0 + (yb - 466) * 0.12)
+            _townsfolk(people, x, yb, h, int(t * TIDE_FPS + ph * 2) % 2 == 0, kind)
+        return c, people
 
     t_of = frame_t(0.75)
     bx0, by0, bx1, by1 = TIDE_BOX
     frames = []
     for k in range(int(math.ceil(TIDE_SECONDS * TIDE_FPS))):
         t = (k + 0.5) / TIDE_FPS
-        c = tide_frame(t, k)
+        c, people = tide_frame(t, k)
         darken(c, t_of, [S[4], OCC], box=TIDE_BOX)
+        over(c, people)
         frames.append(c.img.crop((bx0, by0, bx1, by1)))
     heath(fore, 640, 840, 500, 23, [(OCC, OCC), (OCC, S[4])], scale=1.8)
     layers = dict(back=back, mid=mid, fore=fore)
@@ -2280,7 +2379,9 @@ def p_taken():
 # Every edge of the box is a multiple of 8, and so is its width and height: the dissolve's Bayer
 # threshold is taken from the atlas's own pixel, and on that grid it matches the threshold of the
 # same frame pixel in the mid layer, so the box dissolves in and out with the panel, pixel for pixel.
-MISSED_BOX = (296, 400, 664, 512)
+# Out to the PC's left edge (2026-11-08), so the hound walks in from it rather than appearing where the box began,
+# and down to the feet of his stone and the hound beside it.
+MISSED_BOX = (168, 400, 664, 552)
 MISSED_FPS = 8
 # The panel's hold in Prologue.cs (Beats, "missed"); the frames cover it, the last held after.
 MISSED_SECONDS = 5.4
@@ -2288,6 +2389,10 @@ MISSED_COLUMNS = 4
 # His light in the hiding: the black sun over the tower on the horizon (p_missed, tower(back, 694, 396, 34)).
 # The searchers are rimmed from it and nothing else; the row of stones and the player stand in the key.
 MISSED_LIGHT = (694, 359)
+# Where he hides: (x, feet, height), pressed against the right of the row's biggest stone (centred at 456, 86
+# wide), and where the hound stops at its left edge, nose to the stone.
+MISSED_HIM = (536, 546, 108)
+MISSED_HOUND_STOP = 380.0
 
 
 def sniffing_hound(c, x, yb, h, facing, head, stride, twitch=0.0, rim=None, light=None):
@@ -2308,22 +2413,23 @@ def rot(x, y, a):
 
 
 def _hound_at(t):
-    """The hound's one walk past him, as (x, head, stride, twitch). It trots in from the right,
-    nose down, stops at his shoulder, lifts its head and works the air beside him - and goes on."""
+    """The hound's one search past his stone, as (x, head, stride, twitch, facing). It trots in from the left
+    along the stones, nose down, stops at the far side of the stone he hides behind, lifts its head and works
+    the air at its edge - a stone's width from him - and turns back the way it came."""
     walk = lambda d: math.sin(d * 2 * math.pi / 13.0) * 2.4
-    stop = 556.0
+    start, stop = 180.0, MISSED_HOUND_STOP
     if t < 1.3:
-        x = 630 - (630 - stop) / 1.3 * t
-        return x, -1, walk(630 - x), 0.0
+        x = start + (stop - start) / 1.3 * t
+        return x, -1, walk(x - start), 0.0, 1
     if t < 1.55:
-        return stop, 0, 0.0, 0.0
+        return stop, 0, 0.0, 0.0, 1
     if t < 2.95:
         # Working the air: the nose twitches every other frame; he does not move.
-        return stop, 1, 0.0, (0.35 if int(t * MISSED_FPS) % 2 else -0.15)
+        return stop, 1, 0.0, (0.35 if int(t * MISSED_FPS) % 2 else -0.15), 1
     if t < 3.15:
-        return stop, 0, 0.0, 0.0
+        return stop, 0, 0.0, 0.0, -1
     x = stop - 80 * (t - 3.15)
-    return x, -1, walk(stop - x), 0.0
+    return x, -1, walk(stop - x), 0.0, -1
 
 
 def _shade_down(steps, keep=(), more=None):
@@ -2363,15 +2469,13 @@ def _ember_at(t):
 
 
 def p_missed():
-    """5. "You are the one he missed." The hiding (Eric, 2026-11-01). The broken ring at night, its
-    near stones in a row across the heath, and in the row, between two of them, the player - the
-    title's own figure, facing us, still as a stone, his light put out to an ember. From where they
-    stand he is one more dark standing shape with a point on top; from where we stand he is
-    plainly the wizard. Beyond the row his creatures search: a hound trots along it nose down,
-    stops at his shoulder, lifts its head to the air beside him - he lets his ember go out - and
-    goes on; a caster in the gap watches it; two small ones turn their heads; and out in the dark,
-    pair by pair, the eyes turn away and back, a sweep of looks across the heath. They never find
-    him. No new words: the line is the premise's."""
+    """5. "You are the one he missed." The hiding (Eric, 2026-11-01; hiding properly since 2026-11-08). The
+    broken ring at night, its near stones in a row across the heath, and pressed against the far side of the
+    biggest of them, in its shadow behind a low rock, the player - the title's own figure, still as the stone,
+    his light put out to an ember. His creatures search: a hound trots along the row nose down to the stone's
+    other edge, lifts its head and works the air there, a stone's width from him - he lets his ember go out -
+    and turns back; a caster further along watches; two small ones turn their heads; and out in the dark, pair
+    by pair, the eyes turn away and back. They never find him. No new words: the line is the premise's."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 420, [OCC, OCC, S[4], V[4], V[3]])
     stars(back, (0, 0, FW, 340), 260, 21)
@@ -2395,28 +2499,37 @@ def p_missed():
         for (gx, col) in ((0, EYE[0]), (1, EYE[1]), (gap - 1, EYE[1]), (gap, EYE[0])):
             back.set(x + gx, y, col)
 
-    # THE ROW: two stones of the ring either side of him, and two more out at the PC's edges, and
-    # him in it as one of them. Drawn once per state of his ember; the frames lay it over the
-    # searchers, and the mid layer carries it whole.
+    # THE ROW, AND HIS STONE (Eric, 2026-11-08: "the wizard is standing out in the open. he should be hiding
+    # properly" - he stood in the gap between two stones, in full view of anything beyond the row). Now the
+    # biggest stone of the row stands between him and the search: he is pressed flat against its far side from
+    # the hound, in its shadow, a low rock in front of his legs, and the hound comes along the row to the
+    # stone's other edge - a stone's width from him - and works the air there. We see both of them, and the
+    # stone between; nothing on the hound's side can. Drawn once per state of his ember; the frames lay it over
+    # the searchers, and the mid layer carries it whole.
+    hx_, hb_, hh_ = MISSED_HIM
+
     def row(ember):
         c = Cv(FW, FH)
-        for (x, yb, w, h, sd, lean, br) in [(232, 548, 58, 132, 911, 0.05, True), (366, 540, 50, 112, 913, -0.03, False),
-                                            (598, 544, 54, 120, 917, 0.04, False), (734, 552, 62, 140, 919, -0.05, True)]:
+        for (x, yb, w, h, sd, lean, br) in [(232, 548, 58, 132, 911, 0.05, True), (456, 544, 86, 160, 913, -0.02, False),
+                                            (652, 546, 56, 124, 917, 0.04, False), (772, 552, 62, 140, 919, -0.05, True)]:
             standing_stone(c, x, yb, w, h, sd, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC],
                            toward=(-1, -0.6, S[1]))
-        # He stands in the dark: the title's figure a stop down every pigment row, the key's rim
-        # softened to bone - plainly him to us, one more dark upright shape to them. Only the ember,
-        # which is light and not pigment, keeps its own colours.
+        # He stands in the stone's shadow: the title's figure two stops down every pigment row, the key's rim
+        # softened to bone - plainly him to us, and on the hound's side of the stone nothing at all. Only the
+        # ember, which is light and not pigment, keeps its own colours.
         him = Cv(FW, FH)
-        hero.wizard_hero(him, cx, base, h=112, staff_ramp=LT, under_ramp=None, snuffed=ember)
-        down = _shade_down(1, keep=LT, more={"gold": 1})
+        hero.wizard_hero(him, hx_, hb_, h=hh_, staff_ramp=LT, under_ramp=None, snuffed=ember)
+        down = _shade_down(2, keep=LT, more={"gold": 1})
         hp = him.px
-        for y in range(int(base - 140), int(base + 30)):
-            for x in range(int(cx - 70), int(cx + 90)):
+        for y in range(int(hb_ - 140), int(hb_ + 30)):
+            for x in range(int(hx_ - 70), int(hx_ + 90)):
                 q = hp[x, y]
                 if q[3] and q in down:
                     hp[x, y] = down[q]
         over(c, him)
+        # The low rock he crouches behind, over his legs: lit by the key as the moot's near boulders are, so it
+        # reads against his robe in the dark.
+        sk.boulder(c, hx_ + 6, hb_ + 8, 70, 36, seed=921, ramp=[S[1], S[1], S[2], S[2], S[3]])
         return c
     rows = dict((e, row(e)) for e in (1.0, 0.5, 0.0))
     over(mid, rows[1.0])
@@ -2443,16 +2556,16 @@ def p_missed():
             for (gx, col) in ((0, EYE[0]), (1, EYE[1]), (gap - 1, EYE[1]), (gap, EYE[0])):
                 c.set(x + gx + look, y, col)
         # In scale with him, by how far behind the row each one stands (the ground runs from the
-        # horizon at 392 to his feet at 538): the two small ones far back, the caster in the gap, the
-        # hound a few strides behind him.
+        # horizon at 392 to his feet at 546): the two small ones far back, the caster further along the
+        # row, watching, the hound just behind the row, at the far edge of his stone.
         creature(c, "swarmer", 318, 458, 30, facing=_facing_at(t, [0.7, 2.4, 4.0], 1), body=[OCC, S[4]],
                  rim=V[3], seed=31, light=MISSED_LIGHT)
         creature(c, "swarmer", 648, 452, 28, facing=_facing_at(t, [1.5, 3.0, 4.5], -1), body=[OCC, S[4]],
                  rim=V[3], seed=37, light=MISSED_LIGHT)
-        creature(c, "caster", 414, 502, 58, facing=_facing_at(t, [1.1, 3.3], -1), body=[OCC, S[4]],
+        creature(c, "caster", 336, 470, 50, facing=_facing_at(t, [1.1, 3.3], 1), body=[OCC, S[4]],
                  rim=V[2], seed=41, light=MISSED_LIGHT)
-        hx, head, stride, twitch = _hound_at(t)
-        sniffing_hound(c, hx, 510, 54, -1, head, stride, twitch, rim=V[2], light=MISSED_LIGHT)
+        hx, head, stride, twitch, hf = _hound_at(t)
+        sniffing_hound(c, hx, 534, 54, hf, head, stride, twitch, rim=V[2], light=MISSED_LIGHT)
 
     t_of = frame_t(0.9, CY + 60)
     x0, y0, x1, y1 = MISSED_BOX
@@ -2476,25 +2589,27 @@ def p_missed():
 # --------------------------------------------------------------------------- the freeing
 # THE FREEING (Eric, 2026-11-02: "We need to add cutscenes to help the player identify with the blue
 # robed character. Include a cutscene where the blue robed wizard frees the four starting wizards.").
-# Two panels between the hiding and the road: the Archmage - the one he missed, the playable starter -
-# goes back for the four he could reach, the disciplines a fresh save plays, and breaks the dark
-# wizard's chain off them (animated, BREAK_BOX); then the five of them stand together with their lights
-# back. Then the road, and the character select, where all five are the player's to choose. See
+# Between the hiding and the road: the Archmage - the one he missed, the playable starter - goes back for
+# the four he could reach, the disciplines a fresh save plays, and breaks the dark wizard's chain off them
+# (animated, BREAK_BOX); their lights come back, they stand with him, and the dark wizard's creatures close
+# in. Then the five of them on the road (the five's own panel, which stood them together, was folded into it,
+# Eric, 2026-11-08), and the character select, where all five are the player's to choose. See
 # .ai/cutscenes.md.
 #
-# The four kneel where the hiding's row of stones stood and stand up in the same places in the next
-# panel, so the dissolve between them is the one moment they rise. The order, left to right, is the
-# same in both: Pyromancer, Geomancer, him, Frostweaver, Stormcaller. The fire is outermost: inside, the
+# The four kneel where the hiding's row of stones stood and stand up in the same places. The order, left to
+# right: Pyromancer, Geomancer, him, Frostweaver, Stormcaller. The fire is outermost: inside, the
 # Pyromancer's lantern, held out in front of him, came back to light behind the Archmage's staff.
 FREED_FOUR = [(PYRO, 342, 524, 88, 1), (GEO, 404, 536, 94, 1), (FROST, 556, 536, 94, -1), (STORM, 618, 524, 88, -1)]
 # Where he stands in both: the title's figure, his feet above row 560 so the PC's caption band
 # (rows ~558-578) never crosses them.
 HIM_X, HIM_Y, HIM_H = 480, 548, 112
 
-# The chain's breaking is the panel's one moving part: a box of its mid layer swapped on a clock, the
-# hiding's way (write_anim). Every edge a multiple of 8, so the dissolve's Bayer threshold, taken from the
-# atlas's own pixel, matches the mid layer's under it.
-BREAK_BOX = (288, 384, 672, 576)
+# The chain's breaking, the four coming back to their colours and his creatures closing in are the panel's moving
+# part: a box of its mid layer swapped on a clock, the hiding's way (write_anim). Every edge a multiple of 8, so the
+# dissolve's Bayer threshold, taken from the atlas's own pixel, matches the mid layer's under it. As wide as a PC
+# shows (2026-11-08), so the creatures closing in from the sides walk in from its edges rather than appearing
+# where a narrower box began.
+BREAK_BOX = (168, 384, 792, 584)
 BREAK_FPS = 8
 # The panel's hold in Prologue.cs (Beats, "break"); the frames cover it, the last held after.
 BREAK_SECONDS = 5.4
@@ -2622,11 +2737,40 @@ def _shackle(c, x, y, col):
 
 
 # The breaking, in panel seconds: his light banked, then up; the length behind him goes first, then the
-# outer two, then the shackles; then each of them takes his own light back, one after another.
+# outer two, then the shackles; then each of them takes his own light back, one after another, close behind the
+# shackles (Eric, 2026-11-08, "you can see the wizards": they used to stay three stops into the dark until 3.2 s,
+# so a look at the panel mid-hold found four dark shapes), and stands up, turning out to face what is coming.
 BREAK_LIGHT_UP = 1.3
 BREAK_AT = [2.0, 2.25, 2.25]          # the middle length, the left, the right
 SHACKLES_AT = 2.5
-RELIGHT_AT = [3.2, 3.5, 3.8, 4.1]     # FREED_FOUR's order
+RELIGHT_AT = [2.6, 2.75, 2.9, 3.05]   # FREED_FOUR's order
+# Seconds after his light is back that he is up: half risen, then standing.
+RISE_AT = (0.5, 0.625)
+
+# HIS CREATURES CLOSE IN (Eric, 2026-11-08: "show enemies closing in on the wizards after he breaks the chains").
+# The moment the chain is broken the dark wizard's things come for them: down off the ridge behind them, growing
+# as they come, to loom over the four's heads, and in from either side along the ground, a hound and a runner
+# and two small ones, until they stand close round the five. Each creeps in and stops (an ease out), rimmed now by
+# the Archmage's gold, his creatures' eyes in their heads. (kind, from (x, feet, height), to (x, feet, height),
+# when it starts, how long it takes).
+BREAK_CREATURES = [("caster", (360, 414, 18), (368, 474, 60), 2.3, 2.2),
+                   ("bruiser", (436, 412, 18), (436, 470, 64), 2.5, 2.2),
+                   ("knight", (528, 412, 20), (528, 468, 68), 2.4, 2.3),
+                   ("shielder", (600, 414, 18), (594, 474, 58), 2.6, 2.1),
+                   ("hound", (140, 540, 30), (298, 536, 32), 2.35, 2.2),
+                   ("runner", (820, 534, 40), (662, 530, 42), 2.45, 2.2),
+                   ("swarmer", (150, 508, 26), (294, 502, 28), 2.8, 2.0),
+                   ("swarmer", (810, 506, 26), (668, 500, 28), 2.9, 2.0)]
+
+
+def _break_creature(entry, t):
+    """(x, feet, height, moving) of one of his creatures at panel time t, or None before it starts."""
+    kind, (x0, y0, h0), (x1, y1, h1), t0, dur = entry
+    if t < t0:
+        return None
+    u = min(1.0, (t - t0) / dur)
+    s = 1.0 - (1.0 - u) * (1.0 - u)
+    return x0 + (x1 - x0) * s, y0 + (y1 - y0) * s, h0 + (h1 - h0) * s, u < 1.0
 
 
 def _fragments(c, pts, burst, t, seed, ground):
@@ -2693,15 +2837,39 @@ def _break_frame(t, him):
     if lit:
         k = min(1.0, (t - BREAK_LIGHT_UP) / 0.5)
         c.radial(HIM_X, HIM_Y + 2, 70 + 80 * k, 18 + 18 * k, [G[2], G[3], G[3], G[4], G[4], None])
-    wrists = []
     broken = t >= BREAK_AT[0]
+    # His creatures, far to near with the four and the chain: the ones off the ridge behind them first, under
+    # everything; the ones along the ground at their own depth, after the four.
+    beasts = []
+    for k, e in enumerate(BREAK_CREATURES):
+        pose = _break_creature(e, t)
+        if pose is not None:
+            beasts.append((pose[1], k, e[0], pose))
+    beasts.sort()
+
+    def beast(k, kind, pose):
+        x, yb, h, moving = pose
+        bob = round(math.sin(t * 9.0 + k * 1.3)) if moving else 0
+        c.hline(x - h * 0.18, x + h * 0.18, yb + 1, OCC)
+        creature(c, kind, x, yb + bob, int(round(h)), facing=1 if x < HIM_X else -1, body=[OCC, S[4]],
+                 rim=G[3], seed=820 + k, light=(HIM_X, HIM_Y - 60))
+    for (yb, k, kind, pose) in beasts:
+        if yb < 500:
+            beast(k, kind, pose)
     for i, (who, x, y, h, f) in enumerate(FREED_FOUR):
         since = t - RELIGHT_AT[i]
         coming = -0.6 <= since < 0
         # His own sprite, kneeling (the second frame of his fall), three stops into the dark while the chain
         # holds him, and coming up into his own colours a stop at a time as his light returns (Eric:
-        # "Redraw with real sprites").
+        # "Redraw with real sprites"); then up off his knees and turned out, back to back with the Archmage,
+        # facing what is closing in.
         steps = 3 if since < 0 else (2 if since < 0.2 else (1 if since < 0.4 else 0))
+        if since < RISE_AT[0]:
+            strip, fr, face = "death", 1, f
+        elif since < RISE_AT[1]:
+            strip, fr, face = "death", 0, f
+        else:
+            strip, fr, face = "idle", 0, -f
         # Their only lit edge before the break is the dark wizard's light, his chain's, landing as the violet
         # it makes (the rule: his ramp is emission on him and the chain alone); once the chain breaks it is
         # the Archmage's gold, from his staff.
@@ -2711,14 +2879,16 @@ def _break_frame(t, him):
             rim = (toward[0] / n, toward[1] / n, G[2])
         else:
             rim = (f, 0, V[2])
-        light, box = sprite_figure(c, who, x, y, strip="death", frame=1, facing=f, steps=steps, rim=rim)
+        light, box = sprite_figure(c, who, x, y, strip=strip, frame=fr, facing=face, steps=steps, rim=rim)
         # Their own light coming back to them, out of the sky it was drawn into, just before it lights.
         if light and (coming or since >= 0):
             ax, ay = light
             span = min(1.0, (since + 0.6) / 0.6)
             motes(c, (ax - f * 40, ay - 120), (ax, ay), int(70 * span) if coming else 18, 900 + i,
                   [E[who[2]]], spread=10, bow=-14)
-        wrists.append(sprite_wrist(box, f))
+    # The chain held them kneeling, and its pieces stay where it broke: its points from where their wrists were,
+    # however they stand now.
+    wrists = him["wrists"]
     # The chain: three lengths, wrist to wrist, the middle one behind him.
     spans = [(wrists[0], wrists[1]), (wrists[1], wrists[2]), (wrists[2], wrists[3])]
     order = [1, 0, 2]
@@ -2740,18 +2910,22 @@ def _break_frame(t, him):
             _fragments(c, [(x - 2, y), (x, y - 2), (x + 2, y), (x, y + 2)], x, t - SHACKLES_AT, 400 + k, y + 22)
     over(c, him["lit"] if lit else him["banked"])
     _flare(c, hx, hy, t)
+    for (yb, k, kind, pose) in beasts:
+        if yb >= 500:
+            beast(k, kind, pose)
     return c
 
 
 def p_break():
-    """6. "You rescued them, and they stand with you." The hiding's heath again, the tower on its horizon, and the four he
-    could reach - the disciplines, each his own sprite (sprite_figure) put three stops into the dark - on
+    """6. "You rescued four - they now stand with you." The hiding's heath again, the tower on its horizon, and the four
+    he could reach - the disciplines, each his own sprite (sprite_figure) put three stops into the dark - on
     their knees in a row, bound wrist to wrist by his chain, its violet their only lit edge, their staves
     dark. The Archmage, the one he missed, stands in the middle of them, the title's own figure, his light
     banked as it was in the hiding. It comes up (animated): his light finds the chain and it breaks, the
     length behind him first, then the others, link by link going out as it flies, and his gold is on their
-    edges now; and one after another their own lights come back to them out of the sky they were drawn
-    into, and each comes up into his own colours a stop at a time."""
+    edges now; one after another their own lights come back to them out of the sky they were drawn into,
+    each comes up into his own colours a stop at a time and stands, turned out, back to back with him - as the
+    dark wizard's creatures close in on the five of them, down off the ridge and in from either side."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 420, [OCC, OCC, S[4], V[4], V[3]])
     stars(back, (0, 0, FW, 340), 240, 151)
@@ -2786,8 +2960,13 @@ def p_break():
     u = HIM_H / 32.0
     sx = HIM_X - 11.6 * u
     w = max(1, int(round(1.3 * u)))
+    # Where the chain held each of them: his front at the wrist, kneeling.
+    wrists = []
+    for (who, x, y, h, f) in FREED_FOUR:
+        _light, box = sprite_figure(Cv(FW, FH), who, x, y, strip="death", frame=1, facing=f, steps=3)
+        wrists.append(sprite_wrist(box, f))
     him = {"banked": draw_him(0.6), "lit": draw_him(None),
-           "head": ((int(sx) + int(sx + w)) * 0.5, HIM_Y - 37.0 * u)}
+           "head": ((int(sx) + int(sx + w)) * 0.5, HIM_Y - 37.0 * u), "wrists": wrists}
 
     t_of = frame_t(0.9, CY + 60)
     x0, y0, x1, y1 = BREAK_BOX
@@ -2806,59 +2985,11 @@ def p_break():
     return layers
 
 
-def p_five():
-    """7. "Four are free. The rest still wait for you." The five of them. The same heath and the same places: the four stand up where they knelt, each
-    each in their own sprite and colours, each staff burning its own element again - and in the middle, in his
-    warded circle, the Archmage.
-    His chain lies on the ground in front of them, dead. Five lights on the heath where there was one; no
-    line - the next panel is the road, and the one after it the player choosing which of them walks it."""
-    back, mid, fore = frame(True), frame(), frame()
-    sky(back, 0, 420, [OCC, S[4], V[4], V[3], V[2]])
-    stars(back, (0, 0, FW, 340), 300, 161)
-    sk.moon(back, 392, 262, 9)
-    back.radial(700, 360, 220, 100, [V[3], V[4], None])
-    hills(back, ridge_fn(390, 10, 153, 0.9), [V[3], V[4], S[4]], 30, lit=V[2])
-    tower(back, 700, 394, 44, seed=15)
-    hills(back, ridge_fn(402, 9, 155, 1.4), [S[4], V[4], OCC], 36, lit=V[3])
-    back.vramp(404, FH - 1, [S[4], S[4], OCC, OCC])
-    heath(back, 404, 840, 1800, 157, [(OCC, S[4]), (OCC, V[4])])
-    for i, (x, y, w, h, lean, br) in enumerate([(212, 432, 18, 44, -0.3, True), (760, 436, 16, 38, 0.35, False)]):
-        standing_stone(back, x, y, w, h, 1500 + i, lean=lean, broken=br, ramp=[S[2], S[3], S[4], OCC, OCC])
-    # Each light's pool on the ground, in the pigment it makes: gold under him, theirs under them.
-    back.radial(HIM_X, HIM_Y + 4, 230, 56, [G[3], G[3], G[4], G[4], None])
-    for (who, x, y, h, f) in FREED_FOUR:
-        halo = HALO[who[2]]
-        back.radial(x, y + 4, 38, 9, [halo[4], halo[4], None])
-    # His ward under him, as on the title.
-    ward(mid, HIM_X, HIM_Y + 2, 58, 15, pool=False)
-    # The chain they wore, dead on the ground in front of them: links in occlusion, the light gone out of it.
-    rng = random.Random(163)
-    for _ in range(70):
-        x = 330 + rng.random() * 300
-        y = 560 + rng.random() * 18 + abs(x - HIM_X) * -0.02
-        if abs(x - HIM_X) < 40 and y < 566:
-            continue
-        mid.set(x, y, OCC)
-        mid.set(x + 1, y, S[4] if rng.random() < 0.6 else OCC)
-        if rng.random() < 0.3:
-            mid.set(x + 2, y + 1, OCC)
-    # The four, standing, their lights back: each his own sprite in his own colours (Eric: "Redraw with real
-    # sprites"), rimmed on the side that faces the Archmage's light. Back to front.
-    for (who, x, y, h, f) in sorted(FREED_FOUR, key=lambda e: e[2]):
-        toward = (HIM_X - x, -0.6 * abs(HIM_X - x))
-        n = math.hypot(*toward) or 1.0
-        sprite_figure(mid, who, x, y + 4, strip="idle", frame=0, facing=f, rim=(toward[0] / n, toward[1] / n, G[2]))
-    hero.wizard_hero(mid, HIM_X, HIM_Y, h=HIM_H, staff_ramp=LT)
-    heath(fore, 600, 840, 900, 159, [(OCC, OCC), (OCC, S[4])], scale=1.7)
-    layers = dict(back=back, mid=mid, fore=fore)
-    finish(layers, 0.9, cy=CY + 60)
-    return layers
-
-
 def p_road():
-    """6. The road ahead. Seen from above and behind: the player small on a road that winds
-    away across the heath toward everything he holds, the tower on the far horizon under his
-    light. No line - the next screen is the player choosing who walks it."""
+    """7. "The rest still wait for you." The road ahead. Seen from above and behind: the five of them - the
+    Archmage and the four he freed - small on a road that winds away across the heath toward everything the dark
+    wizard holds, past the campaign's places, the tower on the far horizon under his light. Then the character
+    select, the player choosing who walks it."""
     back, mid, fore = frame(True), frame(), frame()
     sky(back, 0, 300, [OCC, S[4], V[4], V[3], V[2]])
     stars(back, (0, 0, FW, 250), 300, 33)
@@ -3021,10 +3152,18 @@ def p_road():
         wd = 1.0 + max(0.0, (wy - 300)) * 0.034
         standing_stone(back, wx + side * wd * 2.6, wy, h * 0.4, h, 950 + k, lean=side * 0.04,
                        ramp=[S[2], S[3], S[4], OCC, OCC])
-    # He stands ON the road: x from the spline at his row, not a number that drifted off it.
-    py_ = 566
-    px_ = min(pts, key=lambda p: abs(p[1] - py_))[0]
-    back.radial(px_, py_ + 2, 80, 26, [G[3], G[3], G[4], G[4], None])
+    # THE FIVE OF THEM ON THE ROAD (Eric, 2026-11-08: the five's own panel "remove this, combine with the last
+    # panel", and of this one "make the wizard smaller on the map"). The Archmage and the four he freed walk it
+    # together, small among the landmarks and up the road, under "The rest still wait for you." - the five's
+    # standing together folded into the journey they start. Each ON the road (x from the spline at his row), the
+    # four in their own colours with their own lights, the Archmage among them with his: five lights on the road,
+    # where the hiding left one. All above row 548, clear of the line on a PC.
+    party = [(FROST, 458), (PYRO, 476), (None, 494), (GEO, 512), (STORM, 530)]
+    him_at = min(pts, key=lambda p: abs(p[1] - 494))
+    back.radial(him_at[0], 497, 36, 14, [G[3], G[3], G[4], G[4], None])
+    # Free, the four wear the middle of their own rows, not the moot's deep end (the Stormcaller's deep gold was lost on
+    # the gold of the Archmage's light), rimmed by that light in the pigment it makes.
+    walking = {"pyromancer": R[1], "frostweaver": M["azure"][2], "geomancer": M["verdant"][2], "stormcaller": G[2]}
     # the wood's edge either side of the road where it leaves the frame: the Enchanted Forest is
     # the first chapter, so the journey starts at the trees
     rngw = random.Random(79)
@@ -3032,7 +3171,22 @@ def p_road():
         sk._clump(back, 300 + rngw.random() * 118, 598 + rngw.random() * 64, 11, 7, 34, rngw, OCC, S[4])
     for _ in range(11):
         sk._clump(back, 574 + rngw.random() * 104, 606 + rngw.random() * 62, 11, 7, 34, rngw, OCC, S[4])
-    player_back(mid, px_, py_, 50)
+    # Far to near, so the nearer stand in front; each a little smaller the further up the road he is. The road
+    # climbs away up and to the left here, so the four walk facing left, rimmed on the side toward his light. On
+    # their own canvas, laid over the mid layer after the vignette: they walk in the middle of the frame, and the
+    # vignette's dither set a lattice of dots over their flat robes.
+    walkers = Cv(FW, FH)
+    for k_, (who, py_) in enumerate(party):
+        px_, _ = min(pts, key=lambda p: abs(p[1] - py_))
+        x_ = px_ + (5 if k_ % 2 else -5)
+        hgt = 24 + (py_ - 458) * 0.1
+        if who is None:
+            player_back(walkers, x_, py_, hgt)
+        else:
+            to = (him_at[0] - x_, (him_at[1] - 18) - (py_ - hgt * 0.5))
+            n = math.hypot(*to) or 1.0
+            roster_figure(walkers, who, x_, py_, hgt, [walking[who[0]], OCC], strip="moving",
+                          frame=(py_ // 12) % 4, facing=-1, toward=(to[0] / n, to[1] / n, G[1]))
     heath(fore, 640, 840, 700, 43, [(OCC, OCC), (OCC, S[4])], scale=1.8)
     # the wood's near boughs on the fore, trunks well off the road, crowns under the player's row
     for i_, (tx2, ty2, th2, sp2) in enumerate([(334, 748, 88, 52), (408, 710, 48, 30),
@@ -3040,11 +3194,15 @@ def p_road():
         sk.tree(fore, tx2, ty2, th2 * 2.0, sp2 * 2.0, seed=70 + i_, dark=OCC, light=OCC, vines=False)
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.8)
+    over(mid, walkers)
     return layers
 
 
-PANELS = [("moot", p_moot), ("throne", p_throne), ("tide", p_tide), ("taken", p_taken),
-          ("missed", p_missed), ("break", p_break), ("five", p_five), ("road", p_road)]
+# The story's order (Eric, 2026-11-08): the tide after the procession - "He took every wizard who might rival him.",
+# then "There was no one left to defend them." - and the five folded into the road ("remove this, combine with the
+# last panel"), so seven panels where there were eight.
+PANELS = [("moot", p_moot), ("throne", p_throne), ("taken", p_taken), ("tide", p_tide),
+          ("missed", p_missed), ("break", p_break), ("road", p_road)]
 
 # The animated panels' boxes, clocks and atlas widths (write_anim): the four lifted one by one, the
 # tide's rush over the crest, the hiding's searchers, and the chain breaking.

@@ -12,7 +12,7 @@ using TheOneHeMissed.scripts;
 /// skip; (3) Enter held skips, on into the character select; (4) the flag is still unset, because
 /// writes are off; (5) a save that has seen it - Start Run goes straight to the character select;
 /// (6) Options' Watch the Prologue plays it, and Escape held returns to the main menu; (7) left alone
-/// it plays through the freeing - the chain breaking, the five standing - into the character select;
+/// it plays through the freeing - the chain breaking, the five of them on the road - into the character select;
 /// (8, temporary, with the button) the world map's Replay
 /// intro plays it, and Escape held returns to the map; (9) once a wizard is free, Options lists his
 /// freeing (.ai/cutscenes.md) and plays it; (10) once the Throne is taken back, the world map plays reel E, the light
@@ -151,14 +151,15 @@ public partial class _PrologueProbe : Node
 					Check("menu has Start Run (third visit)", PressButton("StartRunButton"));
 					Next();
 					break;
-				// Untouched, it plays to its end (about 38 s) and goes on into story mode by itself - through the
-				// freeing (.ai/cutscenes.md): after the hiding the chain breaks (22.5 s in), then the five stand (27.2 s).
-				case 12 when at == 1410:
+				// Untouched, it plays to its end (about 34.6 s) and goes on into story mode by itself - through the
+				// freeing (.ai/cutscenes.md): after the hiding the chain breaks (the break from 23.2 s in), then the five
+				// of them take the road (27.9 s; the five's own panel was folded into it, Eric's story review, 2026-11-08).
+				case 12 when at == 1500:
 					Check("the freeing follows the hiding: the chain breaks", Scene == Prologue.ScenePath && HasPanel("Panel_break"));
 					Next();
 					break;
-				case 13 when at == 330:
-					Check("then the five stand together", HasPanel("Panel_five"));
+				case 13 when at == 240:
+					Check("then the five of them take the road", HasPanel("Panel_road") && !HasPanel("Panel_five"));
 					Next();
 					break;
 				case 14 when at == PlayThroughFrames - 1680:
