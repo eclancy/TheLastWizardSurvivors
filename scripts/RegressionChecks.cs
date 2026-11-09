@@ -3868,6 +3868,10 @@ public static partial class RegressionChecks
 			AchievementDefinition deed = AchievementDefinitions.GetById(AchievementDefinitions.TakerTakenId);
 			if (deed == null || !CodexRows.HidesWizard(deed, locked))
 				warnings.Add("The Taker Taken: his deed's row names him while he is locked.");
+			// A mystery until done (Eric, 2026-11-09): the condition shows, the name and the reward read "???".
+			if (deed != null && (deed.SealedName != AchievementDefinitions.MysteryName || deed.SealedReward != AchievementDefinitions.MysteryName
+				|| string.IsNullOrWhiteSpace(deed.Description)))
+				warnings.Add("The Taker Taken: it must be a mystery deed - its condition shown, its name and reward \"???\" until done.");
 			if (!StageRewards.ForStage(throne.Id).Where(r => r.Id.Equals(dark, StringComparison.OrdinalIgnoreCase)).All(r => StageRewards.IsSealed(locked, r)))
 				warnings.Add("The Taker Taken: the Throne's card shows the dark wizard's shape before he is taken.");
 		}

@@ -261,6 +261,9 @@ public static class AchievementDefinitions
 	/// </summary>
 	public const string TakerTakenId = "the_taker_taken";
 
+	/// <summary>What a mystery deed's name and reward read until it is done: The Taker Taken's (Eric, 2026-11-09).</summary>
+	public const string MysteryName = "???";
+
 	/// <summary>
 	/// The Road Restored: every chapter's boss beaten on Default or harder. Merlin now belongs to the Moot.
 	/// The id keeps the deed's first name, "The One He Missed", so a save that has done it keeps it; that name is the
@@ -571,9 +574,15 @@ public static class AchievementDefinitions
 		// deed naming the boss would be read as the Throne's warden deed (StageRewards.WardenDeed). Pays him alone -
 		// his spell, The Taking, is a Conjunction he opens on, which its own Feat pays everyone else (ComboCatalog);
 		// he is never named while locked (CodexRows.HidesWizard: "Frees someone").
+		// A MYSTERY until it is done (Eric, 2026-11-09, .ai/character-fit.md section 5: "do not change the dark wizard,
+		// but add his unlock condition as a mystery achievement"). The condition is on the page; the deed's name and
+		// what it pays are not - the title "The Taker Taken" says who is taken - so the row reads "???" for both
+		// (SealedName and SealedReward, CodexRows.DeedEntry, the way a Conjunction's Feat reads before it is made),
+		// with the seal for its glyph, until the last Hardcore boss falls and the name and the reward are revealed.
 		new()
 		{
 			Id = TakerTakenId, DisplayName = "The Taker Taken",
+			SealedName = MysteryName, SealedReward = MysteryName,
 			Description = "Defeat every chapter's boss on Hardcore.",
 			RewardText = "Unlocks The Dark Wizard",
 			CharacterUnlockId = "dark_wizard",
