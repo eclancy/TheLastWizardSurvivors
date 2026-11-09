@@ -147,6 +147,7 @@ public partial class Player
 		RunEvents.RecordSpellEvolved(combo.Id);
 		SfxPlayer.Global(SfxCatalog.SpellEvolve);
 		GD.Print($"CONJUNCTION: {first.Name} and {second.Name} became {combo.Name} (slot {slot + 1}; {equippedSpells.Count} of {SpellSlots} held)");
+		NoteFarSkyFusion(recipe);
 		RefreshElementalMaxHp();
 		RaiseLoadoutChanged();
 		return true;

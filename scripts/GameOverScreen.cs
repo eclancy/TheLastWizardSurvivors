@@ -1033,6 +1033,8 @@ public partial class GameOverScreen : CanvasLayer
 		if (a.BossBonus > 0)
 			lines.Add(("crit", string.IsNullOrWhiteSpace(a.BossName) ? "Boss defeated" : $"Defeated {a.BossName}",
 				$"+{Count(a.BossBonus)}", false));
+		// F4, the far sky: tonight's Conjunction made (FarSky.ArcaneBonus).
+		if (a.FarSkyBonus > 0) lines.Add(("conjunction", $"Tonight's Conjunction made - {a.FarSkyName}", $"+{Count(a.FarSkyBonus)}", false));
 		lines.Add(("energy", "This run", $"+{Count(report.ArcaneEarned)}", true));
 		if (a.UnlockBonus > 0)
 			lines.Add(("done", "Unlock rewards", $"+{Count(a.UnlockBonus)}", true));

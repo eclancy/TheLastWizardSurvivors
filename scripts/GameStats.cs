@@ -91,6 +91,10 @@ public class RunResult
 	public int HaresCoursed { get; set; } = 0;
 	/// <summary>Seconds survived before the first hit landed; equals TimeSurvived if never hit.</summary>
 	public float UndamagedSeconds { get; set; } = 0f;
+	/// <summary>The far sky (F4, .ai/second-half.md 5): the Conjunction this run was named, empty for none.</summary>
+	public string FarSkyRecipeId { get; set; } = string.Empty;
+	/// <summary>True when tonight's Conjunction was made in the run: its bonus and the Under the Far Sky Feat.</summary>
+	public bool FarSkyMade { get; set; } = false;
 }
 
 public partial class GameStats : Node

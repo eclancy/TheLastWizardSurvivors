@@ -734,6 +734,8 @@ public partial class Node2DGame : Node2D
 		StartRunOpening();
 		UpdateSpawnScaling();
 		StartChapterRules();
+		// F4, the far sky: tonight's Conjunction for this run, if any (Node2DGame.FarSky.cs).
+		StartFarSky();
 	}
 
 	// The chapter's rules, if it has any (ChapterRulesCatalog). A Node under the run, so it can process
@@ -4510,6 +4512,8 @@ public partial class Node2DGame : Node2D
 		ShowStructuredEscapeDetail(EscapeRunTitle, sections =>
 		{
 			sections.AddChild(BuildRunSummarySection());
+			// F4, the far sky: tonight's Conjunction on a far-shore run (Node2DGame.FarSky.cs).
+			if (BuildFarSkySection() is Control farSky) sections.AddChild(farSky);
 			sections.AddChild(BuildCharacterPassiveSection());
 			// "Your ... this run", in the Spell Index's own words (Attacks, Passives): this tab is
 			// the spells in hand, the Spell Index tab is every spell there is, and the two headings
@@ -7660,7 +7664,10 @@ public partial class Node2DGame : Node2D
 			TookDamageBeforeFiveMinutes = tookDamageBeforeFiveMinutes,
 			ElementCounts = BuildElementCountSnapshot(),
 			EquippedSpells = BuildSpellSnapshot(),
-			CharacterId = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx)?.Id ?? string.Empty
+			CharacterId = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx)?.Id ?? string.Empty,
+			// F4, the far sky (Node2DGame.FarSky.cs): what the run was named, and whether it was made.
+			FarSkyRecipeId = farSkyRecipe?.Id ?? string.Empty,
+			FarSkyMade = player != null && IsInstanceValid(player) && player.FarSkyMade,
 		};
 	}
 
@@ -7879,6 +7886,8 @@ public partial class Node2DGame : Node2D
 			breakdown.BossBonus = bossRushArcane;
 			breakdown.BossName = $"{bossRushFelled} of {BossRushRosterCount} bosses";
 		}
+		// F4, the far sky: tonight's Conjunction made, flat and after the multipliers as the boss's bonus is.
+		computed += FarSkyArcane(result, breakdown);
 
 		return Math.Max(1, computed);
 	}

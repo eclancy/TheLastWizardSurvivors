@@ -299,7 +299,7 @@ public partial class Prologue : Control
 			},
 			wizardId);
 
-	/// <summary>Every reel, by id: the prologue, the four lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
+	/// <summary>Every reel, by id: the prologue, the five lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
 	public static readonly System.Collections.Generic.IReadOnlyDictionary<string, Reel> Reels = BuildReels();
 
 	private static System.Collections.Generic.Dictionary<string, Reel> BuildReels()
@@ -315,6 +315,8 @@ public partial class Prologue : Control
 		};
 		foreach (string wizardId in Freeings.WizardIds)
 			reels[Freeings.ReelIdFor(wizardId)] = FreedReel(wizardId);
+		// F4, the far sky's lesson (Teachings.FarSkyLesson; its beats in Prologue.FarSky.cs).
+		reels[Teachings.FarSkyLesson.Id] = new Reel(Teachings.FarSkyLesson.Id, LessonFolder, FarSkyBeats());
 		return reels;
 	}
 

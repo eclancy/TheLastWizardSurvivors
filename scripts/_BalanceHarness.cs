@@ -77,6 +77,17 @@ public partial class _BalanceHarness : Node
 	// ascended, when the recipe was first offered and when taken, and the damage a second of the two parents
 	// before the fusion against the combination's after it. Hunter's Draw's recipe wants --circle=R.
 	[Export] public string SeekCombo { get; set; } = "";
+	// --far-sky[=ID|off] (.ai/second-half.md section 5, piece F4; FarSky.ToolOverride): the far sky's favour for this
+	// run. --far-sky names --seek-combo's recipe (or, without one, tonight's for this wizard on this save) on ANY
+	// chapter, favour on; --far-sky=ID names that recipe; --far-sky=off names nothing, even on the far shore. Absent,
+	// the game's own rule: tonight's, on a far-shore chapter of a save that has learned it (--all-unlocked has). The
+	// section 5 measurement is the same run twice, --far-sky and --far-sky=off, each with --seek-combo=ID
+	// --all-unlocked --immortal. The report's FAR SKY line and the summary's farSky= say when the recipe was made, in
+	// the run's PACE minutes (Node2DGame.PaceSeconds), and how many cards the favour put in a hand.
+	private string farSkyArg;
+	// --stop-when-made: end the run the moment the --far-sky / --seek-combo recipe is made - the measurement's one
+	// number is when, and a swarm at the cap runs at a few frames a second.
+	private bool stopWhenMade;
 	// --seek-sovereign (.ai/sovereign-spell.md section 6; pair with --all-unlocked --immortal): a planned
 	// build (it switches on --seek-ascensions; with --policy=ordinary, the ordinary build) that takes the Sovereign Rite once the spell it wants is open.
 	// --anoint=top (the default) wants the spell that dealt the most in the last minute, =own the wizard's
@@ -347,6 +358,9 @@ public partial class _BalanceHarness : Node
 			else if (arg == "--seek-apotheosis") SeekApotheosis = true;
 			else if (arg == "--seek-ascensions") SeekAscensions = true;
 			else if (arg.StartsWith("--seek-combo=")) { SeekCombo = arg.Substring(13).Trim(); SeekAscensions = true; }
+			else if (arg == "--far-sky") farSkyArg = string.Empty;
+			else if (arg.StartsWith("--far-sky=")) farSkyArg = arg.Substring(10).Trim();
+			else if (arg == "--stop-when-made") stopWhenMade = true;
 			else if (arg == "--seek-sovereign") SeekSovereign = true;
 			else if (arg.StartsWith("--anoint=")) AnointPolicy = arg.Substring(9).Trim();
 			else if (arg.StartsWith("--anoint-wait=")) AnointWaitSeconds = float.Parse(arg.Substring(14));
@@ -483,6 +497,7 @@ public partial class _BalanceHarness : Node
 
 		if (Explore || giveRelics.Length > 0 || grantBoons.Length > 0)
 			SaveManager.WritesDisabled = true;
+		ApplyFarSkyArg();
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
 		// --seed is the run's seed too: the ground, the side event, the secrets and a chapter's own rules
@@ -1036,6 +1051,7 @@ public partial class _BalanceHarness : Node
 		if (Immortal) { player.MaxHP = Math.Max(player.MaxHP, 100000); player.CurrentHP = player.MaxHP; }
 		if (SeekApotheosis || SeekAscensions) TrackTier();
 		if (!string.IsNullOrEmpty(SeekCombo)) TrackCombo();
+		TrackFarSky();
 		if (SeekSovereign) TrackSovereign();
 		TrackSpellLevel((float)delta);
 		TrackAscensions();
@@ -2963,7 +2979,7 @@ public partial class _BalanceHarness : Node
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -3539,6 +3555,83 @@ public partial class _BalanceHarness : Node
 			}
 		}
 		return $" combo={SeekCombo} parents=[{parents}] comboOffered={At(comboFirstOfferedAt)} comboTaken={At(comboTakenAt)} comboDps={rates}";
+	}
+
+	// --- --far-sky (.ai/second-half.md section 5: "Measured before it ships") -----------------------------------
+	// Every time below is the run's PACE minute (Node2DGame.PaceSeconds), which is what the doc's "by about minute
+	// 10" means: on a fifteen-minute run it is the clock, on a pinned chapter it is not.
+
+	private float farSkyMadeAtPace = -1f;
+	private float farSkyOfferedAtPace = -1f;
+	private readonly Dictionary<string, float> farSkyInBookAtPace = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, float> farSkyAscendedAtPace = new(StringComparer.OrdinalIgnoreCase);
+
+	private float PaceMinutesNow => game is Node2DGame run && IsInstanceValid(run) ? run.PaceSeconds / 60f : elapsed / 60f;
+
+	// FarSky.ToolOverride from the flag, once the save is in place (tonight's is read from it).
+	private void ApplyFarSkyArg()
+	{
+		if (farSkyArg == null)
+		{
+			FarSky.ToolOverride = null;
+			return;
+		}
+		string id = farSkyArg;
+		if (id.Length == 0)
+		{
+			id = SeekCombo;
+			if (string.IsNullOrEmpty(id))
+			{
+				SaveData save = GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data;
+				CharacterData who = CharacterRoster.GetByIndex(CharacterIndex);
+				id = FarSky.PickForNight(save, who?.Id, FarSky.OwnSpellOf(who), FarSky.Night(save))?.Id ?? FarSky.Off;
+			}
+		}
+		FarSky.ToolOverride = id;
+		GD.Print(id.Equals(FarSky.Off, StringComparison.OrdinalIgnoreCase)
+			? "HARNESS FAR SKY off: the far sky names nothing this run"
+			: $"HARNESS FAR SKY forced: '{id}' is tonight's Conjunction on this chapter, favour on");
+	}
+
+	private void TrackFarSky()
+	{
+		ComboDefinition recipe = player?.FarSkyRecipe ?? (string.IsNullOrEmpty(SeekCombo) ? null : ComboTarget());
+		if (recipe == null || player == null)
+			return;
+		float pace = PaceMinutesNow;
+		foreach (ComboIngredient parent in recipe.Ingredients)
+		{
+			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id.Equals(parent.SpellId, StringComparison.OrdinalIgnoreCase));
+			if (held != null && !farSkyInBookAtPace.ContainsKey(parent.SpellId))
+				farSkyInBookAtPace[parent.SpellId] = pace;
+			if (held != null && held.SelectedLevel8EvolutionId == parent.AscensionId && !farSkyAscendedAtPace.ContainsKey(parent.SpellId))
+				farSkyAscendedAtPace[parent.SpellId] = pace;
+		}
+		if (farSkyOfferedAtPace < 0f && player.EvaluateCombo(recipe).Ready)
+			farSkyOfferedAtPace = pace;
+		bool made = player.FarSkyMade || player.GetEquippedSpells().Any(s => s != null && s.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
+		if (made && farSkyMadeAtPace < 0f)
+		{
+			farSkyMadeAtPace = pace;
+			GD.Print($"HARNESS FAR SKY {recipe.Name} made at pace minute {pace:0.0} (t={elapsed:0}s), player level {player.CurrentLevel}"
+				+ $", favour {(player.FarSkyRecipe != null ? "on" : "off")}");
+			if (stopWhenMade)
+				Finish("tonight's Conjunction made");
+		}
+	}
+
+	// " farSky=sagittarius favour=on inBook=[a@1.2,b@3.4] ascended=[a@7.9,b@9.1] offered=9.1 made=9.1 favoured=12"
+	private string FarSkySummary()
+	{
+		ComboDefinition recipe = player?.FarSkyRecipe ?? (string.IsNullOrEmpty(SeekCombo) ? null : ComboTarget());
+		if (recipe == null)
+			return farSkyArg == null ? string.Empty : " farSky=off";
+		string At(float t) => t < 0f ? "-" : $"{t:0.0}";
+		string Each(Dictionary<string, float> at) => string.Join(",", recipe.Ingredients.Select(i =>
+			$"{i.SpellId}@{(at.TryGetValue(i.SpellId, out float t) ? $"{t:0.0}" : "-")}"));
+		return $" farSky={recipe.Id} favour={(player?.FarSkyRecipe != null ? "on" : "off")} inBook=[{Each(farSkyInBookAtPace)}]"
+			+ $" ascended=[{Each(farSkyAscendedAtPace)}] offeredPace={At(farSkyOfferedAtPace)} madePace={At(farSkyMadeAtPace)}"
+			+ $" favoured={player?.FarSkyFavouredCards ?? 0}";
 	}
 
 	// --- chests --------------------------------------------------------------------------------

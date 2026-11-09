@@ -40,6 +40,7 @@ Built on `wip/slow-start` (section 10). One line each, with why:
 | **the Apotheosis** | **the Fallen Star** (`secret_fallen_star`, the Circle's vault, pays Starfall) | 3, the Broken Circle | The circle where the wizards met, and a star that fell there: a wizard's final form is learned where the wizards were last whole. The doc's chapter for it. |
 | **Conjunctions** | **the Geode Heart** (`secret_geode_heart`, the Cave's vault, pays Frost Shard) | 4, the Sunken Cave | A crystal grown round a light: two things grown into one stone. The doc's chapter for it, and the first chapter with no side event, so the vault is the chapter's one find. |
 | **the Sovereign Rite** | **the Warden of the Deep** (`emberdeep_ended`), unchanged | 10, the Emberdeep | Eric's instruction: it keeps its deed, and gets its lesson reel. |
+| **the far sky** | **Artemis rekindled** (`Teachings.FarSkyTeacherId`: whoever is seated at the far shore's first chapter) | Far Shore 1, the White Downs | Added 2026-11-08 by piece F4 of `.ai/second-half.md` (section 9, "F4, built"): a fifth lesson, owed as the Rite's is - by a deed, not a vault - and played after her rekindling reel. Nothing of it is shown before it is learned. |
 
 **The three are a ladder, not three fixed pairs.** Whichever teacher a save finds first teaches the
 Ascension, the second the Apotheosis, the third Conjunctions (`Teachings.Owed`). In campaign order - the

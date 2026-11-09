@@ -397,11 +397,155 @@ def p_rite_seal():
     return layers
 
 
+# =========================================================================== the far sky (piece F4)
+# .ai/second-half.md 5 and 6.3: the far shore's one system, taught by the huntress once she is rekindled, so it opens
+# on her seat, the White Downs, under the moon she has just put back up. The ground is the rekindling reel's far shore
+# (freed.py's cliff-top downland: short turf, chalk showing through it, flints) seen inland, as rolling downs with a
+# chalk track and a long barrow, rather than its sea; the two stars are two spells' lights, the Conjunctions lesson's
+# ice and fire, now in the sky rather than on stones. K is the skin ramp, which is bone and chalk; LI the lichen.
+K, LI = pr.K, pr.LI
+SKY_STARS = ((404, 300), (556, 300))
+SKY_MEET = (480, 284)
+
+
+def downs(back, horizon, seed):
+    """The White Downs at night with the moon up: two rolling ridges of turf, a chalk track climbing the near one, a
+    long barrow on its shoulder, and short turf flecked with chalk and flint down to the camera."""
+    pr.sky(back, 0, horizon, [OCC, S[4], V[4], V[3], V[2]])
+    pr.stars(back, (0, 0, FW, horizon - 70), 460, seed)
+    # The moon she put back, high on the left - inside the phone's columns (300 on), whole - its light lying pale
+    # along the ridges.
+    sk.moon(back, 342, 258, 10)
+    back.radial(342, horizon - 6, 360, 40, [V[3], V[3], V[4], None])
+    far = pr.ridge_fn(horizon - 16, 22, seed + 1, 0.55)
+    pr.hills(back, far, [V[3], V[4], S[4]], 40, lit=K[3])
+    moonlit(back, far, 7, [V[2], V[3]])
+    near = pr.ridge_fn(horizon + 14, 16, seed + 2, 0.8)
+    pr.hills(back, near, [LI[4], S[4], S[4], OCC], 60, lit=K[3])
+    moonlit(back, near, 12, [LI[3], K[4]])
+    # The chalk track: a pale band up the near down's moonlit flank, broken where the turf has grown over it.
+    rng = random.Random(seed + 3)
+    for i in range(200):
+        t = i / 200.0
+        x = 186 + t * 250 + math.sin(t * 5.0) * 10
+        y = horizon + 116 - t * (116 - (near(x) - horizon)) + 2
+        w = 4.6 - t * 3.0
+        if rng.random() < 0.85:
+            back.disc(x, y, w, max(1.0, w * 0.45), K[2] if rng.random() < 0.6 else K[3])
+    # A long barrow on the near ridge, east of the track: a low mound, its moonlit back pale, its chalk ditch a line.
+    bx, by = 640, int(near(640)) + 2
+    back.disc(bx, by, 44, 9, S[4])
+    back.disc(bx - 4, by - 1, 40, 7, S[3])
+    back.disc(bx + 6, by + 2, 34, 5, S[4])
+    for k in range(-38, 30):
+        top = by - int(round(7 * math.sqrt(max(0.0, 1.0 - ((k + 4) / 40.0) ** 2))))
+        if pr.dith(bx + k, top, 0.7):
+            back.set(bx + k, top, K[4])
+    for k in range(-46, 47, 2):
+        if rng.random() < 0.75:
+            back.set(bx + k, by + 9 + (k % 3 == 0), K[3] if rng.random() < 0.6 else K[4])
+    pr.heath(back, horizon + 18, FH, 1500, seed + 4, [(OCC, S[4]), (OCC, LI[4]), (S[4], LI[3])])
+    flints = random.Random(seed + 5)
+    for _ in range(90):
+        d = flints.random() ** 1.3
+        y = horizon + 30 + d * (FH - horizon - 30)
+        x = flints.random() * FW
+        r = 0.8 + d * 2.4
+        if flints.random() < 0.6:                  # chalk showing through the turf
+            back.disc(x, y, r * 1.5, r * 0.7, K[4])
+            back.set(x - r * 0.4, y - r * 0.3, K[3])
+        else:                                      # a flint, its white rind on the lit side
+            back.disc(x, y, r, r * 0.7, OCC)
+            back.set(x - r * 0.6, y - r * 0.4, K[4])
+    return near
+
+
+def moonlit(c, h, rows, tones):
+    """The moon's light lying on a down's flank: a dithered band under the crest wherever the slope faces it (the key
+    is from the upper left), brightest at the crest and gone `rows` below it."""
+    for x in range(c.w):
+        rise = h(x - 2) - h(x + 2)
+        if rise <= -0.3:
+            continue
+        strength = min(1.0, 0.45 + rise * 0.6)
+        top = int(round(h(x)))
+        for k in range(1, rows):
+            f = strength * (1.0 - k / float(rows))
+            if pr.dith(x, top + k, f):
+                c.set(x, top + k, tones[0] if k < rows * 0.4 else tones[1])
+
+
+def sky_star(c, x, y, r, ramp, halo):
+    """A spell's light as a star: the glow, a four-pointed glint in its own ramp, and a white heart."""
+    glow(c, x, y, r, ramp, halo=halo)
+    for k in range(1, int(r * 3.2)):
+        col = ramp[1] if k < r * 1.2 else (ramp[2] if k < r * 2.2 else ramp[3])
+        if k > r * 2.4 and k % 2:
+            continue
+        for (dx, dy) in ((k, 0), (-k, 0), (0, k * 0.8), (0, -k * 0.8)):
+            c.set(x + dx, y + dy, col)
+    c.disc(x, y, max(1.0, r * 0.35), max(1.0, r * 0.35), LT[0])
+
+
+def p_far_sky_meet():
+    """1. "Each night the far sky names a Conjunction." The White Downs under the moon, and over them two stars - two
+    spells' lights, ice and fire - leaning together across the sky, their light meeting between them. The player
+    small on the downs below, from behind, looking up."""
+    back, mid, fore = pr.frame(True), pr.frame(), pr.frame()
+    downs(back, 430, 701)
+    (lx, ly), (rx, ry) = SKY_STARS
+    back.radial(SKY_MEET[0], SKY_MEET[1] + 10, 170, 80, [V[3], V[3], V[4], None])
+    arc(mid, (lx + 6, ly - 4), (SKY_MEET[0] - 8, SKY_MEET[1] + 2), 200, 705, [E["ice"]], bow=26, spread=8)
+    arc(mid, (rx - 6, ry - 4), (SKY_MEET[0] + 8, SKY_MEET[1] + 2), 200, 706, [E["fire"]], bow=26, spread=8)
+    sky_star(mid, lx, ly, 7, E["ice"], M["azure"])
+    sky_star(mid, rx, ry, 7, E["fire"], M["ember"])
+    # Where they meet: a small point of the player's own light, the two colours either side of it.
+    mid.radial(SKY_MEET[0] - 5, SKY_MEET[1], 10, 10, [E["ice"][2], E["ice"][3], None])
+    mid.radial(SKY_MEET[0] + 5, SKY_MEET[1], 10, 10, [E["fire"][2], E["fire"][3], None])
+    glow(mid, SKY_MEET[0], SKY_MEET[1], 4, LT, halo=G)
+    pr.player_back(mid, 480, 590, 58)
+    near_heath(fore, 711, y0=650, keep_out=lambda x, y: abs(x - 480) < 34 + (y - 600) * 0.2 and y < 700)
+    for (bx, by, bw, bh, sd) in [(262, 704, 54, 20, 21), (702, 690, 48, 18, 22)]:
+        sk.boulder(fore, bx, by, bw, bh, seed=sd, ramp=[K[3], K[3], K[4], K[4], S[4]])
+    layers = dict(back=back, mid=mid, fore=fore)
+    pr.finish(layers, 0.85)
+    return layers
+
+
+def p_far_sky_favour():
+    """2. "Its two spells come to your hand first." The same two stars, higher, each pouring its light down to a stone on
+    the downs - the two spells the deal now offers first - and the player between the stones, his own light lifting to
+    where the two will meet."""
+    back, mid, fore = pr.frame(True), pr.frame(), pr.frame()
+    downs(back, 430, 721)
+    back.radial(480, 600, 300, 60, [V[3], V[3], V[4], None])
+    stars_at = ((392, 286), (568, 286))
+    left = stone_light(mid, 392, 604, 48, 138, 723, E["ice"], M["azure"], ramp_stone=[K[2], K[3], S[3], S[4], OCC])
+    right = stone_light(mid, 568, 604, 48, 138, 724, E["fire"], M["ember"], ramp_stone=[K[2], K[3], S[3], S[4], OCC])
+    # The stars' light coming down, a narrow fall of motes each, onto its stone's crown.
+    arc(mid, (stars_at[0][0], stars_at[0][1] + 8), (left[0], left[1] - 8), 230, 725, [E["ice"]], bow=4, spread=5)
+    arc(mid, (stars_at[1][0], stars_at[1][1] + 8), (right[0], right[1] - 8), 230, 726, [E["fire"]], bow=4, spread=5)
+    sky_star(mid, stars_at[0][0], stars_at[0][1], 6, E["ice"], M["azure"])
+    sky_star(mid, stars_at[1][0], stars_at[1][1], 6, E["fire"], M["ember"])
+    # Between them, overhead, the place they will meet: faint linked rings, the mark the level 8 card carries.
+    for (rx, ramp) in ((463, E["ice"]), (497, E["fire"])):
+        ring_band(mid, rx, 330, 22, 0.0, 2 * math.pi, ramp)
+    # The player between the stones, his staff's light rising toward the rings.
+    pr.player_back(mid, 480, 598, 62)
+    arc(mid, (492, 524), (480, 358), 110, 727, [LT], bow=-8, spread=6)
+    near_heath(fore, 731, y0=652, keep_out=lambda x, y: abs(x - 480) < 36 + (y - 600) * 0.2 and y < 700)
+    layers = dict(back=back, mid=mid, fore=fore)
+    pr.finish(layers, 0.85)
+    return layers
+
+
 PANELS = [
     ("ascension-gift", p_ascension_gift), ("ascension-rise", p_ascension_rise),
     ("apotheosis-circle", p_apotheosis_circle), ("apotheosis-form", p_apotheosis_form),
     ("conjunctions-two", p_conjunctions_two), ("conjunctions-one", p_conjunctions_one),
     ("rite-crown", p_rite_crown), ("rite-seal", p_rite_seal),
+    # F4, the far sky (.ai/second-half.md 6.3; Prologue.FarSkyBeats).
+    ("far-sky-meet", p_far_sky_meet), ("far-sky-favour", p_far_sky_favour),
 ]
 
 

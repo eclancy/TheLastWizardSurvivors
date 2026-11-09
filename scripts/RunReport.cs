@@ -90,6 +90,9 @@ public sealed class ArcaneRewardBreakdown
 	/// <summary>A boss's flat victory payout, added after every multiplier.</summary>
 	public int BossBonus { get; set; }
 	public string BossName { get; set; } = string.Empty;
+	/// <summary>The far sky's flat bonus for making tonight's Conjunction (FarSky.ArcaneBonus), and its name.</summary>
+	public int FarSkyBonus { get; set; }
+	public string FarSkyName { get; set; } = string.Empty;
 	/// <summary>Arcane Energy finished Unlocks entries paid, on top of the run's own payout.</summary>
 	public int UnlockBonus { get; set; }
 }

@@ -1482,6 +1482,9 @@ public partial class _UiShot : Node
 				Global.SelectedStageIdx = int.Parse(arg.Substring("--stage=".Length));
 			else if (arg.StartsWith("--character="))
 				Global.SelectedCharacterIdx = int.Parse(arg.Substring("--character=".Length));
+			// F4, the far sky (FarSky.ToolOverride): --far-sky=ID names that recipe on any chapter, =off nothing.
+			else if (arg.StartsWith("--far-sky="))
+				FarSky.ToolOverride = arg.Substring("--far-sky=".Length).Trim();
 			// Gameplay wants hundreds of frames before there is a crowd worth photographing, and
 			// at 1x that is ten real seconds of waiting per shot.
 			else if (arg.StartsWith("--timescale="))

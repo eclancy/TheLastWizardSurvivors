@@ -88,6 +88,11 @@ public enum AchievementVisibility
 	/// (.ai/combo-spells.md section 2, "Unlocks and the save"). Derived from the save, never stored.
 	/// </summary>
 	Recipe,
+	/// <summary>
+	/// The far sky's Feats (FarSky, piece F4): not on the page at all until the save has learned the far sky
+	/// (Teachings), since nothing of the far shore is on show before (.ai/second-half.md 6.2).
+	/// </summary>
+	FarSky,
 }
 
 public sealed class AchievementDefinition
@@ -693,9 +698,35 @@ public static class AchievementDefinitions
 		},
 		// THE FAR SHORE'S HALF-WIDE FEATS (.ai/second-half.md 4.3, marked by F0), Arcane Energy only. Section 9
 		// names a piece for the first alone; the others are given to the piece that can first measure them.
-		// F4: Under the Far Sky - make tonight's Conjunction (section 5).
+		// F4: Under the Far Sky - make tonight's Conjunction (section 5). Met in the run (the achievement watch reads
+		// RunResult.FarSkyMade on its one-second snapshot), so a run that makes it and is then quit keeps it.
+		new()
+		{
+			Id = FarSky.UnderTheFarSkyId, DisplayName = "Under the Far Sky",
+			Description = "On the far shore, make the Conjunction the far sky names.",
+			RewardText = $"{FarSky.UnderTheFarSkyCurrency} Arcane Energy", CurrencyReward = FarSky.UnderTheFarSkyCurrency,
+			Category = AchievementCategory.Mastery,
+			Kind = AchievementKind.Feat,
+			Visibility = AchievementVisibility.FarSky,
+			Measure = c => (c.Save != null && GlobalStatsManager.IsAchievementUnlocked(c.Save, FarSky.UnderTheFarSkyId))
+				|| c.Run?.FarSkyMade == true ? 1f : 0f,
+			Target = 1,
+		},
 		// (the next line is F4's too; leave this one as it is)
-		// F4: Every Conjunction Known - every recipe made once, measured live against ComboCatalog.Fusions.
+		// F4: Every Conjunction Known - every recipe made once, measured live against ComboCatalog.Fusions: a recipe
+		// added later (F6-F10's) raises the target for those still collecting, as the Grimoire's spells do. "Made" is
+		// the recipe's own Feat, the code's one record of it (ComboCatalog.IsMet).
+		new()
+		{
+			Id = FarSky.EveryConjunctionKnownId, DisplayName = "Every Conjunction Known",
+			Description = "Make every Conjunction once.",
+			RewardText = $"{FarSky.EveryConjunctionKnownCurrency} Arcane Energy", CurrencyReward = FarSky.EveryConjunctionKnownCurrency,
+			Category = AchievementCategory.Mastery,
+			Kind = AchievementKind.Collection,
+			Visibility = AchievementVisibility.FarSky,
+			Measure = c => ComboCatalog.Fusions.Count(r => ComboCatalog.IsMet(r, c.Save)),
+			Target = ComboCatalog.Fusions.Count(),
+		},
 		// (F10's line is below; leave this one as it is)
 		// F10: Every Seat Lit - all six gods rekindled.
 		// (F10's second line is below; leave this one as it is)
@@ -859,6 +890,8 @@ public static class AchievementDefinitions
 				return !IsSealed(deed, save);
 			case AchievementVisibility.Recipe:
 				return save != null && ComboCatalog.IsKnown(ComboCatalog.ForId(deed.ComboId), save);
+			case AchievementVisibility.FarSky:
+				return save != null && Teachings.HasLearned(save, Teaching.FarSky);
 			default:
 				return true;
 		}

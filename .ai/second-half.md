@@ -13,8 +13,9 @@ starting power, passive and unlock around that later story.
 **Status: design for Eric's review, 2026-11-07; accepted 2026-11-07/08 (section 8). F0, the plumbing, is built
 (2026-11-08, section 9, "F0, built"), F1, the god plumbing (2026-11-08, "F1, built"): a god can be added as
 data; F2, Artemis (2026-11-08, "F2, built"): the first god, whole; F3, the White Downs (2026-11-08, "F3,
-built"): the first far chapter, playable behind the far shore's gate; and F5, reel E and the map (2026-11-08,
-"F5, built"): the far shore is drawn across the dark sea and announced.**
+built"): the first far chapter, playable behind the far shore's gate; F5, reel E and the map (2026-11-08,
+"F5, built"): the far shore is drawn across the dark sea and announced; and F4, the far sky (2026-11-08, "F4,
+built"): tonight's Conjunction, its favour, its lesson and its measurement.**
 Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
@@ -431,7 +432,12 @@ question carried no "(recommended)": **2** keeps the six as proposed (Artemis, M
 Ukko, Hephaestus); **15** names the half and its stretch of the map **The Far Shore**. **10 stays open** -
 whether far-shore runs open with a Muster depends on how late tonight's recipe lands, which is measured in
 F4 (`_BalanceHarness --far-sky`, section 5) before anyone decides it. So the half is greenlit to build, F0
-first and alone (section 9).
+first and alone (section 9). **Measured 2026-11-08** (section 9, "F4, built"): on the White Downs, with the favour,
+the planned bot made Shadow Bolt at 10.7 and The Taking at 12.4 and never made Sagittarius; across ten favoured runs
+three met it by about minute 10, all Shadow Bolt, and without the favour none made it at all. What holds the rest is the Ascension's own gates
+(player level 17, four of the named path's element), not the cards, and a Muster that bought the level gate back would
+be 16-20 levels - the Throne's whole Muster, not a few - and would not touch the element gates. Still Eric's to
+decide.
 
 1. **The premise.** The gods lived on the light the wizards carried and went dark when he took it, and his
    castle stands between the land and the far shore so it could never cross back (recommended) - or the
@@ -480,7 +486,7 @@ less, **M** a few days, **L** a week or more.
 | F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data. **Built 2026-11-08** ("F1, built", below) |
 | F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere. **Built 2026-11-08** ("F2, built", below); reachable once F3 makes her seat playable |
 | F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter. **Built 2026-11-08** ("F3, built", below), **playable** the same day once F2 and F5 merged (the far shore's gate still keeps it shut) |
-| F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured |
+| F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured. **Built 2026-11-08** ("F4, built", below) |
 | F5 | **Reel E and the map**: `world_map.py` widened east, the crossing, the white cliffs and six places, the motes after Taken Back, the stop order; reel E | L | F0 | the half on the map, and announced. **Built 2026-11-08** ("F5, built", below) |
 | F6 | **Manannán, Maelstrom and the Drowned Shore** | Maelstrom M-L, god M, chapter L | F1; the lattice-as-water look | the second slice |
 | F7 | **Hecate, Dark Lens and the Three Ways** | Dark Lens M, god M, chapter L | F1 | |
@@ -1048,3 +1054,181 @@ up" is found from the line and one bolt, and whether freezing in the castle's sw
 Hunter's lane reads at a glance on a phone in a crowd; whether a barrow reads as a mound and not a hedge (the long ones in
 particular), and the beeches as beeches; the music, the four sounds, the Hart's gather (not driven by a probe: it is
 `SecretGather`, as the Fallen Star's is) and the Hound's linger in a real run; the boss's health against a person's build.
+
+### F4, built (2026-11-08, branch `worktree-agent-a747fe911f345a8bb`, on `main-ff86ni` after F2)
+
+The far sky is in the game, whole: the recipe named, the favour in the deal, the card and pause lines, the payout,
+both Feats, `Teaching.FarSky` and its reel, its validator and `_BalanceHarness --far-sky`. It is taught when Artemis is
+rekindled - the Unstrung Hunter's deed, F3's, which merged into the trunk while F4 was building: on F4's branch alone
+the White Downs is still unplayable, and once merged a save meets the sky on its next far-shore run after her reel.
+**No save schema step** (still 25: the night is derived, below), and the story epoch is not raised. **The Muster
+(decision 10) is not built**; the measurement below is for Eric to decide it on.
+
+**Where it lives.**
+
+| piece | where |
+|---|---|
+| what is named | `scripts/FarSky.cs` (new). `MayName` holds section 5's rules in one place: a fusion of two spells (`ComboCatalog.Fusions`, never the Rite); never the one the wizard opens on (`StartsFused`); never one naming his own starting spell (`ComboSeal.OwnSpell`'s rule; the Test Wizard has none); both parents dealable from the save - owned, not set aside, not another wizard's alone (`UnlockCatalog.MayBeOffered`). `PickForNight` weighs a recipe never made **3** to a made one's **1**, and never names the same recipe two nights running while there is another. `Tonight` adds "learned"; `ForRun` adds "on the far shore" and the tools' `ToolOverride` |
+| the night | **the save's run count** (`FarSky.Night` = `LifetimeStats.TotalRuns`). The pick is a hash of the night (SplitMix32's finaliser, not Godot's RNG), walked from night 0 so each night can exclude the one before. So the sky turns after every run - won, lost or quit, far shore or road - and the card, the run and the pause screen name the same recipe with nothing stored |
+| the favour | `scripts/Player.FarSky.cs` (new), three hooks. `TakeFarSkyFavoured` in `GetLevelUpOptions`: a parent's new-spell card when a slot is free, and a held parent's upgrade card always, are taken out of both pools and dealt first - ahead of the roll that decides whether held upgrades are in the hand, so it is `UpgradeOfferChance` 1 for those two and more (in the hand, not only in the pool); a boon dealt in never replaces one; bans and set-aside spells are obeyed. `FavourNamedAscension` in `GetAscensionOffers`: the named Ascension first on the parent's level 8 page, under the linked rings it carries. `NoteFarSkyFusion` in `TryFuse`. `FarSkyFavourHolds` ends it the moment the recipe is made or sealed (a parent down its other path, a fourth element, the Rite). It changes no gate: player level 17, four of the named path's element, both parents at 8 |
+| the run | `scripts/Node2DGame.FarSky.cs` (new): `StartFarSky` (one marked line at the end of `_Ready`), the pause screen's **The Far Sky** section on the Run tab after Run Summary (one marked line in `ShowEscapeRunOverview`): tonight's recipe, then made / sealed / "Its two spells come to your hand first. Make it before the run ends." |
+| the payout | **100 Arcane Energy** every run that makes it (`FarSky.ArcaneBonus`; one marked line in `CalculateArcaneReward`), flat after every multiplier as a boss's bonus is, its own line on the results' breakdown ("Tonight's Conjunction made - Shadow Bolt", `ArcaneRewardBreakdown.FarSkyBonus`). `RunResult.FarSkyRecipeId` / `FarSkyMade` |
+| the Feats | `AchievementDefinitions`, F0's two F4 slots: **Under the Far Sky** (Feat, 300; met mid-run by the achievement watch, which reads `RunResult.FarSkyMade` on its one-second snapshot) and **Every Conjunction Known** (Collection, 600; every fusion's own Feat counted live against `Fusions`, so F6-F10's recipes raise the target). Both under a new `AchievementVisibility.FarSky` - listed once the far sky is learned (6.2: no row of the far shore before) - which `ValidateAchievementShape` lets wait, as a recipe's Feat waits |
+| the card | `WorldMap.RebuildCard`: **one marked line** (`FarSky.CardLine`, the `conjunction` glyph, the place ink) on every far-shore stop, open or not: **"Tonight: The Taking"** - the recipe's name alone. Section 5's example line ("Tonight: Maelstrom - Riptide (Tidal Wall) and Cyclone Slash (Vortex Reaper)") was built first and photographed on F3's and F5's White Downs: the card has one line to spare there (four rewards, a fallen warden, a longest stand), and the full line wrapped to three on a PC and two on a phone and pushed Enter off the foot of the screen on both. The pause screen names it in full; `ValidateFarSky` holds every recipe's card line to 30 characters |
+| the lesson | `Teachings`: `Teaching.FarSky` and `FarSkyLesson` ("far_sky", "The Far Sky", "Each night the far sky names a Conjunction"), owed when `FarSkyTeacherId` - the god seated at the far shore's first chapter (`UnlockCatalog.GodSeatedAt`), Artemis - is the save's; learned when its reel ends, after her rekindling reel (`PlayOwedLessonsThen` already puts freeings first); shown only once learned; `SealedLine` "Learned on the far shore". Its beats in `scripts/Prologue.FarSky.cs` (new; a method, so a partial class's static order cannot bite) and one line after the freeings in `Prologue.BuildReels`. `Player.ItemRules.HasLearnedForRun` asks `Teachings` for any system past the ladder rather than assuming the Rite. A row in `.ai/slow-start.md`'s table of systems |
+| the reel | `tools/art/lessons.py`, `p_far_sky_meet` and `p_far_sky_favour` -> `assets/bonelight/ui/lessons/far-sky-{meet,favour}-{back,mid,fore}.png`, 0 off-contract pixels. The White Downs at night under the moon she has put back - the rekindling ground's turf, chalk and flint, seen inland as rolling downs with a chalk track and a long barrow. **1.** Two stars, ice and fire (the Conjunctions lesson's pair), leaning together across the sky: "Each night the far sky names a Conjunction." **2.** Their light falling onto two stones, the linked rings overhead, the player between: "Its two spells come to your hand first." |
+| the tools | `_BalanceHarness --far-sky[=ID|off]` and `--stop-when-made`; the summary's `farSky=` fields (`inBook`, `ascended`, `offeredPace`, `madePace` - **pace** minutes, `Node2DGame.PaceSeconds` - and `favoured`); `_UiShot --far-sky=ID|off` |
+| the validator | `RegressionChecks.FarSky.cs`, `ValidateFarSky` after `ValidateTeachers` in `RunAll` (below) |
+
+**Measured** (section 5's protocol). `_BalanceHarness --stage=14 --character=8 --seek-combo=<recipe> --all-unlocked
+--immortal --timescale=3 --minutes=20`, `--far-sky` (favour on) against `--far-sky=off`; `--stop-when-made` on the later
+favoured runs. Laelaps (Cyclone Slash, so no recipe names his spell); the planned bot (`--seek-combo`: rerolls and bans
+spent fishing, level 4 paths kept inside three elements, the named Ascension only, the gate's element sought). Every
+minute is the run's **pace** minute (15-minute runs, so the clock). Three grounds, in the order they became available:
+**the White Downs' stand-ins** while F3 was unmerged (`--stage=14` on the Cursed Dungeon's cast, the Heath's ground,
+the castle's difficulty row); **the Court** (`--stage=12`), the castle cross-check the brief asked for; and, once F3
+merged into `main-ff86ni` mid-piece, **the White Downs itself** - its cast, its ground, the Unstrung Hunter - measured
+in a scratch checkout of this branch merged with the trunk (`git merge-tree`'s tree, never committed; the branch was
+restored to its own commits after).
+
+| recipe | ground | bot | seed | favour | parents in the book | named Ascensions taken | **made** | level at 10 / 15 |
+|---|---|---|---|---|---|---|---|---|
+| Shadow Bolt | **the White Downs** | orbs | 1234 | on | 0.5 / 1.0 | 8.9 / 10.2 | **10.7** (level 23) | 20 / (ended when made) |
+| Shadow Bolt | **the White Downs** | orbs | 1234 | off | 0.4 / 8.3 | 12.7 / - (Contagion at level 4 at 20) | not by 20 | 14 / 21 |
+| The Taking | **the White Downs** | orbs | 1234 | on | 0.5 / 1.0 | 10.5 / 12.2 | **12.4** (level 24) | 15 / (ended when made) |
+| Sagittarius | **the White Downs** | orbs | 1234 | on | 0.5 / 1.0 | - / - (both at 7; Wind 2 and Light 2 of 4, level 15 of 17 at 20) | not by 20 | 10 / 12 |
+| Shadow Bolt | Downs (stand-in) | orbs | 1234 | on | 0.6 / 1.1 | 8.7 / 9.9 | **10.3** (level 23) | 22 / 37 |
+| Shadow Bolt | Downs (stand-in) | orbs | 1234 | off | 0.5 / 9.6 | 12.8 / - | not by 20 | 13 / 20 |
+| Shadow Bolt | Downs (stand-in) | orbs | 7 | on | 0.6 / 1.0 | 12.5 / - (Pandemic: Poison 2 of 4) | not by 20 | 15 / 26 |
+| The Taking | Downs (stand-in) | orbs | 1234 | on | 0.5 / 1.1 | 13.7 / - (Pyre: Light 3 of 4) | not by 20 | 11 / 21 |
+| The Taking | Downs (stand-in) | orbs | 1234 | off | 0.5 / never | - / - | not by 20 | 10 / 14 |
+| Sagittarius | Downs (stand-in) | orbs | 1234 | on | 0.5 / 1.1 | - / - (Hunter's Mark: Wind 2 of 4, level 14 of 17) | not by 20 | 10 / 14 |
+| Sagittarius | Downs (stand-in) | circle 180 | 1234 | on | 1.3 / 1.6 | - / - (level 10 of 17) | not by 20 | 8 / 10 |
+| Sagittarius | Downs (stand-in) | circle 180 | 1234 | off | 2.0 / 1.6 | - / - | not by 20 | 8 / 10 |
+| Shadow Bolt | the Court | orbs | 1234 | on | 0.6 / 1.2 | 9.1 / 10.6 | **10.9** (level 23) | 20 / (ended when made) |
+| Shadow Bolt | the Court | orbs | 1234 | off | 0.5 / 12.8 | - / - (level 16 of 17 at 20) | not by 20 | 11 / 14 |
+| The Taking | the Court | orbs | 1234 | on | 0.6 / 1.2 | 11.4 / 13.4 (Pyre's Light met at 13.4) | **13.7** (level 24) | 13 / (ended when made) |
+
+The made column is the pace minute the fusion was taken; "not by 20" ran the whole twenty. The three grounds keep much
+the same level clock (Shadow Bolt 20-22 at minute 10, The Taking 11-15); the real White Downs pays a little better than
+its stand-in for the slower builds (The Taking at level 15 at minute 10 against 11), and The Taking met Pyre's Light
+there, as it never did on the stand-in.
+
+What it says:
+
+- **The favour does what it is for.** With it on, both parents were in the book inside the first 1.2 minutes in every
+  run; without it, Contagion came at 8.3, 9.6 and 12.8 minutes and Kindled Ward never. The parents then rode to level
+  7 on every level-up. The cards were the brake `combo-spells.md` 6 found; with the favour they are not.
+- **What holds the recipe now is the Ascension's own gates**, which the favour does not touch and Eric's rule keeps:
+  **player level 17** (`Player.AscensionMinimumPlayerLevel`) and **four of the named path's element**
+  (`AscensionElementRequirement`). Every miss above is one of them, named in its row. The bot reaches level 17 at about
+  minute 8.5-9 with Shadow Bolt's parents (10.7 on the stand-in's seed 7), 10.5-13.7 with The Taking's, and with
+  Sagittarius's not inside the run at all (level 12-14 at minute 15, on every ground). The level clock is the build's
+  own kill rate: the favour puts two spells to 7 early, which is strong when the two are Void Lance and Contagion in a
+  crowd (level 37 at 15 against 20 without, on the stand-in) and weak when they are Hollow Star and Kindled Ward, or
+  Hunter's Draw and Starfall walking to orbs.
+- **The circle bot is no measure here**: it leaves the XP it does not pass over and stood at level 10 at minute 15 with
+  the favour or without, so it never met the level gate. `combo-spells.md` 6 asked for `--circle` for Hunter's Draw's
+  draw; making the recipe needs the level clock more than the draw, and the orb bot is the fairer player.
+
+**Decision 10, plainly: no - with the favour alone the planned bot does not meet tonight's recipe by about minute 10,
+except when its two parents are themselves a fast-killing build.** On the White Downs itself: Shadow Bolt at 10.7 -
+about minute 10, as section 5 hoped; The Taking at 12.4, with two and a half minutes and the boss left; Sagittarius not
+at all. Across all ten favoured runs: three met it by about 10, all Shadow Bolt (10.3, 10.7, 10.9); two made it at
+12.4 and 13.7, both The Taking; five never made it in twenty minutes (Shadow Bolt on another seed, held by Pandemic's
+Poison; The Taking on the stand-in, held by Pyre's Light; Sagittarius on every ground and both bots, held by the level
+gate and by Hunter's Mark's Wind and Constellation's Light). Without the favour no run made its recipe at all.
+
+**And a short Muster would not close it.** The XP curve is linear in the cost of a level (`10 + 45 x (level - 1)`), so a
+level granted at the start is the cheapest level there is: a Muster of K levels is worth `C(1 + K)` XP later - 4 levels
+310 XP, 8 levels 1,340 - where `C(L) = 10(L - 1) + 45(L - 1)(L - 2)/2` is the XP from level 1 to L. In their tenth
+minute the slow builds earned 0-1,100 XP and Shadow Bolt's 2,300-3,400. Read off the ledgers (the
+`lvByMin` levels: the XP between the level held at minute 10 and the level the recipe was made at, or would be at the
+earliest - 19: the gate at 17, two Ascension picks, the fusion):
+
+| run | level at 10 | made at (or would be) | XP short at minute 10 | Muster levels that buy it |
+|---|---|---|---|---|
+| Shadow Bolt, **the White Downs**, 1234 (made at 10.7) | 20 | 23 | 2,730 | **12** |
+| The Taking, **the White Downs**, 1234 (made at 12.4) | 15 | 24 | 7,380 | **19** |
+| Sagittarius, **the White Downs**, 1234 (never) | 10 | 19 at the earliest | 5,355 | **16** at the least |
+| Shadow Bolt, Downs stand-in, 1234 (made at 10.3) | 22 | 23 | 955 | **7** (it was 0.3 minutes late) |
+| Shadow Bolt, the Court, 1234 (made at 10.9) | 20 | 23 | 2,730 | **12** |
+| The Taking, the Court, 1234 (made at 13.7) | 13 | 24 | 8,525 | **20** |
+| The Taking, Downs stand-in, 1234 (never) | 11 | 19 at the earliest | 4,940 | **16** at the least |
+| Sagittarius, Downs stand-in, 1234, orbs (never) | 10 | 19 at the earliest | 5,355 | **16** at the least |
+
+So the Muster that lands the slow recipes by minute 10 is **16 to 20 levels - the Throne's whole Muster (17), not a
+few**; a recipe that already lands near 10 (Shadow Bolt) needs none, since it is "about minute 10" already, and even
+the 0.7 minutes the White Downs' run was late (0.9 in the Court) would cost 12 levels, because by then that build earns
+2,300-3,000 XP a minute. And a Muster buys only the level gate. The element gates (Pyre's Light, Hunter's Mark's Wind,
+Constellation's Light, Pandemic's Poison - two of four short in most rows) want picks of the right element, which the
+Muster's extra cards could pay for only if something steered them; the favour as section 5 wrote it does not. Two levers that are not
+a Muster, for Eric to weigh and not built: count tonight's named Ascensions' element gates as met (the recipe is still
+both parents at 8 down both named paths), or let the favour deal one card carrying the named path's element when the
+gate is all that is missing. Either changes what "the recipe is unchanged" means, which is why neither was done.
+
+**Decisions F4 made** (the doc left them open):
+
+1. **The night is the save's run count**, so the sky also turns after a road run. Turning "after every far-shore run"
+   and only then needs a count of far-shore runs - a save field, a schema step, and a collision with F3 or F5 if either
+   bumps; this needs none. Nobody on the road sees the sky.
+2. **Never the same recipe two nights running** while there is another ("a new recipe each far-shore run"). With two
+   to name they alternate, whatever their weights.
+3. **3 : 1** for never made against made. **"Made" is the recipe's own Feat** (`ComboCatalog.IsMet`), the code's one
+   record of it - completed the first time the strip offers the recipe, so a save that was offered it and passed it by
+   counts as having made it. Every Conjunction Known counts the same thing.
+4. **"Always in the hand" is in the hand**, not only in the pool: the parents' cards are dealt first, every hand, the
+   new spell's card as well as the upgrades'. `UpgradeOfferChance` 1 for the two alone would still have let the draw
+   leave them out of a three-card hand.
+5. **The favour ends when the recipe is sealed or made**, and does not steer a parent's level 4 path or its element.
+6. **100** Arcane Energy a run that makes it, **300** for Under the Far Sky, **600** for Every Conjunction Known (the
+   Grimoire, the nearest Collection, pays 500).
+7. **The card line is on every far-shore stop, open or locked** - section 5's "every far-shore stop", read literally -
+   **and is the recipe's name alone**, for want of room (the card row above); the full recipe is the pause screen's.
+8. **The pause line is its own section** on the Run tab, with where the recipe stands this run.
+9. **A new `AchievementVisibility.FarSky`** keeps both Feats off the page until the sky is learned, rather than
+   `RequiredCharacterId = "artemis"`, which reads as her challenge.
+10. **The lesson's two stars are ice and fire**, the Conjunctions lesson's pair, so the far sky reads as that lesson
+    going on; the downs are drawn inland, the rekindling reel's ground being the cliff edge.
+
+**Verified.**
+
+- `dotnet build`: 0 errors; no warning in any file F4 touched.
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1 warning**
+  (`test_wizard`). `ValidateFarSky` prints "the far sky over 240 nights for 24 characters on 4 saves - 23040 nights
+  named, 3 of 3 fusions named at all, 0 broken rules" and, for the weighting, "'pyromancer' over 600 nights with
+  'sagittarius' made - sagittarius 116, shadow_bolt 243, the_taking 241". It checks, on a save with every spell, one
+  without a parent, one with a parent set aside and one that has made everything, for every character: never a recipe
+  he opens on, never one naming his own spell, never one he cannot be dealt, the same night the same recipe, never two
+  nights running; the weighting; nothing before the sky is learned, nothing off the far shore, the tool override; the
+  lesson owed by Artemis rekindled and by no other god, learned once taught; both Feats hidden until learned, Under the
+  Far Sky met by a run that made tonight's and not by one that did not, Every Conjunction Known met at every fusion and
+  not one short. `ValidateTeachers` holds the reel's panels and its 46-character lines.
+- **Shown to fire**, in a scratch build that was not committed: openers allowed, the own spell allowed, ownership not
+  checked, the weights turned round and repeats allowed - 12,830 broken-rule lines across every kind (585 openers,
+  1,301 own spells, 1,992 unmakeable parents, 8,952 repeats), the weighting's two, and the starters-only save's.
+- `_UiShot` (`user://`, looked at): `f4-reel-meet-{pc,phone}` and `f4-reel-favour-{pc,phone}` (`--scene=res://scenes/
+  Prologue.tscn --reel=far_sky --fixed-fps 60`, frames 200 and 520; the moon moved inside the phone's columns after the
+  first phone shot cut it in half); `f4-pause-{pc,phone}` (`--scene=res://scenes/node_2d_game.tscn --stage=14
+  --character=8 --all-unlocked --open-pause --scroll=150/120`: "Tonight: Sagittarius - Hunter's Draw (Hunter's Mark)
+  and Starfall (Constellation)" and its standing line, both canvases - on the stand-in ground, the line being the same
+  code on the real one); `f4-map-card-real-{pc,phone}` (`--scene=res://scenes/WorldMap.tscn --all-unlocked
+  --character=8 --map-at=stage_14`, **in the scratch checkout of this branch merged with the trunk**, on F5's map and
+  F3's chapter): "Tonight: The Taking" under the longest stand, above What he keeps here, Enter whole on both canvases.
+  Before that, `f4-map-card-{pc,phone}` (a scratch with the White Downs flipped playable and a stop added to
+  `worldmap.json`, before F5's map existed) and the first `f4-map-card-real-pc` showed the full line wrapping into Enter.
+- `git merge-tree` against `main-ff86ni` after F5's and F3's merges: the code is clean (once the far sky's beats left
+  `Prologue.cs` for `Prologue.FarSky.cs` - both pieces had added their beats beside `RiteBeats`). **This file is not**:
+  the trunk changed the same places (the status line, the F3 and F5 rows either side of F4's, the end of the file). F4's
+  copy was written on the trunk's, with F3's and F5's notes in it, and differs from it only by F4's lines - so the
+  merge takes F4's side of `.ai/second-half.md` whole, unless the trunk's copy has moved again since (2026-11-08).
+
+**Not run, and needs a person's eyes.** The far sky has never been taught, named on a map stop or made by a person:
+Artemis is rekindled by F3's warden, and nobody has played that run with F4 in. The measurement's real-chapter rows
+ran in a scratch merge; after the real merge it re-runs as written (`--stage=14 ... --far-sky` / `--far-sky=off`),
+nothing to change. Whether the favour
+reads as an invitation or a chore, whether two parents' cards in every hand crowd out the rest of a build (the bot
+leaned into it; a player may not), whether 100 Arcane Energy is worth chasing, whether a player who passed tonight's
+recipe by should be named it again, and whether the reel's two stars read as two spells rather than two stars. The
+results-screen line and the Under the Far Sky moment were never photographed: no run on this branch made a recipe with
+the screen on.
