@@ -124,6 +124,11 @@ A fall pays a chest where it fell.
 
 ### 1.5 How it scales
 
+> **Superseded by measurement (E5, section 7.3).** The curve below was the design's first value; as built the
+> strength climbs +12% health and +3% damage a minute for the second night and then compounds (x1.09 and x1.04 a
+> minute), because the linear hour below never caught a farmed build. The shape of the night - one number,
+> health and damage only, the field otherwise the 15:00 field - is as written.
+
 One number grows: **the night's strength**, read from `m`, the minutes of run clock since the first
 warden fell. It multiplies on top of the chapter's row (`ChapterDifficulty`) and the preset.
 

@@ -520,6 +520,8 @@ public partial class Node2DGame
 		TickEndlessStrength();
 		WidenRunTimer();
 		runTimerLastSecond = -1;
-		GD.Print($"ENDLESS (tool) night {night} at {FormatTime(timeElapsed)}: {EndlessCatalog.DescribeStrength(endlessHealthStrength, endlessDamageStrength)}");
+		UpdateSpawnScaling();
+		GD.Print($"ENDLESS (tool) night {night} at {FormatTime(timeElapsed)}: {EndlessCatalog.DescribeStrength(endlessHealthStrength, endlessDamageStrength)}"
+			+ $" (an ordinary spawn now has {spawnHealth:0} health; enemy hits x{EnemyDamageScale:0.00})");
 	}
 }

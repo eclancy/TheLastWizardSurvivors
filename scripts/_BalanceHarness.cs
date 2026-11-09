@@ -1064,6 +1064,8 @@ public partial class _BalanceHarness : Node
 		AutoPickChestScreen();
 		AutoPickLevelUp();
 		DriveMovement();
+		// --endless --warden-limit: a returning warden the build cannot kill is felled (_BalanceHarness.Endless.cs).
+		TickEndlessWardenLimit();
 		// A fallen boss opens the way home and the run ends when the player steps in (Node2DGame's
 		// victory portal); the bot steps in at once, so a run that wins still ends as it always did.
 		// The run ends there too: what the clock would add after a victory is a field standing still.

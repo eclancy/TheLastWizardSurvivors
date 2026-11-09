@@ -106,26 +106,34 @@ public static class EndlessCatalog
 	// health, the Warden's, the returning warden's, and every hit an enemy lands (Node2DGame.EnemyDamageScale, through
 	// Enemy.ScaleOutgoingDamage, so Weaken still works on it).
 	//
-	//   health(m) = 1 + 0.08 m      for m <= 60, then health(60) x 1.08^(m - 60)
-	//   damage(m) = 1 + 0.02 m      for m <= 60, then damage(60) x 1.04^(m - 60)
+	//   health(m) = 1 + 0.12 m      for m <= 15, then health(15) x 1.09^(m - 15)
+	//   damage(m) = 1 + 0.03 m      for m <= 15, then damage(15) x 1.04^(m - 15)
 	//
-	// Per fifteen-minute night that is +120% health and +30% damage, about Vampire Survivors' +100% and +25% a cycle.
+	// The second night climbs +180% health and +45% damage; from the third on the strength compounds, about x3.6
+	// health and x1.8 damage a night.
+	//
+	// TUNED 2026-11-09 (E5, .ai/endless-mode.md section 7). The design's first values - +8% and +2% a minute, the
+	// wall an hour past the first fall at x1.08 - never caught a farmed build: a whole-road save (the only kind that
+	// has endless open) on the ordinary policy held the Forest to 1:37:00 at x31 health and the Emberdeep to 1:26:00
+	// at x13, swarm pressure never above zero, because a night pays two to four levels a minute and every one past a
+	// full book is +2% spell damage (Marginalia), about +5% of the build a minute - as fast as a linear climb. Only a
+	// strength that compounds outruns a build that grows linearly, so it compounds from the third night.
 
 	/// <summary>Enemy health added a minute, of the first night's, until the wall.</summary>
-	public const float HealthPerMinute = 0.08f;
+	public const float HealthPerMinute = 0.12f;
 
 	/// <summary>Enemy damage added a minute, until the wall.</summary>
-	public const float DamagePerMinute = 0.02f;
+	public const float DamagePerMinute = 0.03f;
 
 	/// <summary>
 	/// The wall (question 3, decided): minutes past the first fall after which the strength compounds rather than
-	/// climbs, doubling health about every nine minutes. At 90:00 on the clock enemies carry 18 times their first
-	/// night's health, at 105:00 58 times: every run is over by about an hour and a half on the clock.
+	/// climbs - health doubling about every eight minutes - so every run is over by about an hour and a half on the
+	/// clock whatever it has built. Fifteen since E5 (it was sixty): see the tuning note above.
 	/// </summary>
-	public const float WallMinutes = 60f;
+	public const float WallMinutes = 15f;
 
 	/// <summary>Health's step a minute past the wall.</summary>
-	public const float HealthCompoundPerMinute = 1.08f;
+	public const float HealthCompoundPerMinute = 1.09f;
 
 	/// <summary>Damage's step a minute past the wall.</summary>
 	public const float DamageCompoundPerMinute = 1.04f;
@@ -157,7 +165,7 @@ public static class EndlessCatalog
 
 	/// <summary>
 	/// Of the chapter's warden health, the share a returning warden brings - times the night's health strength at the
-	/// moment he arrives. The second night's warden is 1.1 times the first's, the third's 1.7, the fourth's 2.3.
+	/// moment he arrives. Since E5 the second night's warden is 1.4 times the first's, the third's 5.1, the fourth's 18.6.
 	/// Target: a fight of one to three minutes for the build that reached it.
 	/// </summary>
 	public const float ReturningWardenShare = 0.5f;

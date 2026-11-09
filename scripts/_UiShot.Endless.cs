@@ -36,6 +36,7 @@ public partial class _UiShot
 	private int endlessNightTo;
 	private float endlessNightClock;
 	private bool endlessNightEntered;
+	private int endlessNightHealthFrame;
 
 	// From the argument loop: true when the argument was endless's.
 	private bool TryParseEndlessShotArg(string arg)
@@ -127,9 +128,25 @@ public partial class _UiShot
 		if ((endlessSteps > 0 || endlessNightTo > 0) && !deathForced && hero != null && !hero.IsDead)
 			hero.CurrentHP = hero.MaxHP;
 
+		// What the field's bodies actually carry, a few seconds into the night: the strength must reach every spawn.
+		if (endlessNightEntered && endlessNightHealthFrame > 0 && frames == endlessNightHealthFrame)
+		{
+			int n = 0, top = 0;
+			long sum = 0;
+			foreach (Node node in EnemyRegistry.Snapshot)
+			{
+				if (node is not Enemy body || body.IsMiniBoss)
+					continue;
+				n++;
+				sum += body.Health;
+				top = Math.Max(top, body.Health);
+			}
+			GD.Print($"_UiShot: night {endlessNightTo}'s field: {n} ordinary bodies, mean health {(n > 0 ? sum / n : 0)}, most {top}");
+		}
 		if (endlessNightTo > 0 && !endlessNightEntered && frames >= WarmupFrames / 4)
 		{
 			endlessNightEntered = true;
+			endlessNightHealthFrame = frames + 240;
 			run.DebugEnterNight(endlessNightTo, endlessNightClock);
 			GD.Print($"_UiShot: entered night {endlessNightTo} at {endlessNightClock:0}s (endless run: {run.IsEndlessRun})");
 		}

@@ -10,6 +10,10 @@ using TheOneHeMissed.scripts;
 //                   seconds after the fall, so the chest is set out first). The save is made one that has taken the
 //                   Throne back and beaten this chapter's warden - in memory, writes off - so the run can go on.
 //   --leave-at=N    with --endless: step into the portal at the N-th fall instead (N=1 is an ordinary clear).
+//   --warden-limit=S with --endless: a returning warden still standing S game seconds after he arrived is felled
+//                   outright (Node2DGame.DebugAdvanceEndless), so a long immortal run - the wall, the performance run -
+//                   keeps its clock running through every night instead of holding at a warden the build cannot kill.
+//                   Logged as "HARNESS NIGHT warden felled by the limit". Never for a measurement of the fights.
 //
 // A HARNESS NIGHT line at every fall: the clock, the level, the night's strength, kills a minute since the last fall,
 // swarm pressure, Marginalia taken, and HP a minute offered and lost - the health ledger a night is tuned against
@@ -27,6 +31,9 @@ public partial class _BalanceHarness
 	private float endlessLastFallHealing;
 	private int endlessLastFallHpLost;
 	private readonly List<string> endlessNightLines = new();
+	private float WardenLimitSeconds = -1f;
+	private float endlessFightSeenAt = -1f;
+	private int endlessWardensForced;
 
 	// From the argument loop: true when the argument was endless's.
 	private bool TryParseEndlessArg(string arg)
@@ -42,7 +49,31 @@ public partial class _BalanceHarness
 			LeaveAt = Math.Max(1, int.Parse(arg.Substring("--leave-at=".Length)));
 			return true;
 		}
+		if (arg.StartsWith("--warden-limit="))
+		{
+			WardenLimitSeconds = float.Parse(arg.Substring("--warden-limit=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			return true;
+		}
 		return false;
+	}
+
+	// Every harness step: --warden-limit's clock on a returning warden's fight.
+	private void TickEndlessWardenLimit()
+	{
+		if (!Endless || WardenLimitSeconds <= 0f || game is not Node2DGame run || !IsInstanceValid(run)
+			|| !run.InEndlessNight || !run.BossFightActive || run.VigilOffered)
+		{
+			endlessFightSeenAt = -1f;
+			return;
+		}
+		if (endlessFightSeenAt < 0f)
+			endlessFightSeenAt = elapsed;
+		if (elapsed - endlessFightSeenAt < WardenLimitSeconds || BossEnemy.EnteringCount > 0)
+			return;
+		endlessFightSeenAt = -1f;
+		endlessWardensForced++;
+		GD.Print($"HARNESS NIGHT warden felled by the limit ({WardenLimitSeconds:0} s) at clock {EndlessCatalog.FormatClock(run.RunSeconds)}, night {run.EndlessNight}");
+		run.DebugAdvanceEndless();
 	}
 
 	// After every other save the harness builds (--all-unlocked, --farmed, --fresh-save): the save made one on which this
@@ -127,6 +158,6 @@ public partial class _BalanceHarness
 	{
 		if (!Endless || game is not Node2DGame run || !IsInstanceValid(run))
 			return string.Empty;
-		return $" nights={run.EndlessNight} wardens={run.EndlessWardensFelled} endlessClock={run.RunSeconds / 60f:0.0}";
+		return $" nights={run.EndlessNight} wardens={run.EndlessWardensFelled}{(endlessWardensForced > 0 ? $"(forced{endlessWardensForced})" : "")} endlessClock={run.RunSeconds / 60f:0.0}";
 	}
 }

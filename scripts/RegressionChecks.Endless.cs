@@ -274,20 +274,22 @@ public static partial class RegressionChecks
 		float wallStep = EndlessCatalog.HealthStrength(EndlessCatalog.WallMinutes + 1f) - EndlessCatalog.HealthStrength(EndlessCatalog.WallMinutes);
 		if (wallStep <= linearStep)
 			warnings.Add($"Endless: a minute past the wall adds x{wallStep:0.000} health, no more than the linear x{linearStep:0.000}.");
-		// "Every run is over by about an hour and a half": 30 minutes past the wall, 18 times the first night's health.
+		// "Every run is over by about an hour and a half" (question 3): at 90:00 on the clock the field is far past what
+		// the strongest farmed build measured held (x31 at 1:37:00 under the first values, E5).
 		float at90 = EndlessCatalog.HealthStrength(75f);
-		if (at90 < 10f)
-			warnings.Add($"Endless: at 90:00 on the clock enemies carry x{at90:0.0} health; the wall should have closed in (about x18).");
+		if (at90 < 40f)
+			warnings.Add($"Endless: at 90:00 on the clock enemies carry x{at90:0.0} health; a farmed build held x31 - the wall must have closed in.");
 		if (EndlessCatalog.ArcaneCap <= 0)
 			warnings.Add($"Endless: the Arcane cap is {EndlessCatalog.ArcaneCap}; it must be positive.");
 		if (EndlessCatalog.ReturningWardenShare <= 0f || EndlessCatalog.WardenBonusShare <= 0f || EndlessCatalog.WardenBonusShare > 1f)
 			warnings.Add("Endless: the returning warden's share and his bonus share must be positive (the bonus share at most 1).");
 		if (EndlessCatalog.MaxLooseOrbs <= 0 || EndlessCatalog.VigilHoldSeconds <= 0f)
 			warnings.Add("Endless: the loose-orb fold and the vigil's hold must be positive.");
-		// The second warden is 1.1 times the first's, the third 1.7, the fourth 2.3 (section 1.4).
+		// A returning warden is never weaker than the first, and each is stronger than the last (section 1.4).
 		float second = EndlessCatalog.ReturningWardenShare * EndlessCatalog.HealthStrength(15f);
-		if (Math.Abs(second - 1.1f) > 0.05f)
-			warnings.Add($"Endless: the second night's warden is x{second:0.00} the first's; section 1.4 says x1.1.");
+		float third = EndlessCatalog.ReturningWardenShare * EndlessCatalog.HealthStrength(30f);
+		if (second < 1f || third <= second)
+			warnings.Add($"Endless: the returning wardens are x{second:0.00} and x{third:0.00} the first's; never weaker than him, each stronger than the last.");
 	}
 
 	// Never before Taken Back, never on an excluded chapter, never before the chapter's own warden has fallen there.

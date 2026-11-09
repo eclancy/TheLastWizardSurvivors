@@ -281,7 +281,9 @@ Shown for the highlighted stop, rebuilt when the selection changes:
    beat (`UnlockCatalog`, Tituba), so a held chapter does not say it. The Sketchbook has only the
    scenery line. Same rule as the old list: two lines, not a wall.
 3. **The state line**, glyph-led: the lock reason (lock glyph) if locked; otherwise the warden -
-   *"Elderbark has fallen"* (done) or *"Elderbark holds it"* - and the best time survived there.
+   *"Elderbark has fallen"* (done) or *"Elderbark holds it"* - and the best time survived there. Once
+   endless is open on the chapter (the Throne taken back and this warden beaten), one more line after
+   it: the longest night (section 20).
 4. **What it holds** (section 9): a row of slots, each the real icon or sprite of something tied to
    this chapter - a silhouette until it is found, filled once it is. Under the row, *"2 of 5 found"*.
 5. **Start**: *"Enter the Fallow Fields"*, or the lock reason, never disabled (section 2).
@@ -539,3 +541,21 @@ the record of both pieces).
   sits under the unbuilt double mist, so its landmarks will first be seen properly as each chapter is built. The motes
   were seen still; whether the stream reads as light going home in motion, and at the phone's 1.5 pixels per unit.
   Whether the causeway reads as a road over water and not a pier, and whether the white cliffs read as cliffs at x2.
+
+## 20. Endless on the card (2026-11-09, `.ai/endless-mode.md` 2.4)
+
+One glyph-led line after "Longest stand", only on a chapter endless is open on (`EndlessCatalog.IsOpenOn`:
+Taken Back, and this chapter's own warden beaten) - never before, and never sealed: endless is shown open
+or not at all, so it is never a second locked thing beside the far shore's first stop. `WorldMap.Endless.cs`.
+
+- **A record:** "Longest night: Night 3 · 41:20" - this wizard's best here on the preset he is about to
+  play (`EndlessCatalog.RecordFor`), and under it another wizard's when that is better ("Merlin's longest:
+  Night 4 · 52:30"). With no record of his own, the best of any wizard, by name. The night and its clock
+  are joined by non-breaking spaces, so a wrapping card never parts them.
+- **No record:** "Endless: keep the vigil when Elderbark falls", in the place gold, with a "New" mark in
+  the flag ink until the save keeps its first vigil (`SaveData.HasKeptVigil`).
+- No new focus stop and no new button; the Boss Rush and the far shore's stops never show it.
+
+Photographed at 1280x720 and 540x1212 `--portrait --safe-area` (`_UiShot --scene=res://scenes/WorldMap.tscn
+--campaign-complete --map-at=stage_0 --character=1`, and with `--kept-vigil --endless-record=stage_0:3:2480
+--endless-record=stage_0:4:3150:merlin`).

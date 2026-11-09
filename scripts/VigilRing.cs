@@ -147,9 +147,9 @@ public partial class VigilRing : Node2D
 			// Drawn as a circle's arc squashed onto the ground, so nothing is allocated while he holds.
 			int points = Mathf.Max(3, Mathf.CeilToInt(rim.Length * fill));
 			float start = -Mathf.Pi / 2f;
-			DrawSetTransform(Vector2.Zero, 0f, new Vector2(1f, (ry + 3f) / (rx + 5f)));
-			DrawArc(Vector2.Zero, rx + 5f, start, start + Mathf.Tau * fill, points, new Color(hot, 0.7f), 9f, true);
-			DrawArc(Vector2.Zero, rx + 5f, start, start + Mathf.Tau * fill, points, new Color(core, 1f), 3.5f, true);
+			DrawSetTransform(Vector2.Zero, 0f, new Vector2(1f, (ry + 7f) / (rx + 12f)));
+			DrawArc(Vector2.Zero, rx + 12f, start, start + Mathf.Tau * fill, points, new Color(hot, 0.7f), 9f, true);
+			DrawArc(Vector2.Zero, rx + 12f, start, start + Mathf.Tau * fill, points, new Color(core, 1f), 3.5f, true);
 			DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
 		}
 

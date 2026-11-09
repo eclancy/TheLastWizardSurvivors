@@ -103,6 +103,12 @@ Godot 4.5 Mono (.NET 9), C# 2D roguelite auto-shooter (Vampire Survivors–like)
   Conjunction at level 1 as the Dark Wizard does, the far sky naming a Conjunction every run, and why the
   far shore must be its own order, never appended to `CampaignOrder`. **Read it before adding a god, a
   chapter after the Throne, or a Conjunction a character opens on.**
+- `.ai/endless-mode.md` — endless, decided and built 2026-11-08/09: after Taken Back a road chapter whose warden is
+  beaten can be held through the night (the vigil ring beside the portal at the warden's fall, `Node2DGame.Endless.cs`,
+  `VigilRing`), the warden returning every quarter hour on a climbing strength to a wall; only the first night reaches
+  the save (the ledger, `EndlessCatalog.LedgerFor`), and every "past the boss" rule reads one shim,
+  `EndlessCatalog.ChapterVictorySeconds`. **Read it before touching the boss's fall, `SnapshotRunResult`,
+  `FinishRunAndReward`, `PaceMinutes` or Marginalia.**
 - `.ai/title-screen.md` — the shipping title screen: how the scene avoids fractional scaling, the draw order, every knob, and four bugs not to reintroduce. **Read it before touching `TitleScreen.tscn`, `tools/art/splash.py` or `tools/art/hero.py`.** The art is generated, not painted: edit the generator and re-run it, never the PNG.
 - `.ai/game-name.md` — the name: *The Last Wizard: Survivors* since 2026-11-08 (*The One He Missed* before), the ideas, and
   what a rename touches, above all that `config/name` is also the save folder.
