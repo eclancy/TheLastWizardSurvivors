@@ -157,6 +157,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 | 10 | Abe no Seimei | keeps Kindled Ward and Exorcist, unchanged | "next" | kept |
 | 11 | The Dark Wizard | keeps The Taking and Dread, unchanged. **His unlock is a mystery achievement**: The Taker Taken shows its condition (every chapter's boss on Hardcore) from the first run, and reads "???" for its name and its reward, with the seal, until done (`SealedName`/`SealedReward`, as a Conjunction's Feat reads before it is made). It was already listed under the Throne as "The Taker Taken - Frees someone": the title gave away who is taken | "do not change the dark wizard, but add his unlock condition as a mystery achievement" | built `ff5fa9a6`, validated (0 errors); the page not looked at |
 | 12 | Merlin | keeps Orb of Ages and Warding Hand, unchanged | "Next" | kept |
+| 13 | Baba Yaga | keeps Thorned Vine. **She moves flying in a mortar, holding a broom** (she joins Nimue among the floaters, `FLOATERS` in `tools/art/roster.py`, `anim_sets.hover`; the look only, her feet collider unchanged). **Bone Fence is in question**: her own vine pushes nothing (`Player.cs`: "Her own vine pushes nothing; it is a build's passive"), so +20% knockback does nothing until she takes a spell or card that shoves | "Her typical movement can be flying in a mortar holding a broom, also does thorned vine have knockback? how often is her passive useful?" | mortar queued after Folio; passive open |
 
 ---
 
