@@ -302,7 +302,9 @@ public static partial class RegressionChecks
 	{
 		List<SpellData> spells = ContentValidator.LoadAllSpells().ToList();
 		int opened = 0, refused = 0;
-		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+		// The Rite is a fusion of two spells since 2026-11-08 (.ai/sovereign-spell.md), but the sky never names it (the
+		// capstone, FarSky.MayName), so it is held to "never waived" below rather than to "waives its two paths" here.
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions.Where(r => !r.IsRite))
 		{
 			foreach (ComboIngredient named in recipe.Ingredients)
 			{
@@ -350,7 +352,7 @@ public static partial class RegressionChecks
 		}
 		ComboDefinition rite = ComboCatalog.Rite;
 		if (rite != null && rite.Ingredients.Any(i => FarSky.WaivesElementGate(rite, true, true, i.SpellId, i.AscensionId)))
-			warnings.Add("Far sky waiver: the Sovereign Rite waives an element gate; the sky names fusions of two spells only.");
+			warnings.Add("Far sky waiver: the Sovereign Rite waives an element gate; the sky never names the capstone.");
 		if (FarSky.WaivesElementGate(null, true, true, "starfall", Starfall.ConstellationId))
 			warnings.Add("Far sky waiver: with no recipe named, a gate is waived.");
 		if (string.IsNullOrWhiteSpace(FarSky.WaiverLine) || FarSky.WaiverLine.Any(char.IsDigit) || FarSky.WaiverLine.Contains('_'))
