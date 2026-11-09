@@ -244,7 +244,18 @@ public static class BossCatalog
 		// THE FAR SHORE'S WARDENS (.ai/second-half.md 4.2, marked by F0). None yet: a boss needs a deed that pays it
 		// (its god's, AchievementDefinitions), and the gods are F1's and after. Each chapter's piece replaces its own
 		// comment line with its block; a far chapter with no boss here is on its to-do line (ValidateFarShore).
-		// [14] F3: the Unstrung Hunter - "put a barrow between you".
+		// The White Downs' warden (F3): the hunter the sky lost - "put a barrow between you" (UnstrungHunterBoss).
+		// At the castle's difficulty, held flat across the far shore (.ai/second-half.md 8, decision 11); its health
+		// is set between the Constable's and the Seneschal's and measured in .ai/second-half.md 9, "F3, built".
+		[14] = new BossDefinition
+		{
+			Id = "downs_unstrung_hunter",
+			DisplayName = "The Unstrung Hunter",
+			Tagline = "He draws on you from far off. Put a barrow between you.",
+			ScenePath = "res://scenes/UnstrungHunterBoss.tscn",
+			Health = 420000,
+			ArcaneVictoryBonus = 400
+		},
 		// (F6's line is below; leave this one as it is)
 		// [15] F6: the Weir - "keep to the high ground".
 		// (F7's line is below; leave this one as it is)

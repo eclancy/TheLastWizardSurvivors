@@ -118,7 +118,7 @@ public static partial class Foliage
 		Emberdeep.Build(),
 		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): each chapter's piece writes Foliage.<Chapter>.cs
 		// (.ai/terrain.md 13, "Adding a chapter") and replaces its own comment line with its Build().
-		// F3: WhiteDowns.Build(),
+		WhiteDowns.Build(),
 		// (F6's line is below; leave this one as it is)
 		// F6: DrownedShore.Build(),
 		// (F7's line is below; leave this one as it is)

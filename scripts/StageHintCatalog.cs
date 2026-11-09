@@ -365,7 +365,21 @@ public static class StageHintCatalog
 		},
 		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): each chapter's side event wants its hint; each
 		// piece replaces its own comment line with its new() block.
-		// F3 (White Downs)
+		// The White Downs (F3): the Silver Hind, and the hunt that is out after her. Its horn far off on the down, and
+		// birds lifting off the turf where it sounds. Never says what is hunted, or that she can be reached.
+		new()
+		{
+			SiteId = "silver_hind",
+			Voice = HintVoice.Sound,
+			Sound = SfxCatalog.HintHuntHorn,
+			Cue = HintCue.Birds,
+			Lines = new[]
+			{
+				"A hunting horn, far off on the downs.",
+				"The horn again. Something pale runs before it.",
+				"The hunt has not caught it yet.",
+			},
+		},
 		// (F6's line is below; leave this one as it is)
 		// F6 (Drowned Shore)
 		// (F7's line is below; leave this one as it is)

@@ -220,7 +220,17 @@ public static class GroundDetail
 
 		// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): each chapter's detail block, its piece's alone,
 		// replacing its comment line.
-		// F3: [StageEnvironmentKind.WhiteDowns] = new[] { ... },
+		// The White Downs (F3, tools/art/detail_downs.py). The base layer only: what lies on the cropped turf
+		// everywhere (its grass, a few flints) and on the palette's own blobs - crumbled chalk on the chalk, flints
+		// thick on the flint. The downs' growth by habitat (harebells and thyme in the open, rabbit scrapes toward
+		// the scrub) is the foliage file's clutter (Foliage.WhiteDowns). A dew pond on chalk has a bare rim.
+		[StageEnvironmentKind.WhiteDowns] = new[]
+		{
+			G("downs_grass", 0.05f, 5), G("flints", 0.004f, 1),
+			G("chalk_crumbs", 0.05f, 3, "downs_chalk"), G("flints", 0.012f, 1, "downs_chalk"),
+			G("flints", 0.05f, 2, "downs_flint"), G("chalk_crumbs", 0.015f, 1, "downs_flint"),
+			new("tufts", Site.Shore, null, 0.04f, 1),
+		},
 		// (F6's line is below; leave this one as it is)
 		// F6: [StageEnvironmentKind.DrownedShore] = ...,
 		// (F7's line is below; leave this one as it is)

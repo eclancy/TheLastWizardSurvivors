@@ -233,6 +233,14 @@ public partial class _ExploreProbe : Node
 	private int thawPhrasesAfterWrong = -1;
 	private float thawWalked;
 	private float thawClearClock;
+	// The Silver Hind (F3): stalked at his own walk, still while her head is up (StalkStep). --into-gaze walks on
+	// into her gaze once, on purpose, to be seen.
+	private bool intoGaze;
+	private bool intoGazeWalked;
+	private float hindClearClock;
+	private float hindStood;
+	private (bool Seen, int Bolts, bool Won, int Places, bool SawInto, int Approaches) hindSnap;
+	private int hindSnapCur = -1;
 	private int thawStrayTouches;
 	private (bool Seen, int Phrases, int Singings, int Wrongs, int Notes) thawSnap;
 	private int thawSnapCur = -1;
@@ -302,6 +310,7 @@ public partial class _ExploreProbe : Node
 			else if (arg == "--no-complete") Complete = false;
 			else if (arg == "--log-props") logProps = true;
 			else if (arg == "--slow-bleed") slowBleed = true;
+			else if (arg == "--into-gaze") intoGaze = true;
 			else if (arg == "--fresh-save") freshSave = true;
 			else if (arg == "--all-unlocked") allUnlocked = true;
 			else if (arg.StartsWith("--kill-hammers=")) killHammers = int.Parse(arg.Substring(15));
@@ -1217,7 +1226,10 @@ public partial class _ExploreProbe : Node
 			titheXpAtArrival = player.RunXpGathered;
 			titheArrivedAt = game.RunSeconds;
 		}
-		Teleport(Event.Sites[0].Position + new Vector2(0f, 30f), 20);
+		// The Silver Hind is begun from the edge of the screen, as a player walking up comes on her: stood on her, he
+		// would be at her side before she had looked once (her ArrivalRadius is 860).
+		Vector2 arriveAt = Event is SilverHindEvent ? new Vector2(0f, 820f) : new Vector2(0f, 30f);
+		Teleport(Event.Sites[0].Position + arriveAt, 20);
 		step = 11;
 	}
 
@@ -1295,6 +1307,21 @@ public partial class _ExploreProbe : Node
 					Check("and her mouth moved", mouthTrueBefore >= 0 && mouthTrueAfter >= 0 && mouthTrueBefore != mouthTrueAfter,
 						$"{mouthTrueBefore} -> {mouthTrueAfter}");
 				}
+			}
+			if (e is SilverHindEvent || (hindSnap.Seen && cur == hindSnapCur))
+			{
+				// The snapshot is taken while she runs; the win lands on the frame the sites close, so ask the event.
+				bool hindWon = hindSnap.Won || (e is SilverHindEvent && e.IsWon);
+				Check("the Silver Hind was stalked to her side, every time she asked", hindWon && hindSnap.Approaches >= 2,
+					$"{hindSnap.Approaches} approach(es), {hindSnap.Bolts} bolt(s), {hindSnap.Places} places, stood still {hindStood:0.0}s while she looked");
+				if (intoGaze)
+					Check("walking on in her gaze, he was seen: she bolted, and he stalked her again from there",
+						hindSnap.SawInto && hindSnap.Bolts >= 1 && hindWon, $"{hindSnap.Bolts} bolt(s)");
+				else
+					Check("a stalker who is still whenever her head is up is never seen", hindSnap.Bolts == 0,
+						$"{hindSnap.Bolts} bolt(s)");
+				Check(e.PaysChest ? "a later win: a chest (her deed already done)" : "the first win: her deed and its Arcane Energy",
+					true, $"PaysChest={e.PaysChest}");
 			}
 			if (e is WalkingHutEvent || (hutSnap.Seen && cur == hutSnapCur))
 			{
@@ -1675,6 +1702,19 @@ public partial class _ExploreProbe : Node
 		// The Gaoler's key: the Warden bled at its post, then slipped past the lanterns at his own walk (SlipStep).
 		if (e is GaolersKeyEvent gaolRun && gaolRun.IsFound)
 			target = SlipStep(gaolRun, delta, out clearSwarm);
+		// The Silver Hind: stalked at his own walk, still whenever her head is up (StalkStep); the swarm cleared only
+		// every 5 s, so the bodies close while he stands. Its story is kept as a snapshot (the hut's reason).
+		if (e is SilverHindEvent stalking && stalking.IsFound)
+		{
+			target = StalkStep(stalking, delta);
+			hindClearClock += delta;
+			clearSwarm = hindClearClock >= 5f;
+			if (clearSwarm)
+				hindClearClock = 0f;
+			hindSnapCur = cur;
+			hindSnap = (true, stalking.Bolts, stalking.IsWon, stalking.Places.Count, hindSnap.SawInto || (intoGazeWalked && stalking.Bolts > 0),
+				stalking.Approaches);
+		}
 		// The thaw: listened to, then sung back at his own walk (SingStep); the swarm cleared only every 6 s.
 		if (e is ThawEvent thawing && thawing.IsFound)
 		{
@@ -1745,6 +1785,29 @@ public partial class _ExploreProbe : Node
 	// player's own walking speed, waiting while he is more than a few strides behind; the swarm cleared only every few
 	// seconds. --straight, his first walk: straight at the landing (StraightStep). --let-him-fall, his first walk: into
 	// the largest pool near him, and a small ring walked in it until the rot has him.
+	// One step of the stalk, as a player who has learnt her: walk straight at her at his own walk (210 px/s, under
+	// his 220) while her head is down, and stand still the moment it comes up (the tell) until she grazes again; stand
+	// while she bolts. With --into-gaze: the first time she looks with him in her gaze, walk on - once - to be seen.
+	private Vector2 StalkStep(SilverHindEvent hind, float delta)
+	{
+		Vector2 me = player.GlobalPosition;
+		if (hind.IsBolting)
+			return me;
+		if (hind.IsTelling || hind.IsWatching)
+		{
+			bool walkOn = intoGaze && hind.Bolts == 0 && hind.IsWatching && hind.Sees(player.FootPosition);
+			if (!walkOn)
+			{
+				hindStood += delta;
+				return me;
+			}
+			intoGazeWalked = true;
+		}
+		Vector2 offset = hind.HindPosition - me;
+		float step = 210f * delta;
+		return offset.Length() <= step ? hind.HindPosition : me + offset.Normalized() * step;
+	}
+
 	private Vector2 EscortStep(GibbetCageEvent escort, float delta, out bool clear)
 	{
 		clear = false;

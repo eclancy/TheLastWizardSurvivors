@@ -82,6 +82,8 @@ PREFIXES = {
     # Cursed Dungeon keeps its own roster and the Throne has no trickle cast of its own.
     "bridge-": "Bridge",
     "court-": "Court",
+    # The far shore (.ai/second-half.md 4.2): cast_downs.py, the White Downs (F3).
+    "downs-": "Downs",
 }
 
 CELLS = (32, 48)

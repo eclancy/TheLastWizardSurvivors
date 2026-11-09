@@ -5,6 +5,18 @@ is the inventory and the wiring backlog: seventy-one generated `.wav` files in `
 what each one is for, and where in the code it is meant to be triggered. The music - a menu
 theme and nine chapter sets in `assets/music/` - has its own section at the end.
 
+**2026-11-08: four more, generated and not yet wired; the White Downs.** The first far-shore chapter's
+(`stage_14`, `.ai/second-half.md` 4.2): `hint_hunt_horn`, its chapter hint (a hunting horn far off on the downs);
+`hunter_draw` and `hunter_loose`, the Unstrung Hunter drawing his great bow and loosing it; `hind_bolt`, Artemis's
+silver hind startled in the stalk. Rendered alone (`build.py hint_hunt_horn hunter_draw hunter_loose hind_bolt`),
+each on its target; every other file in `assets/sfx/` and `assets/music/` byte-identical (hashed before and after).
+They are in `REGISTRY` but not yet in `SfxCatalog`, so the game does not load them until they are wired. **Measured:**
+`--confuse` 0 confusable pairs, none of the four among its category's five closest. Across the whole set: the hint's
+nearest 0.190 (`hint_quatrain`), the draw's 0.231 (`spell_beam_start`; 0.272 from the player's `spell_bow_draw`), the
+loose's 0.139 (`escort_cough`, then `player_hurt` 0.160; 0.441 from `spell_bow_release`), the bolt's 0.121
+(`impact_arcane`; 0.146 from `hint_quatrain` in its own category). Three of the drafts collided and were rebuilt, not
+nudged (their rows below). hf 0-4%. The chapter's music went in the same day ("The far shore's music", at the end).
+
 **2026-11-08: two more, both wired; the dry tomb's mirrors.** Imhotep's puzzle (`.ai/unlock-puzzles.md` 3.1, "route the
 sun"): `mirror_turn`, a bronze disc swung on its spindle as his feet turn it, and `sun_arrive`, the sunlight landing on a
 mirror and on the sun-disc over the door. Both share a thin bronze plate's modes (`sfx._BRONZE_PLATE`), so they are one
@@ -361,6 +373,8 @@ Trigger points map onto the damage pipeline in `CLAUDE.md`, and the order matter
 | `boss_roar.wav` | 1.80 s | −4.0 dBFS | boss spawn and phase change (`BossEnemy.cs`) |
 | `boss_block.wav` | 0.16 s | −13.0 dBFS | **wired** (2026-11-07): a boss's guard turning a hit — the Hayward's hurdle (`HaywardBoss.MarkBlockedHit` → `SfxPlayer.BossBlock`, throttled to one per 90 ms). A dry wooden tok (a 640 Hz woody band over a 185→150 Hz box mode, a 6 ms comb for the weave), nothing below 95 Hz, top cut 2.4 kHz: wood where a landed hit is the element, so the cut number has a sound that says why. Not the anvil (steel, a rebound) and not the hull (hollow, double) |
 | `boss_death.wav` | 2.43 s | −3.0 dBFS | `BossEnemy.StartDeath` (`scripts/BossEnemy.cs:141`) |
+| `hunter_draw.wav` | 1.32 s | −11.0 dBFS | **not wired** (2026-11-08): the Unstrung Hunter (the White Downs' boss) drawing his great bow, at the start of its 1.4 s wind-up, at him. A heavy bow's limbs straining (stick-slip clicks quickening from 22 to 74 a second through two wooden resonances rising 230→330 and 560→760 Hz), the string taking the weight (a low buzz rising 98→147 Hz, never under 85), and a cold thread of his arcane tightening over it (two sines near 1.3-1.76 kHz drifting apart so they beat 2 → 13 times a second), all climbing and stopping at full draw. A swell with no transient - the visual telegraph carries the warning; the loose is the sound to hear. Every few seconds while he lives: two dB under the loose. Nearest in the whole set 0.231 (`spell_beam_start`), 0.272 from the player's `spell_bow_draw` (one 0.45 s band of metallic noise at 620-1300 Hz; this is three times as long, an octave lower, and made of clicks). hf 1% |
+| `hunter_loose.wav` | 0.62 s | −9.0 dBFS | **not wired** (2026-11-08): the same bow loosed, at the end of the wind-up, at him. A deep twang - the string at D3 holding its pitch and flapping at 19 Hz, a saw under a fixed 650 Hz lowpass, so it buzzes low - a dry thwack on the grip, the whirr of a great shaft's fletching (a narrow band falling 700→420 Hz, chopped 38 → 24 times a second as it spins), and the arcane thread snapping loose (1.76 kHz falling a fifth). Where `spell_maw_open` sits, between the once-a-second and once-a-minute rows. Three drafts collided and were rebuilt: a saw pluck under a closing lowpass was the grass element's construct (0.066 from `cast_grass`), a falling whoosh over a falling tone was `spell_beam_end`'s (0.076), a round string falling 147→98 Hz under the whirr was a hit's thud (0.091-0.104 from `player_hurt`). As built: nearest 0.139 (`escort_cough`), then 0.160 (`player_hurt`); 0.441 from `spell_bow_release`. Centroid 680 Hz, hf 1% |
 
 `StartDeath` drops rewards and leaves the `"enemies"` group in the same frame, before the
 death animation plays. The death sound is not gating anything and may outlast the corpse.
@@ -438,6 +452,8 @@ way. Tier Normal: they never duck anything. The caption carries the words; these
 | `hint_tomb_knock.wav` | 2.70 s | -10.0 dBFS | **wired**, Scorched Sands (the dry tomb, Imhotep). Far off in the dunes, a slow knocking, stone on stone: three knocks, the gaps lengthening (0.86, 0.98 s) and each softer - "slower now; it has not stopped" - each a dull, dense tok of a stone block's low modes (212 Hz x 1, 2.42, 4.07, gone in a tenth of a second: dead stone, not the anvil's ringing steel), the weight of it in a short low thump, and the grit of two faces grinding (band noise at 700 Hz, chopped at 46 Hz). Under it a steady hiss of running sand that swells after each knock, as if the knock shook some loose (`_sand_hiss`). The onsets are `sfx._TOMB_KNOCKS` = `StageHintCue.TombKnocks`, where the sand lifts. Top cut at 2.6 kHz, the open desert's short dry reflection, nothing under 60 Hz. Nearest in the whole set 0.176 (`spell_orbit`), then 0.177 (`ui_close`); in the hint category 0.143 is still the closest pair (lantern flare and Sibyl). hf 3% |
 | `hint_granary_voice.wav` | 2.20 s | -10.0 dBFS | **wired**, Fallow Fields (the Tithe-Reeve's scale, Medea). A woman's voice from the reeve's granary, said, not called: an alto from B-flat 3 down to F-sharp 3, two words, a breath, then the longer line, every phrase falling and almost no vibrato - the cell's cry rises into a question, this does not plead. Six formant syllables (`sfx._GRANARY_SYLLABLES` = `StageHintCue.GranaryVoices`, where her smoke comes in), a breath under the last, and a few soft crackles of herbs smouldering. Through plank walls: top cut at 1.7 kHz, a box resonance at 450 Hz, a short dry timber room. Nearest in the whole set 0.164 (`pickup_health`), then 0.179 (`hint_cell_cry`). hf 0% |
 | `hint_brush.wav` | 2.40 s | -10.0 dBFS | **wired**, The Court (the dotted door, Ma Liang). A brush drawing itself along the wall: three strokes of a loaded brush on plaster, the first longer (0.46, 0.36, 0.32 s), each a soft wet press with no click (a brush has no hard part), then the drag - a hush of bristles over a rough surface in a band sliding up from 1.15 to 1.75 kHz as the load runs out, its grain the bristles catching and letting go (an irregular chop at 64-82 Hz), a slow low smear of the wet paint under it - lifted off at the end, not stopped; then a drop running off the last stroke, a short rising chirp as it parts (780 to 1560 Hz) and a soft landing, twice. The onsets are `sfx._BRUSH_STROKES` and `_BRUSH_DRIP` = `StageHintCue.BrushBeats`, where the dabs of the paint cue come in. Indoors, a long room of the house: 110 Hz to 3.4 kHz, a short bright tail. Plays as the chapter hint (`StageHintCatalog`, site `dotted_door`), when the last dot inks the door in (`DottedDoorEvent`), and when Paint What Is Needed draws his flask (`PaintedFlask`). Nearest in the whole set 0.131 (`spell_beam_loop`; a first draft with longer strokes and one drip was 0.111 from it), then 0.182 (`player_death`); 0.27 or more from every other hint |
+| `hint_hunt_horn.wav` | 2.50 s | -10.0 dBFS | **not wired** (2026-11-08), The White Downs (the chapter hint; its side event is the stalk of Artemis's silver hind). A hunting horn far off on the downs, blown for a hunt that has lost its quarry: A4 "doubled" - four notes tongued fast - then held and sagging as the breath goes, then a long D4 a fifth under, wavering and falling more than a semitone by its end. A call with no answer. The chapter's own horn (`sfx._hunting_horn`, the score's `hunt_horn`): a straight brass tube, a lip's scoop into each note and a breath of tongue, a lowpass that opens with the note. Back once off the next hill (an echo at 0.5 s), a wide open night, 220 Hz to 2.2 kHz. The onsets are `sfx._HUNT_HORN_CALL`, for `StageHintCue` if it marks them. A dB under the voices, as the caravan's bell is: a horn carries. Nearest in the whole set 0.190 (`hint_quatrain`), 0.452 from `wave_warning` (two low saws swelling). hf 0% |
+| `hind_bolt.wav` | 0.75 s | -9.0 dBFS | **not wired** (2026-11-08), The White Downs (the stalk), not a hint: Artemis's silver hind looking up, seeing him move, and bounding away - played at her, a few times a stalk at most, `lantern_catch`'s row. A deer's alarm (a hard blow of air through the nose, noise at 620 Hz and 1.5 kHz cut off dead after a tenth of a second, a rough bark inside it falling 380→250 Hz), then six strikes of hoof on chalk turf in a bound's pairs (`sfx._HIND_HOOVES`): a soft thud and a damp crunch, a click of flint on the first of each pair, each pair softer and duller as she goes. 100 Hz to 3.4 kHz. Nearest in the whole set 0.121 (`impact_arcane`), in the hints 0.146 (`hint_quatrain`); 0.349 from `escort_cough`, the other snort-and-bark in the set. hf 4% |
 
 | First draft | Collided with | Distance | Fix |
 |---|---|---|---|
@@ -446,6 +462,7 @@ way. Tier Normal: they never duck anything. The caption carries the words; these
 | one strike and its tail | `ui_pause` | 0.084 | five nearly level strikes - a rhythm, not a decay |
 | the cry at G4 | `meta_unlock` | 0.104 | raised to B-flat 4 rising to C-sharp 5, called rather than spoken - out of the A-minor chord's partials |
 | the mirror's turn as a grind alone, eight grains round 900 Hz | `hint_lantern_flare` | 0.084 | the disc's bronze ring made the sound, the grit four grains low under its start: a drag that ends in metal, where the flare is a band of noise held |
+| the hunt's call on B4 falling to E4 | `hint_caravan_bell` | 0.081 | E4 is the tin bell's 330 Hz. On E5 to B4 it was 0.109 from `hint_paper_wind` (its whistle sits round E5) and on D5 to A4 0.074 from `card_select`; on A4 to D4, with the doubling and the echo at 0.5 s, its nearest is 0.190 |
 
 ## Secrets
 
@@ -690,6 +707,41 @@ committed files):
 - **Inside each stem** (`--balance`): the bridge's gusts 7.5 dB under its bed and its side drum
   6.7 under its pulse; the Court's tambour 6.1 under its pulse; the Throne's tread 7.0 under its
   bed, its motor 6.7 and its snare 13.4 under its pulse.
+
+### The far shore's music: the White Downs (2026-11-08, rendered)
+
+The first far-shore set (`.ai/second-half.md` 4.2, F3), scored in `tools/audio/music_downs.py` and rendered once
+into `assets/music/`. `MusicCatalog` already plans it (`PlannedChapter("downs", Heath)`, row `[14]`), so it switches
+itself on - in place of the Broken Circle's stand-in - once its bed is imported. **Nobody has heard it.**
+
+| Files | Chapter | What it is | Length | RMS |
+|---|---|---|---|---|
+| `downs_bed/pulse/lead/boss.wav` | The White Downs, `stage_14` | a hunt at night under no moon: **E hexatonic minor** (E G A B C D - no F, so not the Swamp's Phrygian, and no F sharp, which the seven lack), **12/8 at dotted quarter 140**, wrapping Am to Em (iv - i, the plagal close, no other chapter's). A B-E drone, held strings and the beaters' line walking long-short through the chord, two low horns held in B (bed); taiko on one and three, the hoofbeats on a hand drum (four footfalls a beat, three quick and the fourth on it), a snare on two and four, the bass on the gallop, pizzicato (pulse); **a hunting horn** - a new voice, a natural horn on E that plays only E, B and D, never a third - then three high women's voices in unison on "oo" with the horn far off in each gap (lead); the taiko doubled, brass stabs, a sixteenth motor and the hunting horn doubling on E (boss) | 27.43 s | -33 / -34 / -35 / -34 |
+
+Why that and not a third gallop in 6/8: the Forest already gallops (6/8 at 112, horns in B), and every mode of the
+seven notes is some chapter's tonic, so the Downs are made apart by a key with a missing degree, a metre no piece
+has, a tempo no piece has, a lead voice no piece has, and a cadence no piece wraps on (the module's docstring has
+the reasoning). 4.6 MiB of WAV (four 1.15 MiB stems), about 0.9 MB in an export as QOA; each `.import` written
+before the first import with `edit/loop_mode=2` (Forward) and `compress/mode=2`, without a uid, which the importer
+fills in.
+
+**Measured** (scratch renders byte-identical to the files):
+
+- **Seams** (`music.py --report`): step 0.00-0.27, click 0.04-0.15 of each loop's own body; every stem within
+  1.8 dB of its median second at the wrap (the lead +0.7: the far horn calls across the seam into the hook).
+- **Budget** (`analyse.py --music`): 0% under 80 Hz and above 5 kHz, 0% in 2-5 kHz, hf at most 1%. Bed 62% mid,
+  lead 100% mid, pulse 83% low, boss layer 64% low.
+- **Inside each stem** (`--balance`): the beaters' line level with the strings (-4.6 dB of the bed), the low horns
+  -9.4 over the loop (-6.4 in B, where they play); taiko -3.9, bass -6.6, hoofbeats -8.2, pizzicato -10.7, snare
+  -16.3 of the pulse; the horn -2.8 and the voices -3.5 of the lead, its two sections within 0.2 dB of each other;
+  in the boss layer taiko -3.8 and brass -4.7, the motor -10.3, the hunting horn -11.8 (on alternate bars).
+- **Under the effects** (`mixsim.py --music --policy tiered --sets downs`): a median cast +12.2 dB over bed and
+  pulse (worst tenth +7.4), +10.9 with the opening lead, +7.4 over the fight's bed, pulse and boss layer (+2.8 over
+  swarm and music, `level_up` the worst critical at +8.4), +8.1 over a late-game set; `player_hurt` +17.2 to +18.6.
+  Inside the road chapters' ranges on every row.
+
+**Wiring:** none needed beyond the import - the row exists. A boss layer is rendered, so the Unstrung Hunter's fight
+raises it over the bed and pulse and rests the lead, as every playable chapter's does.
 
 ### Known limitations
 

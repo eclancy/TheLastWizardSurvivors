@@ -650,6 +650,14 @@ With a fourth agent, split Group A: the Forest and the Cave (20), the Swamp (11)
   upright staff: the Usher swings his rod overhead and the Chamberlain holds keys, not the
   Seneschal's. The Falconer throws the Cursed Dungeon's arcane bolt (the hawk is taken); the Censer
   faces left like its stand-in.
+- The White Downs (far shore, `stage_14`, piece F3 of `.ai/second-half.md`): drawn (`tools/art/cast_downs.py`,
+  11 of 11; roster `StageBestiary.WhiteDowns.cs`, prefix `Downs` / `downs-`, stand-ins the Emberdeep's as the
+  castle's were). The hunt (Beater, Coursing Hound, Huntsman, Riderless Horse), the people of the chalk (Night
+  Shepherd, Flint-Slinger, Warrener), the flock's Tup, the Giant Puffball and the cliff-watch (its Beacon, built
+  and burning, and its Captain on the 48 cell). No bow anywhere: the Unstrung Hunter's. The four table bodies read
+  olive, red-brown, white and purple; the Tup's fleece and the Captain's cloak left the blue wool row (the
+  player's colour). The Slinger's flint is metal (`#C4D4E8` / white), the far shore's silver; the Puffball
+  faces left like its stand-in; the Courser's gallop is drawn, not bobbed.
 
 ## 10. Decisions for the developer
 

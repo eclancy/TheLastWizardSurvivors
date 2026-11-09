@@ -30,7 +30,8 @@ public enum StageEnvironmentKind
 	// and a detail block of its own (their slots are marked the same way in this file, LevelGenerator and
 	// GroundDetail), then sets its StageCatalog entry to it. Not declared ahead: every value of this enum is held
 	// to a profile and to the ground validators, so a kind with no ground behind it would be a fault.
-	// F3: WhiteDowns,
+	/// <summary>The White Downs (stage_14, F3): night turf on chalk, flint, the barrows (LevelGenerator.Downs.cs).</summary>
+	WhiteDowns,
 	// (F6's line is below; leave this one as it is)
 	// F6: DrownedShore,
 	// (F7's line is below; leave this one as it is)
@@ -688,7 +689,48 @@ public static class StageEnvironmentCatalog
 
 		// THE FAR SHORE (.ai/second-half.md 4.2, marked by F0): each chapter's profile block, its piece's alone,
 		// replacing its comment line (the kind is added in the enum above at the same time).
-		// F3: [StageEnvironmentKind.WhiteDowns] = new StageEnvironmentProfile(...),
+		// THE WHITE DOWNS (stage_14, F3, .ai/second-half.md 4.2): chalk downland at night under no moon. Cropped
+		// turf on chalk (tools/art/terrain_downs.py), chalk scars and flint, and the barrows - grassed burial
+		// mounds that are walls (LevelGenerator.Downs.cs, drawn by downs_walls.py) - and the dew ponds, which take
+		// the moor's near-black pool water: a pond on the chalk at night holds no moon. Lit evenly: an open-air
+		// chapter, not one of the dark ones (LightPool). The night is the haze's - a cold blue-grey wash, no warm
+		// glow, and a thin sea-mist off the cliffs drifting in from the west. No traps and no flower pens: nothing
+		// was built here but the barrows and the watch's beacons, and the downs grow no gardens.
+		[StageEnvironmentKind.WhiteDowns] = new StageEnvironmentProfile(
+			StageEnvironmentKind.WhiteDowns,
+			"downs",
+			"White Downs",
+			"res://assets/bonelight/tiles/downs_turf_fill.png",
+			new Rect2(),
+			string.Empty,
+			new Rect2(),
+			0.35f,
+			0.0f,
+			new Color(0.86f, 0.90f, 1.0f, 1.0f),
+			new Color(1f, 1f, 1f, 0f),
+			0.0f,
+			// Bushes, trees, ruins: read only by the old fixed field; the downs scatter from Foliage.WhiteDowns.
+			0,
+			0,
+			0,
+			new[]
+			{
+				"res://assets/bonelight/tiles/downs_turf_fill.png",
+				"res://assets/bonelight/world/downs/sarsen-1.png",
+			},
+			48f,
+			// Bones only, and few: the downs' own furniture is the barrows, the sarsens and the flints.
+			propCount: 30)
+		{
+			HazeTint = new Color(0.10f, 0.14f, 0.22f, 0.12f),
+			GlowTint = new Color(0.16f, 0.20f, 0.30f, 0.04f),
+			WeatherTint = new Color(0.82f, 0.88f, 0.96f, 0.020f),
+			WeatherOffset = new Vector2(-140f, -40f),
+			IntroTint = new Color(0.90f, 0.94f, 1.0f, 1.0f),
+			WaterStyle = "pool",
+			WallSet = "barrow_wall",
+		}
+		,
 		// (F6's line is below; leave this one as it is)
 		// F6: [StageEnvironmentKind.DrownedShore] = ...,
 		// (F7's line is below; leave this one as it is)

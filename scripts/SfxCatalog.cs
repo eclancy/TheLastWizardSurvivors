@@ -169,6 +169,15 @@ public static class SfxCatalog
 	// shutter thrown wide and the cold flame flaring, and the key ringing on the flagstones. A mistake the player made, once a
 	// catch; the light then holds on him, so it cannot repeat until he has stepped off the key and taken it up again.
 	public const string LanternCatch = "lantern_catch";
+	// THE WHITE DOWNS (F3, .ai/second-half.md 4.2; .ai/audio-manifest.md, the far shore's rows).
+	// HintHuntHorn: the hunt's horn far off on the downs (SilverHindEvent's hint, and the Unstrung Hunter calling his
+	// hounds - one horn, one hunt). HunterDraw / HunterLoose: the Unstrung Hunter's great bow drawn and loosed
+	// (UnstrungHunterBoss) - heavier and colder than the player's own bow, every few seconds in his fight. HindBolt: the
+	// Silver Hind seeing him move, a snort and her hooves on the turf; a mistake the player made, once a bolt.
+	public const string HintHuntHorn = "hint_hunt_horn";
+	public const string HunterDraw = "hunter_draw";
+	public const string HunterLoose = "hunter_loose";
+	public const string HindBolt = "hind_bolt";
 
 	// --- secrets (.ai/stage-secrets.md 7.7, .ai/achievements-and-secrets.md 4.9 and 8.4.1) ------
 	// Generated and allowlisted, not yet played: the secret agents wire them as they build the sites.
@@ -203,6 +212,7 @@ public static class SfxCatalog
 		SibylVoice, SibylEcho, EscortCough,
 		IceString1, IceString2, IceString3, IceString4, IceString5, IceStringWrong, LanternCatch,
 		MirrorTurn, SunArrive,
+		HintHuntHorn, HunterDraw, HunterLoose, HindBolt,
 		SecretSeen, SecretFound, SecretShatter, SecretVoiceBelow,
 	};
 

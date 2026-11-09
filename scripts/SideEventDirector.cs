@@ -144,8 +144,9 @@ public partial class SideEventDirector : Node
 		"stage_13" => null,
 		// THE FAR SHORE (.ai/second-half.md 4.3, F0): one side event a chapter, held to unlock-puzzles.md's rule and
 		// paying Arcane Energy and a keepsake. Each line is its chapter's piece's; the comments keep them apart.
-		// F3: the White Downs.
-		"stage_14" => null,
+		// F3: the White Downs. The Silver Hind, Artemis's, grazing on the down with his hunt out after her: stalk her
+		// to her side unseen (SilverHindEvent). It pays its deed and Arcane Energy, never an unlock.
+		"stage_14" => new(WayfinderKind.Compass, new SideEventEntry("silver_hind", () => new SilverHindEvent())),
 		// F6: the Drowned Shore.
 		"stage_15" => null,
 		// F7: the Three Ways.

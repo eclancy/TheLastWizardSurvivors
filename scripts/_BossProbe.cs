@@ -630,10 +630,23 @@ public partial class _BossProbe : Node
 	private (int Swings, int Charges, int Rings, int Spent, int Turned) haywardBeats;
 	private bool sawHayward;
 
+	// The Unstrung Hunter's draws (F3): how many he loosed, and how many a barrow caught - snapshotted while he stands.
+	private (int Looses, int IntoBarrows, int Phase) hunterDraws;
+	private bool sawHunter;
+
+	private string HunterSummary() => sawHunter
+		? $"{hunterDraws.Looses} draws loosed, {hunterDraws.IntoBarrows} of them cut short by a barrow; reached phase {hunterDraws.Phase}"
+		: null;
+
 	private void TrackHayward()
 	{
 		foreach (BossEnemy body in bodies)
 		{
+			if (body is UnstrungHunterBoss hunter)
+			{
+				sawHunter = true;
+				hunterDraws = (hunter.Looses, hunter.LoosesIntoBarrows, hunter.BossPhase);
+			}
 			if (body is not HaywardBoss hayward)
 				continue;
 			sawHayward = true;
@@ -1201,6 +1214,8 @@ public partial class _BossProbe : Node
 			GD.Print($"  the choir      : {choir}");
 		if (HaywardSummary() is string combo)
 			GD.Print($"  the combo      : {combo}");
+		if (HunterSummary() is string draws)
+			GD.Print($"  the draws      : {draws}");
 		if (DarkWizardSummary() is string dark)
 			GD.Print($"  the dark wizard: {dark}");
 		foreach (string note in notes)

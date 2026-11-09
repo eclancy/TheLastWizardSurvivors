@@ -314,7 +314,7 @@ public static class AchievementDefinitions
 		("dotted_door", "The Door Inked In", "Ink every line of the door sketched in the Court's Gallery, in one stroke.", "Frees Ma Liang"),
 		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): one side event a chapter, paying Arcane Energy and a
 		// keepsake - never a spell, boon or wizard. Each piece replaces its own comment line with its words.
-		// F3 (White Downs)
+		("silver_hind", "The Hind at Gaze", "Stalk the Silver Hind on the White Downs until you stand at her side.", $"{SilverHindCurrency} Arcane Energy"),
 		// (F6's line is below; leave this one as it is)
 		// F6 (Drowned Shore)
 		// (F7's line is below; leave this one as it is)
@@ -326,6 +326,40 @@ public static class AchievementDefinitions
 		// (F10's line is below; leave this one as it is)
 		// F10 (Bronze Isle)
 	};
+
+	/// <summary>The White Downs' event's Arcane Energy (F3), once, with its deed.</summary>
+	public const int SilverHindCurrency = 200;
+
+	/// <summary>
+	/// What a far chapter's side event pays, once, with its deed: Arcane Energy, and the deed itself is the keepsake
+	/// (.ai/second-half.md 4.3 - "an achievement, not an unlock"). A site here gives nothing in UnlockCatalog; the
+	/// first win completes its deed and pays this, and every win after pays a chest, as an exhausted road site does
+	/// (DiscoveryRewards.IsSiteExhausted). One line a chapter, each its piece's; F3 built the table with the first.
+	/// A switch, not a dictionary: the deeds are built in a static initializer, and this must answer before any
+	/// field of a partial class is known to exist.
+	/// </summary>
+	public static int SideEventCurrency(string siteId) => (siteId ?? string.Empty).ToLowerInvariant() switch
+	{
+		// F3 (White Downs)
+		"silver_hind" => SilverHindCurrency,
+		// (F6's line is below; leave this one as it is)
+		// F6 (Drowned Shore)
+		// (F7's line is below; leave this one as it is)
+		// F7 (Three Ways)
+		// (F8's line is below; leave this one as it is)
+		// F8 (Twelfth Hour)
+		// (F9's line is below; leave this one as it is)
+		// F9 (Thunder Fell)
+		// (F10's line is below; leave this one as it is)
+		// F10 (Bronze Isle)
+		_ => 0,
+	};
+
+	/// <summary>
+	/// True for a far chapter's side event: it pays its deed and Arcane Energy rather than an unlock, so "what the
+	/// site gives" is the deed until it is done (the hint, the note's clue, the chest after).
+	/// </summary>
+	public static bool IsKeepsakeEvent(string siteId) => SideEventCurrency(siteId) > 0;
 
 	private const float TenMinutes = 600f;
 	private const float ThreeMinutes = 180f;
@@ -565,7 +599,8 @@ public static class AchievementDefinitions
 		// the one unlock a far chapter carries - and is that god's one source (UnlockCatalog). Not listed until its
 		// chapter is playable (IsChapterBuilt), and sorted after the campaign's (CampaignRankOfStage). A line a
 		// chapter, each its piece's alone: replace your comment line with your deed; leave the others as they are.
-		// F3 (White Downs): the Unstrung Hunter's deed, freeing Artemis.
+		// F3 (White Downs): the Unstrung Hunter's deed, rekindling Artemis (her FromGod line is F2's).
+		SeatClear("stage_14", "The Hunter Brought Down", "downs_unstrung_hunter", "Artemis"),
 		// (F6's line is below; leave this one as it is)
 		// F6 (Drowned Shore): the Weir's deed, freeing Manannan mac Lir.
 		// (F7's line is below; leave this one as it is)
@@ -691,6 +726,8 @@ public static class AchievementDefinitions
 				DisplayName = words.Name ?? siteId,
 				Description = words.Description ?? string.Empty,
 				RewardText = words.Reward ?? string.Empty,
+				// A far chapter's event pays its deed and Arcane Energy, never an unlock (SideEventCurrency).
+				CurrencyReward = SideEventCurrency(siteId),
 				SpellUnlockId = pays.FirstOrDefault(d => d.Kind == UnlockKind.Spell)?.Id ?? string.Empty,
 				BoonUnlockId = pays.FirstOrDefault(d => d.Kind == UnlockKind.Boon)?.Id ?? string.Empty,
 				CharacterUnlockId = wizard,

@@ -478,7 +478,7 @@ less, **M** a few days, **L** a week or more.
 | F0 | **Far-shore plumbing**: `FarShoreOrder`, `StageGate.FarShore`, six stand-in chapters `IsPlayable = false`, `PreviousChapter` per order, `QuestLog` / `StageRewards` / `ChapterNotes` / `WorldMap` reading both orders, `ValidateFarShore` | L | - | the far shore exists, nobody can enter it, and the Dark Wizard's and The Road Restored's targets have not moved. **Built 2026-11-08** ("F0, built", below) |
 | F1 | **God plumbing**: any recipe as an opener with its own table; `OnStartingConjunction` and `ValidateStartingConjunction` over every opener; the god's card lines; the rekindled reel's far-shore ground in `freed.py` | M | F0 | a god can be added as data. **Built 2026-11-08** ("F1, built", below) |
 | F2 | **Artemis**: Sagittarius's table path, The Hunter's Moon, Far-Shooting, her sheet (`tools/art/player_*.py`, 48 cell, idle / move / hurt / death), icons, reel layer, catalog rows | M | F1 | the first god, playable everywhere. **Built 2026-11-08** ("F2, built", below); reachable once F3 makes her seat playable |
-| F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter |
+| F3 | **The White Downs**: chalk tiles and barrows, its cast, the Unstrung Hunter, music, foliage, one side event, two secrets, its difficulty row | L | F0 | the first far chapter. **Built 2026-11-08** ("F3, built", below) - all but its flag, which waits on F2's god and F5's map place |
 | F4 | **The far sky**: `Teaching.FarSky` and its reel, tonight's recipe, the favour, card and pause lines, the Feat, `_BalanceHarness --far-sky` and the section 5 measurement | M | F0, F2 | the half's system, measured |
 | F5 | **Reel E and the map**: `world_map.py` widened east, the crossing, the white cliffs and six places, the motes after Taken Back, the stop order; reel E | L | F0 | the half on the map, and announced. **Built 2026-11-08** ("F5, built", below) |
 | F6 | **Manannán, Maelstrom and the Drowned Shore** | Maelstrom M-L, god M, chapter L | F1; the lattice-as-water look | the second slice |
@@ -933,3 +933,117 @@ E's line lands, is Eric's call. The far places' landmarks are under the unbuilt 
 chapter's piece (F3, F6-F10) is the first to see its own place uncovered: if the place on the map does not match the
 chapter it became, the landmark function is that chapter's to adjust in `world_map.py` (its own function and its
 `PLACES`/`WAYPOINTS` line).
+
+### F3, built (2026-11-08, branch `worktree-agent-a02f5b4c89ec986ae`, on `main-ff86ni` at 8cd0e007)
+
+The White Downs is built in full but for its flag. **`IsPlayable` stays false**, and must until F2 and F5 merge: F0's
+rule turns a far chapter's to-do into a warning the day it is playable, and two of its lines are not F3's to close -
+"no god seated here" (Artemis, F2; "no deed frees its god" is the same line seen from the seat deed, which is written
+and pays her the moment her `FromGod` line exists) and "no place on the world map" (F5). Flipping it is one line in its
+`StageCatalog` block once both are in. **No save schema step** (still 25); the story epoch is not raised.
+
+**The chapter as built.**
+
+| part | what | where |
+|---|---|---|
+| ground | cropped turf at night (`downs_turf`, a terrain laid as the Cave lays its floor: the lichen row on `tiles.py`'s natural style is the Forest's turf), bare chalk scars and flint rubble, rare dew ponds. **The barrows are walls**: one candidate a 16-tile super-cell - a bowl barrow (radius 3.2-3.6), a great round one (4.15-4.45) or a long barrow (a stadium 3 or 5 wide, 9-13 long) - placed from (seed, super-cell), one too close to a neighbour standing down to the higher priority roll, none within 9 tiles of the start; radii held to the bands whose last row is three tiles wide (the first photographs had a nub on every crown). Walled, as the Ruins are | `LevelGenerator.Downs.cs` (`StageTopology.Barrows`), the palette and profile blocks, `GroundDetail`; art `terrain_downs.py`, `downs_walls.py` (`barrow_wall`), `detail_downs.py` |
+| foliage | clumps, not woods: beeches on the crowns, hawthorn and juniper on the flanks, sarsens lying in loose flocks (knee-high: they stop feet, never a sightline), flint heaps and chalk; harebells, thyme and rabbit scrapes. Salts 0x5F12-4; measured shares inside the validator's 3-20% stand, 55-88% open | `Foliage.WhiteDowns.cs`, `props_downs.py` (`downs.json`) |
+| cast | eleven, every role (the castle's precedent, and `ValidateBestiary` wants every role filled or absent with a reason): the hunt (Beater, Coursing Hound, Huntsman, Riderless Horse), the people of the chalk (Night Shepherd, Flint-Slinger, Warrener), the Downland Tup, the Giant Puffball, the cliff-watch (its Beacon, built and burning; its Captain, the miniboss). Stand-ins the Emberdeep's; table mean 1.266; the far shore's bolt is metal (silver) | `StageBestiary.WhiteDowns.cs`, `cast_downs.py`; `.ai/bestiary.md` status |
+| warden | **the Unstrung Hunter** (`downs_unstrung_hunter`, 420,000, bonus 400): Orion's shadow, a tall hunter beside a bow taller than himself, three cold stars for a belt. Below | `UnstrungHunterBoss.cs` / `.tscn`, `boss_unstrung_hunter.py`, `BossCatalog` [14], `SeatClear("stage_14", "The Hunter Brought Down", ...)` |
+| side event | **the Silver Hind** (`silver_hind`): stalk. Below | `SilverHindEvent.cs`, `silver_hind.py` (and the `hind` pictogram) |
+| secrets | **the Hound in the Hill** (anchor, linger 3 s in its eye: 25% faster for a minute, every find) and **the Hart in the Hill** (keepsake, gather: lift its seven knots of turf in any order - healed by half, 150 Arcane Energy once). No found level: all four of issue #20's are spoken for on the road | `SecretCatalog.WhiteDowns.cs`, `HoundInTheHill.cs`, `HartInTheHill.cs`, `secret_downs.py` |
+| music | `downs`: E with no F (E G A B C D), 12/8 at a dotted quarter of 140, 27.4 s - a key, metre and tempo no other set has; a hunting horn that never sounds a third, three high voices answering; the beaters' line in low strings; hoofbeats in the pulse. Not yet heard | `music_downs.py`; `MusicCatalog`'s planned set switched itself on |
+| sounds | `hint_hunt_horn` (the event's hint, and the Hunter's horn), `hunter_draw`, `hunter_loose`, `hind_bolt`; `analyse.py --confuse`: 0 confusable pairs | `sfx.py`, `SfxCatalog`, `.ai/audio-manifest.md` |
+| words | the event's deed *The Hind at Gaze*, its hint (the hunt's horn far off, birds lifting), its clue in the note; the boss's tagline "He draws on you from far off. Put a barrow between you." | `AchievementDefinitions`, `StageHintCatalog`, `ChapterNotes` |
+| difficulty | the castle's row, unchanged (decision 11) | `ChapterDifficultyCatalog` |
+
+**The Unstrung Hunter.** His one attack is the draw: a lane (`TelegraphShape.Line`, 60 px wide) from his body out over
+the open down. While he draws it follows the wizard at 80 degrees a second - faster than a running wizard sweeps round
+him at any range he keeps, so it cannot be outrun - and for its last 0.45 s it holds still and whitens: the sidestep
+`GroundSlamAttack.Facing` promises (`TuningProblems` holds it to the 0.26 s a wizard takes to step out). Every frame
+the lane is cut where it first meets a barrow, and that length is the `Radius` the outline and the hit both read, so
+what the player is shown stopping at a mound is what stops there; a loose into a barrow strikes the turf. He keeps his
+range (backs off inside 360 px, circles to 680, comes on beyond), only begins a draw with a clear line, and comes round a
+barrow by the swarm's own flow field - so cover is a place for a draw or two, then to leave. **0.66, the hunt is up**:
+his horn, and three coursing hounds slipped at his side every 11 s, which run round a barrow - hold it while they come
+or go. **0.33, unstrung**: the lane turns at 120 degrees a second and holds for 0.36 s, and after every loose four
+stars fall round the wizard (one on his spot) out of the sky, over any barrow: the cover is marked now and then too.
+He arrives as three cold stars falling out of the empty sky to his belt and the dark gathering round them into him,
+the thread springing taut at the climax (3.2 s); he falls as they rise out of him and leave, and he sinks into the dark.
+
+**The Silver Hind** (the ask: **stalk**; `.ai/unlock-puzzles.md` 4's table). Artemis's hind grazes on the down with his
+hunt out after her. Her head comes up (0.6 s, the tell); she looks (1.4-2.3 s), her gaze a pale fan on the turf 640 px
+deep, cut short at the barrows - the rays drawn are the rays that see (`Sees`). Anything that moves in it (feet carried
+over 10 px in 0.15 s) she sees: she bolts to the furthest of her six seeded places, and two of the hunt's coursing hounds
+are slipped at him. Still in her gaze, or moving behind a barrow, he is not seen. Come to her side unseen and she lets
+him near, then goes on, calm, to the next place; the third time she is won. Every look has its tell, the one she gives
+as she lands from a bound too (a look with none would catch a man still walking after her). Nothing she is joins
+`"enemies"`; her rhythm is real seconds; nothing locks. It teaches the chapter's cover before the warden asks it.
+
+**What it pays: the far shore's keepsake event, built here.** F0 left "paying Arcane Energy and a keepsake" unbuilt, and
+a site with nothing in `UnlockCatalog` read as exhausted from the start (`DiscoveryRewards.IsSiteExhausted` looped over
+nothing): it would have paid a chest the first time and never recorded its deed. Now `AchievementDefinitions.
+SideEventCurrency(site)` (a switch, one slot a far chapter) gives the event's deed its Arcane Energy; `IsSiteExhausted`
+reads such a site as exhausted once its deed is done; the hint, the note's clue and the map card read the same rule
+(`IsKeepsakeEvent`; `StageRewards` lists the Arcane Energy). The first win: the deed, 200 Arcane Energy and a chest;
+every win after, a chest.
+
+**Other shared lines, each the smallest that would do:** `StageTopology.Barrows` and its partial declaration in
+`LevelGenerator.cs`; `SfxCatalog`'s four; `ExploreArt.Glyphs` "hind"; `bestiary_kit.PREFIXES` "downs-";
+`ValidateBossPattern`'s case; the "grants nothing" check lets a seat deed wait for its god while the seat is unplayable
+(F1 meant the two pieces to merge in either order; this check had not yet met a seat deed); `_BalanceHarness --farmed`
+on a far chapter stands behind the whole road and the far chapters before it (it read the campaign position, -1, and
+built a new save with 300 Arcane); `_ExploreProbe`'s stalk (`StalkStep`, `--into-gaze`) and arrival from 820 px;
+`_BossProbe`'s draws line.
+
+**Decisions F3 made** (the docs left these open):
+
+1. **The barrows are walls**, not props or landmarks: the one way the four places that must agree about a blocker
+   already do, and the shot test (`MazeNavigation.IsWallAt`) is what cuts the Hunter's lane and the Hind's gaze. So a
+   barrow is cover against every bolt in the chapter, and the chapter plays by walled rules (every body steers by the
+   flow field; sites snap to the lattice's cell centres).
+2. **Eleven creatures, not "about five"**: every role, at the castle's stand-ins and a table a step under the
+   Emberdeep's mean.
+3. **The warden's fight**: the lane that follows then holds (the contract's sidestep, short), the hounds at 0.66, the
+   stars over the barrows at 0.33; 420,000 health between the Constable's and the Seneschal's, a first guess for its
+   own measurement.
+4. **The side event's ask, stalk**, and three approaches (one was a ten-second walk on the probe); its keepsake is its
+   deed, with 200 Arcane Energy - a castle deed's half.
+5. **Two secrets, both chalk figures** (the hound and the hart of 4.2), anchor and keepsake; the keepsake pays Arcane
+   Energy, the only keepsake reward left.
+6. **No flip.** See the opening paragraph.
+
+**Verified.**
+
+- `dotnet build`: 0 errors (the warnings are the tip's own; none in a file of F3's).
+- The validator: **0 errors and 1 warning** (`test_wizard`). Its far-shore line for the White Downs reads "no god seated
+  here; no deed frees its god when its warden falls; no place on the world map" - F2's and F5's.
+- `_BossProbe --stage=14`: arrived, both phases entered, fell cleanly (2.1-2.5 s fall). `--cc=none` (the wizard standing,
+  kept whole): 11 draws in 45 s, the Hunter holding 455-513 px. On the plain probe the kiting bot dies at castle
+  difficulty and the Hunter loosed once, into a barrow.
+- `_ExploreProbe --stage=14 --seed=4242 --fresh-save`: 25 passed, 0 failed - placed in the band on open ground, dormant,
+  the wayfinder, the arrows; stalked three times, never seen, won in 26 s of game time (10 s of it standing still while
+  she looked); the first win paid the deed. `--seed=31 --into-gaze`: 25 passed, 0 failed - seen once, the hounds
+  slipped, stalked again and won in 45 s.
+- `python tools/audio/analyse.py --confuse`: 0 confusable pairs.
+- `_BalanceHarness --stage=14 --farmed --survivor --immortal --policy=ordinary --stop-overrun=60 --minutes=19
+  --character=3 --seed=1234 --timescale=1`, `--fixed-fps 30` (the difficulty curve's protocol, 1.1), on the far shore's
+  farmed save - the whole road behind it, 35 spells and 8 boons from deeds, 8,525 of 8,750 Arcane on Powers: **no
+  overrun**, swarm pressure at most 0.27, L15 **45** (L17 at 5.5 min, L21 at 7.3), **37 HP lost all run** (need x0.1),
+  6.1 HP a minute offered by heals and 25.1 by regeneration; the Hunter at 15:00, **down at 18.1 min - a 3.1-minute
+  fight**, inside the lengthened fights' three to five. So at the castle's row the first far chapter is a place to try
+  builds for a save that has walked the road, which is decision 11's reading; Hardcore is the climb. The first run of
+  it, before the harness knew the far shore, stood on a near-new save (300 Arcane, 16 spells) and was overrun at minute
+  five - a new save is never there, the gate keeps it out, but it says the row is a wall without the road behind it.
+- Photographed (`_UiShot`, seed 4242): the chapter at 1:50 at 1280x720 and 540x1212 `--portrait --safe-area`; the
+  Hunter's arrival (the stars landed on his belt, the dark gathering; then gathered); his draw in the fight, the locked
+  lane cut short at a barrow beside the wizard and the arrow in flight; the Hind's gaze on the turf ("She is looking") on
+  the PC canvas, and grazing under her dimmed column on the phone's; the Hound in the Hill beside the spawn, and its eye
+  stood in until found (the find logged; its toast waits behind the chapter's note); the Hart in the Hill where the seed
+  put it, 11.6 chunks out, its knots glinting.
+
+**Not run, and needs eyes.** No real player has stalked the hind under a full swarm, so whether "be still when she looks
+up" is found from the line and one bolt, and whether freezing in the castle's swarm is a fair price, are open; whether the
+Hunter's lane reads at a glance on a phone in a crowd; whether a barrow reads as a mound and not a hedge (the long ones in
+particular), and the beeches as beeches; the music, the four sounds, the Hart's gather (not driven by a probe: it is
+`SecretGather`, as the Fallen Star's is) and the Hound's linger in a real run; the boss's health against a person's build.
