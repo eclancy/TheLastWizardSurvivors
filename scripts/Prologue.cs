@@ -180,14 +180,16 @@ public partial class Prologue : Control
 		// the wizards dark specks at his feet: "it's hard to see what he's doing in the background, it should show him
 		// lifting each of the wizards into the air to capture them"; then, of the first answer: "the silhouette of 4
 		// wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard,
-		// since he is the wizard that you are"). Its box animates (tools/art/prologue.py, THRONE_BOX, 12 frames a
-		// second): him in the foreground with his back to us, his black sun behind his head, and beyond him the four
-		// disciplines on the far crest of the circle, cast in shadow against the sky; from 1.25 s, one every 0.65 s,
-		// his reach leaves his hand, a hoop of his violet closes on one and lifts it into the sky, where it hangs while
-		// its light streams back into his hand. All four at rest by 4.8 s. HELD 5.9 s, not 5.2: four lifts the eye can
-		// follow one after another (each under 120 art px/s), a still beat before the first and 0.4 s after the last
-		// before the dissolve. No impact (rule 1): the tide's burst, a few seconds on, is the one that is his. Back and
-		// mid drift as ONE, so a wizard standing on the crest never slides on it; the slow tilt up follows the rise.
+		// since he is the wizard that you are"; and "they should still be at the stone circles. you can also show the
+		// colored dark silhouettes when he lifts them"). Its box animates (tools/art/prologue.py, THRONE_BOX, 12 frames
+		// a second): him in the foreground with his back to us, his black sun behind his head, and beyond him the four
+		// disciplines in the moot's ring of stones, cast in shadow against the sky; from 1.25 s, one every 0.65 s, his
+		// reach leaves his hand, a hoop of his violet closes on one, his own colour comes up on him dark and shaded,
+		// and he is lifted out of the ring into the sky, where he hangs while his light streams back into the hand. All
+		// four at rest by 4.8 s. HELD 5.9 s, not 5.2: four lifts the eye can follow one after another (each under 120
+		// art px/s), a still beat before the first and 0.4 s after the last before the dissolve. No impact (rule 1):
+		// the tide's burst, a few seconds on, is the one that is his. Back and mid drift as ONE, so a wizard standing
+		// in the ring never slides on it; the slow tilt up follows the rise.
 		new("throne", 5.9f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, 4f), new Vector2(0f, 10f)),
 		// His shadows over the land, coming down on a village that is still lit. THE RUSH (Eric, 2026-11-05: the
 		// army must rush over the horizon; the old beat slid the whole crowd across a still picture as one layer):
