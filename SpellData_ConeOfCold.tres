@@ -11,7 +11,7 @@ DamageBonus = 2
 
 [resource]
 script = ExtResource("1")
-Tagline = "A freezing cone that slows."
+Tagline = "A freezing cone where you face."
 Id = "cone_of_cold"
 Name = "Cone of Cold"
 CurrentLevel = 1
@@ -26,7 +26,7 @@ BaseProjectileCount = 1
 ; cone: more targets, less reach.
 BaseRange = 260.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_coneofcold_lvl2")])
-Description = "Unleashes a cone-shaped blast of freezing air, damaging and slowing everything caught in it."
+Description = "Unleashes a cone of freezing air the way you are facing, damaging and slowing everything caught in it. Walk to aim it."
 Icon = ExtResource("3_icon")
 ElementWeights = {
 "Ice": 1

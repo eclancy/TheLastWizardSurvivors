@@ -5340,7 +5340,9 @@ public partial class Node2DGame : Node2D
 			"meteor_swarm" => SpellTargetingMode.GroundAtEnemy,
 			"scorching_ray" => SpellTargetingMode.MultiTarget,
 			"chain_lightning" => SpellTargetingMode.MultiTarget,
-			"cone_of_cold" or "cinderbreath" => SpellTargetingMode.DirectionalCone,
+			// Cone of Cold aims the way he faces since 2026-11-09 (Player.FireConeBlast); Cinderbreath still turns to its enemy.
+			"cone_of_cold" => SpellTargetingMode.Facing,
+			"cinderbreath" => SpellTargetingMode.DirectionalCone,
 			"frozen_bulwark" or "guardian_vines" or "venom_cloak" or "tidal_barrier" => SpellTargetingMode.Self,
 			_ => SpellTargetingMode.NearestEnemy
 		};

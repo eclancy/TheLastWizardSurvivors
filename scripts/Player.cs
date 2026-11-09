@@ -1576,7 +1576,8 @@ public partial class Player : CharacterBody2D
 				tags |= SpellScalingTag.Area | SpellScalingTag.Slow | SpellScalingTag.ProjectileCount;
 				break;
 			case "cone_of_cold":
-				targeting = SpellTargetingMode.DirectionalCone;
+				// The facing family since 2026-11-09 (FireConeBlast): aimed the way he faces, never at an enemy.
+				targeting = SpellTargetingMode.Facing;
 				shape = SpellDamageShape.RadiusBurst;
 				tags |= SpellScalingTag.Area | SpellScalingTag.Slow;
 				break;
@@ -7224,8 +7225,13 @@ public partial class Player : CharacterBody2D
 	private CastOutcome FireConeBlast(SpellData spell, PackedScene scene)
 	{
 		if (scene == null) return CastOutcome.NoTarget;
-		FindNearestEnemy(out var nearest, out _);
-		Vector2 direction = nearest != null ? (nearest.GlobalPosition - GlobalPosition) : Vector2.Right;
+		// THE WAY HE FACES, NEVER AT AN ENEMY (Eric, 2026-11-09, on Isbrand: "implement your suggestion"; .ai/spell-variety.md
+		// phase 1). It joins the facing family (Stormsweep, Sleet Runes): FacingDirection, the way he last walked - every
+		// wizard who holds it, not only Isbrand. It always fired on its cooldown, at the nearest enemy or to the right with
+		// none; it still fires every cooldown, now where he faces. Every cone of the cast takes this one direction
+		// (ConeBlast.Fire): Arctic Blast's half-moon is centred on it and Zero Point's relay is thrown on along it. The
+		// Long Winter's ring has no front, so only its relay is aimed.
+		Vector2 direction = FacingDirection;
 
 		var cone = scene.Instantiate<Node2D>();
 		var script = cone as ConeBlast;
