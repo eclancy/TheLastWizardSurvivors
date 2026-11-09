@@ -120,8 +120,9 @@ public partial class SilverHindEvent : SideEvent
 	public int Approaches => approaches;
 	/// <summary>Where she is now, and whether she is looking. For _ExploreProbe and _UiShot.</summary>
 	public Vector2 HindPosition => hind;
-	public bool IsWatching => mood is Mood.Watching or Mood.Settling;
-	public bool IsTelling => mood == Mood.Tell;
+	public bool IsWatching => mood == Mood.Watching;
+	/// <summary>Her head coming up: before a look, and as she lands from a bound (Settling).</summary>
+	public bool IsTelling => mood is Mood.Tell or Mood.Settling;
 	public bool IsBolting => mood == Mood.Bolting;
 	public IReadOnlyList<Vector2> Places => places;
 
@@ -281,16 +282,17 @@ public partial class SilverHindEvent : SideEvent
 				}
 				break;
 			case Mood.Tell:
+			case Mood.Settling:
 				PlaceSprite(FrameAlertTurn);
 				if (moodLeft <= 0f)
 				{
+					// Landed from a bound, she watches a fixed while (SettleSeconds); else as long as she likes.
+					moodLeft = mood == Mood.Settling ? SettleSeconds : rng.RandfRange(WatchMinSeconds, WatchMaxSeconds);
 					mood = Mood.Watching;
-					moodLeft = rng.RandfRange(WatchMinSeconds, WatchMaxSeconds);
 					CastGaze();
 				}
 				break;
 			case Mood.Watching:
-			case Mood.Settling:
 				PlaceSprite(FrameAlert);
 				if (moodLeft <= 0f)
 				{
@@ -450,15 +452,15 @@ public partial class SilverHindEvent : SideEvent
 		if (u < 1f)
 			return;
 		hind = boltTo;
+		// She lands and turns to look back the way she came, at him - with the tell first, as every look of hers has
+		// one: a look with no warning would catch a man still walking after her bound, which he could not have read.
 		mood = Mood.Settling;
-		moodLeft = SettleSeconds;
-		// She lands looking back the way she came, at him.
+		moodLeft = TellSeconds;
 		if (Player != null)
 		{
 			facingRight = Player.FootPosition.X >= hind.X;
 			gazeAngle = (Player.FootPosition - hind).Angle() + Mathf.DegToRad(rng.RandfRange(-GazeJitterDegrees, GazeJitterDegrees) * 0.5f);
 		}
-		CastGaze();
 	}
 
 	// --- The win -------------------------------------------------------------------------------------
@@ -513,20 +515,20 @@ public partial class SilverHindEvent : SideEvent
 	// --- Drawing -------------------------------------------------------------------------------------
 
 	// Her gaze on the turf: a pale fan from her eyes, stopped at the barrows - faint as her head comes up, full while
-	// she looks, whiter the moment she sees him. On the floor, under every body.
+	// she looks. On the floor, under every body.
 	public override void _Draw()
 	{
 		if (IsResolved || IsDormant)
 			return;
 		float strength = mood switch
 		{
-			Mood.Tell => Mathf.Clamp(1f - moodLeft / Mathf.Max(0.01f, TellSeconds), 0f, 1f) * 0.45f,
-			Mood.Watching or Mood.Settling => 1f,
+			Mood.Tell or Mood.Settling => Mathf.Clamp(1f - moodLeft / Mathf.Max(0.01f, TellSeconds), 0f, 1f) * 0.45f,
+			Mood.Watching => 1f,
 			_ => 0f,
 		};
 		if (strength <= 0f)
 			return;
-		if (mood == Mood.Tell)
+		if (mood is Mood.Tell or Mood.Settling)
 			CastGaze();
 		float half = Mathf.DegToRad(GazeHalfAngleDegrees);
 		Vector2 origin = ToLocal(Eye);
