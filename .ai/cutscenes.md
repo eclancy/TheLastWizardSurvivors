@@ -43,9 +43,9 @@ offset for the prologue's panels. Every hold is a named constant, and `Regressio
 |---|---|---|---|
 | **Boss arrival** (`Node2DGame.BossEntrance.cs`) | the climax: speed lines out of the body in `EntranceFlareElement`'s ramp (violet for the dark wizard), with the shake, bar jolt, push-in kick and flare it had | 0.65 s before the pan (`BossEntrancePanDelay`); on the landed boss 0.5 s after it lands and 0.45 s after the pan rests, whichever is later (`BossEntranceLandedHold`, `RestHold`); the camera goes back with the field still held; home, the bars go out and 0.6 s later the field is let go (`BossEntrancePlayHold`) | pan capped at 220 px/s and 600 px/s2 (`BossEntrancePanMaxSpeed`, `MaxAccel`), the zoom on a capped spring too; both ways |
 | **The landed boss** (`BossEnemy.IsAwaitingFight`) | - | stands in its own sprite, untargetable with its clock stopped, until the field is let go (`LetLandedBodiesFight`); the Long Coil and the kids' wizard lead their arrivals (`EntranceDelaySeconds` 0.6, 0.75) so their reveal lands with the camera there | - |
-| **The prologue's break** (`Prologue`, `Beat.Impact`) | at 2.0 s: warm speed lines out of the Archmage's staff, a shake of the stage, a warm dithered flash | every panel still 0.9 s at its start and 0.35 s at its end; the black holds 0.6 s after the last panel (`EndHoldSeconds`) before the next screen - the prologue's, every lesson's, every freeing's | the drift a smoothstep, at most 23 canvas px/s (`MaxDriftSpeed` 28) |
+| **The prologue's break** (`Prologue`, `Beat.Impact`) | at 2.0 s: warm speed lines out of the Archmage's staff, a shake of the stage, a warm dithered flash; after it the four relight and stand and his creatures creep in (2026-11-08), each easing to a stop by 4.9 s | every panel still 0.9 s at its start and 0.35 s at its end; the black holds 0.6 s after the last panel (`EndHoldSeconds`) before the next screen - the prologue's, every lesson's, every freeing's | the drift a smoothstep, at most 23 canvas px/s (`MaxDriftSpeed` 28) |
 | **The prologue's throne** (the lifting, 2026-11-08) | calm: none - his reach, a hoop flashing on the ground and speed lines of his light under each one rising are drawn in the frames; the tide's burst a few seconds on is his one impact | the circle whole and still for 1.1 s (the dissolve and a beat) before his reach; one of the four taken every 0.65 s; the last at rest 0.4 s before the dissolve out, the panel held 5.9 s (it was 5.2) so the four fit one after another | each lift a smoothstep under 120 art px/s, its box at 12 frames a second (the others' 8 went up in jumps); back and mid as one |
-| **The prologue's tide** (the rush, 2026-11-07) | at 1.4 s, the wave bursting over the crest: COLD speed lines out of the ridge, a shake, his violet - the one impact that is the dark wizard's | the village lit and the slope empty for the first 1.1 s: the quiet before it | the rush is the animated box's own frames (8 fps), never a layer drifting; back and mid drift as one so the flood cannot slide on its ground |
+| **The prologue's tide** (the rush, 2026-11-07; a town overrun, 2026-11-08) | at 1.4 s, the wave bursting over the crest: COLD speed lines out of the ridge, a shake, his violet - the one impact that is the dark wizard's | the town lit and the slope empty for the first 1.1 s: the quiet before it; its people start running from 0.3 s, one about every quarter second | the rush is the animated box's own frames (8 fps), never a layer drifting; back and mid drift as one so the flood cannot slide on its ground; the townsfolk never faster than 30 art px/s |
 | **Lessons and freeings** (embedded reels) | calm: none | the same end hold before the results | the same drift |
 | **The defeat** (`DefeatSequence`) | violet speed lines rush in on him through the zoom; the four jolts it had | freeze held 0.55 s; a 0.3 s close-up before he falls; 0.6 s between his landing and the word | the zoom 0.6 s, eased in and out (it was 0.32 s, fastest on its first frame) |
 | **The dark wizard's fall** (`ThroneDarkWizardBoss`) | the storm: warm speed lines out of his chest, a warm flash; the killing blow's shake | - | - |
@@ -84,8 +84,8 @@ Three things, and each beat below uses at least one:
 
 ### Inside the prologue, not a reel of its own
 
-The two panels sit between `missed` and `road` in the prologue's own beats. Why there and not as a reel
-played straight after:
+The break sits between `missed` and `road` in the prologue's own beats (with the five's panel after it until Eric
+folded that into the road, 2026-11-08). Why there and not as a reel played straight after:
 
 - **The order is the story's.** He frees them, *then* takes the road. A reel after the prologue would show
   the road and then the freeing; a reel between the two would split the prologue into two halves that
@@ -103,25 +103,26 @@ played straight after:
 
 | # | panel | line | what |
 |---|---|---|---|
-| 6 | The break (`break`, 5.4 s) | *You rescued them, and they stand with you.* | **Animated.** The hiding's heath, his tower on the horizon. The four disciplines - Aedan the Pyromancer, Gabbro the Geomancer, Isbrand the Frostweaver, Levina the Stormcaller, each his own real sprite (the second frame of his death strip: going down) put three stops into the dark - kneel in a row, bound wrist to wrist by the dark wizard's chain of light, their staves dark, the chain's violet their only lit edge. The Archmage stands in the middle of them, the title's own figure, his light banked as it was in the hiding. At 1.3 s it comes up; at 2.0 s it bursts and the chain breaks - the length behind him first, then the outer two, then the shackles - link by link going out as it flies (the darkness ramp down to violet, then nothing), one link in four falling dead to the ground, and the Archmage's gold is on their edges now. From 3.2 s their own lights come back to them one after another, motes falling out of the sky they were drawn into in panel 4, and each comes up into his own colours a stop at a time. |
-| 7 | The five (`five`, 4.8 s) | *Four are free. The rest still wait for you.* | The same heath and the same places: the four stand where they knelt (the dissolve is the moment they rise), each in their own sprite and colours, each staff burning his own element again, rimmed in the Archmage's gold on the side that faces him. The Archmage in the middle, in his warded circle as on the title. Each light's pool on the ground in the pigment it makes; the dead chain on the ground in front of them. Five lights on the heath where the last two panels had one. |
+| 6 | The break (`break`, 5.4 s) | *You rescued four - they now stand with you.* | **Animated.** The hiding's heath, his tower on the horizon. The four disciplines - Aedan the Pyromancer, Gabbro the Geomancer, Isbrand the Frostweaver, Levina the Stormcaller, each his own real sprite (the second frame of his death strip: going down) put three stops into the dark - kneel in a row, bound wrist to wrist by the dark wizard's chain of light, their staves dark, the chain's violet their only lit edge. The Archmage stands in the middle of them, the title's own figure, his light banked as it was in the hiding. At 1.3 s it comes up; at 2.0 s it bursts and the chain breaks - the length behind him first, then the outer two, then the shackles - link by link going out as it flies (the darkness ramp down to violet, then nothing), one link in four falling dead to the ground, and the Archmage's gold is on their edges now. From 2.6 s, close behind the shackles, their own lights come back to them one after another (0.15 s apart), motes falling out of the sky they were drawn into in panel 3, and each comes up into his own colours a stop at a time, then stands up off his knees and turns out, back to back with the Archmage. And from 2.3 s the dark wizard's creatures close in on the five of them (2026-11-08, Eric: *"show enemies closing in on the wizards after he breaks the chains and you can see the wizards"*): a caster, a bruiser, a knight and a shielder down off the ridge behind them, growing as they come until they loom over the four's heads, and a hound, a runner and two small ones in along the ground from either side, each creeping in and stopping by 4.9 s, rimmed in the Archmage's gold. |
 
-Then the road (unchanged) and the character select, where all five are playable.
+The five's own panel (*Four are free. The rest still wait for you.*, the four standing where they knelt round the Archmage's
+ward) was removed in Eric's story review of 2026-11-08 (*"remove this, combine with the last panel"*): the five of them now
+walk the road together, small, under *The rest still wait for you.*, and then the character select, where all five are
+playable.
 
-**The lines** are the prologue's fifth and sixth. *The stones where we used to meet. He came here first. He took every wizard
-who might rival him. You are the one he missed. You rescued them, and they stand with you. Four are free. The rest still
-wait for you.* - the story in the past, then the present from "You are the one he missed" on (Eric: "match tenses"), "you"
-from the fourth. The fifth is the rescue and the four on the
-player's side now (Eric, 2026-11-03: *"it should sound more like you rescued them and now they can work with you"*; it was *You
-went back for them*), and says the one thing the picture cannot: that the figure breaking the chain is the player. The sixth
-is the player's goal, told as story (Eric chose it), over the five standing.
+**The line** is the prologue's sixth: *The stones where we used to meet. He came here first. He took every wizard who
+might rival him. There was no one left to defend them. You are the one he missed. You rescued four - they now stand with
+you. The rest still wait for you.* - the story in the past, then the present from "You are the one he missed" on (Eric:
+"match tenses"), "you" from the fifth. The break's is the rescue and the four on the player's side now - Eric's own
+wording from the story review, 2026-11-08; before it *You rescued them, and they stand with you.* (2026-11-03: *"it should
+sound more like you rescued them and now they can work with you"*), once *You went back for them* - and says the one thing
+the picture cannot: that the figure breaking the chain is the player. The road's is the player's goal, told as story.
 
 **Rules it keeps** (`.ai/prologue.md`): the dark wizard's light is the chain and the black sun over the
-tower, nothing else; the Archmage's is the light ramp and the gold it lands on; the four are their real
-sprites (below); nothing from the Sketchbook; feet
-above row 552, so the PC's caption band never crosses a figure. The old rule "the last two panels have one
-warm light each, and it is his" now reads: the hiding and the road have one each; the five is the one
-panel where his light gives theirs back.
+tower, nothing else; the Archmage's is the light ramp and the gold it lands on - on the four, and on his creatures'
+edges as they close in; the four are their real sprites (below); nothing from the Sketchbook; feet above row 552, so
+the PC's caption band never crosses a figure. The old rule "the last two panels have one warm light each, and it is his"
+now reads: the hiding has one; the break is where his light gives theirs back; the road carries the five lights on.
 
 **Real sprites, not cut-outs** (Eric, 2026-11-03: *"Redraw with real sprites"*). The first build drew the
 four, and the freed wizards, as `roster_figure`'s flat one-colour silhouettes - right for the moot, the
@@ -137,11 +138,13 @@ darkness ramp is emission on him and his chain alone); from the break on it is t
 
 **The animation** is the hiding's machinery (`write_anim`, `<name>-anim.png` + `.json`, Prologue.cs's
 `AnimSpec`), now per panel: `ANIMS` in `tools/art/prologue.py` holds each animated panel's box, clock and
-atlas width. The break's box is `BREAK_BOX` (288,384 - 672,576, every edge on the 8-pixel Bayer grid), 8 fps
-over 5.4 s, 35 unique frames of 44 ticks. Its still mid layer is empty inside the box: everything there moves.
+atlas width. The break's box is `BREAK_BOX` (168,384 - 792,584, every edge on the 8-pixel Bayer grid, as wide as
+a PC shows since the creatures came in, 2026-11-08), 8 fps over 5.4 s, 35 unique frames of 44 ticks, about 17 MB of
+texture while it is up. Its still mid layer is empty inside the box: everything there moves. The chain's pieces stay
+where the kneeling wrists held it, whatever the four do after.
 
-**Length:** the prologue is about 38.7 s now (eight panels; `Prologue.ReelSeconds("prologue")`; 38.0 until the
-throne's lifting, 2026-11-08, held its panel 5.9 s instead of 5.2).
+**Length:** the prologue is about 34.6 s now (seven panels; `Prologue.ReelSeconds("prologue")`; 38.7 with the
+five's panel, which Eric's story review took out, 2026-11-08).
 
 ## B. Freed (built)
 
@@ -270,23 +273,24 @@ mid-hold) and `--frames=480` (the sea, line up).
 ## Checking it
 
 ```
-python tools/art/prologue.py break five --preview    # the freeing; tools/art/_prologue/break.png, break-anim.png, five.png
+python tools/art/prologue.py break road --preview    # the freeing and the five on the road; tools/art/_prologue/break.png, break-anim.png, road.png
 python tools/art/freed.py --preview                  # the ground and every freeing; tools/art/_freed/<id>.png
 "$GODOT_BIN" --headless --path . --import            # then commit the .import sidecars
 ```
 
 Both audit every layer against the contract palette and must print **0** off-contract pixels.
 
-**The pictures.** At 60 fps the prologue's panels start dissolving in at 0, 3.9, 9.1, 14.0, 18.5, 23.2,
-27.9 and 32.0 s, and it ends at about 38.7 s. The break starts at frame 1392, so its moment `t` is frame
-`1392 + 60t`: `--frames=1458 --burst=5,42` takes it at 1.1, 1.8, 2.5, 3.2 and 3.9 s (banked, his light up,
-the chain flying, the first lights back, three lights back). The five is mid-hold at 1818, the road at 2064.
-The throne's lifting (`.ai/prologue.md`, "The throne's lifting") starts at frame 234: `--frames=300
---burst=8,34` takes it at 1.1 to 5.1 s.
+**The pictures.** At 60 fps the prologue's seven panels start dissolving in at 0, 3.9, 9.1, 13.6, 18.5,
+23.2 and 27.9 s (moot, throne, taken, tide, missed, break, road), and it ends at about 34.6 s. The break starts
+at frame 1392, so its moment `t` is frame `1392 + 60t`: `--frames=1458 --burst=7,40` takes it at 1.1, 1.8,
+2.4, 3.1, 3.8, 4.4 and 5.1 s (banked, his light up, the chain flying and the first creatures off the ridge, the
+first lights back, the four standing as the creatures close, closer, at rest round the five). The road - the five
+of them on it - is mid-hold at 1836. The throne's lifting (`.ai/prologue.md`, "The throne's lifting") starts at
+frame 234: `--frames=300 --burst=8,34` takes it at 1.1 to 5.1 s.
 
 ```
 "$GODOT_BIN" --path . --resolution 1280x720 --fixed-fps 60 scenes/_UiShot.tscn -- \
-  --scene=res://scenes/Prologue.tscn --frames=1458 --burst=5,42 --shot=cut-break-pc --no-save-writes
+  --scene=res://scenes/Prologue.tscn --frames=1458 --burst=7,40 --shot=cut-break-pc --no-save-writes
 "$GODOT_BIN" --path . --resolution 1280x720 --fixed-fps 60 scenes/_UiShot.tscn -- \
   --scene=res://scenes/Prologue.tscn --reel=freed_tituba --frames=200 --shot=cut-freed-tituba-pc --no-save-writes
 ```
@@ -337,16 +341,23 @@ forging.", he asked that it say he is a slave there), prologue panel 2 redrawn i
 lifting the four out of the stone circle one by one), John Dee taken out of panels 1 and 4 (he read the purple wizard as
 the player), and the Sovereign Rite's lesson removed (the Rite became an ordinary Conjunction, `.ai/sovereign-spell.md`).
 
-**The prologue's second round** - his notes, to be drawn and shown to him before they merge: the tide moves after "He
-took every wizard who might rival him." and becomes a town overrun by shadows with its people running, his tower and its
-glowing eye in the distance, under a new line "There was no one left to defend them."; the hiding wizard hides properly
-instead of standing in the open; the break shows his creatures closing in once the chain is broken, the four visible,
-under "You rescued four - they now stand with you."; the five is removed and folded into the road, the wizard smaller on
-the map, under "The rest still wait for you."; and the Ascension lesson's first panel moves the wizard up out of the line.
+**The prologue's second round** - his notes, drawn on one branch (2026-11-09) and shown to him before they merge
+(`.ai/prologue.md` has each panel as it is now):
+
+| note | done |
+|---|---|
+| the tide after "He took every wizard who might rival him.", under "There was no one left to defend them." | done: the order is moot, throne, taken, tide, missed, break, road (`Prologue.PrologueBeats`, `PANELS`) |
+| the tide: "a town being overrun by shadows, with the people running away", the tower far off "with the glowing eye" | done: a lit town with a hall and spire, the flood over its near half, sixteen of its people running from it, the tower's eye burning; the rush and its impact kept |
+| the hiding: "he should be hiding properly" | done: pressed against the far side of the row's biggest stone from the hound, in its shadow, behind a low rock |
+| the break: "show enemies closing in on the wizards after he breaks the chains and you can see the wizards", under "You rescued four - they now stand with you." | done: their lights back from 2.6 s, standing and turned out by 3.7 s; eight of his creatures closing in from 2.3 s |
+| the five: "remove this, combine with the last panel" | done: the panel and its art deleted; the five of them walk the road |
+| the road: "make the wizard smaller on the map", under "The rest still wait for you." | done: the five small on the road among the landmarks, above the line |
+| the Ascension lesson, panel 1: "the words are in the way of the wizard. move him up so you can see him" | done: his feet at row 544, a step to the left of the light, clear of the line on both screens |
 
 ## Needs Eric's eyes
 
-- The lines *You rescued them, and they stand with you.* and *Four are free. The rest still wait for you.* (2026-11-03).
+- The prologue's second round (above), on a real screen: above all whether the townsfolk read as people at a phone's
+  size, and whether the break's creatures read as closing in or crowd the four.
 - The break at full size on a real screen: whether the four read as kneeling wizards before the light comes
   up (they are dark shapes on cold ground for the first 1.3 s), and whether the burst is too much.
 - The real sprites at x2 beside the Archmage, who is drawn on the panel's finer grid and stands half a

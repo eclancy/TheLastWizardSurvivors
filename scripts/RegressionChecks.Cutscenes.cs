@@ -28,11 +28,12 @@ public static partial class RegressionChecks
 				warnings.Add($"Prologue: '{beat.Name}' says more than one line on a PC (46 characters).");
 		}
 		// Three lines were the prologue's rule, and the freeing adds one (Eric: "Overall keep text minimal"); the moot's
-		// adds a fifth, where the story begins (Eric, 2026-11-03: "The stones where we used to meet."), and the five's a
-		// sixth, the player's goal ("Four are free. The rest still wait for you.").
+		// adds a fifth, where the story begins (Eric, 2026-11-03: "The stones where we used to meet."), and the five's was
+		// a sixth. Eric's story review (2026-11-08) took the five's panel out and gave the tide and the road a line each
+		// ("There was no one left to defend them.", "The rest still wait for you."): seven panels, every one with a line.
 		int lines = reel.Beats.Count(b => !string.IsNullOrEmpty(b.Caption));
-		if (lines > 6)
-			warnings.Add($"Prologue: {lines} panels carry a line; it was written for six at most.");
+		if (lines > 7)
+			warnings.Add($"Prologue: {lines} panels carry a line; it was written for seven at most.");
 		ValidateLightGoesOn(warnings);
 	}
 

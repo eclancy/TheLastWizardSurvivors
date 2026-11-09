@@ -143,8 +143,11 @@ def p_ascension_gift():
     arc(mid, (fx + 30, fy), (sx + 36, sy + 10), 120, 209, [LT], bow=18, spread=10)
     mid.radial(sx, sy, 70, 70, [G[3], G[3], G[4], None])
     sigil(mid, sx, sy, 38, LT)
-    # the player before it, from behind, his own staff answering
-    pr.player_back(mid, 480, 592, 66)
+    # the player before it, from behind, his own staff answering. Up at the near edge of its pool and a step to the
+    # left, his feet above row 548 (Eric, 2026-11-08: "the words are in the way of the wizard. move him up so you can
+    # see him" - at row 592 the PC's line covered him); to the left so that, raised, he does not stand over the
+    # light he is looking at.
+    pr.player_back(mid, 440, 544, 66)
     near_heath(fore, 211, keep_out=lambda x, y: abs(x - 480) < 40 + (y - 600) * 0.2 and y < 700)
     pr.standing_stone(fore, 206, 660, 64, 196, 213, lean=0.05, ramp=[S[3], S[4], S[4], OCC, OCC], toward=(1, -0.5, G[4]))
     pr.standing_stone(fore, 770, 650, 52, 150, 214, lean=-0.05, ramp=[S[3], S[4], S[4], OCC, OCC], toward=(-1, -0.4, G[4]))

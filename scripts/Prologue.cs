@@ -4,8 +4,8 @@ using System.Text.Json;
 using TheOneHeMissed.scripts;
 
 /// <summary>
-/// The story-mode prologue: eight generated panels (tools/art/prologue.py), each held a few seconds
-/// with its layers drifting, five short lines between them, then on to wherever story mode was
+/// The story-mode prologue: seven generated panels (tools/art/prologue.py), each held a few seconds
+/// with its layers drifting, six short lines between them, then on to wherever story mode was
 /// going. See .ai/prologue.md.
 /// </summary>
 /// <remarks>
@@ -26,7 +26,7 @@ using TheOneHeMissed.scripts;
 /// whole screen pixels. Only the caption and the skip prompt fade - type on its own layer, as the
 /// title's prompt does.</para>
 ///
-/// <para><b>Four panels move</b> (the five lifted, the tide's rush, the hiding, the break): a box of the mid layer is swapped frame by frame
+/// <para><b>Four panels move</b> (the four lifted, the town overrun, the hiding, the break): a box of the mid layer is swapped frame by frame
 /// on a clock from an atlas, <c>&lt;name&gt;-anim.png</c>, by the timeline in <c>&lt;name&gt;-anim.json</c>
 /// (<see cref="AnimSpec"/>) - the title's frame-swap, never a tint. Any panel the generator gives the
 /// pair to animates the same way.</para>
@@ -191,47 +191,53 @@ public partial class Prologue : Control
 		// the tide's burst, a few seconds on, is the one that is his. Back and mid drift as ONE, so a wizard standing
 		// in the ring never slides on it; the slow tilt up follows the rise.
 		new("throne", 5.9f, "He came here first.", new Vector2(0f, 4f), new Vector2(0f, 4f), new Vector2(0f, 10f)),
-		// His shadows over the land, coming down on a village that is still lit. THE RUSH (Eric, 2026-11-05: the
-		// army must rush over the horizon; the old beat slid the whole crowd across a still picture as one layer):
-		// its box animates (tools/art/prologue.py, TIDE_BOX) - the slope empty for a breath, heads behind the
-		// crest, the wave over it, the flood down the slope, the front rank looming by the village as the panel
-		// ends. Back and mid drift as ONE, so the flood never slides on the ground it runs on; the motion is the
-		// bodies' own. THE IMPACT (rule 1): at 1.4 s the wave bursts over the crest (TIDE_BURST) - cold speed
-		// lines out of the ridge, a shake, his violet: the one impact that is his, not the player's. Its point,
-		// (600, 404), is crest inside the 360x360 square both canvases show, so the phone sees the burst too -
-		// and a step west of the tower's column, so the burst is the wave's and not the tower exploding.
-		new("tide", 5.6f, null, new Vector2(-6f, 0f), new Vector2(-6f, 0f), new Vector2(-20f, 0f),
-			Impact: new PanelImpact(1.4f, new Vector2(600f, 404f), Warm: false, ShakePx: 7f, FlashScale: 0.6f)),
 		// The wizards led away to his tower, their light drawn out of them. The line says WHY these wizards (Eric,
 		// 2026-11-03: the story should "specifically mention that the villain was imprisoning any wizard he thought
-		// could rival him"); it was "He took them all", which gave no reason. It sets up the next panel: the one he
-		// missed is a rival too. 41 characters, under the PC's one-line 46 (RegressionChecks.Cutscenes).
+		// could rival him"); it was "He took them all", which gave no reason. It sets up the next panel: with the
+		// wizards gone, no one is left to defend the land. 41 characters, under the PC's one-line 46
+		// (RegressionChecks.Cutscenes).
 		new("taken", 5.2f, "He took every wizard who might rival him.", new Vector2(2f, 0f), new Vector2(14f, -2f), new Vector2(-20f, 0f)),
-		// The one he missed, hiding among the stones while his creatures search (its box animates). The back
-		// and the mid drift as one, so the searchers never slide on the ground they walk.
+		// His shadows over the land, coming down on a town that is still lit. Moved after the procession and given a line
+		// (Eric, 2026-11-08: "move this panel after the 'he took every wizard who might rival him' panel", "There was no
+		// one left to defend them" - the full stop added, as on every other line; 37 characters) and redrawn as "a town
+		// being overrun by shadows, with the people running away. the tower should be in the distant background with
+		// the glowing eye". THE RUSH (Eric, 2026-11-05: the army must rush over the horizon; the old beat slid the whole
+		// crowd across a still picture as one layer): its box animates (tools/art/prologue.py, TIDE_BOX) - the slope
+		// empty for a breath, heads behind the crest, the wave over it, the flood down the slope and into the town's
+		// near half, its people running from the other, the front rank in its streets as the panel ends. Back and mid
+		// drift as ONE, so the flood never slides on the ground it runs on; the motion is the bodies' own. THE IMPACT
+		// (rule 1): at 1.4 s the wave bursts over the crest (TIDE_BURST) - cold speed lines out of the ridge, a shake,
+		// his violet: the one impact that is his, not the player's. Its point, (600, 404), is crest inside the 360x360
+		// square both canvases show, so the phone sees the burst too - and a step west of the tower's column, so the
+		// burst is the wave's and not the tower exploding.
+		new("tide", 5.6f, "There was no one left to defend them.", new Vector2(-6f, 0f), new Vector2(-6f, 0f), new Vector2(-20f, 0f),
+			Impact: new PanelImpact(1.4f, new Vector2(600f, 404f), Warm: false, ShakePx: 7f, FlashScale: 0.6f)),
+		// The one he missed, hiding behind the biggest of the stones while his creatures search (its box animates; since
+		// 2026-11-08, Eric: "the wizard is standing out in the open. he should be hiding properly", pressed against the
+		// stone's far side from the hound). The back and the mid drift as one, so the searchers never slide on the
+		// ground they walk.
 		new("missed", 5.4f, "You are the one he missed.", new Vector2(-4f, 0f), new Vector2(-4f, 0f), new Vector2(14f, 0f)),
 		// THE FREEING (.ai/cutscenes.md; Eric, 2026-11-02: "Include a cutscene where the blue robed wizard frees the
 		// four starting wizards."). The Archmage goes back for the four disciplines, on their knees in the dark
 		// wizard's chain, and his light breaks it (its box animates: tools/art/prologue.py, BREAK_BOX); their own
-		// lights come back to them. Back and mid as one again: the four kneel on the ground the back layer lights.
+		// lights come back to them, they stand and turn out, and the dark wizard's creatures close in on the five
+		// (Eric, 2026-11-08: "show enemies closing in on the wizards after he breaks the chains and you can see the
+		// wizards"). Back and mid as one again: the four kneel on the ground the back layer lights.
 		// THE IMPACT (rule 1): at 2.0 s the light his staff holds bursts and the chain breaks (tools/art/prologue.py,
 		// BREAK_AT and _flare, drawn at the staff's head, art (442, 418)). Speed lines out of it in his warm light, a
 		// shake and a flash, over the burst the generator draws.
-		// THE LINE (Eric, 2026-11-03): the rescue, and that the four are with you now - "it should sound more like you
-		// rescued them and now they can work with you". In the story's voice, past tense like the lines before it; it
-		// was "You went back for them", then briefly "Your light broke his chain, and they rose" and "...they fought
-		// beside you" (Eric: "they have not fought beside you yet"), then Eric: "stand with you". 41 characters.
-		new("break", 5.4f, "You rescued them, and they stand with you.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
+		// THE LINE: Eric's, 2026-11-08, "You rescued four - they now stand with you." (43 characters); before it "You
+		// rescued them, and they stand with you." (2026-11-03: "it should sound more like you rescued them and now
+		// they can work with you"), once "You went back for them".
+		new("break", 5.4f, "You rescued four - they now stand with you.", new Vector2(-3f, 0f), new Vector2(-3f, 0f), new Vector2(12f, 0f),
 			Impact: new PanelImpact(2.0f, new Vector2(442f, 418f), Warm: true)),
-		// The five of them, standing where the four knelt, each light his own again. Its line is the player's goal, told
-		// as story (Eric, 2026-11-03, choosing it): four are free and every other wizard he took is still held - the
-		// road is next, and then the character select, where any of the five may walk it. Present tense, matching the
-		// break line before it (Eric: "match tenses"). 43 characters, inside the PC one-line 46.
-		new("five", 4.8f, "Four are free. The rest still wait for you.", new Vector2(-2f, 0f), new Vector2(-2f, 0f), new Vector2(-14f, 0f)),
-		// The road to all of it, past the places the campaign visits in its own order (Eric, 2026-11-05: landmarks
-		// in place of the empty plain; tools/art/prologue.py, "THE JOURNEY'S LANDMARKS"): held a little longer and
-		// pushed a little deeper, so the eye has time to walk the road the drift pans along.
-		new("road", 5.4f, null, new Vector2(0f, 3f), new Vector2(8f, -10f), new Vector2(0f, 18f)),
+		// The road to all of it, past the places the campaign visits in its own order (Eric, 2026-11-05: landmarks in
+		// place of the empty plain; tools/art/prologue.py, "THE JOURNEY'S LANDMARKS"), and the five of them on it, small:
+		// the five's own panel folded in (Eric, 2026-11-08: "remove this, combine with the last panel", and of this one
+		// "make the wizard smaller on the map"). Its line is the five's old second half, the player's goal: "The rest
+		// still wait for you." (28 characters). The mid layer, which carries the five, drifts up and to the left - the
+		// way the road climbs where they walk it - so they go on up it as the panel holds.
+		new("road", 5.4f, "The rest still wait for you.", new Vector2(0f, 3f), new Vector2(-6f, -9f), new Vector2(0f, 18f)),
 	};
 
 	// THE LESSONS (.ai/slow-start.md, "The lessons"; tools/art/lessons.py). Each explains one system in two

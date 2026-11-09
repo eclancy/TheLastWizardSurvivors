@@ -1,6 +1,6 @@
 # The prologue
 
-The story-mode introduction: eight illustrated panels, about 39 seconds, mostly without words. Built
+The story-mode introduction: seven illustrated panels, about 35 seconds, mostly without words. Built
 2026-10-31 from Eric's request: *"When you first open up story mode, there should be an introduction
 to the story, mostly told through art, introducing the final boss and his dark creatures taking over
 the land, and kidnapping the other wizards."* And then: *"Overall keep text minimal."*
@@ -14,27 +14,29 @@ choice below comes from it.
 |---|---|---|---|
 | 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it four of the game's own wizards (below) - the disciplines, standing square round the fire - each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
 | 2 | He comes (`throne`) | *He came here first.* | **Animated** (2026-11-08, Eric: *"it's hard to see what he's doing in the background, it should show him lifting each of the wizards into the air to capture them"*, then *"the silhouette of 4 wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard, since he is the wizard that you are"*, then *"when the dark wizard lifts the wizards into the air, they should still be at the stone circles. you can also show the colored dark silhouettes when he lifts them"*; below). **Only his silhouette**, in the foreground and with his back to us: a tall cowled shape inside a collar of points, his black sun behind his head as an eclipse, one arm raised and reaching up into the scene. No face, folds, trim or keys; the shadow running out of his hem has eyes in it. Beyond him, the moot's ring of standing stones round its cold ward - the far stones tall behind and between them, the near ones thrown down outward - and in it the four disciplines (the four the break frees, in its order), cast in shadow against his sun's glow, each with nothing on him in colour but his own light. Then he takes them one at a time, far to near: his reach leaves his hand, a hoop of his violet closes on one, his own colour comes up on him in its light - the moot's red, green, blue or gold, dark and shaded - and he is lifted out of the ring into the sky, where he hangs in the dark wizard's grip while his light streams back into the hand. They end in an arc over the empty ring that curves down into the hand. Never Dee, whose grey robe and violet light read as the player, who is never taken. |
-| 3 | The tide (`tide`) | - | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture). His shadows over the land: a village at the foot of a hill, still lit and quiet for a breath - then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope toward the village, every body on its own lane with its feet on the ground, growing as it comes, the front rank striding up big by the village as the panel ends. The last frame is the old still: the flood arrived. Every one of them wears his mark in its eyes. |
-| 4 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards - six of them, the secret three among them, never Dee - led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
-| 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and in the row, between two of them, the player - the title's figure, facing us, still as a stone, his light put out to an ember. Beyond the row his creatures search: a hound trots along it nose down, stops at his shoulder and works the air beside him - his ember goes out - and goes on; a caster in the gap watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. They never find him. |
-| 6 | The break (`break`) | *You rescued them, and they stand with you.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it, their own lights coming back. |
-| 7 | The five (`five`) | *Four are free. The rest still wait for you.* | The four standing where they knelt, each light his own again, and the Archmage in his warded circle among them. |
-| 8 | The road (`road`) | - | Seen from above and behind: the player small on a road that winds over the heath toward everything he holds, the tower on the far horizon. Since 2026-11-07 (Eric: landmarks in place of the empty plain) the road passes the places the campaign visits, in campaign order, nearest first: the west wood's boughs, the Fields' hedged strips and barn, the Broken Circle's ring (eight stones and the walker's gap), the scarp over the Sunken Cave, the Swamp's pools and snags, the Ruins' colonnade and keep, the Waste's pale peaks, the Sands' dunes, and the Emberdeep's black bluffs that the road threads just under the tower. No lit window among them - the player's light is the only warm light on the road. Then the character select - the player choosing who walks it, any of the five. |
+| 3 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards - six of them, the secret three among them, never Dee - led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
+| 4 | The tide (`tide`) | *There was no one left to defend them.* | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture; moved after the procession and redrawn 2026-11-08, Eric: *"show a town being overrun by shadows, with the people running away. the tower should be in the distant background with the glowing eye"*). His shadows over the land: a town at the foot of a hill - a street's depth of houses and a hall with a spire, its windows lit - quiet for a breath; then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope and into the town, over the houses of its near half, every body on its own lane with its feet on the ground, growing as it comes, the front rank in its streets as the panel ends. Out of the town's far side its people run - small figures with the town's light on their backs, children and cloaks and packs among them - away from it and down the slope toward us. The tower stands far off on the horizon, its eye burning. Every one of the flood wears his mark in its eyes. |
+| 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and pressed against the far side of the biggest of them - in its shadow, behind a low rock - the player, the title's figure, still as the stone, his light put out to an ember (since 2026-11-08, Eric: *"the wizard is standing out in the open. he should be hiding properly"*; he stood in the gap between two stones). His creatures search: a hound trots along the row nose down to the stone's other edge, lifts its head and works the air there, a stone's width from him - his ember goes out - and turns back; a caster further along watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. We see both of them and the stone between; they never find him. |
+| 6 | The break (`break`) | *You rescued four - they now stand with you.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it; their own lights come back to them close behind the shackles, they come up into their own colours, stand and turn out, back to back with him - as the dark wizard's creatures close in on the five of them, down off the ridge to loom over their heads and in along the ground from either side (2026-11-08, Eric: *"show enemies closing in on the wizards after he breaks the chains and you can see the wizards"*). |
+| 7 | The road (`road`) | *The rest still wait for you.* | Seen from above and behind: the five of them - the Archmage and the four he freed, each in his own colours with his own light - small on a road that winds over the heath toward everything the dark wizard holds, the tower on the far horizon. The five's own panel folded in (2026-11-08, Eric: *"remove this, combine with the last panel"*, and of this one *"make the wizard smaller on the map"*); they walk it up and away above the line. Since 2026-11-07 (Eric: landmarks in place of the empty plain) the road passes the places the campaign visits, in campaign order, nearest first: the west wood's boughs, the Fields' hedged strips and barn, the Broken Circle's ring (eight stones and the walker's gap), the scarp over the Sunken Cave, the Swamp's pools and snags, the Ruins' colonnade and keep, the Waste's pale peaks, the Sands' dunes, and the Emberdeep's black bluffs that the road threads just under the tower. No lit window among them - the five's lights are the only warm lights on the road. Then the character select - the player choosing who walks it, any of the five. |
 
-**Six lines, all in the game's own voice.** The first two are the Broken Circle's own note, word for word,
-split across the moot and his coming: *"The stones where we used to meet."* / *"He came here first."* The moot
+**Seven lines, all in the game's own voice, one on every panel.** The first two are the Broken Circle's own note, word
+for word, split across the moot and his coming: *"The stones where we used to meet."* / *"He came here first."* The moot
 was silent until 2026-11-03, so "here" was nowhere (Eric: *"where are they? can we add a little context?"*, then
 *"lets include that explanation in that first cutscene then 'The stones where we used to meet.'"*), and the
-player who reaches the stones in chapter 3 has heard them before (`ChapterNotes`, `stage_10`). Six is the
-validator's cap now (`RegressionChecks.Cutscenes`; it was four, Eric's *"Overall keep text minimal"*); "He took every wizard who might rival him" is the premise's reason, the one thing the
-procession cannot show - why these wizards (Eric, 2026-11-03: the story should "specifically mention that the
-villain was imprisoning any wizard he thought could rival him"; it was "He took them all", which gave none,
-and it makes the next line's one he missed a rival too); "You are the one he missed" is the premise's sentence; "You rescued them, and they fought beside
-you" is the freeing's - the rescue, and that the four are with the player now (Eric, 2026-11-03: *"it should sound
-more like you rescued them and now they can work with you"*; it was "You went back for them", then briefly "Your
-light broke his chain, and they rose"), saying the one thing the picture cannot: that the one breaking the chain
-is the player. "Four are free. The rest still wait for you" is the player's goal told as story (Eric chose
-it), over the five standing, before the road and the character select.
+player who reaches the stones in chapter 3 has heard them before (`ChapterNotes`, `stage_10`). Seven is the
+validator's cap now (`RegressionChecks.Cutscenes`; it was four, Eric's *"Overall keep text minimal"*, then six, and
+his story review of 2026-11-08 gave the tide and the road a line each and took the five's panel out); "He took every
+wizard who might rival him" is the premise's reason, the one thing the procession cannot show - why these wizards
+(Eric, 2026-11-03: the story should "specifically mention that the villain was imprisoning any wizard he thought
+could rival him"; it was "He took them all", which gave none); "There was no one left to defend them" follows it, over
+the town overrun (Eric's, 2026-11-08) - with the wizards taken, no one stands between his shadows and the land;
+"You are the one he missed" is the premise's sentence; "You rescued four - they now stand with you" is the freeing's
+(Eric's wording, 2026-11-08; it was "You rescued them, and they stand with you.", 2026-11-03: *"it should sound more
+like you rescued them and now they can work with you"*), saying the one thing the picture cannot: that the one
+breaking the chain is the player; and "The rest still wait for you" is the player's goal told as story, over the five
+of them on the road, before the character select (the second half of the five's old line, "Four are free. The rest
+still wait for you."). Every line keeps to one line on a PC (46 characters) and ends with a full stop.
 Nothing else is said: no title card, no narration, nothing an image is already saying
 (`world-and-tone.md` tone rule 2).
 
@@ -63,7 +65,8 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   (`roster_figure` / `silhouette` in the generator: the 48 cell's pixels, contact line and sparks
   dropped, smoothed onto the panel's grid, filled flat, lit only at the anchor where his own element
   sits in the sprite). Which frames: idle in the moot and in panel 2 while he stands, the first frame of
-  his death strip once the hoop has him (the flinch), his walk in panel 4. In panel 2, standing, they are cast
+  his death strip once the hoop has him (the flinch), his walk in the procession (panel 3) and on the road. In
+  panel 2, standing, they are cast
   in shadow - occlusion, a rim of violet on the edge that faces the light, and nothing in colour but each one's
   own light - and told apart by outline alone: the Pyromancer's lantern and cape, the Geomancer's bulk and
   fork, the Frostweaver's crown and trident, the Stormcaller's hair and raised fork. Once the hoop has one,
@@ -78,8 +81,9 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   get captures by him"*, then *"Yes, remove him"* for the moot and the procession): his grey robe and violet
   light read as the player, and the player is never taken. He stood behind the moot's fire and walked fifth
   in the chain; the four in the moot now stand square round the fire, and the chain closed up behind him.
-- **The player is the light.** The hiding and the road have one warm light each, and it is his; the
-  break and the five are where his light gives the four theirs back.
+- **The player is the light.** The hiding has one warm light, and it is his; the break is where his light
+  gives the four theirs back, and the road carries the five lights on together. (The tide's town has lit
+  windows: the land's own light, about to go out.)
 
 **One tension, and how Eric settled it (2026-11-01).** `world-and-tone.md` tone rule 5 says *"He is
 never on screen until he is."* Eric asked for the prologue to introduce him, then ruled: *"The dark
@@ -100,7 +104,7 @@ tongues - drawn as one smooth bow he read as a cone.
 every random stream uses `rng.random()` only (Python 3 changed `randrange`).
 
 ```
-python tools/art/prologue.py              # all eight panels into assets/bonelight/ui/prologue/
+python tools/art/prologue.py              # all seven panels into assets/bonelight/ui/prologue/
 python tools/art/prologue.py taken road   # just these
 python tools/art/prologue.py --preview    # also tools/art/_prologue/<panel>.png (gitignored)
 "$GODOT_BIN" --headless --path . --import  # then import, and commit the .import sidecars
@@ -131,17 +135,20 @@ silhouettes and the searching hound (`sniffing_hound`), the dark wizard, the bla
 the player from behind (`player_back`).
 
 **The animated panels.** Four panels animate, each in its own box of its mid layer (`ANIMS` holds each
-one's box, clock and atlas width): the four lifted (`THRONE_BOX`, below), the tide's rush (`TIDE_BOX`,
-560x272 at 400,328 - the whole flood, so its still mid layer is empty), the hiding's searchers
-(`MISSED_BOX`, 368x112 at 296,400) and the break's chain (`BREAK_BOX`; `.ai/cutscenes.md` says what
-moves). Each is drawn at 8 frames a second over the panel's hold (the throne at 12) and written as
+one's box, clock and atlas width): the four lifted (`THRONE_BOX`, below), the tide's rush and the town's
+people running (`TIDE_BOX`, 560x272 at 240,328 since the town moved into it, 2026-11-08 - the whole flood
+and the townsfolk, so its still mid layer is empty), the hiding's searchers, his stone and the hound beside it
+(`MISSED_BOX`, 496x152 at 168,400, out to the PC's left edge so the hound walks in from it) and the break's
+chain, the four standing and the creatures closing in (`BREAK_BOX`, 624x200 at 168,384, as wide as a PC shows;
+`.ai/cutscenes.md` says what moves). Each is drawn at 8 frames a second over the panel's hold (the throne at 12) and written as
 `<name>-anim.png` (an atlas, four frames a row; the throne's eight) with `<name>-anim.json` (the
 box, the clock, and a timeline of one atlas frame per tick, so a held frame is stored once). Each frame
 is the WHOLE mid layer inside the box - so laid over the still mid layer it is the scene at that moment,
 and outside the box nothing moves. Every edge and size is a multiple of 8, so the dissolve's Bayer
 threshold, read from the atlas's own pixel, matches the mid layer's under it: the box dissolves with the
-panel, pixel for pixel, with no seam. The hiding is about 7 MB of texture while its panel is up; the tide,
-which animates its whole flood, about 23 (446 KB on disk - flat colours compress well). The tide's bodies
+panel, pixel for pixel, with no seam. While its panel is up the hiding is about 13 MB of texture, the break
+about 17, and the tide, which animates its whole flood, about 26 (354 KB on disk - flat colours compress well);
+two panels are in memory at once. The tide's bodies
 are rendered once per (kind, size, seed, light) and pasted along their lanes (`creature_fig`,
 `_TIDE_CACHE`), or the 45 frames would re-draw 1,600 creatures each.
 
@@ -288,24 +295,27 @@ xvfb-run -a -s "-screen 0 1400x1300x24" "$GODOT_BIN" --path . --resolution 1280x
 Add `--resolution 540x1212 ... --portrait --safe-area` for the Pixel 9 canvas. (On a desktop, `--safe-area`
 takes its insets from the monitor, and on this machine they come out uneven left and right: the prologue's
 full-screen stage is inset by both, so the whole picture sits about 15 art pixels left of where a phone,
-whose side insets are equal, puts it. Shoot once without it to see the art centred.) At 60 fps the panels
-sit mid-hold at frames 138, 411 (the throne, animated), 714 (the tide, animated), 996, 1278, 1554 (the
-break, animated: see `.ai/cutscenes.md`), 1818 and 2064; frame 255 is mid-dissolve from the first to the
-second, and the whole thing ends at about frame 2322. The throne starts dissolving in at frame 234, so its
-moment `t` seconds in is frame `234 + 60t`: `--frames=300 --burst=8,34` (above) takes it at 1.1, 1.7, 2.2,
-2.8, 3.4, 3.9, 4.5 and 5.1 s (the four in the ring; the first in his hoop; the first up and the second
-taken; the third taken; the third rising and the last taken; the last rising; all four held; at rest before
-the dissolve), and frame 567 is mid-dissolve from it into the tide. The tide starts dissolving in at frame
-546, so its moment `t` seconds in is frame `546 + 60t`: `--frames=642 --burst=5,42` takes the rush at 1.6,
-2.3, 3.0, 3.7 and 4.4 s (the wave over the crest, the pour, the flood mid-slope, the front rank arriving).
-The hiding starts dissolving in at frame 1110, so its moment `t` seconds in is frame `1110 + 60t`:
-`--frames=1170 --burst=4,60` takes it at 1, 2, 3 and 4 s (the hound arriving, sniffing at his shoulder,
-standing, gone past). `--frames=138 --burst=6,300` takes the first six panels in one run, each well inside
-its hold.
+whose side insets are equal, puts it. Shoot once without it to see the art centred.) At 60 fps the seven
+panels start dissolving in at frames 0, 234, 546, 816, 1110, 1392 and 1674 (moot, throne, taken, tide,
+missed, break, road) and sit mid-hold at 138, 411 (the throne, animated), 702, 984 (the tide, animated),
+1272 (the hiding, animated), 1554 (the break, animated: see `.ai/cutscenes.md`) and 1836; frame 255 is
+mid-dissolve from the first to the second, and the whole thing ends at about frame 2076 (34.6 s). The
+throne starts dissolving in at frame 234, so its moment `t` seconds in is frame `234 + 60t`:
+`--frames=300 --burst=8,34` (above) takes it at 1.1, 1.7, 2.2, 2.8, 3.4, 3.9, 4.5 and 5.1 s (the four in the
+ring; the first in his hoop; the first up and the second taken; the third taken; the third rising and the
+last taken; the last rising; all four held; at rest before the dissolve). The tide starts dissolving in at
+frame 816, so its moment `t` seconds in is frame `816 + 60t`: `--frames=912 --burst=5,42` takes the rush at
+1.6, 2.3, 3.0, 3.7 and 4.4 s (the wave over the crest and the first of the town running, the pour, the flood
+in the town's near half, the front rank in its streets, its people out on the slope). The hiding starts
+dissolving in at frame 1110, so its moment `t` seconds in is frame `1110 + 60t`: `--frames=1170
+--burst=4,60` takes it at 1, 2, 3 and 4 s (the hound coming along the row, working the air at the far edge
+of his stone, turning, gone back). `--frames=138 --burst=6,300` takes the first six panels in one run, each
+well inside its hold.
 
 ## Not done
 
 - Only the throne, the tide, the hiding and the break animate. The others are still but for drift (no
-  flicker on the fire, no blinking eyes); the animated box would carry any of them if it is wanted.
+  flicker on the fire, no blinking eyes, the five on the road walking only by the mid layer's drift); the
+  animated box would carry any of them if it is wanted.
 - No pad has been held on the skip prompt and no phone has played it; both are reasoned from
   `MenuNavigator` and `BaseButton` and tested with an injected key.
