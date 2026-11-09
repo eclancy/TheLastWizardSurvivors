@@ -2616,6 +2616,8 @@ public partial class LevelUpMenu : CanvasLayer
 		Control narrowElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Begin, family);
 		if (narrowElements != null)
 			text.AddChild(narrowElements);
+		if (BuildRecipeSealMark(option, evo, centred: false) is Control narrowSeal)
+			text.AddChild(narrowSeal);
 		// No advice line here either (BuildEvolutionOptionCard).
 
 		return root;
@@ -2764,6 +2766,8 @@ public partial class LevelUpMenu : CanvasLayer
 		Control wideElements = BuildTagGainRow(evo, option, FlowContainer.AlignmentMode.Center, family);
 		if (wideElements != null)
 			content.AddChild(wideElements);
+		if (BuildRecipeSealMark(option, evo, centred: true) is Control wideSeal)
+			content.AddChild(wideSeal);
 
 		// No advice line ("Synergizes with raw damage and attack speed - the shards fly straight, so
 		// ..."): two or three lines a card that pushed the level 8 paths below a 1280x720 screen, saying

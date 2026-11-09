@@ -36,7 +36,10 @@ public class SaveData
 	// section 9): Arcane Explosion and Gravewell made one, paid by its Feat rather than the Warden of
 	// the Deep's deed. A save that owned the Rite, did that deed or beat the Warden keeps it - its
 	// Feat is recorded done, as 24 did for Shadow Bolt.
-	public const int CurrentSchemaVersion = 26;
+	// 27 is the Conjunction ladder's (.ai/conjunction-progression.md, rung I): PinnedRecipeId, the one recipe the
+	// player has pinned. A save from before has pinned nothing, so the step only makes that explicit. (Built as 26 in
+	// parallel with the Rite's; the Rite reached the trunk first, so the pin is 27.)
+	public const int CurrentSchemaVersion = 27;
 	public const int CampaignSchemaVersion = 8;
 	private const int MaxTelemetryHistory = 25;
 
@@ -175,6 +178,14 @@ public class SaveData
 	/// player's own choice (everything untracked), which is why the default lives here and not in a reader.
 	/// </summary>
 	public List<string> TrackedQuestIds { get; set; } = new() { QuestLog.NextWizardId };
+
+	/// <summary>
+	/// The one Conjunction the player has pinned (ConjunctionLadder, rung I of .ai/conjunction-progression.md): a
+	/// recipe's id, or empty. Its checklist is on the pause screen and its next step one line in the quest corner.
+	/// Pinned from the Codex; read only once the Conjunctions lesson is learned (ConjunctionLadder.Pinned). Schema 27
+	/// added it and pins nothing (MigrateToPinnedRecipe).
+	/// </summary>
+	public string PinnedRecipeId { get; set; } = string.Empty;
 
 	/// <summary>
 	/// The chapters whose note (ChapterNotes) has been shown, as stage ids: a note shows on the first entry
@@ -480,6 +491,10 @@ public class SaveData
 
 		if (SchemaVersion < 26)
 			MigrateRiteToConjunction();
+
+		// 27: the Conjunction ladder's pin (.ai/conjunction-progression.md, rung I). Adds the field and pins nothing.
+		if (SchemaVersion < 27)
+			MigrateToPinnedRecipe();
 
 		if (log)
 			GD.Print($"SaveData: migrated schema {from} -> {CurrentSchemaVersion}; " +
@@ -834,6 +849,16 @@ public class SaveData
 	/// save never held the capacity, so it buys them like any Power. Returns the levels granted,
 	/// for the validator.
 	/// </summary>
+	/// <summary>
+	/// Schema 27: the Conjunction ladder's pin (ConjunctionLadder.Pin). Nothing is credited or taken: a save from before
+	/// had no pin, so it has none now - written down rather than left to a default, so a stray value in an older file
+	/// (there is none to find) could never pin a recipe the player did not choose. RegressionChecks.ValidatePinnedRecipeMigration.
+	/// </summary>
+	internal void MigrateToPinnedRecipe()
+	{
+		PinnedRecipeId = string.Empty;
+	}
+
 	internal int MigrateToBoonRework()
 	{
 		if ((Lifetime?.TotalRuns ?? 0) <= 0 && (RunTelemetryHistory?.Count ?? 0) <= 0)
@@ -1475,6 +1500,7 @@ public class SaveData
 			["FullBookKept"] = FullBookKept,
 			["FreeingsOwed"] = freeingsOwed,
 			["BalancePresetId"] = BalancePresetId,
+			["PinnedRecipeId"] = PinnedRecipeId ?? string.Empty,
 			["PlaytestChecklistState"] = playtestChecklistState
 		};
 	}
@@ -1798,6 +1824,9 @@ public class SaveData
 
 		if (root.ContainsKey("BalancePresetId"))
 			result.BalancePresetId = GlobalStatsManager.NormalizeBalancePresetId(root["BalancePresetId"].AsString());
+		// Schema 27 (rung I of the Conjunction ladder): the one recipe pinned, or empty.
+		if (root.ContainsKey("PinnedRecipeId") && root["PinnedRecipeId"].VariantType == Variant.Type.String)
+			result.PinnedRecipeId = root["PinnedRecipeId"].AsString().Trim();
 
 		if (root.ContainsKey("PlaytestChecklistState"))
 		{

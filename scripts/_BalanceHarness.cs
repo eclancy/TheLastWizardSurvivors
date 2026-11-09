@@ -85,6 +85,22 @@ public partial class _BalanceHarness : Node
 	// --all-unlocked --immortal. The report's FAR SKY line and the summary's farSky= say when the recipe was made, in
 	// the run's PACE minutes (Node2DGame.PaceSeconds), and how many cards the favour put in a hand.
 	private string farSkyArg;
+	// THE CONJUNCTION LADDER (.ai/conjunction-progression.md section 4's measurement; ConjunctionLadder):
+	//   --kindred=N     rung II: Kindred Draw at level N this run, whatever the save bought (ConjunctionLadder.KindredToolLevel).
+	//   --planner       --farmed, as a planner stands there: the lessons the road behind him has taught (the farmed save
+	//                   finds the teachers but never plays their reels, so it had learned nothing), and the rerolls and
+	//                   bans a planner buys (Fate Fracture 5, Proscription 3, as --all-unlocked holds them).
+	//   --curate=N      N spells set aside in the Spell Index, as N Redactions allow - never one of --seek-combo's
+	//                   parents or the wizard's own, never below the pool's floor (GlobalStatsManager.MinimumOfferablePool).
+	//   --foretell=ID|off  rung IV: Nostradamus foretells that recipe on any chapter (ConjunctionLadder.ForetellToolOverride);
+	//                   its parents dealt by the far sky's favour, without the sky's payout. FORETOLD log lines.
+	//   --pair-shares[=half|full|off]  rung III: the pair shares its light this run whatever the save has learned, at the
+	//                   strength it ships at (half since the measurement: the partner counting at most 1); =full the
+	//                   doc's first strength, =half the shipped one, =off never. Each Ascension the share opened is
+	//                   logged as a PAIR SHARES line.
+	// The summary's ladder= says what was on (kindred level and cards leaned, curated count).
+	private bool planner;
+	private int curate;
 	// --stop-when-made: end the run the moment the --far-sky / --seek-combo recipe is made - the measurement's one
 	// number is when, and a swarm at the cap runs at a few frames a second.
 	private bool stopWhenMade;
@@ -412,6 +428,18 @@ public partial class _BalanceHarness : Node
 			// the A/B of .ai/slow-start.md section 8 on one tree. No page opens mid-run under it.
 			else if (arg.StartsWith("--slots=")) SpellBook.ToolOverride = int.Parse(arg.Substring(8));
 			else if (arg == "--farmed") Farmed = true;
+			else if (arg == "--planner") { planner = true; Farmed = true; }
+			else if (arg.StartsWith("--curate=")) curate = Math.Max(0, int.Parse(arg.Substring(9)));
+			else if (arg.StartsWith("--kindred=")) ConjunctionLadder.KindredToolLevel = Math.Clamp(int.Parse(arg.Substring(10)), 0, ConjunctionLadder.KindredDrawLevels);
+			else if (arg.StartsWith("--foretell=")) ConjunctionLadder.ForetellToolOverride = arg.Substring(11).Trim();
+			else if (arg == "--pair-shares") ConjunctionLadder.PairShareToolOverride = true;
+			else if (arg.StartsWith("--pair-shares="))
+			{
+				string how = arg.Substring(14).Trim();
+				ConjunctionLadder.PairShareToolOverride = !how.Equals("off", StringComparison.OrdinalIgnoreCase);
+				if (how.Equals("half", StringComparison.OrdinalIgnoreCase) || how.Equals("full", StringComparison.OrdinalIgnoreCase))
+					ConjunctionLadder.PairShareHalf = how.Equals("half", StringComparison.OrdinalIgnoreCase);
+			}
 			else if (arg.StartsWith("--arcane=")) FarmedArcane = int.Parse(arg.Substring(9));
 			else if (arg.StartsWith("--stop-need=")) StopNeed = float.Parse(arg.Substring(12), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--stop-overrun=")) StopOverrunSeconds = float.Parse(arg.Substring(15), System.Globalization.CultureInfo.InvariantCulture);
@@ -493,6 +521,7 @@ public partial class _BalanceHarness : Node
 		if (Explore || giveRelics.Length > 0 || grantBoons.Length > 0)
 			SaveManager.WritesDisabled = true;
 		ApplyFarSkyArg();
+		ApplyLadderArgs();
 
 		game = ResourceLoader.Load<PackedScene>("res://scenes/node_2d_game.tscn").Instantiate();
 		// --seed is the run's seed too: the ground, the side event, the secrets and a chapter's own rules
@@ -1047,6 +1076,7 @@ public partial class _BalanceHarness : Node
 		if (SeekApotheosis || SeekAscensions) TrackTier();
 		if (!string.IsNullOrEmpty(SeekCombo)) TrackCombo();
 		TrackFarSky();
+		TrackLadderMet();
 		if (SeekingRite) TrackSovereign();
 		TrackSpellLevel((float)delta);
 		TrackAscensions();
@@ -1223,7 +1253,17 @@ public partial class _BalanceHarness : Node
 			data.ArcaneUpgradeLevels[bought] = (data.ArcaneUpgradeLevels.TryGetValue(bought, out int had) ? had : 0) + 1;
 			left -= bestCost;
 		}
-		metaLabel = $"farmed(road {behind.Count},arcane {budget},book {SpellBook.PagesFor(data)})";
+		if (planner)
+		{
+			// The reels the road behind him owed, played: each found teacher's lesson, lowest rung first (Teachings.Owed).
+			for (List<Teachings.Lesson> owed = Teachings.Owed(data); owed.Count > 0; owed = Teachings.Owed(data))
+				if (!Teachings.Teach(data, owed[0]))
+					break;
+			data.ArcaneUpgradeLevels["rerolls"] = Math.Max(5, data.ArcaneUpgradeLevels.TryGetValue("rerolls", out int r) ? r : 0);
+			data.ArcaneUpgradeLevels["bans"] = Math.Max(3, data.ArcaneUpgradeLevels.TryGetValue("bans", out int b) ? b : 0);
+			GD.Print($"HARNESS planner: lessons {string.Join(",", data.LessonsLearned)}; rerolls 5, bans 3");
+		}
+		metaLabel = $"{(planner ? "planner" : "farmed")}(road {behind.Count},arcane {budget},book {SpellBook.PagesFor(data)})";
 		GD.Print($"HARNESS farmed save at {stage.DisplayName}: {behind.Count} chapters behind it, {spells} spells and {boons} boons from deeds,"
 			+ $" {budget - left} of {budget} Arcane on Powers: "
 			+ string.Join(", ", FarmedPowers.Select(p => $"{p.Id} {(data.ArcaneUpgradeLevels.TryGetValue(p.Id, out int n) ? n : 0)}")));
@@ -2979,7 +3019,7 @@ public partial class _BalanceHarness : Node
 			+ $" apotheosis={(apotheosisTakenAt < 0f ? "-" : $"{apotheosisTakenAt / 60f:0.0}")}"
 			+ $" level={player?.CurrentLevel ?? 0} L10={Level(10)} L17={Level(17)} L20={Level(20)} L23={Level(23)} L26={Level(26)} L29={Level(29)}"
 			+ $" atCap={reachedCardCapAt.Count} slots={player?.GetEquippedSpells().Count ?? 0}/{player?.SpellSlots ?? Player.MaxSpellSlots}"
-			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}";
+			+ $" boons={player?.GetOwnedBoonIds().Count ?? 0}{ComboSummary()}{SovereignSummary()}{FarSkySummary()}{LadderSummary()}";
 	}
 
 	// --- the GOOD ORDINARY policy (--policy=ordinary) ------------------------------------------
@@ -3611,6 +3651,64 @@ public partial class _BalanceHarness : Node
 			? "HARNESS FAR SKY off: the far sky names nothing this run"
 			: $"HARNESS FAR SKY forced: '{id}' is tonight's Conjunction on this chapter, favour on");
 	}
+
+	// --curate and --kindred, once the save is in place.
+	private void ApplyLadderArgs()
+	{
+		if (ConjunctionLadder.KindredToolLevel is int kindred)
+			GD.Print($"HARNESS LADDER Kindred Draw at level {kindred} (x{ConjunctionLadder.KindredMultiplier(kindred):0} as often)");
+		if (curate <= 0 || GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data is not SaveData save)
+			return;
+		SaveManager.WritesDisabled = true;
+		CharacterData who = CharacterRoster.GetByIndex(CharacterIndex);
+		var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (who?.StartingSpellResource != null)
+			keep.Add(who.StartingSpellResource.Id);
+		if (ComboTarget() is ComboDefinition target)
+			foreach (ComboIngredient parent in target.Ingredients)
+				keep.Add(parent.SpellId);
+		// The planner's set-aside: spells his plan never wants, last in the book's order first (a stable, seedless pick).
+		var aside = new List<string>();
+		foreach (string id in UnlockCatalog.AllSpellIds.Reverse())
+		{
+			if (aside.Count >= curate || GlobalStatsManager.GetCurationSlotCapacity(save) <= GlobalStatsManager.GetRemovedSpellCount(save))
+				break;
+			if (keep.Contains(id) || ComboCatalog.IsCombination(id) || !GlobalStatsManager.IsSpellUnlockedForLevelUp(save, id)
+				|| !UnlockCatalog.MayBeOffered(id, who?.Id) || GlobalStatsManager.IsSpellRemovedFromPool(save, id))
+				continue;
+			save.RemovedSpellIds.Add(id);
+			aside.Add(id);
+		}
+		curated = aside.Count;
+		GD.Print($"HARNESS LADDER curated {aside.Count} of {curate} asked: {string.Join(",", aside)}");
+	}
+
+	private int curated;
+
+	// Every fusion the strip offers, the first pace minute it does (the guard rail, cell E: "a recipe met in at most
+	// one run in five" - met is offered, as the recipe's Feat counts it). Read once a tick; a handful of recipes.
+	private readonly Dictionary<string, float> ladderMetAtPace = new(StringComparer.OrdinalIgnoreCase);
+
+	private void TrackLadderMet()
+	{
+		if (player == null || !IsInstanceValid(player))
+			return;
+		foreach (ComboDefinition recipe in ComboCatalog.Fusions)
+		{
+			if (ladderMetAtPace.ContainsKey(recipe.Id))
+				continue;
+			ComboStanding standing = player.EvaluateCombo(recipe);
+			if (standing.Ready || (standing.Taken && !ComboCatalog.StartsFused(recipe, player.SelectedCharacter?.Id)))
+				ladderMetAtPace[recipe.Id] = PaceMinutesNow;
+		}
+	}
+
+	// " ladder=kindred2,leaned14,curated8"
+	private string LadderSummary() =>
+		$" ladder=kindred{player?.KindredDrawLevel ?? 0},leaned{player?.KindredLeanedCards ?? 0},curated{curated}{(planner ? ",planner" : "")}"
+		+ $",pairShares{(player?.PairSharesLearned == true ? (ConjunctionLadder.PairShareHalf ? "Half" : "On") : "Off")},opened{player?.PairSharesOpened ?? 0}"
+		+ $",foretold{(player?.ForetoldRecipe != null ? "=" + player.ForetoldRecipe.Id + (player.ForetoldMade ? "@made" : "") : "-")}"
+		+ $" met=[{string.Join(",", ladderMetAtPace.Select(p => $"{p.Key}@{p.Value:0.0}"))}]";
 
 	private void TrackFarSky()
 	{

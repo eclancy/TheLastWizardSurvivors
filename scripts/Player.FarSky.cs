@@ -77,9 +77,17 @@ public partial class Player
 		}
 	}
 
-	// The parent tonight's recipe names for this spell, or null.
+	// THE ONE FAVOUR, TWO SOURCES. The recipe the deal favours this run: tonight's (the far sky), else the one Nostradamus
+	// foretold (rung IV of .ai/conjunction-progression.md, Player.Ladder.cs - "deals its parents as the far sky's favour
+	// does", so the same three hooks, not a copy). The sky's payout, Feat and waiver stay the sky's: they read
+	// FarSkyRecipe and FarSkyMade, never these.
+	private ComboDefinition FavouredRecipe => FarSkyRecipe ?? ForetoldRecipe;
+
+	private bool FavourHolds => FarSkyRecipe != null ? FarSkyFavourHolds : ForetoldFavourHolds;
+
+	// The parent the favoured recipe names for this spell, or null.
 	private ComboIngredient FarSkyParent(string spellId) =>
-		FarSkyRecipe?.Ingredients.FirstOrDefault(i => i.SpellId.Equals(spellId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+		FavouredRecipe?.Ingredients.FirstOrDefault(i => i.SpellId.Equals(spellId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
 	/// Takes tonight's parents' cards out of the deal's two pools - a new spell's card (only there when a slot is free)
@@ -90,9 +98,9 @@ public partial class Player
 		List<LevelUpOption> heldUpgrades, List<float> heldWeights)
 	{
 		var favoured = new List<LevelUpOption>();
-		if (!FarSkyFavourHolds)
+		if (!FavourHolds)
 			return favoured;
-		foreach (ComboIngredient parent in FarSkyRecipe.Ingredients)
+		foreach (ComboIngredient parent in FavouredRecipe.Ingredients)
 		{
 			if (TakeFrom(newSpells, newWeights, parent.SpellId) is LevelUpOption fresh)
 				favoured.Add(fresh);
@@ -121,7 +129,7 @@ public partial class Player
 	/// <summary>On a parent's level 8 page, the named Ascension first. The rest keep their order.</summary>
 	private void FavourNamedAscension(LevelUpOption option, SpellData spell)
 	{
-		if (option?.EvolutionChoices == null || option.EvolutionChoices.Count < 2 || !FarSkyFavourHolds)
+		if (option?.EvolutionChoices == null || option.EvolutionChoices.Count < 2 || !FavourHolds)
 			return;
 		ComboIngredient parent = FarSkyParent(spell?.Id);
 		if (parent == null)
@@ -137,6 +145,8 @@ public partial class Player
 	// TryFuse's last word: tonight's recipe made.
 	private void NoteFarSkyFusion(ComboDefinition recipe)
 	{
+		// Nostradamus's foretold recipe, made (Player.Ladder.cs).
+		NoteForetoldFusion(recipe);
 		if (FarSkyRecipe == null || FarSkyMade || recipe == null
 			|| !recipe.Id.Equals(FarSkyRecipe.Id, StringComparison.OrdinalIgnoreCase))
 			return;

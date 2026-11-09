@@ -156,7 +156,7 @@ public partial class MainMenu
 		// The Reliquary Shelf sits here rather than under Survival: a boon slot is one more thing a
 		// level-up can offer, the same lever as a reroll or a ban.
 		("Level-ups", "More say over what each level-up offers you.",
-			new[] { "rerolls", "bans", GlobalStatsManager.BoonSlotsUpgradeId, GlobalStatsManager.CurationUpgradeId }),
+			new[] { "rerolls", "bans", GlobalStatsManager.BoonSlotsUpgradeId, GlobalStatsManager.CurationUpgradeId, ConjunctionLadder.KindredDrawId }),
 	};
 
 	// The boons for sale (UnlockCatalog.PurchasableBoons), the last section of Powers whether or not
@@ -414,9 +414,13 @@ public partial class MainMenu
 		shopCategory.TooltipText = PowersIntro;
 
 		var placed = new HashSet<string>();
+		// One locked thing on show at a time (.ai/slow-start.md): Kindred Draw names Conjunctions, so it is not on the
+		// shelf until the Conjunctions lesson is learned (rung II of .ai/conjunction-progression.md).
+		if (!ConjunctionLadder.KindredDrawShown(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data))
+			placed.Add(ConjunctionLadder.KindredDrawId);
 		foreach ((string title, string note, string[] ids) in UpgradeSections)
 		{
-			var defs = ids.Where(upgradeDefinitions.ContainsKey).Select(id => upgradeDefinitions[id]).ToList();
+			var defs = ids.Where(upgradeDefinitions.ContainsKey).Where(id => !placed.Contains(id)).Select(id => upgradeDefinitions[id]).ToList();
 			placed.UnionWith(defs.Select(d => d.Id));
 			if (defs.Count > 0)
 				foreach (int step in AddShopSectionSteps(title, note, defs, narrow, boonSection: false)) yield return step;
@@ -1080,6 +1084,8 @@ public partial class MainMenu
 			"crit_chance" => ("Crit chance", $"+{Math.Min(75, l * 3)}%"),
 			GlobalStatsManager.CurationUpgradeId => ("Spells set aside", $"{l}"),
 			GlobalStatsManager.BoonSlotsUpgradeId => ("Boon slots", $"{Player.BaseBoonSlots + Math.Min(l, Player.MaxBoonSlots - Player.BaseBoonSlots)}"),
+			// A percentage, as every card says it (Eric, 2026-11-04): x2 / x3 / x4 as often among its own kind of card.
+			ConjunctionLadder.KindredDrawId => ("Partner cards", $"+{Math.Round((ConjunctionLadder.KindredMultiplier(l) - 1f) * 100f)}% as often"),
 			// The value is rewritten with the save's own book where the card is refreshed (RefreshUpgradeControls).
 			SpellBook.ShopUpgradeId => ("Spells held", $"+{l}"),
 			_ => ("Level", $"{l}"),
@@ -1105,6 +1111,7 @@ public partial class MainMenu
 		"vitality" => "heart",
 		"luck" => "luck",
 		"crit_chance" => "crit",
+		ConjunctionLadder.KindredDrawId => "conjunction",
 		_ => "generic",
 	};
 }

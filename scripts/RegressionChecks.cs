@@ -83,6 +83,9 @@ public static partial class RegressionChecks
 		ValidateTeachers(warnings);
 		// F4, the far sky (RegressionChecks.FarSky.cs).
 		ValidateFarSky(warnings);
+		// The Conjunction ladder (RegressionChecks.Ladder.cs; .ai/conjunction-progression.md).
+		ValidateConjunctionLadder(warnings);
+		ValidatePinnedRecipeMigration(warnings);
 		ValidatePrologueReel(warnings);
 		ValidateFreeings(warnings);
 		ValidateCinematicRules(warnings);

@@ -61,6 +61,13 @@ public sealed class LevelUpOption
 	public Dictionary<string, string> EvolutionLockReason { get; set; } = new();
 
 	/// <summary>
+	/// A level 4 page's paths that would seal a shown recipe by making its pair name a fourth element: evolution id to
+	/// the recipe's name ("Sagittarius"). The card says "Seals Sagittarius" (rung I of .ai/conjunction-progression.md,
+	/// Player.NoteRecipeSeals). Absent means the path seals nothing.
+	/// </summary>
+	public Dictionary<string, string> RecipeSeals { get; set; } = new();
+
+	/// <summary>
 	/// Evolution ids open only because the far sky waives their element gate (Player.FarSkyWaivesElementGate): the
 	/// level 8 page says so on the path, so the player sees why it is offered.
 	/// </summary>
@@ -342,6 +349,14 @@ public sealed class AscensionRequirement
 	/// </summary>
 	public bool Waived { get; set; }
 
-	public bool Met => Waived || Have >= Need;
-	public int Missing => Waived ? 0 : System.Math.Max(0, Need - Have);
+	/// <summary>
+	/// An element gate's share from the recipe's other parent (rung III of .ai/conjunction-progression.md, "the pair shares
+	/// its light"; ConjunctionLadder.PairShareFor): counted toward <see cref="Need"/> beside <see cref="Have"/>, which stays
+	/// the player's own count. Zero, and <see cref="SharedBy"/> empty, everywhere the rule does not apply.
+	/// </summary>
+	public int Shared { get; set; }
+	public string SharedBy { get; set; } = string.Empty;
+
+	public bool Met => Waived || Have + Shared >= Need;
+	public int Missing => Waived ? 0 : System.Math.Max(0, Need - Have - Shared);
 }

@@ -132,7 +132,55 @@ public partial class EvolutionCodex
 			head.AddChild(tag);
 		if (CurationToggle(entry) is Control curation)
 			head.AddChild(curation);
+		if (PinToggle(entry) is Control pin)
+			head.AddChild(pin);
 		return head;
+	}
+
+	// Rung I of the Conjunction ladder (.ai/conjunction-progression.md, ConjunctionLadder): Pin a recipe the save knows,
+	// one at a time, and its checklist rides the pause screen and its next step the quest corner. On the main menu's
+	// Codex and the pause screen's alike; nothing before the Conjunctions lesson is learned, and never the Rite.
+	private Control PinToggle(CodexEntry entry)
+	{
+		if (entry.Kind != CodexKind.Combination || !entry.Discovered)
+			return null;
+		SaveData save = context.Save;
+		ComboDefinition recipe = ComboCatalog.ForId(entry.Id);
+		if (!ConjunctionLadder.MayPin(recipe, save, out _))
+			return null;
+		bool pinned = ConjunctionLadder.Pinned(save)?.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase) == true;
+		var button = new Button
+		{
+			Name = "PinToggle_" + entry.Id,
+			Text = pinned ? "Unpin" : "Pin",
+			FocusMode = Control.FocusModeEnum.All,
+			SizeFlagsVertical = Control.SizeFlags.ShrinkBegin,
+			TooltipText = pinned ? "Stop following it on the pause screen and in the quest corner."
+				: "Follow it in your runs: its checklist on the pause screen, its next step in the quest corner.",
+		};
+		ResponsiveLayout.SetFont(button, ResponsiveLayout.TextRole.Label);
+		CodexRows.StyleQuietToggle(button, V);
+		ResponsiveLayout.EnsureTouchTarget(button, 0f);
+		string id = recipe.Id;
+		button.Pressed += () =>
+		{
+			var manager = GetNodeOrNull<SaveManager>("/root/SaveManager");
+			if (manager?.Data == null)
+				return;
+			bool changed = pinned ? ConjunctionLadder.Unpin(manager.Data) : ConjunctionLadder.Pin(manager.Data, id);
+			if (!changed)
+				return;
+			manager.SaveGame();
+			Callable.From(() => RefreshAfterPin(id)).CallDeferred();
+		};
+		return button;
+	}
+
+	private void RefreshAfterPin(string id)
+	{
+		ShowPage();
+		if (page.FindChild("PinToggle_" + id, true, false) is Button again)
+			again.GrabFocus();
 	}
 
 	// "Attack · Level 7 · your starting spell", "Rare relic", "Conjunction".

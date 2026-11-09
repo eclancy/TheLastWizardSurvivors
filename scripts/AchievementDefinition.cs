@@ -494,7 +494,9 @@ public static class AchievementDefinitions
 		},
 		BossClear("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", "riptide", "Riptide"),
 		BossClear("swamp_cleansed", "Cut the Rot Out", "swamp_mother", "the Blighted Swamp", "mirefoot", "Mirefoot"),
-		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon"),
+		// The Archivist teaches rung III of the Conjunction ladder (ConjunctionLadder.PairShareDeedId; Teachings.PairSharesLesson):
+		// "teaches a lesson", the one locked thing it puts on show (.ai/conjunction-progression.md section 3).
+		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon", "teaches a lesson"),
 		BossClearBoon("waste_thawed", "Broke the Guard", "frost_warden", "the Frozen Waste", "rimebriar", "Rimebriar"),
 		// Two things since schema 19: the boon it always paid, and Fireball, moved here from the Warden of
 		// the Deep's deed - a spell only the far side of the old final gate paid, while that gate counted
@@ -867,7 +869,9 @@ public static class AchievementDefinitions
 			case AchievementVisibility.ChapterOpen:
 				return !IsSealed(deed, save);
 			case AchievementVisibility.Recipe:
-				return save != null && ComboCatalog.IsKnown(ComboCatalog.ForId(deed.ComboId), save);
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I); the
+				// row still reads "Conjunction: ???" until made (CodexRows.DeedEntry). The Rite too, a recipe like any.
+				return save != null && ConjunctionLadder.IsShown(ComboCatalog.ForId(deed.ComboId), save);
 			case AchievementVisibility.FarSky:
 				return save != null && Teachings.HasLearned(save, Teaching.FarSky);
 			default:
@@ -981,12 +985,13 @@ public static class AchievementDefinitions
 	// Boss ids are matched exactly now. They used to be matched by *substring* against terms like
 	// "forest" and "castle", guarded only by a validator warning - so a boss id that happened to
 	// contain another's keyword would silently grant the wrong spell.
-	private static AchievementDefinition BossClear(string id, string name, string bossId, string place, string spellId, string spellName) => new()
+	private static AchievementDefinition BossClear(string id, string name, string bossId, string place, string spellId, string spellName,
+		string alsoReward = "") => new()
 	{
 		Id = id,
 		DisplayName = name,
 		Description = $"Defeat the boss of {place}.",
-		RewardText = $"Unlocks {spellName}",
+		RewardText = $"Unlocks {spellName}{(string.IsNullOrEmpty(alsoReward) ? "" : " and " + alsoReward)}",
 		SpellUnlockId = spellId,
 		Category = AchievementCategory.Exploration,
 		Kind = AchievementKind.Road,
