@@ -170,12 +170,24 @@ public partial class _RecoveryProbe : Node
 		Check(player.CurrentHP == 5 && player.IsInvincible, "killing blow is refused without healing");
 		var sprite = player.GetNode<AnimatedSprite2D>("AnimatedSprite2D");
 		Check(sprite.Material is ShaderMaterial, "invincibility visual is active");
+		// A pale ghost of him for the grace (Eric, 2026-11-09): white AND see-through, at Player.OverlookedOpacity.
+		var ghost = sprite.Material as ShaderMaterial;
+		float opacity = ghost?.GetShaderParameter("opacity").AsSingle() ?? 1f;
+		Check(ghost != null && Mathf.IsEqualApprox(opacity, Player.OverlookedOpacity) && opacity < 1f,
+			$"Overlooked draws him semi-transparent ({opacity:0.00})");
 		await ToSignal(GetTree().CreateTimer(9.8, processInPhysics: true), SceneTreeTimer.SignalName.Timeout);
 		player.TakeDamage(10000);
 		Check(player.IsInvincible && player.CurrentHP == 5, "still immune just before ten seconds");
 		await ToSignal(GetTree().CreateTimer(0.4, processInPhysics: true), SceneTreeTimer.SignalName.Timeout);
 		Check(!player.IsInvincible, "immunity expires after ten seconds");
 		Check(sprite.Material is not ShaderMaterial, "invincibility visual expires with protection");
+		Check(ghost == null || Mathf.IsEqualApprox(ghost.GetShaderParameter("opacity").AsSingle(), 1f),
+			"the opacity is put back with the white, so a later whitened grace is opaque");
+		// And one: an ordinary whitened grace (the boss's fall) after it is white and whole.
+		player.GrantInvincibility(0.5f);
+		Check(sprite.Material is ShaderMaterial after && Mathf.IsEqualApprox(after.GetShaderParameter("opacity").AsSingle(), 1f),
+			"a later ordinary whitened grace is opaque");
+		await ToSignal(GetTree().CreateTimer(0.7, processInPhysics: true), SceneTreeTimer.SignalName.Timeout);
 		player.TakeDamage(1);
 		Check(player.CurrentHP == 4, "damage resumes after expiry");
 		player.TakeDamage(10000);

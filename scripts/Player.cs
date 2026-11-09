@@ -211,8 +211,12 @@ public partial class Player : CharacterBody2D
 	private float invincibilityTimeRemaining = 0f;
 	// How much longer he is drawn white: only a grace that asked for it (GrantInvincibility's whiten).
 	private float whiteTimeRemaining = 0f;
+	// How much of him is drawn while he is white (the shader's opacity): 1 but for Overlooked's ghost, and 1 again
+	// the moment the white ends (SetInvincibilityVisual).
+	private float whiteOpacity = 1f;
 	private static readonly Shader InvincibilityShader =
 		ResourceLoader.Load<Shader>("res://scenes/shaders/invincibility_white.gdshader");
+	private static readonly StringName ParamOpacity = "opacity";
 	private ShaderMaterial? invincibilityMaterial;
 	// The sprite's material before the grace period started, restored when it ends.
 	private Material? materialBeforeInvincibility;
@@ -669,6 +673,11 @@ public partial class Player : CharacterBody2D
 	// ten-second escape window is independent of post-menu grace. He is drawn white through it:
 	// the crowd that landed the blow is still on him, so he needs time to get clear.
 	public const float OverlookedGraceSeconds = 10.0f;
+	// And a pale ghost of him through it, not only white (Eric, 2026-11-09: "his passive should also make him
+	// semi-transparent for those 10 seconds, to make it clear that he is untouchable"): the body sprite at this
+	// opacity, on the white's own clock (GrantInvincibility's opacity). The body sprite only: nothing else drawn round
+	// him changes. A first guess.
+	public const float OverlookedOpacity = 0.45f;
 	private bool characterOverlooked = false;
 	private bool overlookedSpent = false;
 
@@ -2824,7 +2833,11 @@ public partial class Player : CharacterBody2D
 	// and a white figure on every pick read as something happening to him. The boss's fall still
 	// whitens him: there it says the fight is over and nothing can touch him. The white has its own
 	// clock, so a quiet grace that outlasts a white one does not keep him white.
-	public void GrantInvincibility(float seconds, bool whiten = true)
+	//
+	// opacity: how much of him is drawn while he is white - Overlooked's pale ghost (OverlookedOpacity), 1 for
+	// every other grace. It rides the white's clock: while two whitened graces overlap the paler one holds until the
+	// white ends, and then he is whole again, so a later ordinary whitened grace is opaque.
+	public void GrantInvincibility(float seconds, bool whiten = true, float opacity = 1f)
 	{
 		if (IsDead || seconds <= 0f)
 			return;
@@ -2832,8 +2845,12 @@ public partial class Player : CharacterBody2D
 		invincibilityTimeRemaining = Mathf.Max(invincibilityTimeRemaining, seconds);
 		if (!whiten)
 			return;
+		float wanted = Mathf.Clamp(opacity, 0f, 1f);
+		whiteOpacity = whiteTimeRemaining > 0f ? MathF.Min(whiteOpacity, wanted) : wanted;
 		whiteTimeRemaining = Mathf.Max(whiteTimeRemaining, seconds);
 		SetInvincibilityVisual(true);
+		// Set after, too: an already-white sprite returns early from SetInvincibilityVisual.
+		invincibilityMaterial?.SetShaderParameter(ParamOpacity, whiteOpacity);
 	}
 
 	public bool IsInvincible => invincibilityTimeRemaining > 0f;
@@ -2894,6 +2911,7 @@ public partial class Player : CharacterBody2D
 
 			invincibilityMaterial ??= new ShaderMaterial { Shader = InvincibilityShader };
 			invincibilityMaterial.SetShaderParameter("whiten", 1.0f);
+			invincibilityMaterial.SetShaderParameter(ParamOpacity, whiteOpacity);
 			materialBeforeInvincibility = bodySprite.Material;
 			bodySprite.Material = invincibilityMaterial;
 		}
@@ -2901,6 +2919,9 @@ public partial class Player : CharacterBody2D
 		{
 			bodySprite.Material = materialBeforeInvincibility;
 			materialBeforeInvincibility = null;
+			// Whole again with the white: the next whitened grace is opaque unless it asks otherwise.
+			whiteOpacity = 1f;
+			invincibilityMaterial?.SetShaderParameter(ParamOpacity, 1f);
 		}
 
 		invincibilityVisualActive = active;
@@ -3040,7 +3061,7 @@ public partial class Player : CharacterBody2D
 			OverlookedAtSeconds = Node2DGame.Current?.RunSeconds ?? 0f;
 			PlayBlurDodgeEffect();
 			SfxPlayer.Global(SfxCatalog.PlayerDodge, 0.05f);
-			GrantInvincibility(OverlookedGraceSeconds);
+			GrantInvincibility(OverlookedGraceSeconds, opacity: OverlookedOpacity);
 			GD.Print($"Overlooked: a blow of {mitigated} against {CurrentHP} HP missed at {OverlookedAtSeconds:0.0} s.");
 			return;
 		}
