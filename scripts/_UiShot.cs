@@ -1485,6 +1485,11 @@ public partial class _UiShot : Node
 			// F4, the far sky (FarSky.ToolOverride): --far-sky=ID names that recipe on any chapter, =off nothing.
 			else if (arg.StartsWith("--far-sky="))
 				FarSky.ToolOverride = arg.Substring("--far-sky=".Length).Trim();
+			// THE CONJUNCTION LADDER (.ai/conjunction-progression.md), applied after any save the flags build (below).
+			else if (arg == "--ladder-learned")
+				ladderLearned = true;
+			else if (arg.StartsWith("--pin="))
+				ladderPin = arg.Substring("--pin=".Length).Trim();
 			// Gameplay wants hundreds of frames before there is a crowd worth photographing, and
 			// at 1x that is ten real seconds of waiting per shot.
 			else if (arg.StartsWith("--timescale="))
@@ -1987,6 +1992,7 @@ public partial class _UiShot : Node
 
 		if (demoShop)
 			ReplaceSave(BuildDemoShopSave());
+		ApplyLadderShotArgs();
 
 		// Status shots keep the player alive from the first frame. A death would end the run and pay
 		// its Arcane Energy into the real save, so writes are off too.

@@ -382,3 +382,35 @@ like a chore; whether the Sibyl's reel lands; whether a recipe made on the road 
    too much for a phone. **Decided: Nostradamus.**
 9. **The target.** A skilled player's planned recipe by about pace 11-12 on the road, the castle allowed a
    minute more? **Recommended: yes.** **Decided: as recommended.**
+
+---
+
+## 6. Built
+
+Built 2026-11-08/09 on the branch `worktree-agent-a68bd101e5d22e3c4`, cut from `main-ff86ni`, rung by rung.
+`scripts/ConjunctionLadder.cs` is the one authority on what each rung shows and allows, as `ComboCatalog` is on the
+recipes; nothing here changes `ComboCatalog.Evaluate`, the Ascension's gates' own numbers, XP, rerolls, bans or a tag.
+
+### Rung I, know it (built)
+
+| piece | where |
+|---|---|
+| **known from one half** | `ConjunctionLadder.IsShown`: today's rule (`ComboCatalog.IsKnown`, both halves owned, shown from the Apotheosis on) or, once the Conjunctions lesson is learned, either half. Read by the browser (`Player.BuildComboPreviews`), the Codex's Recipes and its level 8 "Joins" note (`CodexModel`), and the Feat's Achievements row (`AchievementVisibility.Recipe`; the Rite keeps its own rule). The missing half is its own locked hint (`ConjunctionLadder.MissingHalfLine`, the Codex ingredient's note). |
+| **the result stays sealed** | `ConjunctionLadder.ShownName`: a recipe is called by its two parents ("Hunter's Draw + Starfall") until made, its name after - the existing rule of the browser and the Codex, kept on every ladder surface (decision 1 below). |
+| **the pin** | `SaveData.PinnedRecipeId` (**schema 26**, `MigrateToPinnedRecipe`: pins nothing; `ValidatePinnedRecipeMigration`). One at a time; refused before the lesson, for the Rite and for a recipe the save knows nothing of (`ConjunctionLadder.MayPin`). Pinned from the Codex's recipe page, **Pin / Unpin** in its head (`EvolutionCodex.Detail.PinToggle`), on the main menu and over a run alike. |
+| **the checklist** | `Player.BuildRecipeChecklist` (`Player.Ladder.cs`): each parent in the book and its level against 7, each named path's element count ("Pandemic: Poison 1 of 4", from `EvaluateElementGate`, the one authority), your level against 17, the level 4 path that would seal it, or why it is sealed; and the one next step. The pause screen's Run tab shows it as **Pinned Conjunction**, after the far sky's section (`Node2DGame.Ladder.cs`, one marked line in `ShowEscapeRunOverview`). |
+| **the corner's one line** | `QuestTracker.SetRecipeLine`: the two linked rings and the next step ("Void Lance to level 7 · 1/7"), the last row of the tracker, on its one-second reading; "Shadow Bolt made" once made. Hidden while nothing is pinned. |
+| **the level 4 mark** | `Player.NoteRecipeSeals` fills `LevelUpOption.RecipeSeals`; the level 4 card (both shapes) carries the rings and "Seals the Conjunction with Starfall" (the recipe's name once made) in the page's rubric (`LevelUpMenu.BuildRecipeSealMark`). `ConjunctionLadder.WouldSealByElement` is checked against `ComboCatalog.Evaluate`'s own fourth-element seal on every parent's every level 4 path; today two paths mark (Starfall's Frostfall, Contagion's Marsh Fever). |
+| **a wizard's recipe** | `ConjunctionLadder.Suits`, the character select's **Suits** row (`CharacterSelection.BuildFacts`): shown recipes with a named path gated on an element his own spell carries, neither parent his own (his starting spell or one that is his alone), never the one he opens on. Derived; on a save with every spell: Merlin and Nimue all three; Medea Sagittarius and The Taking; the Dark Wizard Sagittarius and Shadow Bolt; the Archmage, the Sibyl, John Dee, Baba Yaga and Ma Liang Shadow Bolt; Laelaps, Seimei, Wayland and Morgan Sagittarius; Nostradamus and Artemis The Taking. |
+
+### Rung II, Kindred Draw (built)
+
+A Power in the shop's Level-ups section, **100 / 160 / 220** (`ConjunctionLadder.KindredDraw*`; icon
+`tools/art/upgrade_icons.py` `kindred_draw`, two rings drawn together along a thread), **shown only once the
+Conjunctions lesson is learned** (`ConjunctionLadder.KindredDrawShown`; `MainMenu.BuildShopSteps` leaves it off the
+shelf before). In a run (`Player.ApplyKindredDrawLean`, after the Betrothal Hoop's lean, never in a browse): for every
+recipe the save knows (owns both halves), not the one he opens on, not his own spell's, not made and not sealed - one
+parent held, the other's new-spell card is **x2 / x3 / x4** as heavy among the new spells; both held, both their
+upgrades that much heavier among the upgrades. `ConjunctionLadder.ApplyKindredDraw` only re-weighs cards already in a
+pool, so it can never deal a card the save could not be dealt, and the group shares (`NormalizeOfferWeightsByGroup`)
+keep it "which card, never whether": `UpgradeOfferChance` is untouched.

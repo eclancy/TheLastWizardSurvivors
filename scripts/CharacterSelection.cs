@@ -147,6 +147,7 @@ public partial class CharacterSelection : Control
 		var saveManager = GetNodeOrNull<SaveManager>("/root/SaveManager");
 		apotheosisShown = Teachings.IsShown(saveManager?.Data, Teaching.Apotheosis);
 		conjunctionsLearned = Teachings.HasLearned(saveManager?.Data, Teaching.Conjunctions);
+		factsSave = saveManager?.Data;
 
 		for (int i = 0; i < characters.Count; i++)
 		{
@@ -444,6 +445,9 @@ public partial class CharacterSelection : Control
 	// has been taught what one is, so the word is never a locked system on show.
 	private static bool conjunctionsLearned = true;
 
+	// The save the cards read the Conjunctions a wizard suits from (ConjunctionLadder.Suits), once per build of the roster.
+	private static SaveData factsSave;
+
 	/// <summary>
 	/// The key of the line naming what a character opens on: "Conjunction" for one who opens on a Conjunction already
 	/// made (ComboCatalog.OpenerFor - the dark wizard, every god of the far shore: .ai/second-half.md 3.4, a god's card
@@ -493,6 +497,11 @@ public partial class CharacterSelection : Control
 			Add("Apotheosis", BuildApotheosisValue(character, apotheosis));
 		if (!string.IsNullOrWhiteSpace(character.StartingPassiveDescription))
 			Add("Passive", StatIcons.BuildLine(character.StartingPassiveDescription, CodexRows.Stone.Ink, ResponsiveLayout.TextRole.Body, expand: false));
+		// The known Conjunctions his own spell helps with (rung I of .ai/conjunction-progression.md, idea 4): a named path
+		// gated on an element his spell carries, neither parent his own. Derived, never authored, and nothing before the
+		// Conjunctions lesson; a recipe is named once made, by its two parents before (ConjunctionLadder.ShownName).
+		if (ConjunctionLadder.Suits(character, factsSave) is { Count: > 0 } suits)
+			Add("Suits", BuildSuitsValue(suits));
 		if (character.IsLegendaryStart)
 			Add("Starts", CodexRows.MakeText("Legendary", ResponsiveLayout.TextRole.Body, CodexRows.Stone.Reward));
 		return grid;
@@ -520,6 +529,33 @@ public partial class CharacterSelection : Control
 		Label which = CodexRows.MakeText($"As the {Short(own)}{rest}", ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
 		which.Name = "ApotheosisForm";
 		column.AddChild(which);
+		return column;
+	}
+
+	// One line a recipe, each behind the two linked rings the level 8 page marks a Conjunction's path with.
+	private static Control BuildSuitsValue(List<ComboDefinition> suits)
+	{
+		var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		column.AddThemeConstantOverride("separation", 2);
+		foreach (ComboDefinition recipe in suits)
+		{
+			var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+			line.AddThemeConstantOverride("separation", 8);
+			line.AddChild(new TextureRect
+			{
+				Texture = StatIcons.Load("conjunction"),
+				CustomMinimumSize = new Vector2(24f, 24f),
+				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+				MouseFilter = Control.MouseFilterEnum.Ignore,
+			});
+			Label name = CodexRows.MakeText(ConjunctionLadder.ShownName(recipe, factsSave), ResponsiveLayout.TextRole.Body, CodexRows.Stone.Ink);
+			name.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+			line.AddChild(name);
+			column.AddChild(line);
+		}
 		return column;
 	}
 

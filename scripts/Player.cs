@@ -1147,6 +1147,8 @@ public partial class Player : CharacterBody2D
 		AscensionLearned = Teachings.HasLearned(saveManager.Data, Teaching.Ascension);
 		ApotheosisLearned = Teachings.HasLearned(saveManager.Data, Teaching.Apotheosis);
 		ConjunctionsLearned = Teachings.HasLearned(saveManager.Data, Teaching.Conjunctions);
+		// Kindred Draw, rung II of the Conjunction ladder (Player.Ladder.cs): a shop Power, read once here.
+		ReadKindredDraw(GetLevel(ConjunctionLadder.KindredDrawId));
 		bookPages = SpellBook.PagesFor(saveManager.Data);
 		// The run's boon slots: the base two plus the shop's Reliquary Shelf levels, capped at four
 		// (the boon rework, in-flight item 41). A found level would stack through GetLevel like any
@@ -8318,6 +8320,8 @@ public partial class Player : CharacterBody2D
 						// Not gated on element, unlike the Ascension: level 4 is where a build is still
 						// being chosen, and gating it would just stall the player.
 						option.UpgradeSummary = "✦ SPELL MUTATION (Level 4) - Choose a mechanical mutation!";
+						// "Seals Sagittarius" on a path that would make a shown recipe name four elements (Player.Ladder.cs).
+						NoteRecipeSeals(option, equipped);
 					}
 				}
 
@@ -8433,6 +8437,9 @@ public partial class Player : CharacterBody2D
 		RemoveBanned(boonCandidates, boonWeights);
 		// The Betrothal Hoop leans the upgrade group toward the lowest-level spell (Player.ItemRules.cs).
 		WeightLowestUpgrades(heldUpgrades, heldUpgradeWeights);
+		// Kindred Draw (Player.Ladder.cs): a held parent's partner, and both parents' upgrades, leaned on. Not in a browse.
+		if (!browseAll)
+			ApplyKindredDrawLean(candidates, weights, heldUpgrades, heldUpgradeWeights);
 		// The far sky's favour (Player.FarSky.cs): tonight's two parents' cards, taken out of both pools to be dealt
 		// first - before the roll that decides whether held upgrades are in the hand, which they bypass. Not in a browse.
 		List<LevelUpOption> favoured = browseAll ? new List<LevelUpOption>()

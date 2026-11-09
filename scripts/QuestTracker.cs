@@ -53,6 +53,16 @@ public partial class QuestTracker : VBoxContainer
 	/// <summary>How many quests it is showing.</summary>
 	public int Count => shown.Count;
 
+	// The pinned Conjunction's one line (rung I of .ai/conjunction-progression.md; Node2DGame.RefreshPinnedRecipeLine):
+	// the two linked rings (the stat glyph every screen marks a Conjunction with) and its next step in the sans, under
+	// the quests. Built on first use; hidden while nothing is pinned.
+	private HBoxContainer recipeLine;
+	private Label recipeStep;
+	private string recipeKey = string.Empty;
+
+	/// <summary>True while the pinned recipe's line is on show.</summary>
+	public bool ShowsRecipeLine => recipeLine != null && recipeLine.Visible;
+
 	/// <summary>The quests as last read, for the run's opening to write in big.</summary>
 	public IReadOnlyList<Quest> Quests => shown;
 
@@ -80,7 +90,7 @@ public partial class QuestTracker : VBoxContainer
 	public override void _Process(double delta)
 	{
 		// The pointers read this every frame they draw; a dictionary write, no allocation.
-		if (IsVisibleInTree() && shown.Count > 0 && !held)
+		if (IsVisibleInTree() && (shown.Count > 0 || ShowsRecipeLine) && !held)
 			HudKeepOut.Set(this, GetGlobalRect().Grow(4f));
 		else
 			HudKeepOut.Clear(this);
@@ -95,6 +105,8 @@ public partial class QuestTracker : VBoxContainer
 		held = true;
 		foreach (EntryView view in entries)
 			view.Box.Modulate = new Color(1f, 1f, 1f, 0f);
+		if (recipeLine != null)
+			recipeLine.Modulate = new Color(1f, 1f, 1f, 0f);
 	}
 
 	public void RevealEntry(int index)
@@ -105,7 +117,10 @@ public partial class QuestTracker : VBoxContainer
 		Tween tween = box.CreateTween();
 		tween.TweenProperty(box, "modulate:a", 1f, 0.18f);
 		if (index == entries.Count - 1)
+		{
 			held = false;
+			recipeLine?.CreateTween().TweenProperty(recipeLine, "modulate:a", 1f, 0.18f);
+		}
 	}
 
 	/// <summary>Shows everything at once - nothing is opening, or the opening was cut short.</summary>
@@ -114,6 +129,72 @@ public partial class QuestTracker : VBoxContainer
 		held = false;
 		foreach (EntryView view in entries)
 			view.Box.Modulate = Colors.White;
+		if (recipeLine != null)
+			recipeLine.Modulate = Colors.White;
+	}
+
+	/// <summary>
+	/// The pinned recipe's line: the linked rings and the one next step ("Starfall to level 7 · 4/7"), or none
+	/// (<paramref name="step"/> null). Once a second, not per frame; a step that moved on breathes gold once, as a
+	/// quest's does. Always the last row, so the quests keep their places and the opening's targets.
+	/// </summary>
+	public void SetRecipeLine(string step, bool done)
+	{
+		if (string.IsNullOrEmpty(step))
+		{
+			if (recipeLine != null)
+				recipeLine.Visible = false;
+			recipeKey = string.Empty;
+			return;
+		}
+		if (recipeLine == null)
+			BuildRecipeLine();
+		recipeLine.Visible = true;
+		MoveChild(recipeLine, GetChildCount() - 1);
+		string key = step + (done ? "\nD" : "");
+		if (key == recipeKey)
+			return;
+		bool changed = recipeKey.Length > 0;
+		recipeKey = key;
+		recipeStep.Text = ResponsiveLayout.NoWidow(step);
+		recipeStep.AddThemeColorOverride("font_color", done ? DoneInk : StepInk);
+		if (changed && !held)
+		{
+			recipeLine.Modulate = new Color(1.6f, 1.45f, 1.0f, 1f);
+			recipeLine.CreateTween().TweenProperty(recipeLine, "modulate", Colors.White, 0.8f);
+		}
+	}
+
+	private void BuildRecipeLine()
+	{
+		recipeLine = new HBoxContainer { Name = "PinnedRecipe", MouseFilter = MouseFilterEnum.Ignore };
+		recipeLine.AddThemeConstantOverride("separation", 8);
+		AddChild(recipeLine);
+		// The 12-pixel glyph at x2, centred on the line: no plate behind it, as the words have none.
+		recipeLine.AddChild(new TextureRect
+		{
+			Name = "Rings",
+			Texture = StatIcons.Load("conjunction"),
+			CustomMinimumSize = new Vector2(24f, 24f),
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+			TextureFilter = TextureFilterEnum.Nearest,
+			SizeFlagsVertical = SizeFlags.ShrinkCenter,
+			MouseFilter = MouseFilterEnum.Ignore,
+		});
+		recipeStep = new Label
+		{
+			MouseFilter = MouseFilterEnum.Ignore,
+			AutowrapMode = TextServer.AutowrapMode.WordSmart,
+			SizeFlagsHorizontal = SizeFlags.ExpandFill,
+			VerticalAlignment = VerticalAlignment.Center,
+		};
+		ResponsiveLayout.SetFont(recipeStep, ResponsiveLayout.TextRole.Label);
+		recipeStep.AddThemeColorOverride("font_color", StepInk);
+		Outlined(recipeStep);
+		recipeLine.AddChild(recipeStep);
+		if (held)
+			recipeLine.Modulate = new Color(1f, 1f, 1f, 0f);
 	}
 
 	/// <summary>Where entry <paramref name="index"/>'s heading is on screen, and its font size: the opening's target.</summary>

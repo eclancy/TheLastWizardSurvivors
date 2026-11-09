@@ -59,6 +59,13 @@ public sealed class LevelUpOption
 	/// choices one run and three the next and conclude the game was being random at them.
 	/// </remarks>
 	public Dictionary<string, string> EvolutionLockReason { get; set; } = new();
+
+	/// <summary>
+	/// A level 4 page's paths that would seal a shown recipe by making its pair name a fourth element: evolution id to
+	/// the recipe's name ("Sagittarius"). The card says "Seals Sagittarius" (rung I of .ai/conjunction-progression.md,
+	/// Player.NoteRecipeSeals). Absent means the path seals nothing.
+	/// </summary>
+	public Dictionary<string, string> RecipeSeals { get; set; } = new();
 	public string SynergyTag { get; set; } = string.Empty;
 	public string SynergyDescription { get; set; } = string.Empty;
 

@@ -937,6 +937,12 @@ public partial class MainMenu : Control
 		// a later re-price refunds through SaveData.RepricedPowers like any Power's.
 		RegisterUpgrade(GlobalStatsManager.BoonSlotsUpgradeId, "Reliquary Shelf",
 			"+1 boon slot in every run", 150, 150, Player.MaxBoonSlots - Player.BaseBoonSlots);
+		// Rung II of the Conjunction ladder (.ai/conjunction-progression.md, Eric 2026-11-08: "Build the ladder"): which
+		// card, never whether. Shown once the Conjunctions lesson is learned (ConjunctionLadder.KindredDrawShown; the
+		// section build skips it before), priced 100 / 160 / 220.
+		RegisterUpgrade(ConjunctionLadder.KindredDrawId, ConjunctionLadder.KindredDrawName,
+			"+100% as often: the partner of a known Conjunction's spell you hold, then both their upgrades",
+			ConjunctionLadder.KindredDrawBaseCost, ConjunctionLadder.KindredDrawCostPerLevel, ConjunctionLadder.KindredDrawLevels);
 
 		// The boons the catalog prices, driven by UnlockCatalog rather than a hand-kept list. No screen
 		// sold them until 2026-10-26, so Quicksilver Bead, Deepwater Pearl and Saltbound Chain -

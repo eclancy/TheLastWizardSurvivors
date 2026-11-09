@@ -889,7 +889,12 @@ public static class AchievementDefinitions
 			case AchievementVisibility.ChapterOpen:
 				return !IsSealed(deed, save);
 			case AchievementVisibility.Recipe:
-				return save != null && ComboCatalog.IsKnown(ComboCatalog.ForId(deed.ComboId), save);
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I); the
+				// row still reads "Conjunction: ???" until made (CodexRows.DeedEntry).
+				// The Rite keeps its own rule (owned).
+				return save != null && (ComboCatalog.ForId(deed.ComboId) is { IsRite: true } rite
+					? ComboCatalog.IsKnown(rite, save)
+					: ConjunctionLadder.IsShown(ComboCatalog.ForId(deed.ComboId), save));
 			case AchievementVisibility.FarSky:
 				return save != null && Teachings.HasLearned(save, Teaching.FarSky);
 			default:

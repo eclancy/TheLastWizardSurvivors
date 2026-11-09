@@ -4514,6 +4514,8 @@ public partial class Node2DGame : Node2D
 			sections.AddChild(BuildRunSummarySection());
 			// F4, the far sky: tonight's Conjunction on a far-shore run (Node2DGame.FarSky.cs).
 			if (BuildFarSkySection() is Control farSky) sections.AddChild(farSky);
+			// Rung I of the Conjunction ladder: the pinned recipe's checklist (Node2DGame.Ladder.cs).
+			if (BuildPinnedRecipeSection() is Control pinned) sections.AddChild(pinned);
 			sections.AddChild(BuildCharacterPassiveSection());
 			// "Your ... this run", in the Spell Index's own words (Attacks, Passives): this tab is
 			// the spells in hand, the Spell Index tab is every spell there is, and the two headings
@@ -7272,6 +7274,7 @@ public partial class Node2DGame : Node2D
 
 		QuestLog.Prune(data);
 		questTracker?.Refresh(data, AchievementContext.ForSave(data));
+		RefreshPinnedRecipeLine();
 		float opening = 0f;
 		if (questTracker != null && questTracker.Count > 0)
 		{
@@ -7370,7 +7373,10 @@ public partial class Node2DGame : Node2D
 		AchievementContext projected = AchievementContext.Projected(data, SnapshotRunResult());
 		// The corner's counts move on the same one-second reading the achievement moment fires on.
 		if (tracking)
+		{
 			questTracker!.Refresh(data, projected);
+			RefreshPinnedRecipeLine();
+		}
 		if (achievementWatch.Count == 0)
 			return;
 		for (int i = 0; i < achievementWatch.Count; i++)

@@ -775,7 +775,8 @@ public sealed class CodexModel
 				return null;
 			foreach (ComboDefinition recipe in ComboCatalog.Naming(spellId, ascensionId))
 			{
-				if (!ComboCatalog.IsKnown(recipe, save))
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I).
+				if (!ConjunctionLadder.IsShown(recipe, save))
 					continue;
 				ComboIngredient partner = ComboCatalog.PartnerOf(recipe, spellId);
 				if (partner != null)
@@ -1028,7 +1029,8 @@ public sealed class CodexModel
 					continue;
 				SpellData template = ComboCatalog.Template(recipe);
 				ComboPreview preview = context.Combos?.FirstOrDefault(c => c != null && c.Id.Equals(recipe.Id, StringComparison.OrdinalIgnoreCase));
-				bool known = ComboCatalog.IsKnown(recipe, save) || preview != null;
+				// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I).
+				bool known = ConjunctionLadder.IsShown(recipe, save) || preview != null;
 				bool made = ComboCatalog.IsMet(recipe, save) || preview?.Taken == true;
 				bool revealed = made || preview?.Revealed == true || preview?.Offered == true;
 				var card = new CodexRecipe
@@ -1199,6 +1201,9 @@ public sealed class CodexModel
 				: new CodexChip { Text = $"{part.SpellName} L8" });
 			if (gate?.Closed == true)
 				node.Note = "Took the other path";
+			// The half not yet found, by the hint its own locked page wears (rung I: known from one half).
+			else if (save != null && !ConjunctionLadder.Owns(save, part))
+				node.Note = UnlockCatalog.GetLockedHint(part.SpellId, UnlockKind.Spell);
 			return node;
 		}
 

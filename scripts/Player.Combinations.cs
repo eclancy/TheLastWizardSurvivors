@@ -252,7 +252,8 @@ public partial class Player
 		{
 			ComboStanding standing = EvaluateCombo(recipe);
 			bool heldNow = standing.Taken || standing.FirstHeld != null || standing.SecondHeld != null;
-			if (!ComboCatalog.IsKnown(recipe, save) && !heldNow)
+			// Known from one half once the Conjunctions lesson is learned (ConjunctionLadder.IsShown, rung I).
+			if (!ConjunctionLadder.IsShown(recipe, save) && !heldNow)
 				continue;
 			SpellData template = ComboCatalog.Template(recipe);
 			SpellData firstTemplate = ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(recipe.First.SpellId, StringComparison.OrdinalIgnoreCase));

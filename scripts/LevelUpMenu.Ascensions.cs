@@ -224,6 +224,25 @@ public partial class LevelUpMenu
 	}
 
 	/// <summary>
+	/// The level 4 page's mark (rung I of .ai/conjunction-progression.md): a path that would make a shown recipe's pair
+	/// name a fourth element - and so seal it for the run - carries the two linked rings and "Seals Sagittarius", in the
+	/// page's rubric (the red a scribe used for a line that mattered, measured 4.6:1 on the resting page). Read off
+	/// <see cref="LevelUpOption.RecipeSeals"/>, which Player.NoteRecipeSeals fills; null when the path seals nothing.
+	/// </summary>
+	private Control BuildRecipeSealMark(LevelUpOption option, SpellEvolutionOption evo, bool centred)
+	{
+		if (option?.RecipeSeals == null || evo == null || !option.RecipeSeals.TryGetValue(evo.Id, out string recipes) || string.IsNullOrEmpty(recipes))
+			return null;
+		Control mark = BuildRequirementGlyphText($"Seals {recipes}", "conjunction", Rubric, expand: !centred);
+		mark.Name = $"RecipeSeal_{evo.Id}";
+		if (!centred)
+			return mark;
+		var centre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+		centre.AddChild(mark);
+		return centre;
+	}
+
+	/// <summary>
 	/// What is written on a path's plate: icon, name and what it does - or, sealed, the seal, "???"
 	/// and one line saying why. <paramref name="extras"/> (the choice page's tag, element line and
 	/// advice) are left out of a sealed path, since each would give part of it away.
