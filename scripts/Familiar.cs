@@ -315,7 +315,38 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		Cat, CaitSith, Grimalkin, CathPalug, CathPalugSith,
 		Hellhound, HellhoundRime, AnnwnHound, AnnwnHoundRime, Pup, HellPup, AnnwnPup,
 		BlackCat, BlackCatSith,
+		// Ma Liang's crow, every look of it painted in ink (InkLook).
+		CrowInk, StormcrowInk, RavenInk, MorriganInk, MorriganStormInk, GriffinInk, GriffinStormInk,
 	}
+
+	// MA LIANG'S CROW IS AN INK PAINTING COME ALIVE (Eric, 2026-11-09, .ai/character-fit.md section 5, row 21: "redoing the
+	// crow familiar to be brush paintings"). The boy of the tale painted birds and they flew off the paper, so when HE casts
+	// the Familiar his crow - and each look it grows into - is drawn in black ink with dry-brush edges over a pale wash, a
+	// painter's red seal on its hat (tools/art/familiar.py, "MA LIANG'S CROW"). Every other wizard's crow stays the
+	// creature of light. Only the drawing: the same cell, the same strike, the same flight, and its motes and pecks and
+	// The Painted Door stay his light, as the trace of the dotted door and the painted flask are - his ink is his light.
+	/// <summary>The wizard whose crow is painted in ink.</summary>
+	public const string InkPainterId = "ma_liang";
+
+	/// <summary>True when <paramref name="caster"/>'s crow is drawn as an ink painting (Ma Liang's).</summary>
+	public static bool PaintsInInk(Player caster) => PaintsInInk(caster?.SelectedCharacter?.Id);
+
+	/// <summary>True when the wizard <paramref name="characterId"/>'s crow is drawn as an ink painting.</summary>
+	public static bool PaintsInInk(string characterId) =>
+		string.Equals(characterId, InkPainterId, StringComparison.OrdinalIgnoreCase);
+
+	// The same look painted in ink, for a crow look; anything else as it is.
+	private static Look InkLook(Look l) => l switch
+	{
+		Look.Crow => Look.CrowInk,
+		Look.Stormcrow => Look.StormcrowInk,
+		Look.Raven => Look.RavenInk,
+		Look.Morrigan => Look.MorriganInk,
+		Look.MorriganStorm => Look.MorriganStormInk,
+		Look.Griffin => Look.GriffinInk,
+		Look.GriffinStorm => Look.GriffinStormInk,
+		_ => l,
+	};
 
 	private enum State : byte { Heel, Chase, Crouch, Leap, Bite, Howl, BlinkOut, BlinkIn, Swoop, Catch, Rise }
 	private enum BlinkWhy : byte { Arrive, Stuck, Leash, Inside, Dismiss }
@@ -576,6 +607,9 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		tint = visualTint;
 
 		Look wanted = ResolveLook(spell);
+		// His crow, painted (InkLook): the crow's pack wears its main look, so the whole murder is ink.
+		if (kind == Kind.Crow && PaintsInInk(PlayerRef))
+			wanted = InkLook(wanted);
 		Look wantedPack = ResolvePackLook(spell, wanted);
 		bool changed = !lookSet || wanted != look || wantedPack != packLook;
 		look = wanted;
@@ -708,6 +742,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		"Cat", "CaitSith", "Grimalkin", "CathPalug", "CathPalugSith",
 		"Hellhound", "HellhoundRime", "AnnwnHound", "AnnwnHoundRime", "Pup", "HellPup", "AnnwnPup",
 		"BlackCat", "BlackCatSith",
+		"CrowInk", "StormcrowInk", "RavenInk", "MorriganInk", "MorriganStormInk", "GriffinInk", "GriffinStormInk",
 	};
 
 	// The cell each look is drawn on (tools/art/familiar.py FORMS): the hound, the crow, the cat and the
@@ -716,6 +751,7 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	private static int CellOf(Look l) => l switch
 	{
 		Look.Hound or Look.Rimehound or Look.Crow or Look.Stormcrow or Look.Cat or Look.CaitSith => 48,
+		Look.CrowInk or Look.StormcrowInk => 48,
 		Look.Hellhound or Look.HellhoundRime or Look.AnnwnHound or Look.AnnwnHoundRime => 48,
 		_ when IsPup(l) => 32,
 		Look.Cerberus or Look.CerberusRime => 96,
