@@ -56,7 +56,7 @@ public sealed class StageReward
 /// Four sources, in this order on a card:
 ///   1. the warden: the deed whose <see cref="AchievementDefinition.BossId"/> is the chapter's boss
 ///      (<see cref="BossCatalog.ForStageIndex"/>), and whatever it grants - a spell, a boon, a wizard,
-///      or Arcane Energy (the Sketchbook's);
+///      or Arcane Energy;
 ///   2. the side events: every site in <see cref="SideEventDirector.EventsFor"/> - one or two - and
 ///      everything each pays (<see cref="UnlockCatalog.ForDiscoverySite"/>);
 ///   3. a deed done there: an unlock whose <see cref="UnlockDefinition.RevealStageId"/> is the chapter

@@ -209,7 +209,7 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 	/// <summary>
 	/// The floor's own tones for earth turned over on it - lit, base, shade and deep - by the kind of ground
 	/// the chapter stands on: turf and soil on grass, rubble on flagstones, snow on the Frozen Waste, sand in
-	/// the Sands, graphite on the Sketchbook's paper. Every one a row of the contract (tools/art/bonelight.py).
+	/// the Sands. Every one a row of the contract (tools/art/bonelight.py).
 	/// </summary>
 	public static void SoilFor(StageEnvironmentKind kind, out Color lit, out Color baseTone, out Color shade, out Color deep)
 	{
@@ -236,10 +236,6 @@ public partial class IronPalisade : Node2D, IPaintsElementPath
 			case StageEnvironmentKind.Swamp:
 				// Mud: the linen row the swamp's floor is.
 				lit = Hex(0x7A8A7C); baseTone = Hex(0x46544C); shade = Hex(0x2C3834); deep = Hex(0x1A2220);
-				break;
-			case StageEnvironmentKind.Sketchbook:
-				// Graphite smudged into the paper: the bone row's lower stops.
-				lit = Hex(0x9AA4B8); baseTone = Hex(0x626E84); shade = Hex(0x38404F); deep = Hex(0x05070C);
 				break;
 			default:
 				// Turf torn up off soil (the Forest, the Fields, the Heath): the lichen row on top, the gold

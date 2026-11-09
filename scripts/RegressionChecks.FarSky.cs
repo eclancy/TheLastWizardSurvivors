@@ -139,7 +139,7 @@ public static partial class RegressionChecks
 	// "Weighted toward recipes the save has never made": with one recipe made, every never-made one is named more often.
 	private static void ValidateFarSkyWeighting(List<string> warnings)
 	{
-		CharacterData wide = CharacterRoster.GetAll().Where(c => c != null && !c.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase))
+		CharacterData wide = CharacterRoster.GetAll().Where(c => c != null)
 			.OrderByDescending(c => FarSky.Candidates(FarSkySave(), c.Id, FarSky.OwnSpellOf(c)).Count).FirstOrDefault();
 		if (wide == null)
 			return;
@@ -165,7 +165,7 @@ public static partial class RegressionChecks
 		StageDefinition far = StageCatalog.FarShore.FirstOrDefault();
 		StageDefinition road = StageCatalog.Campaign.FirstOrDefault();
 		CharacterData wizard = CharacterRoster.GetAll().FirstOrDefault(c => c != null && c.Id == "laelaps")
-			?? CharacterRoster.GetAll().FirstOrDefault(c => c != null && !c.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase));
+			?? CharacterRoster.GetAll().FirstOrDefault(c => c != null);
 		if (far == null || road == null || wizard == null)
 		{
 			warnings.Add("Far sky: no far-shore chapter, road chapter or wizard to check who sees the sky.");

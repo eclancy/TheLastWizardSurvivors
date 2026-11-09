@@ -66,7 +66,7 @@ OUT_ENEMIES = os.path.join("assets", "bonelight", "enemies")
 OUT_FRAMES = os.path.join("scenes", "resources")
 
 # Stem prefix -> SpriteFrames / scene prefix, one per chapter that draws a cast. The Cursed Dungeon
-# draws nothing (it owns the old roster) and the Sketchbook is the kids' and is never generated.
+# draws nothing (it owns the old roster).
 PREFIXES = {
     "forest-": "Forest",
     "cave-": "Cave",

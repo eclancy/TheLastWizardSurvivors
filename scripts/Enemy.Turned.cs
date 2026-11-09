@@ -22,7 +22,7 @@ using TheOneHeMissed.scripts;
 // does not start, and one already winding up resolves against nobody (GroundSlamAttack.ResolveAgainst takes a null
 // target and hits nothing). It is still an enemy: in "enemies", hit by his spells, killed by them.
 //
-// WHO IS NEVER TURNED. Elites, minibosses and the Boo (IsMiniBoss) are struck by the stone, not turned (4.2:
+// WHO IS NEVER TURNED. Elites and minibosses (IsMiniBoss) are struck by the stone, not turned (4.2:
 // "elites are struck, not turned"); a boss never (the CC rule, chapter-wizards.md section 1); nor a body that is
 // sealed or held (IsTargetable, IsHeld), dying, or recycled - a recycle ends the turn, as it ends every status.
 //

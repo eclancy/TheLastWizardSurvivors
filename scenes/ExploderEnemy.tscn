@@ -7,9 +7,8 @@
 radius = 21.6
 
 ; Fragile and quick - it has to reach you to matter, and 26 health means a single
-; spell answers it if you notice in time. The ghost sheet is a deliberate pick: it
-; ships no death animation, so a body that is meant to vanish rather than collapse
-; needs no new art. Much smaller than BooEnemy, which is the one other user.
+; spell answers it if you notice in time. (It once wore the ghost's sheet, shared with
+; the Sketchbook's BooEnemy; both sheets are gone - it has its own Bonelight strips.)
 [node name="ExploderEnemy" type="CharacterBody2D"]
 collision_layer = 2
 collision_mask = 3

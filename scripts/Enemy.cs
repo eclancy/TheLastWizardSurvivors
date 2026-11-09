@@ -223,12 +223,10 @@ public partial class Enemy : CharacterBody2D
 	public bool BlocksPlayer => IsMiniBoss;
 
 	/// <summary>
-	/// What kind of chest carrier this is - "elite", "warden", "ghost" - or empty for none. Set by
+	/// What kind of chest carrier this is - "elite", "warden" - or empty for none. Set by
 	/// Node2DGame on the bodies it sends, never by a scene: IsMiniBoss cannot say it, because an
-	/// event's elites carry the flag and are paid by the event's own chest. (Rockem's scene carries it
-	/// too, as the Sketchbook's scheduled miniboss; SpawnEnemy clears it on the Rockems its table
-	/// rolls.) Chests come from what the player
-	/// kills on purpose (DropTable), so a carrier opts in rather than every big body paying out.
+	/// event's elites carry the flag and are paid by the event's own chest. Chests come from what the
+	/// player kills on purpose (DropTable), so a carrier opts in rather than every big body paying out.
 	/// </summary>
 	public string ChestSource { get; set; } = string.Empty;
 
@@ -2308,7 +2306,7 @@ public partial class Enemy : CharacterBody2D
 		}
 		DropXp();
 		TryDropBonusItem();
-		// A chest carrier - an elite, a Warden, the Sketchbook's ghost - hands its chest to the run,
+		// A chest carrier - an elite, a Warden - hands its chest to the run,
 		// which decides whether this one pays and where it lands (Node2DGame.DropCarriedChest).
 		if (!string.IsNullOrEmpty(ChestSource) && Node2DGame.Current is Node2DGame chestGame && IsInstanceValid(chestGame))
 			chestGame.DropCarriedChest(this);
@@ -2389,7 +2387,7 @@ public partial class Enemy : CharacterBody2D
 			return;
 		}
 
-		// No death animation (most of the kids sheets): defer freeing so FloatingText survives a frame.
+		// No death animation: defer freeing so FloatingText survives a frame.
 		CallDeferred("queue_free");
 	}
 
@@ -2424,7 +2422,7 @@ public partial class Enemy : CharacterBody2D
 	// never wired up, so enemies used to slide into the player and shrug off arrows with the same
 	// looping walk cycle. These two play those strips as one-shots over the walk.
 	//
-	// Enemies whose SpriteFrames lack the animation - the kids sheets, SlowEnemy - fall through
+	// Enemies whose SpriteFrames lack the animation - SlowEnemy - fall through
 	// untouched; HasAnimation is the guard, the same way StartDeath already handles a missing
 	// death animation.
 	private bool oneShotAnimationPlaying;

@@ -284,8 +284,7 @@ public static partial class AchievementDefinitions
 	/// of <paramref name="rank"/> or harder (SaveData.MaxDifficultyCleared, with the run that is ending folded in -
 	/// the pause tab's projection reads the save before the run's end records it). The two deeds' measure, out of
 	/// <see cref="CampaignChapterCount"/>, which counts the chapters not yet playable. Read from StageCatalog.Campaign,
-	/// never a list of its own, so the Sketchbook - outside the campaign, and with no unlocks (Eric, 2026-11-02) - is
-	/// never asked for.
+	/// never a list of its own, so a chapter outside the campaign is never asked for.
 	/// </summary>
 	public static float ChaptersClearedAt(AchievementContext context, int rank) =>
 		GlobalStatsManager.ChaptersClearedAt(context?.Save, rank, context?.Run);
@@ -622,9 +621,7 @@ public static partial class AchievementDefinitions
 		// F9 (Thunder Fell): the Still Eye's deed, freeing Ukko.
 		// (F10's line is below; leave this one as it is)
 		// F10 (Bronze Isle): Talos's deed, freeing Hephaestus.
-		// The Sketchbook has no deed at all (Eric, 2026-11-02: "the sketchbook should not have any unlocks
-		// or any achievements"). Its clear, Best Drawing (400 Arcane Energy), was the last; the kids' chapter
-		// is played for itself. RegressionChecks.ValidateSketchbookHoldsNothing keeps it that way.
+		// (The Sketchbook had no deed from 2026-11-02, and the chapter itself was removed on 2026-11-09.)
 		new()
 		{
 			Id = "relic_hunter", DisplayName = "Relic Hunter",
@@ -684,7 +681,8 @@ public static partial class AchievementDefinitions
 			Description = "Play a run as 4 different wizards.",
 			RewardText = "200 Arcane Energy", CurrencyReward = 200,
 			Category = AchievementCategory.Exploration,
-			Measure = c => c.Lifetime.CharactersPlayed.Count(id => !id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase)),
+			// The Test Wizard never counted; the schema 28 step took him out of the record when he was removed.
+			Measure = c => c.Lifetime.CharactersPlayed.Count,
 			Target = 4,
 		},
 		// THE GRIMOIRE RESTORED (.ai/achievements-and-secrets.md 2.5, decision 1). Every spell recovered was

@@ -18,8 +18,8 @@ using TheOneHeMissed.scripts;
 /// Pausable: a level-up arriving while it is up freezes it under the menu, and its keys are not heard
 /// while the tree is paused, so A on a level-up card never puts the note away as well.
 ///
-/// THE MATERIAL. Paper, except in the Sketchbook, whose ground is paper already: there it is a slate of
-/// floor stone with the stone register's inks, so no screen shows the note on its own material.
+/// THE MATERIAL. Paper. (In the Sketchbook, whose ground was paper already, it was a slate of floor stone
+/// until the chapter was removed on 2026-11-09.)
 ///
 /// THE HAND. The engine sans in ink on the page: the legibility rule keeps prose out of display faces
 /// (.ai/level-up-screen.md 4a), and a hand that cannot be read at a glance mid-run is worse than none. The
@@ -47,17 +47,11 @@ public partial class ChapterNoteCard : CanvasLayer
 	private static readonly Color PaperEdge = CodexRows.Vellum.Edge;
 	private static readonly Color PaperInk = CodexRows.Vellum.Ink;
 	private static readonly Color PaperHeading = CodexRows.Vellum.Heading;
-	// The slate, for the Sketchbook: floor stone and the stone register's inks.
-	private static readonly Color SlateFace = CodexRows.Stone.Face;
-	private static readonly Color SlateEdge = CodexRows.Stone.Edge;
-	private static readonly Color SlateInk = CodexRows.Stone.Ink;
-	private static readonly Color SlateHeading = CodexRows.Stone.Heading;
 	private static readonly Color Shadow = new(0.02f, 0.025f, 0.04f, 0.5f);
 
 	private StageDefinition stage = null!;
 	private List<string> lines = new();
 	private List<string> clues = new();
-	private bool slate;
 	private Control rule;
 	private Label firstClue;
 	private PanelContainer page = null!;
@@ -79,7 +73,6 @@ public partial class ChapterNoteCard : CanvasLayer
 			stage = stage,
 			lines = intro ? new List<string>(ChapterNotes.IntroFor(stage.Id)) : new List<string>(),
 			clues = ChapterNotes.CluesFor(stage.Id, save),
-			slate = stage.EnvironmentKind == StageEnvironmentKind.Sketchbook,
 		};
 		parent.AddChild(card);
 		return card;
@@ -147,7 +140,7 @@ public partial class ChapterNoteCard : CanvasLayer
 
 		var heading = new Label { Text = stage.DisplayName, MouseFilter = Control.MouseFilterEnum.Ignore };
 		ResponsiveLayout.SetFont(heading, ResponsiveLayout.TextRole.Title);
-		heading.AddThemeColorOverride("font_color", slate ? SlateHeading : PaperHeading);
+		heading.AddThemeColorOverride("font_color", PaperHeading);
 		column.AddChild(heading);
 
 		var italic = new FontVariation
@@ -171,7 +164,7 @@ public partial class ChapterNoteCard : CanvasLayer
 			ResponsiveLayout.SetFont(line, ResponsiveLayout.TextRole.Body);
 			if (slanted)
 				line.AddThemeFontOverride("font", italic);
-			line.AddThemeColorOverride("font_color", slate ? SlateInk : PaperInk);
+			line.AddThemeColorOverride("font_color", PaperInk);
 			column.AddChild(line);
 			written.Add(line);
 			total += text.Length;
@@ -185,7 +178,7 @@ public partial class ChapterNoteCard : CanvasLayer
 			if (lines.Count > 0)
 			{
 				rule = new Control { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(0f, 14f) };
-				Color ruleInk = new Color(slate ? SlateInk : PaperInk, 0.55f);
+				Color ruleInk = new Color(PaperInk, 0.55f);
 				rule.Draw += () => rule.DrawRect(new Rect2(0f, 6f, 56f, 2f), ruleInk);
 				rule.Modulate = new Color(1f, 1f, 1f, 0f);
 				column.AddChild(rule);
@@ -342,10 +335,10 @@ public partial class ChapterNoteCard : CanvasLayer
 		for (int i = 0; i < points.Length; i++)
 			shadow[i] = points[i] + new Vector2(4f, 5f);
 		page.DrawColoredPolygon(shadow, Shadow);
-		page.DrawColoredPolygon(points, slate ? SlateFace : PaperFace);
+		page.DrawColoredPolygon(points, PaperFace);
 		var closed = new Vector2[points.Length + 1];
 		points.CopyTo(closed, 0);
 		closed[points.Length] = points[0];
-		page.DrawPolyline(closed, slate ? SlateEdge : PaperEdge, 2f);
+		page.DrawPolyline(closed, PaperEdge, 2f);
 	}
 }

@@ -590,8 +590,8 @@ public partial class MenuNavigator : Node
 	/// </summary>
 	/// <remarks>
 	/// FollowFocus is what the player wants when they NAVIGATE to an option below the fold, and
-	/// never what they want on arrival. The character select proved it: the Test Wizard card is
-	/// taller than the rest, so granting it focus as the screen opened scrolled the list far enough
+	/// never what they want on arrival. The character select proved it: the Test Wizard's card (since
+	/// removed) was taller than the rest, so granting it focus as the screen opened scrolled the list far enough
 	/// to show the card's bottom edge, and the screen came up already scrolled past its own first
 	/// heading. A list opens at the top.
 	///

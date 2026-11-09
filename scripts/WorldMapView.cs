@@ -5,8 +5,7 @@ using TheOneHeMissed.scripts;
 
 /// <summary>
 /// The drawn world on the world map: the picture, the fog over held places, the stand-point rings,
-/// and the selected wizard walking the road, under a camera that leads him. The Sketchbook's page is
-/// not on it: that is a sheet of its own (<see cref="WorldMapPage"/>, .ai/world-map.md section 4).
+/// and the selected wizard walking the road, under a camera that leads him.
 /// </summary>
 /// <remarks>
 /// WHOLE SCREEN PIXELS (.ai/art-direction.md 6a). Everything here is drawn by this one control at a
@@ -144,8 +143,7 @@ public partial class WorldMapView : Control
 
 	/// <summary>
 	/// The selected wizard as the map draws him: his idle and moving frames, their speeds, his tint and
-	/// which way his sheet faces. Shared with the Sketchbook's page (<see cref="WorldMapPage"/>), where he
-	/// stands on the paper.
+	/// which way his sheet faces.
 	/// </summary>
 	internal sealed class Figure
 	{
@@ -176,8 +174,8 @@ public partial class WorldMapView : Control
 			}
 			else if (character != null)
 			{
-				// No sheet of his own (the Test Wizard, whose sprite is Eric's drawing and is never derived):
-				// the idle built from the portrait, played quicker while he walks.
+				// No sheet of his own (none today; the Test Wizard, removed 2026-11-09, was the last): the idle
+				// built from the portrait, played quicker while he walks.
 				f.Idle = CharacterVisuals.GetIdleFrames(character.Portrait).ToArray();
 				f.IdleFps = CharacterVisuals.IdleFramesPerSecond;
 			}

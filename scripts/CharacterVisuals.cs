@@ -112,7 +112,6 @@ public static class CharacterVisuals
 			// the spell it casts, in its own saturated pigment row, so a multiply over it is not
 			// identity, it is damage. It drags a true red toward brown and a true blue toward grey,
 			// and it turns a lit face sickly.
-			case "test_wizard":
 			case "pyromancer":
 			case "frostweaver":
 			case "stormcaller":

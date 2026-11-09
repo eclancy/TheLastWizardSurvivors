@@ -94,8 +94,8 @@ vec4 shade_cell(vec2 world, vec2 origin, vec2 axis_x, vec2 axis_y) {
 	if (d <= thin + GRID * 0.75 && hash12(cell + jag * 1.7) > 0.25) {
 		return vec4(LIT_HOT, 1.0);
 	}
-	// Lightning's saturated edge either side: the fringe that holds the wire on a pale floor (on the
-	// Sketchbook's paper a bare white and pale-yellow line all but vanished), a gold glow on a dark one.
+	// Lightning's saturated edge either side: the fringe that holds the wire on a pale floor (on white
+	// a bare white and pale-yellow line all but vanished), a gold glow on a dark one.
 	if (d <= thin + GRID * 1.6) {
 		return vec4(LIT_EDGE, 1.0);
 	}

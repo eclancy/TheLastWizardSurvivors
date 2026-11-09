@@ -16,15 +16,13 @@ repository, and most of what follows is about it.
 
 <p align="center">
   <img src="docs/screenshots/forest.png" width="300" alt="The Enchanted Forest">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/sketchbook.png" width="300" alt="The Sketchbook">
 </p>
 
 ---
 
 ## The art is code
 
-**3,278 images, 1,461 of them ground tiles**, drawn by 159 Python generators in
+**3,764 images, 1,754 of them ground tiles**, drawn by the 179 Python scripts in
 [`tools/art/`](tools/art). Not exported from an editor — *drawn in code*, pixel by pixel, against
 a fixed palette. One command rebuilds every image in the game:
 
@@ -50,26 +48,11 @@ important it feels, is in [`.ai/audio-direction.md`](.ai/audio-direction.md).
 A warning if you intend to run any of it: the generators are **Python 2.7 with PIL**, because
 that is what was on the machine. No numpy, no f-strings, no `math.tau`.
 
-## The Sketchbook chapter was drawn by kids
-
-Twelve sprite sheets, used exactly as drawn — cropped and repacked, never repainted. They are the
-entire cast of one chapter: eight enemies, a boss, its projectile, a companion dog that cannot be
-killed, and a chasing enemy that alternates between a smiling face and a frowning one. One older
-drawing of theirs, a ghost, haunts the same chapter and no other - the one exception to "never
-repainted": at the developer's request it was redrawn bigger and scarier, from the drawing itself,
-to be the chapter's miniboss.
-
-They drew a creature that squashes down and then leaps, on two separate sheets, without being
-asked for one. That is a wind-up and a dash, so it became the chapter's charging enemy and needed
-no new code at all.
-
-Please read the [`NOTICE`](NOTICE) file before doing anything with that folder.
-
 ## What is in the game
 
 | | |
 |---|---|
-| Chapters | 13 campaign chapters plus the Sketchbook, each ending in a boss |
+| Chapters | 14 — the campaign's 13 and the first chapter of the far shore, each ending in a boss |
 | Bosses | 14 — among them a hurdle that must be walked round, a stone circle that closes on you, three bodies that must all be silent at the same moment, one that sheds pieces of itself, a burrower, one that quotes four of the others, a steward who flees through the walls and must be hunted room to room, and the dark wizard himself, who seals your spells until you take them back |
 | Spells | 41, with evolutions and level-up branches |
 | Wizards | 21, and one hound who is not a wizard |
@@ -104,19 +87,18 @@ console on launch.
 ## Layout
 
 ```
-scripts/      ~460 C# files, flat — no subdirectories
-scenes/       ~230 .tscn, flat
+scripts/      ~535 C# files, flat — no subdirectories
+scenes/       ~235 .tscn, flat
 SpellData_*.tres, CharacterData_*.tres   at the repo root, where they all live
-assets/       generated art, synthesised audio, the kids' drawings
+assets/       generated art and synthesised audio
 tools/        the generators, and the headless probes that photograph the game
 .ai/          52 design documents — the actual source of truth for decisions
 ```
 
 `.ai/` is not documentation written after the fact. It is where a decision is argued out before
 it is built, and where the reasoning survives after the code has changed shape. If you only read
-one, read [`.ai/world-and-tone.md`](.ai/world-and-tone.md) — it decides why the player is alone,
-why the horde has no faction colour, and it is the reason a friendly dog is allowed in exactly
-one chapter and nowhere else.
+one, read [`.ai/world-and-tone.md`](.ai/world-and-tone.md) — it decides why the player is alone
+and why the horde has no faction colour.
 
 ## Licence — please read it
 

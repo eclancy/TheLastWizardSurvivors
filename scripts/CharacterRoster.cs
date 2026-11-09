@@ -8,10 +8,13 @@ namespace TheOneHeMissed.scripts;
 // stub list that didn't correspond to any real CharacterData resource.
 public static class CharacterRoster
 {
-	// Test Wizard stays first for development flows (it is the only entry that can pick its own
-	// starting loadout); the four after it are the first four starters, one per starting element. The
-	// fifth, The Archmage, is appended at index 14 (below), and the character select shows him first by
-	// its own order (SelectionOrder), not by this one.
+	// A ROSTER INDEX IS A WIZARD'S NUMBER, never a position to close up: Global.SelectedCharacterIdx and every
+	// tool's --character=N name one, and every doc that records a run names it too. Index 0 is RETIRED - it was
+	// the Test Wizard, Eric's debug wizard, removed at his request on 2026-11-09 ("remove ... the test wizard") -
+	// and stays an empty slot, never reused, so the Pyromancer is 1 and Artemis 23 as they always were
+	// (RetiredIndices; RegressionChecks.ValidateCharacterRoster holds it). The four after it are the first four
+	// starters, one per starting element. The fifth, The Archmage, is appended at index 14 (below), and the
+	// character select shows him first by its own order (SelectionOrder), not by this one.
 	//
 	// CharacterData.tres - the Arcane "Apprentice Wizard" - is deliberately no longer listed. It
 	// started with Magic Missile when that carried Arcane and Lightning weight, so it was the one
@@ -19,7 +22,7 @@ public static class CharacterRoster
 	// since 2026-11-02 and The Archmage opens on it; the file is still on disk, unlisted.
 	private static readonly string[] ResourcePaths = new[]
 	{
-		"res://CharacterData_TestWizard.tres",
+		null, // 0: retired, the Test Wizard (2026-11-09). Never reuse it.
 		"res://CharacterData_Pyromancer.tres",
 		"res://CharacterData_Frostweaver.tres",
 		"res://CharacterData_Stormcaller.tres",
@@ -94,23 +97,26 @@ public static class CharacterRoster
 	/// </summary>
 	private static readonly string[] ShownFirst = { "archmage" };
 
+	/// <summary>Roster indices that once named a wizard and never will again: 0, the Test Wizard (2026-11-09).</summary>
+	public static readonly IReadOnlyList<int> RetiredIndices = new[] { 0 };
+
 	/// <summary>
 	/// Every roster index in the order the character select lays its cards out: <see cref="ShownFirst"/>, then the
-	/// rest in roster order. A display order only - nothing stores a position in it.
+	/// rest in roster order. A display order only - nothing stores a position in it. A retired index is never in it.
 	/// </summary>
 	public static List<int> SelectionOrder()
 	{
-		var all = GetAll();
-		var order = new List<int>(all.Count);
+		CharacterData[] slots = Slots();
+		var order = new List<int>(slots.Length);
 		foreach (string id in ShownFirst)
 		{
-			int index = all.FindIndex(c => c != null && c.Id.Equals(id, System.StringComparison.OrdinalIgnoreCase));
+			int index = IndexOf(id);
 			if (index >= 0)
 				order.Add(index);
 		}
-		for (int i = 0; i < all.Count; i++)
+		for (int i = 0; i < slots.Length; i++)
 		{
-			if (!order.Contains(i))
+			if (slots[i] != null && !order.Contains(i))
 				order.Add(i);
 		}
 		return order;
@@ -118,7 +124,7 @@ public static class CharacterRoster
 
 	/// <summary>The roster index of the character with this id, or -1.</summary>
 	public static int IndexOf(string characterId) =>
-		GetAll().FindIndex(c => c != null && c.Id.Equals(characterId ?? string.Empty, System.StringComparison.OrdinalIgnoreCase));
+		System.Array.FindIndex(Slots(), c => c != null && c.Id.Equals(characterId ?? string.Empty, System.StringComparison.OrdinalIgnoreCase));
 
 	// Loaded once and held. Every call used to load all seven again, and each load hands back a
 	// fresh managed wrapper for the same cached Godot resource; the old wrappers were left to the
@@ -128,7 +134,11 @@ public static class CharacterRoster
 	// the same churn as a finalizer crash in the balance bot. Holding the list keeps the wrappers
 	// alive for the life of the process, which is what a roster of seven is anyway.
 	private static List<CharacterData> loaded;
+	// The same wizards by roster index, null at a retired index (or one whose resource did not load), so an
+	// index never slides onto the wizard after it.
+	private static CharacterData[] byIndex;
 
+	/// <summary>Every wizard on the roster, in roster order. Never a null, so a position here is NOT a roster index.</summary>
 	public static List<CharacterData> GetAll()
 	{
 		// A copy, so a caller that sorts or filters its list cannot reorder the roster for everyone.
@@ -138,13 +148,31 @@ public static class CharacterRoster
 		return new List<CharacterData>(loaded);
 	}
 
+	/// <summary>
+	/// The roster by index: entry i is the wizard whose roster index is i, null at a retired index. For the one
+	/// screen that lays its cards out by roster index (CharacterSelection); everything else wants <see cref="GetAll"/>.
+	/// </summary>
+	public static List<CharacterData> GetAllByIndex() => new(Slots());
+
+	private static CharacterData[] Slots()
+	{
+		if (byIndex == null)
+			foreach (int step in PrepareResources()) { }
+		return byIndex;
+	}
+
 	/// <summary>Warm the lifetime roster cache in small steps on the main thread.</summary>
 	public static IEnumerable<int> PrepareResources()
 	{
 		if (loaded != null) yield break;
 		var result = new List<CharacterData>();
-		foreach (var path in ResourcePaths)
+		var slots = new CharacterData[ResourcePaths.Length];
+		for (int i = 0; i < ResourcePaths.Length; i++)
 		{
+			string path = ResourcePaths[i];
+			// A retired index keeps its empty slot.
+			if (path == null)
+				continue;
 			// Plain load (default CacheMode.Reuse) - matches every other resource load in this
 			// codebase (SpellData etc. in Player.cs). CacheMode.Replace was tried here previously
 			// as a speculative fix for a suspected stale-cache bug, but it turned out to be the
@@ -156,19 +184,26 @@ public static class CharacterRoster
 			// project already relies on.
 			var data = ResourceLoader.Load<CharacterData>(path);
 			if (data != null)
+			{
 				result.Add(data);
+				slots[i] = data;
+			}
 			yield return 0;
 		}
+		byIndex = slots;
 		loaded = result;
 	}
 
+	/// <summary>
+	/// The wizard whose roster index this is. An index that names nobody - out of range, or retired (0) - is the
+	/// first wizard on the roster (the Pyromancer), as an unknown index always fell back to the first entry.
+	/// </summary>
 	public static CharacterData GetByIndex(int index)
 	{
+		CharacterData[] slots = Slots();
+		if (index >= 0 && index < slots.Length && slots[index] != null)
+			return slots[index];
 		var all = GetAll();
-		if (all.Count == 0)
-			return null;
-		if (index < 0 || index >= all.Count)
-			return all[0];
-		return all[index];
+		return all.Count == 0 ? null : all[0];
 	}
 }

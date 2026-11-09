@@ -10,7 +10,7 @@ see him. he should fire animated fire strikes and have a few different special a
 This draws everything the fight shows that is not light:
 
   assets/bonelight/enemies/swamp-lantern-tender-{moving,attack,hurt,death}.png
-      the tender, on the 96 cell at x2 - the Boo's precedent for a miniboss on the boss cell
+      the tender, on the 96 cell at x2 - the precedent (the Sketchbook's ghost, since removed) for a miniboss on the boss cell
       (.ai/enemy-behaviour.md 7b) - with its SpriteFrames, scenes/resources/SwampLanternTenderFrames.tres
   assets/bonelight/effects/tender-strike.png   a fire strike landing: 8 frames on the 96 AoE cell
   assets/bonelight/effects/tender-ember.png    the flame it throws, in flight: 4 frames on the 32 cell

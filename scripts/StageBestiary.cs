@@ -13,7 +13,7 @@ namespace TheOneHeMissed.scripts;
 // set of creatures." Before this, six behaviour roles (Hexer, Skull Sentry, Lunger, Exploder, Slammer,
 // Summoner) were rolled in every chapter with one look each, the Warden was the one recurring miniboss
 // everywhere, and seven of the nine chapter tables drew from the same four bodies. Only the Forest and
-// the Sketchbook had anything of their own.
+// the Sketchbook (removed 2026-11-09) had anything of their own.
 //
 // THE SHAPE. This file holds the types and the lookup and nothing about any particular chapter. Each
 // chapter's roster lives in its own file, StageBestiary.<Chapter>.cs, as a nested static class with a
@@ -63,7 +63,7 @@ public enum BestiaryRole
 	/// <summary>The recurring miniboss sent on a clock (was the Warden everywhere), and the Gaoler's key carrier.</summary>
 	MiniBoss,
 
-	/// <summary>A table body beyond the four: the Forest's wolves and wisps, the Sketchbook's one-eye and message.</summary>
+	/// <summary>A table body beyond the four: the Forest's wolves and wisps.</summary>
 	Extra,
 }
 
@@ -195,17 +195,10 @@ public sealed class ChapterBestiary
 	public float LateTableFromPaceMinutes { get; init; }
 
 	/// <summary>
-	/// Creatures that belong to the chapter and fill no slot: what its boss calls up (the Rime Guard),
-	/// the Sketchbook's ghost. Listed so the ownership check knows whose they are.
+	/// Creatures that belong to the chapter and fill no slot: what its boss calls up (the Rime Guard).
+	/// Listed so the ownership check knows whose they are.
 	/// </summary>
 	public IReadOnlyList<BestiaryCreature> Attendants { get; init; } = Array.Empty<BestiaryCreature>();
-
-	/// <summary>
-	/// True for the one chapter whose art is not held to .ai/art-direction.md - the Sketchbook, which is
-	/// Eric's kids' drawings and never gets derived frames. ValidateBestiary does not ask its sheets for
-	/// a death or an attack strip, and lets its heavy be a miniboss, because that is how they were drawn.
-	/// </summary>
-	public bool ArtContractExempt { get; init; }
 
 	/// <summary>
 	/// Why this chapter's creatures are other chapters' by design, or empty. Only the Throne, whose minions
@@ -278,7 +271,6 @@ public static partial class StageBestiary
 		FrozenWaste.Build(),
 		ScorchedSands.Build(),
 		Emberdeep.Build(),
-		Sketchbook.Build(),
 		FallowFields.Build(),
 		BrokenCircle.Build(),
 		// The castle (.ai/endgame-castle.md): the bridge's garrison and the Court's household. The Cursed

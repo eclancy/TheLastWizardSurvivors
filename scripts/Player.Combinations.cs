@@ -24,12 +24,8 @@ public partial class Player
 	/// <summary>True for a spell that went into a combination this run: it is never offered again.</summary>
 	public bool WasFusedAway(string spellId) => !string.IsNullOrEmpty(spellId) && fusedAwaySpellIds.Contains(spellId);
 
-	// The wizard's own starting spell, never an ingredient for him: its last form is his Apotheosis. The
-	// Test Wizard has none and picks his own opener, so for him nothing is excluded.
-	private string OwnSpellForCombos =>
-		selectedCharacter == null || selectedCharacter.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase)
-			? null
-			: selectedCharacter.StartingSpellResource?.Id;
+	// The wizard's own starting spell, never an ingredient for him: its last form is his Apotheosis.
+	private string OwnSpellForCombos => selectedCharacter?.StartingSpellResource?.Id;
 
 	/// <summary>Where a recipe stands against this run's loadout (ComboCatalog.Evaluate, the one rule).</summary>
 	public ComboStanding EvaluateCombo(ComboDefinition recipe) => ComboCatalog.Evaluate(recipe, equippedSpells, OwnSpellForCombos);

@@ -9,7 +9,7 @@ namespace TheOneHeMissed.scripts;
 // the element of what dealt it: the spell's (SpellData.GetNumberElement), or the element a hit carries
 // without one (a poison tick, the Lightning tier's chain, the boon chain's steel shards).
 //
-// ONE OUTLINE, AND A RAMP STOP PER ELEMENT. No colour at all clears 4.5:1 on both the Sketchbook's paper
+// ONE OUTLINE, AND A RAMP STOP PER ELEMENT. No colour at all clears 4.5:1 on both the palest ground
 // (taken as white, the worst case) and the darkest floor stone (#0B0F18): it would have to be darker than
 // 0.18 luminance for the one and lighter than 0.20 for the other. Ice's mid on white is 1.6:1. And the
 // ground a number is actually read against is usually an enemy - it rises from the body it struck, and a
@@ -42,7 +42,7 @@ namespace TheOneHeMissed.scripts;
 // element's crit came out near-white and alike - which said "crit" and lost which spell it was. Before
 // that it was gold for every spell.
 //
-// Damage with no element (Bastion of Spikes, the Iron Fang, the Sketchbook's dog, a spell that names
+// Damage with no element (Bastion of Spikes, the Iron Fang, a spell that names
 // no element) keeps the red every number was, crit or not. A turned enemy's blow on its own kind - not his hit at all - is written in
 // bone, the horde's own colourless material (TurnedBlow); its old warm gold was Light's gold now.
 //

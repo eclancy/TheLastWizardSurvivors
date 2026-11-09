@@ -172,7 +172,7 @@ public sealed class EquippedSpellInfo
 
 	/// <summary>
 	/// The wizard's Apotheosis, on the one spell it is the final form of; null on every other spell
-	/// and for a wizard with none (the Test Wizard). Filled by Player.BuildApotheosisPreview.
+	/// and for a wizard with none. Filled by Player.BuildApotheosisPreview.
 	/// </summary>
 	public ApotheosisPreview Apotheosis { get; set; }
 }

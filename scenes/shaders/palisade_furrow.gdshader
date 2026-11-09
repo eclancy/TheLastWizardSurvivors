@@ -14,7 +14,7 @@
 //   a dark pit here and there, its edges ragged where it meets the untouched floor.
 //   THE SOIL'S TONES ARE THE FLOOR'S where the floor is earth or stone (IronPalisade.SoilFor): turf and
 //   soil on grass, rubble on flagstones, snow and frozen ground on the Frozen Waste, sand in the Sands,
-//   graphite on the Sketchbook's paper. All four come from the contract's material rows.
+//   mud in the Swamp. Every one comes from the contract's material rows.
 //   IT DISSOLVES, never fades: a cell of the strip goes out by Bayer dither as it ages - the oldest ground,
 //   furthest behind the wall, first, so the trail is a wake that closes behind it - and the whole strip
 //   goes out the same way once the wall has fallen (`fallen`).

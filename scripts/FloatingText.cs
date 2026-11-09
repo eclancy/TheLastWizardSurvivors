@@ -84,7 +84,7 @@ public partial class FloatingText : Node2D
 		label.Text = Text;
 		// The ink is the Modulate (set per hit, below and in Restart), so the face itself is white and the
 		// number shows its ink exactly. The outline is what keeps every element's ink readable on every
-		// ground - the Sketchbook's paper and a skeleton's bone as much as the darkest floor - and is set
+		// ground - the Fallow Fields' pale stubble and a skeleton's bone as much as the darkest floor - and is set
 		// once per label: a pooled number keeps it (DamageNumberInk).
 		label.AddThemeColorOverride(FontColorName, Colors.White);
 		label.AddThemeColorOverride(FontOutlineColorName, DamageNumberInk.Outline);

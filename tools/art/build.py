@@ -24,7 +24,6 @@ import boss_deaths
 import explore_props
 import foes_forest
 import ground_detail
-import kids_art
 import props_fx
 import relic_icons
 import tiles
@@ -42,7 +41,6 @@ import status_fx
 import telegraph_icons
 import spell_icons
 import spell_icons_core
-import sprite_boo
 import sprite_bosses
 import swamp_tender
 import sprite_treant
@@ -52,16 +50,15 @@ import roster
 import sprite_bell
 import sprite_pickups
 import sprite_player
-import sprite_testwizard
 import sprite_skullsentry
 import spriteframes
+
+# (The Sketchbook's kids_art.py, the Boo's sprite_boo.py and the Test Wizard's sprite_testwizard.py were
+# built from here until all three were removed at Eric's request on 2026-11-09; git history holds them.)
 
 OUT_CHARS = os.path.join(ROOT, "assets", "bonelight", "characters")
 OUT_ENEMIES = os.path.join(ROOT, "assets", "bonelight", "enemies")
 OUT_PICKUPS = os.path.join(ROOT, "assets", "bonelight", "pickups")
-# Deliberately NOT under assets/bonelight/: the test wizard is Eric's own drawing and is off
-# contract on purpose. Its own directory keeps that visible from the path alone.
-OUT_TESTWIZ = os.path.join(ROOT, "assets", "testwizard")
 
 
 def build_player():
@@ -80,24 +77,6 @@ def build_skullsentry():
         path = os.path.join(OUT_ENEMIES, "skullsentry-%s.png" % name)
         P.write_strip(frames, sprite_skullsentry.PALETTE, path, sprite_skullsentry.CELL)
         paths.append((name, path, len(frames)))
-    return paths, problems
-
-
-def build_testwizard():
-    """The supplied test-wizard skin, re-seated on the player cell with a derived idle.
-
-    Numbered single frames, not a strip: CharacterData.Portrait points at frame one and
-    CharacterVisuals.ResolveIdleFrame walks "-2", "-3", "-4" off it.
-    """
-    frames = sprite_testwizard.frames()
-    problems = sprite_testwizard.check(frames)
-    if not os.path.isdir(OUT_TESTWIZ):
-        os.makedirs(OUT_TESTWIZ)
-    paths = []
-    for i, im in enumerate(frames):
-        path = os.path.join(OUT_TESTWIZ, "testwizard-%d.png" % (i + 1))
-        im.save(path)
-        paths.append(path)
     return paths, problems
 
 
@@ -190,28 +169,6 @@ def build_roster():
         made.append(("wizard", name, sum(len(f) for _a, f, _l, _s in anims),
                      "%sFrames" % name.capitalize()))
     return made
-
-
-def build_boo():
-    """Elim's ghost, the Sketchbook's miniboss: his drawing grown onto the 96px cell and lit to
-    the Bonelight model, refined at Eric's request on 2026-10-20 - see sprite_boo.py.
-
-    Output lives beside his source drawing in assets/enemies/ rather than under assets/bonelight/,
-    so it stays visible from the path that this sprite is his, and the one kids' drawing that the
-    never-restyle rule was lifted for.
-    """
-    out_dir = os.path.join(ROOT, "assets", "enemies")
-    spec = []
-    for name, frames, loop, speed in sprite_boo.animations():
-        png = "boo-%s.png" % name
-        sheet = Image.new("RGBA", (sprite_boo.CELL * len(frames), sprite_boo.CELL), (0, 0, 0, 0))
-        for i, f in enumerate(frames):
-            sheet.alpha_composite(f, (i * sprite_boo.CELL, 0))
-        sheet.save(os.path.join(out_dir, png))
-        spec.append((name, png, len(frames), loop, speed))
-    spriteframes.write(os.path.join(ROOT, "scenes", "resources", "BooEnemyFrames.tres"),
-                       spec, "assets/enemies", cell=sprite_boo.CELL)
-    return sum(a[2] for a in spec)
 
 
 def build_treant():
@@ -392,19 +349,12 @@ if __name__ == "__main__":
     for name, path, n in sentry_paths:
         print("   %-8s %d frames  %s" % (name, n, os.path.relpath(path, ROOT).replace(os.sep, "/")))
 
-    tw_paths, problems = build_testwizard()
-    all_problems += problems
-    print("test wizard: %d idle frames" % len(tw_paths))
-    for p in tw_paths:
-        print("   " + os.path.relpath(p, ROOT).replace(os.sep, "/"))
-
     total = 0
     for kind, name, n, sheet in build_roster():
         print("%-7s %-12s %3d frames -> %s.tres" % (kind, name, n, sheet))
         total += n
     print("   %d frames across the roster" % total)
 
-    print("boo          %3d frames -> BooEnemyFrames.tres" % build_boo())
     print("treant       %3d frames -> ForestTreantBossFrames.tres" % build_treant())
     print("warden       %3d frames -> WardenEnemyFrames.tres" % build_warden())
     for name, n, sheet in build_bosses():
@@ -421,7 +371,7 @@ if __name__ == "__main__":
     for module, stem, n, sheet in cast_made:
         print("%-7s %-18s %3d frames -> %s.tres" % (module[len("cast_"):], stem, n, sheet))
 
-    # The Blighted Swamp side event's lantern-tender (swamp_tender.py): on the 96 cell like the Boo,
+    # The Blighted Swamp side event's lantern-tender (swamp_tender.py): on the 96 cell, like a boss,
     # so it is not one of the bestiary's 32/48 casts, with the three flame strips its attacks draw.
     _pose, n, problems = swamp_tender.write_tender()
     all_problems += problems
@@ -489,13 +439,6 @@ if __name__ == "__main__":
     print("")
     print("ground detail and landmarks:")
     ground_detail.main()
-    print("")
-
-    # The kids' chapter. Last, and visibly separate, because nothing in it is generated - the
-    # tool only slices and repacks drawings that already exist.
-    print("")
-    print("the Sketchbook (drawings by Eric's kids, not generated):")
-    kids_art.main()
     print("")
 
     pickup_paths = build_pickups()

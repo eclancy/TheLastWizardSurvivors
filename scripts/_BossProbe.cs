@@ -148,15 +148,23 @@ public partial class _BossProbe : Node
 		}
 
 		Global.SelectedCharacterIdx = 1;
-		// --character=N --start-spell=ID (with 0, the Test Wizard): another loadout through the arrival - the
-		// cutscene freeze (Player.SpellGroup) wants a spell that stays out, the Familiar or the Spiritual Weapon.
+		// --character=N --start-spell=ID (the wizard opens on that spell in place of his own, Global.ToolStartingSpellId):
+		// another loadout through the arrival - the cutscene freeze (Player.SpellGroup) wants a spell that stays out, the
+		// Familiar or the Spiritual Weapon.
+		bool startSpellGiven = false;
 		foreach (string arg in OS.GetCmdlineUserArgs())
 		{
 			if (arg.StartsWith("--character=") && int.TryParse(arg.Substring("--character=".Length), out int who))
 				Global.SelectedCharacterIdx = who;
 			else if (arg.StartsWith("--start-spell="))
-				Global.TestWizardStartingSpellId = arg.Substring("--start-spell=".Length);
+			{
+				Global.ToolStartingSpellId = arg.Substring("--start-spell=".Length);
+				startSpellGiven = true;
+			}
 		}
+		// Never left from an earlier tool in the same process.
+		if (!startSpellGiven)
+			Global.ToolStartingSpellId = string.Empty;
 		Global.SelectedStageIdx = StageIndex;
 		Engine.TimeScale = TimeScale;
 		GameStats.ResetRunTelemetry();

@@ -401,13 +401,12 @@ public static class GlobalStatsManager
 	/// <summary>
 	/// The campaign is finished: the boss of its last playable chapter has fallen there, and that chapter is
 	/// on the save's road (<see cref="StageCatalog.LastPlayableChapter"/>: the Cursed Dungeon while the
-	/// castle's other chapters are unbuilt, the Throne once it is). What opens the Sketchbook's page (Eric,
-	/// 2026-10-30: "Once you beat the whole campaign, you should be able to navigate to it").
+	/// castle's other chapters are unbuilt, the Throne once it is).
 	/// </summary>
 	/// <remarks>
 	/// On the road (.ai/endgame-castle.md 1.5): a Gaoler beaten in a grandfathered Dungeon - every save that
-	/// won it as chapter five - finished nothing. A save that had finished the old campaign keeps the
-	/// Sketchbook because the schema 21 step wrote it into the opened list (SaveData.MigrateDungeonIntoCastle).
+	/// won it as chapter five - finished nothing. (It also opened the Sketchbook's page until that chapter was
+	/// removed on 2026-11-09.)
 	/// </remarks>
 	public static bool HasFinishedCampaign(SaveData data)
 	{
@@ -415,36 +414,6 @@ public static class GlobalStatsManager
 		BossDefinition boss = last != null ? BossCatalog.ForStageIndex(last.Index) : null;
 		return boss != null && data?.Lifetime != null && data.Lifetime.HasDefeatedBoss(boss.Id)
 			&& IsStageEarned(data, last);
-	}
-
-	/// <summary>
-	/// A chapter held back until the campaign is finished (<see cref="StageDefinition.AfterCampaign"/>) is
-	/// reached three ways, any one enough: it is in the opened list (<see cref="RecordFinishedCampaign"/>
-	/// wrote it), the campaign is finished now, or the save has already played there - it was open from
-	/// the first run until 2026-10-30, and nothing a save could enter is ever closed to it.
-	/// </summary>
-	private static bool HasReachedAfterCampaign(SaveData data, StageDefinition stage) =>
-		IsStageUnlocked(data, stage.Id)
-		|| HasFinishedCampaign(data)
-		|| (data?.Lifetime != null && data.Lifetime.BestTimeOnStage(stage.Id) > 0f);
-
-	/// <summary>
-	/// Writes every chapter held back until the campaign is finished into the opened list once it is, so
-	/// it stays open when the campaign grows a new last chapter (the castle's) - the reason
-	/// <see cref="RecordMetGates"/> writes the gates down. Only adds. Returns the chapters it wrote: the
-	/// run that finished the campaign shows the Sketchbook opened on its results screen.
-	/// </summary>
-	public static List<StageDefinition> RecordFinishedCampaign(SaveData data)
-	{
-		var opened = new List<StageDefinition>();
-		if (data == null || !HasFinishedCampaign(data))
-			return opened;
-		foreach (StageDefinition stage in StageCatalog.All)
-		{
-			if (stage.AfterCampaign && stage.IsPlayable && UnlockStage(data, stage.Id))
-				opened.Add(stage);
-		}
-		return opened;
 	}
 
 	/// <summary>
@@ -522,7 +491,7 @@ public static class GlobalStatsManager
 
 		return stage.Gate switch
 		{
-			StageGate.Open => !stage.AfterCampaign || HasReachedAfterCampaign(data, stage),
+			StageGate.Open => true,
 			StageGate.PreviousBossAndWizards => IsStageUnlocked(data, stage.Id)
 				|| HasPassedInOrder(data, stage)
 				|| IsGateMet(data, stage),
@@ -862,7 +831,7 @@ public static class GlobalStatsManager
 	/// Every chapter of the campaign (StageCatalog.Campaign) has had its boss beaten at <paramref name="rank"/> or
 	/// harder. COUNTING THE CHAPTERS NOT YET PLAYABLE (the Court and the Throne today): neither deed that reads
 	/// this - the Dark Wizard's on Hardcore, Merlin's on Default - can be earned until the whole campaign exists
-	/// and has been beaten. A chapter outside the campaign (the Sketchbook) is not asked for.
+	/// and has been beaten. A chapter outside the campaign is not asked for.
 	/// </summary>
 	public static bool ClearedEveryChapterAt(SaveData data, int rank, global::RunResult run = null) =>
 		StageCatalog.Campaign.Count > 0 && ChaptersClearedAt(data, rank, run) == StageCatalog.Campaign.Count;

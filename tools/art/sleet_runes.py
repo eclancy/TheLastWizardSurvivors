@@ -33,8 +33,8 @@ cooling from Wind's mid to its edge as it trails. They were two DrawLines in Sle
 are part of the sheet, walked pixel by pixel per heading on the rune's own grid, opaque - which is why
 the cell grew from 32 to 40 (72 for the great rune): the streaks reach 17 art pixels behind the centre,
 and 32 at the great rune's scale. They take no occlusion: ringed in it, two one-pixel streaks read as
-a fork of twigs at every diagonal heading. Wind's edge stop is dark enough to hold on the Sketchbook's
-paper without it. The rune itself is the same pixels it was. rune() leaves the wind off unless asked,
+a fork of twigs at every diagonal heading. Wind's edge stop is dark enough to hold on white paper
+without it. The rune itself is the same pixels it was. rune() leaves the wind off unless asked,
 so the card icons that paint it (evolution_icons.py) are unchanged.
 """
 

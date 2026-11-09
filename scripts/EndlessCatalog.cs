@@ -45,11 +45,8 @@ public static class EndlessCatalog
 		"stage_1",  // Cursed Dungeon - the Gaoler (the castle's, but its ground is a maze like any other)
 	};
 
-	/// <summary>
-	/// The Sketchbook: the kids' page can be held all night, for its records only - nothing there counts toward a
-	/// Feat (Eric: no achievements there).
-	/// </summary>
-	public const string SketchbookId = "stage_8";
+	// (The Sketchbook, stage_8, could be held all night for its records only until the chapter was removed on
+	// 2026-11-09. Every endless chapter now is on the road's list above.)
 
 	/// <summary>
 	/// The road's chapters that are NOT endless, and why (section 1.3): the Last Bridge is a band that ends at the gate
@@ -61,11 +58,7 @@ public static class EndlessCatalog
 	/// <summary>True for a chapter that can be held through the night at all (built, and on the lists above).</summary>
 	public static bool IsEndlessChapter(StageDefinition stage) =>
 		stage != null && stage.IsPlayable
-		&& (RoadChapterIds.Contains(stage.Id, StringComparer.OrdinalIgnoreCase) || IsRecordsOnly(stage));
-
-	/// <summary>The Sketchbook: endless, but for its records only.</summary>
-	public static bool IsRecordsOnly(StageDefinition stage) =>
-		stage != null && stage.Id.Equals(SketchbookId, StringComparison.OrdinalIgnoreCase);
+		&& RoadChapterIds.Contains(stage.Id, StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// Endless is open on this save: the Throne taken back (GlobalStatsManager.HasTakenBackTheThrone - the deed done,
@@ -255,7 +248,7 @@ public static class EndlessCatalog
 
 	// --- The three Feats (section 3.3) -----------------------------------------------------------------------------
 	// Arcane Energy only, never an unlock: a Feat that paid a spell or a wizard would put a gate behind a mode. Counted
-	// on Default or harder, never in the Sketchbook, measured from the records - so each completes at a fall.
+	// on Default or harder, on the road's endless chapters, measured from the records - so each completes at a fall.
 
 	public const string IntoTheNightId = "endless_into_the_night";
 	public const int IntoTheNightCurrency = 150;
@@ -272,7 +265,7 @@ public static class EndlessCatalog
 	public static readonly IReadOnlyList<string> FeatIds = new[] { IntoTheNightId, LongWatchId, EveryVigilKeptId };
 
 	/// <summary>
-	/// Whether a record counts toward the Feats: a road chapter (never the Sketchbook) on Default or harder.
+	/// Whether a record counts toward the Feats: a road chapter on Default or harder.
 	/// </summary>
 	public static bool CountsForFeats(EndlessRecord record) =>
 		record != null

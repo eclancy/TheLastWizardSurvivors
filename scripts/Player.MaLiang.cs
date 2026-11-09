@@ -47,15 +47,13 @@ public partial class Player
 	/// <summary>
 	/// Whether <paramref name="character"/> chooses the form of the spell he opens on at the start of each run: a spell
 	/// with forms, and a wizard marked to choose it (CharacterData.ChoosesStartingForm) - every other wizard on a spell
-	/// with forms opens in his Apotheosis's form (Nimue's Sword, CharacterData.StartingFormId). Never the Test Wizard,
-	/// whose picker names one on the character screen. Read by the character select too, so the card shows the spell
-	/// and not one form of it.
+	/// with forms opens in his Apotheosis's form (Nimue's Sword, CharacterData.StartingFormId). Read by the character
+	/// select too, so the card shows the spell and not one form of it.
 	/// </summary>
 	public static bool ChoosesOpeningForm(CharacterData character)
 	{
 		SpellData spell = character?.StartingSpellResource;
-		return spell != null && spell.HasVariants && character.ChoosesStartingForm
-			&& !character.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase);
+		return spell != null && spell.HasVariants && character.ChoosesStartingForm;
 	}
 
 	/// <summary>The card the opening page is made from: the spell as a level-up deals it, with a card per form.</summary>

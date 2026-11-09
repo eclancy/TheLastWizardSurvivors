@@ -4,8 +4,8 @@
 Every tile every stage is fought on: the autotile terrains at fourteen roles each, the plain floor
 materials, the Cursed Dungeon's jail walls (`jail_walls.py`, with the shadows they throw) and the
 chapters' own wall sets (`<name>_walls.py`, wall_set_modules below). About eight hundred 48x48 tiles
-and a `tiles.json` manifest, which `CuratedTileCatalog.LoadMany` merges alongside the
-Sketchbook's. The small things lying ON the ground - flowers, lilypads, reeds, pebbles - are
+and a `tiles.json` manifest, which `CuratedTileCatalog.LoadMany` loads (the Sketchbook's own was
+merged alongside it until that chapter was removed on 2026-11-09). The small things lying ON the ground - flowers, lilypads, reeds, pebbles - are
 `ground_detail.py`, not this. Water is not drawn here either: its shape is computed
 (scripts/WaterShape.cs) and its surface comes from `water.py`; tiles.json keeps one `water_fill`
 tile so the manifest still says water blocks.

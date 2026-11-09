@@ -135,8 +135,7 @@ public static class MusicCatalog
 	/// <summary>The Emberdeep, the finale. A minor with the Neapolitan B flat and E major, 4/4 at 150, 25.6 s.</summary>
 	public static readonly MusicSet Emberdeep = Chapter("emberdeep");
 
-	/// <summary>The Sketchbook. C major, a toy waltz in 3/4 at 168, 25.7 s.</summary>
-	public static readonly MusicSet Sketchbook = Chapter("sketchbook");
+	// (The Sketchbook's set, a C major toy waltz, went with the chapter on 2026-11-09.)
 
 	// THE TWO EARLY CHAPTERS (.ai/campaign.md), planned: each names the files it will have and plays
 	// a stand-in until they exist. Phase 2 scores them in tools/audio/music_fields.py and
@@ -203,7 +202,7 @@ public static class MusicCatalog
 		[5] = Frozen,
 		[6] = Sands,
 		[7] = Emberdeep,
-		[8] = Sketchbook,
+		// 8 is retired (the Sketchbook, StageCatalog.RetiredIndices).
 		[9] = Fields,
 		[10] = Heath,
 		[11] = Bridge,

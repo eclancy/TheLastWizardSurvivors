@@ -1742,95 +1742,9 @@ EMBER = Piece(
 
 
 # ---------------------------------------------------------------------------
-# 9. the Sketchbook - C major, 3/4, quarter = 168, 24 bars
+# (9. the Sketchbook, a C major toy waltz in 3/4 at 168, was scored here until the chapter was removed at
+# Eric's request on 2026-11-09; git history holds it.)
 # ---------------------------------------------------------------------------
-# The kids' chapter, the one place he has not been. A toy waltz, quick on its feet: pizzicato
-# oom-pah-pah, soft strings, a brushed drum, the harp in eighths, and the tune on a music box -
-# a toy taken seriously by whoever owns it. Nothing in it mocks the drawings, and nothing
-# pretends to be what they drew. In B a soft flute takes the tune and the music box counts the
-# beats above it.
-#
-#   A  C C F F | G G C C | Am F G G
-#   B  F F C C | Dm G Em Am | F G C G       G wraps to C: the only perfect cadence in the set
-
-SKETCH_GRID = Grid(4, 12)
-SKETCH_CHORDS = {
-    "C": _ch("C3", ["C4", "E4", "G4"], ["C5", "E5", "G5"], ["E4", "G4"]),
-    "F": _ch("F2", ["C4", "F4", "A4"], ["C5", "F5", "A5"], ["F4", "A4"]),
-    "G": _ch("G2", ["B3", "D4", "G4"], ["B4", "D5", "G5"], ["D4", "G4"]),
-    "Am": _ch("A2", ["C4", "E4", "A4"], ["C5", "E5", "A5"], ["C4", "E4"]),
-    "Dm": _ch("D3", ["D4", "F4", "A4"], ["D5", "F5", "A5"], ["F4", "A4"]),
-    "Em": _ch("E3", ["E4", "G4", "B4"], ["E5", "G5", "B5"], ["G4", "B4"]),
-}
-SKETCH_PROG = ("C C F F G G C C Am F G G "
-               "F F C C Dm G Em Am F G C G").split()
-SKETCH_B = 12
-SKETCH_BOX = """C5:4 E5:4 G5:4 | C6:8 G5:4 | A5:4 G5:2 F5:2 A5:4 | C6:8 A5:4 |
-B5:4 A5:2 G5:2 D5:4 | G5:8 F5:4 | E5:4 G5:4 C6:4 | G5:8 .:4 |
-A5:4 C6:2 B5:2 A5:4 | F5:4 A5:2 G5:2 F5:4 | D5:4 G5:4 B5:4 | G5:8 .:4 |"""
-SKETCH_FLUTE = """A4:8 C5:4 | F5:8 E5:4 | E5:4 D5:4 C5:4 | G4:12 |
-F5:8 E5:4 | D5:4 B4:4 G4:4 | E5:8 G5:4 | A5:8 E5:4 |
-F5:4 E5:4 D5:4 | D5:4 C5:4 B4:4 | C5:12 | B4:4 D5:4 .:4 |"""
-
-
-def sketch_bed():
-    g, ch = SKETCH_GRID, SKETCH_CHORDS
-    ev = held(g, SKETCH_PROG, lambda c: ch[c]["pad"], pad_strings, 0.32, 6)
-    ev += ost(g, SKETCH_PROG, lambda c: [ch[c]["root"]], "0...........", pizz, 4, 0.56)
-    for k in xrange(2):
-        ev += ost(g, SKETCH_PROG, lambda c, k=k: [ch[c]["low"][k]], "....0...0...", pizz, 3,
-                  0.42 - 0.04 * k)
-    return ev
-
-
-SKETCH_FILLS = (SKETCH_B - 1, 24 - 1)
-
-
-def sketch_pulse():
-    """The toy waltz with its sleeves rolled up (2026-11-01), still played straight: a kick drum's
-    oom on one with a pickup into the next bar, a snare's pah-pah on two and three, the toy tick on
-    the off-beats, and a plucked bass under the harp. A tin-soldier band, never a joke."""
-    g, ch = SKETCH_GRID, SKETCH_CHORDS
-    ev = ost(g, SKETCH_PROG, lambda c: ch[c]["pad"], "0.1.2.1.2.1.", harp, 4, 0.3)
-    ev += ost(g, SKETCH_PROG, octaves_of(ch), "0.......1.0.", bass_pluck, 2.5, 0.55)
-    for bar in xrange(len(SKETCH_PROG)):
-        ev += hits(g, bar, "X.........x.", frame_drum, "G2", 0.8, 4)
-        if bar in SKETCH_FILLS:
-            ev += hits(g, bar, "....x.xxxxXX", snare, None, 0.6, 1)
-        else:
-            ev += hits(g, bar, "....x...x...", snare, None, 0.62, 3)
-            ev += hits(g, bar, "..o...o...o.", tek, "C5", 0.55, 1)
-    return ev
-
-
-def sketch_boss():
-    """Wizard Dude: the frame drums doubled into a toy-soldier roll, horns' brass on the downbeat
-    and the pickup, and the pizzicato running the chord in eighths high over the waltz - bigger,
-    and still warm."""
-    g, ch = SKETCH_GRID, SKETCH_CHORDS
-    return boss_layer(
-        g, SKETCH_PROG, ch,
-        drum=("X.x.X.x.X.xx", frame_drum, "D3", 0.66, 2),
-        stabs=("X.......x...", brass, 0.5, 2),
-        motor=("012101210121", pizz, lambda c: c["arp"], 0.42, 2),
-        fills=SKETCH_FILLS, roll=("x.x.x.xxxxXX", snare, None, 0.6, 1))
-
-
-def sketch_lead():
-    g, ch = SKETCH_GRID, SKETCH_CHORDS
-    ev = line(g, 0, SKETCH_BOX, music_box, 0.72)
-    ev += line(g, SKETCH_B, SKETCH_FLUTE, flute, 0.58, legato=0.5)
-    ev += ost(g, SKETCH_PROG[SKETCH_B:], lambda c: ch[c]["arp"], "0...1...2...", music_box, 4,
-              0.3, first=SKETCH_B)
-    return ev
-
-
-SKETCH = Piece(
-    "sketchbook", 168.0, 3, 24,
-    [("bed", sketch_bed, 0.24), ("pulse", sketch_pulse, 0.14), ("lead", sketch_lead, 0.22),
-     ("boss", sketch_boss, 0.12)],
-    tail_beats=6, scale=SEVEN,
-    describe="The Sketchbook - C major, 3/4 at 168, A/B of 12 bars")
 
 
 # ---------------------------------------------------------------------------
@@ -1904,8 +1818,9 @@ BOSS = Piece("boss", 138.0, 4, BOSS_BARS, [("loop", boss_events, 0.22)],
              tail_beats=8, describe="the boss loop - A minor, 4/4 at 138, 24 bars, 42 s")
 
 
-# The menu, then the chapters in StageCatalog roster order (index 0..8), then the shared boss loop.
-CHAPTERS = [FOREST, DUNGEON, CAVE, SWAMP, RUINS, FROZEN, SANDS, EMBER, SKETCH]
+# The menu, then the chapters in StageCatalog roster order (index 0..7; 8, the Sketchbook, was removed on
+# 2026-11-09), then the shared boss loop.
+CHAPTERS = [FOREST, DUNGEON, CAVE, SWAMP, RUINS, FROZEN, SANDS, EMBER]
 
 
 # A CHAPTER SCORED IN ITS OWN FILE (.ai/campaign.md). A chapter added after the first nine writes

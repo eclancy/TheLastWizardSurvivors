@@ -858,23 +858,24 @@ public partial class Player : CharacterBody2D
 		// In his own form, for a spell taken in one (CharacterData.StartingSelection: Nimue's Sword); the spell alone
 		// for every other wizard, whose spell has no forms.
 		string startingSelection = selectedCharacter.StartingSelection;
-		if (selectedCharacter.Id.Equals("test_wizard", StringComparison.OrdinalIgnoreCase)
-			&& !string.IsNullOrWhiteSpace(Global.TestWizardStartingSpellId))
-		{
-			// The Test Wizard's picker may name a form as well ("spiritual_weapon:spiritual_weapon_hammer",
-			// CharacterSelection), so the spell is the selection's first half.
-			startingSelection = Global.TestWizardStartingSpellId;
-		}
+		// A TOOL SCENE'S OPENER (Global.ToolStartingSpellId: _BalanceHarness --spell, _UiShot and _BossProbe
+		// --start-spell), for whichever wizard the tool picked; nothing in the game sets it. It may name a form as
+		// well ("spiritual_weapon:spiritual_weapon_hammer"), so the spell is the selection's first half. It was the
+		// Test Wizard's alone until he was removed (2026-11-09). The wizard's own Conjunction and form page are his
+		// own spell's, so neither applies to a spell the tool chose for him.
+		bool toolOpener = !string.IsNullOrWhiteSpace(Global.ToolStartingSpellId);
+		if (toolOpener)
+			startingSelection = Global.ToolStartingSpellId;
 		string startingSpellId = SpellVariants.Split(startingSelection).SpellId;
 
 		signatureSpellId = string.IsNullOrWhiteSpace(startingSpellId) ? "magic_missile" : startingSpellId;
 		// A wizard who opens on a Conjunction (the dark wizard's The Taking) holds it made, at level 1: it is
 		// never fused for him (Player.Combinations.cs, AddStartingConjunction).
-		if (ComboCatalog.ForId(startingSpellId) is ComboDefinition opening && ComboCatalog.StartsFused(opening, selectedCharacter.Id))
+		if (!toolOpener && ComboCatalog.ForId(startingSpellId) is ComboDefinition opening && ComboCatalog.StartsFused(opening, selectedCharacter.Id))
 			AddStartingConjunction(opening, selectedCharacter.IsLegendaryStart);
 		// A wizard who opens on a spell with forms chooses the form on the run's first screen (Ma Liang's Familiar,
 		// Player.MaLiang.cs): the spell is owed until then, and Node2DGame opens the page before anything moves.
-		else if (ChoosesOpeningForm(selectedCharacter) && string.IsNullOrEmpty(SpellVariants.Split(startingSelection).VariantId))
+		else if (!toolOpener && ChoosesOpeningForm(selectedCharacter) && string.IsNullOrEmpty(SpellVariants.Split(startingSelection).VariantId))
 			OweOpeningForm(startingSpellId, selectedCharacter.IsLegendaryStart);
 		else if (!string.IsNullOrWhiteSpace(startingSpellId))
 			TryAddOrLevelSpell(startingSelection, selectedCharacter.IsLegendaryStart);
@@ -897,8 +898,8 @@ public partial class Player : CharacterBody2D
 
 		// The generated wizards ship a full SpriteFrames - idle, moving, hurt, death - which nothing
 		// played until now: the body ran a four-frame idle built from the portrait and only ever
-		// flipped. A character with full frames uses them. One without (the Test Wizard, whose
-		// sprite is Eric's own drawing and is never derived) keeps the idle-only path.
+		// flipped. A character with full frames uses them. One without (none since the Test Wizard,
+		// Eric's own drawing, was removed on 2026-11-09) keeps the idle-only path.
 		Texture2D portrait = character?.Portrait;
 		if (character?.Frames != null && character.Frames.HasAnimation("idle"))
 		{
@@ -4605,7 +4606,7 @@ public partial class Player : CharacterBody2D
 			int shots = counting ? Math.Max(projectileCount, magicMissileTargets.Count) : projectileCount;
 			bool orbs = spell.HasEvolution(MagicMissile.ArcaneOrbId);
 			// Out of the light on his staff's head (CharacterVisuals.GetStaffTipCell), as Cinderbreath is poured from
-			// it; the body's centre for a wizard without one (the Test Wizard), and the cat itself when the Black Cat casts.
+			// it; the body's centre for a wizard without one, and the cat itself when the Black Cat casts.
 			Vector2 from = GlobalPosition + (castingFromFamiliar ? Vector2.Zero : StaffTipLocal());
 
 			for (int p = 0; p < shots && magicMissileTargets.Count > 0; p++)
@@ -8057,7 +8058,7 @@ public partial class Player : CharacterBody2D
 	/// <summary>
 	/// This wizard's Apotheosis on <paramref name="spell"/>, as the ascension browser and the pause
 	/// screen show it: the form, each gate with the run's progress on it, and whether it is offered,
-	/// taken or out of reach. Null when the wizard has none on this spell (the Test Wizard has none).
+	/// taken or out of reach. Null when the wizard has none on this spell.
 	/// </summary>
 	/// <remarks>
 	/// It reports and never decides: <see cref="ApotheosisPreview.Offered"/> is TryBuildApotheosisOffer's
@@ -8259,7 +8260,7 @@ public partial class Player : CharacterBody2D
 					continue;
 
 				// Another wizard's alone (UnlockDefinition.ExclusiveTo: Merlin's Orb of Ages) is never dealt to
-				// this one, whatever the save owns - nor to the Test Wizard, who is nobody's.
+				// this one, whatever the save owns.
 				if (!UnlockCatalog.MayBeOffered(template.Id, selectedCharacter?.Id))
 					continue;
 

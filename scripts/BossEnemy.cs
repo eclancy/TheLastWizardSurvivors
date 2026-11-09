@@ -451,7 +451,7 @@ public partial class BossEnemy : Enemy
 	// timeline: how hard its climax lands (the roar, BossDeath calls it), and the other beats worth a jolt,
 	// which a boss marks from inside its own TickEntrance / TickDeath with BossDeath.Impact(weight) on the
 	// frame they happen - a landing, a burst, a grate swinging open. Weight 1 is a roar's; a whisper of a
-	// boss (the Choir, the kids' wizard) is lighter, a forge catching fire heavier.
+	// boss (the Choir) is lighter, a forge catching fire heavier.
 
 	/// <summary>How hard the arrival's climax shakes the screen, 1 being a roar. 0 for none.</summary>
 	protected internal virtual float EntranceClimaxWeight => 1f;

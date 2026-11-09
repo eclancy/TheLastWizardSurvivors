@@ -57,7 +57,7 @@ public static partial class StageBestiary
 			// shoot at you"). The wisp was the back line here, 14% of the table, and the Dryad and the Effigy
 			// stood in the ranged and turret roles; all three are RangedEnemy. The chapter that teaches moving
 			// and kiting asks only that, and the first bolt waits for the chapters after it. An absent role
-			// skips its roll entirely (Node2DGame.SelectEnemyForCurrentStage), as the Sketchbook's do. The
+			// skips its roll entirely (Node2DGame.SelectEnemyForCurrentStage). The
 			// wisp, the Dryad and the Effigy stay drawn and defined, should a later chapter want them.
 			return new ChapterBestiary
 			{

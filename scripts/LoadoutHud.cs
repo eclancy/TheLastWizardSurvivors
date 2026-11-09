@@ -74,8 +74,9 @@ public partial class LoadoutHud : BoxContainer
 	private const float BandFloorGap = 4f;
 
 	// Inks and rims, from the palette in .ai/art-direction.md. The slot backing is floor stone deep at
-	// 0.85: the icons are drawn for the Bonelight dark ground, and on the Sketchbook's white paper a
-	// thinner backing (0.62 was tried) left the steel rim at 1.3:1 and every milestone rim under 3:1.
+	// 0.85: the icons are drawn for the Bonelight dark ground, and on white ground (measured on the
+	// Sketchbook's paper, the palest the game has had) a thinner backing (0.62 was tried) left the steel
+	// rim at 1.3:1 and every milestone rim under 3:1.
 	// At 0.85 the weakest, the plain held rim, is 3.0:1 on white paper (tools/art/ui_contrast.py).
 	private static readonly Color SlotBacking = new(0.043f, 0.059f, 0.094f, 0.85f);
 	private static readonly Color HeldRim = new(0.416f, 0.494f, 0.596f, 1f);          // steel base #6A7E98

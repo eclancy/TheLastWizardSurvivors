@@ -29,7 +29,10 @@ using TheOneHeMissed.scripts;
 // still only about a tenth of the time - it walks to XP orbs almost constantly. --aim-facing (with
 // --immortal) turns the standing bot toward the nearest enemy, for the facing family (Stormsweep,
 // Sleet Runes), which otherwise fire wherever the last orb lay.
-// --spell=ID with --character=0 opens the Test Wizard on that spell and reports its damage per level
+// --spell=ID opens the chosen wizard on that spell in place of his own (Global.ToolStartingSpellId; his
+// starting passive still applies) and reports its damage per level. It was the Test Wizard's, at
+// --character=0, until he was removed on 2026-11-09; index 0 now falls to the Pyromancer, so say
+// --character=1 to mean him
 // (--partner=ID adds a second, never-levelled spell, for Frost Shard and Arcane Explosion; --enemy-hp=X
 // multiplies the ordinary spawns' health - not --hp-scale, which is the PLAYER's - so a strong spell
 // meets a crowd it cannot clear and two runs differ by what the spell does, not by the spawn rate);
@@ -173,9 +176,9 @@ public partial class _BalanceHarness : Node
 	// --stage=N: the chapter to play (Global.SelectedStageIdx). Left alone when absent, so older
 	// reports stay comparable.
 	[Export] public int StageIndex { get; set; } = -1;
-	// --spell=ID: the Test Wizard's starting spell (Global.TestWizardStartingSpellId), so one spell
-	// can be measured as the run's opener without a character built around it. Only the Test Wizard
-	// reads it - pair with --character=0. The report then breaks that spell's damage down by level.
+	// --spell=ID: the run's opening spell in place of the wizard's own (Global.ToolStartingSpellId), so
+	// one spell can be measured as the run's opener whoever casts it. The report then breaks that
+	// spell's damage down by level.
 	[Export] public string SpellId { get; set; } = "";
 	// --solo: with --spell, the bot takes only that spell's cards (and its ascension) and skips every
 	// other level-up, so the per-level table measures the spell alone rather than a loadout whose
@@ -264,7 +267,7 @@ public partial class _BalanceHarness : Node
 	private double crowdFreeRatioSum, crowdContactRatioSum;
 	private int crowdContactEnemySum;
 	// Every enemy that entered the game, by EnemyType - the spawn table as it actually played, so a
-	// roster question (does the ghost turn up outside the Sketchbook?) is answered by a run rather
+	// roster question (does a chapter's creature turn up outside its chapter?) is answered by a run rather
 	// than by reading SelectEnemyForCurrentStage. A recycled enemy does not re-enter the tree, so
 	// each body counts once.
 	private readonly SortedDictionary<string, int> spawnedByType = new();
@@ -467,8 +470,8 @@ public partial class _BalanceHarness : Node
 		if (!string.IsNullOrEmpty(SpellId))
 		{
 			// The opener in its form, if it has forms: "spell:form" (SpellVariants.Selection).
-			Global.TestWizardStartingSpellId = SpellVariants.Selection(SpellId, Variant);
-			GD.Print($"HARNESS starting spell '{Global.TestWizardStartingSpellId}' (read only by the Test Wizard){(Solo ? ", solo" : "")}");
+			Global.ToolStartingSpellId = SpellVariants.Selection(SpellId, Variant);
+			GD.Print($"HARNESS starting spell '{Global.ToolStartingSpellId}' (in place of {CharacterRoster.GetByIndex(CharacterIndex)?.Name ?? "?"}'s own){(Solo ? ", solo" : "")}");
 		}
 		if (StageIndex >= 0)
 			Global.SelectedStageIdx = StageIndex;
@@ -640,7 +643,7 @@ public partial class _BalanceHarness : Node
 		Engine.TimeScale = 1.0f;
 		Node2DGame.HarnessEnemyHealthScale = 1f;
 		if (!string.IsNullOrEmpty(SpellId))
-			Global.TestWizardStartingSpellId = string.Empty;
+			Global.ToolStartingSpellId = string.Empty;
 		MazeNavigation.BuildOnOpenStages = true;
 		StatusEffectLayer.Disabled = false;
 		StatusEffectLayer.MeasureCost = false;

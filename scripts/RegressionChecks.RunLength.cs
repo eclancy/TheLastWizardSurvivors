@@ -8,8 +8,8 @@ using TheOneHeMissed.scripts;
 // StageCatalog.VictorySecondsFor - and what a build cannot see is a chapter added to either order without its length,
 // or the road quietly moved off the run every pacing number was tuned on. So:
 //
-//   - every chapter of the campaign (the road and the castle) and every chapter outside both orders (the Sketchbook)
-//     runs StageCatalog.RoadRunSeconds, 900; every chapter of FarShoreOrder runs FarShoreRunSeconds, 1200;
+//   - every chapter of the campaign (the road and the castle) and any chapter outside both orders (none since the
+//     Sketchbook was removed, 2026-11-09) runs StageCatalog.RoadRunSeconds, 900; every chapter of FarShoreOrder runs FarShoreRunSeconds, 1200;
 //   - the road's run IS the reference run (RoadRunSeconds == Node2DGame.ReferenceRunSeconds), so RunPace is exactly 1
 //     there and every paced number plays as it was tuned;
 //   - VictorySecondsFor falls back to the road for an id it does not know;

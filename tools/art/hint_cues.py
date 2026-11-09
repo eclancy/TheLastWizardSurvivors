@@ -73,7 +73,7 @@ cyan for the cell, poison for the lanterns, ice for the thaw, metal for the cara
 They are light, not things, so they come from the emissive ramps (.ai/art-direction.md section 3,
 "Elements are emissive"): a bright stop on the key-facing edge, the tell colour in the body, the
 ramp's dark end on the far edge. Every glyph has a 1 px occlusion outline, eight ways, which is
-what keeps it readable over the Fallow Fields' pale ground, the Sketchbook's paper and the swarm.
+what keeps it readable over the Fallow Fields' pale ground and the swarm.
 """
 
 import math
@@ -888,7 +888,8 @@ def main():
     sheet.save(OUT)
 
     # The preview on the grounds that matter: the reference stone, the Fallow Fields' pale field and
-    # the Sketchbook's paper, where the outline is what keeps a pale glyph from dissolving.
+    # white paper (the Sketchbook's, until 2026-11-09), where the outline is what keeps a pale glyph
+    # from dissolving.
     zoom = 6
     floors = [bl.tone("stone", "base"), bl.tone("steel", "lit"), "#E8E2CF"]
     pw, ph = CELL * COLS * zoom, CELL * len(ROWS) * zoom

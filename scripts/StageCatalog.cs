@@ -36,7 +36,11 @@ public sealed class StageDefinition
 {
 	/// <summary>Stable id, "stage_0" upward. Matches <c>RunResult.StageId</c> and the save's unlocked list.</summary>
 	public string Id { get; init; } = string.Empty;
-	/// <summary>Index into the roster. Equals <c>Global.SelectedStageIdx</c>.</summary>
+	/// <summary>
+	/// The chapter's stable number: what <c>Global.SelectedStageIdx</c> and every harness's --stage=N hold, and the
+	/// digits of its <see cref="Id"/>. Never a position in the roster: 8 is retired
+	/// (<see cref="StageCatalog.RetiredIndices"/>), so from the Fallow Fields on, the two differ by one.
+	/// </summary>
 	public int Index { get; init; }
 	public string DisplayName { get; init; } = string.Empty;
 	public string TerrainCategory { get; init; } = string.Empty;
@@ -60,13 +64,6 @@ public sealed class StageDefinition
 	public string LockedHint => StageCatalog.LockedHintFor(this);
 	/// <summary>False while a chapter has no boss or content yet - it is listed, but not enterable.</summary>
 	public bool IsPlayable { get; init; } = true;
-	/// <summary>
-	/// A chapter outside the campaign that is reached only once the campaign is finished
-	/// (<see cref="GlobalStatsManager.HasFinishedCampaign"/>): off the world map, on a page of its own
-	/// (.ai/world-map.md, section 4). The Sketchbook. Its <see cref="Gate"/> stays Open - nothing in
-	/// the road opens it - and <see cref="GlobalStatsManager.IsStageEarned"/> adds this rule.
-	/// </summary>
-	public bool AfterCampaign { get; init; }
 	/// <summary>
 	/// How long the run is: real seconds until the survival clock stops and the boss walks in. Every road
 	/// chapter is <see cref="StageCatalog.RoadRunSeconds"/>, the far shore's are
@@ -205,26 +202,10 @@ public static class StageCatalog
 			// The Long Coil beaten and every wizard on the road freed (since schema 19).
 			Gate = StageGate.PreviousBossAndWizards,
 		},
-		// THE ONE CHAPTER OUTSIDE THE CAMPAIGN, and the reason the roster is a list rather than
-		// a fixed eight. It gates nothing, so it can sit after the finale in the roster without
-		// implying it comes after it in the story. It was open from the first run; since 2026-10-30
-		// it is reached once the campaign is finished, on its own page off the world map (Eric:
-		// "Once you beat the whole campaign, you should be able to navigate to it, but it shows up as
-		// its own separate map"). A save that has already played it keeps it (IsStageEarned).
+		// stage_8, THE SKETCHBOOK, IS GONE: removed with its whole cast at Eric's request on 2026-11-09 ("remove
+		// the sketchbook level and all enemies in it"); git history holds it. Its index is retired, never reused
+		// (RetiredIndices), and nothing below was renumbered: every id and index after it means what it meant.
 		//
-		// Every sprite in it - eight enemies, a boss and its projectile - was drawn by Eric's
-		// kids. It has no CorruptionText because there is nothing here the dark wizard did: the
-		// field exists to say what he has taken from a place, and he has not been to this one.
-		new()
-		{
-			Id = "stage_8", Index = 8,
-			DisplayName = "The Sketchbook",
-			TerrainCategory = "Squared paper",
-			FlavorText = "A world drawn in a workbook, loose.",
-			EnvironmentKind = StageEnvironmentKind.Sketchbook,
-			Gate = StageGate.Open,
-			AfterCampaign = true,
-		},
 		// THE TWO CHAPTERS THAT OPEN EARLY (.ai/campaign.md). Eric, 2026-10-24: "cursed dungeon
 		// should be a later level. there should be another few levels that open up earlier." They
 		// sit second and third in CampaignOrder below, between the Forest and the Cave, and their
@@ -306,8 +287,7 @@ public static class StageCatalog
 		// THE FAR SHORE (.ai/second-half.md; Eric accepted section 8 on 2026-11-08, the half named "The Far Shore").
 		// Six gods' seats across the dark sea, east of his rock: new ids, appended, never renumbered (campaign.md 3).
 		// They stand in FarShoreOrder below, NEVER in CampaignOrder - appending them there would add six Hardcore
-		// clears to the Dark Wizard's deed and to The Road Restored, and hold the Sketchbook shut until the far
-		// shore was done (section 7). Built by F0 as stand-ins: not playable, so no save, screen or run reaches
+		// clears to the Dark Wizard's deed and to The Road Restored (section 7). Built by F0 as stand-ins: not playable, so no save, screen or run reaches
 		// them, and each borrows another chapter's ground (EnvironmentKind) until its own piece gives it one.
 		//
 		// EACH ENTRY IS ITS OWN PIECE'S (section 9): F3 the White Downs, F6 the Drowned Shore, F7 the Three Ways,
@@ -415,7 +395,7 @@ public static class StageCatalog
 	// The road is eight chapters before the Emberdeep, the first gate chapter (PreviousBossAndWizards):
 	// its previous boss AND the wizards freed before it. The castle comes after it (.ai/endgame-castle.md),
 	// boss-gated, and ends on a second gate chapter, the Throne; the last chapter is always a gate.
-	// Chapters outside the campaign (the Sketchbook) are not listed; they must be Open.
+	// A chapter outside the campaign (none since the Sketchbook went) is not listed; it must be Open.
 	//
 	// THE CURSED DUNGEON MOVED INTO THE CASTLE (piece C2, .ai/endgame-castle.md 1.3-1.8). It was fifth,
 	// after four open chapters (.ai/campaign.md); it is the castle's second chapter now, the cells under
@@ -446,7 +426,7 @@ public static class StageCatalog
 	// THE FAR SHORE, IN THE ORDER IT IS PLAYED (.ai/second-half.md 4.2, 7) - the second order, and the only place
 	// it is written. Kept apart from CampaignOrder on purpose: GlobalStatsManager.ChaptersClearedAt counts every
 	// chapter of the Campaign for the Dark Wizard's Hardcore deed and The Road Restored, and LastPlayableChapter
-	// (what opens the Sketchbook) is the campaign's, so neither moves when the far shore grows. RegressionChecks'
+	// (what finishes the campaign) is the campaign's, so neither moves when the far shore grows. RegressionChecks'
 	// ValidateFarShore holds that no id is in both.
 	//
 	// The first is gated FarShore (Taken Back, every spell, every wizard a place holds); every later one opens on
@@ -468,6 +448,14 @@ public static class StageCatalog
 	public static IReadOnlyList<StageDefinition> All => Stages;
 
 	public static int Count => Stages.Length;
+
+	/// <summary>
+	/// Indices that once named a chapter and never will again, so a stage index keeps its meaning in
+	/// <c>Global.SelectedStageIdx</c>, the harnesses' --stage=N and every doc that names one: 8, the Sketchbook,
+	/// removed at Eric's request on 2026-11-09 (SaveData.MigrateRemoveSketchbookAndTestWizard takes it out of saves).
+	/// RegressionChecks.ValidateStageCatalog holds that no chapter takes one.
+	/// </summary>
+	public static readonly IReadOnlyList<int> RetiredIndices = new[] { 8 };
 
 	/// <summary>The campaign's chapters in the order they are played. Excludes chapters outside it.</summary>
 	public static IReadOnlyList<StageDefinition> Campaign =>
@@ -495,7 +483,7 @@ public static class StageCatalog
 
 	public static bool IsOnFarShore(StageDefinition stage) => stage != null && FarShorePositionOf(stage.Id) >= 0;
 
-	/// <summary>A chapter of either order - the campaign or the far shore - rather than one outside both (the Sketchbook).</summary>
+	/// <summary>A chapter of either order - the campaign or the far shore - rather than one outside both (none today).</summary>
 	public static bool IsInEitherOrder(StageDefinition stage) => IsInCampaign(stage) || IsOnFarShore(stage);
 
 	/// <summary>
@@ -536,7 +524,7 @@ public static class StageCatalog
 
 	public static bool IsInCampaign(StageDefinition stage) => stage != null && CampaignPositionOf(stage.Id) >= 0;
 
-	/// <summary>What the world map's card says over a chapter that is not on the road (the Sketchbook).</summary>
+	/// <summary>What the world map's card says over a chapter that is on neither order's road (none today).</summary>
 	public const string OffRoadPlace = "Beyond the map";
 
 	/// <summary>
@@ -566,12 +554,12 @@ public static class StageCatalog
 	public static StageDefinition LastPlayableChapter => Campaign.LastOrDefault(s => s.IsPlayable);
 
 	/// <summary>
-	/// Open from a new save's first run: gated Open and not held back until the campaign is finished
-	/// (<see cref="StageDefinition.AfterCampaign"/>). What the gate validators mean by "reachable before
-	/// any gate" for a chapter outside the campaign.
+	/// Open from a new save's first run: gated Open. What the gate validators mean by "reachable before
+	/// any gate" for a chapter outside the campaign. (A chapter held back until the campaign was finished,
+	/// the Sketchbook, was the one exception; it was removed on 2026-11-09.)
 	/// </summary>
 	public static bool IsOpenFromStart(StageDefinition stage) =>
-		stage != null && stage.Gate == StageGate.Open && !stage.AfterCampaign;
+		stage != null && stage.Gate == StageGate.Open;
 
 	/// <summary>
 	/// The first gate chapter in the campaign (<see cref="StageGate.PreviousBossAndWizards"/>): the
@@ -649,8 +637,6 @@ public static class StageCatalog
 			return string.Empty;
 		if (!stage.IsPlayable)
 			return "Not yet open - this chapter is still being built";
-		if (stage.AfterCampaign)
-			return "Beyond the map - finish the campaign to find it";
 
 		switch (stage.Gate)
 		{
@@ -729,16 +715,26 @@ public static class StageCatalog
 	private static string MidSentence(string name) =>
 		name != null && name.StartsWith("The ", StringComparison.Ordinal) ? "the " + name.Substring(4) : name;
 
+	/// <summary>
+	/// The chapter whose <see cref="StageDefinition.Index"/> this is - by its number, never by its position in the
+	/// roster, which since the Sketchbook's index was retired (<see cref="RetiredIndices"/>) is one less from the
+	/// Fallow Fields on.
+	/// </summary>
 	public static StageDefinition GetByIndex(int index)
 	{
 		if (Stages.Length == 0)
 			return null;
 
-		// Clamped rather than null-returning: every caller here is a display path reached from a
+		foreach (StageDefinition stage in Stages)
+		{
+			if (stage.Index == index)
+				return stage;
+		}
+		// Degraded rather than null-returning: every caller here is a display path reached from a
 		// stage index that some other system already chose, and a missing name should degrade to
-		// the first chapter's rather than crash a run that is otherwise fine.
-		int clamped = Math.Clamp(index, 0, Stages.Length - 1);
-		return Stages[clamped];
+		// the first chapter's rather than crash a run that is otherwise fine. Past either end it
+		// clamps as it always has; a retired index (8) is the first chapter's.
+		return index > Stages[Stages.Length - 1].Index ? Stages[Stages.Length - 1] : Stages[0];
 	}
 
 	public static StageDefinition GetById(string stageId)

@@ -157,8 +157,6 @@ public static class GroundDetail
 			G("cracks", 0.012f, 1), G("rubble", 0.006f), G("moss_seam", 0.006f, 5), G("bone_bits", 0.003f, 1),
 			G("pebbles", 0.003f, 1),
 		},
-		// The Sketchbook has nothing on its page but what the kids drew (CLAUDE.md): no rules.
-		//
 		// The two early chapters (.ai/campaign.md): Phase 1 STAND-INS, each Phase 2's to replace in
 		// its own block with sets drawn in tools/art/terrain_<chapter>.py (DETAIL_SETS).
 		// The Fallow Fields: its own four sets (tools/art/detail_fields.py) - stalks the reaper

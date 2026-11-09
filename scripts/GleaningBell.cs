@@ -8,8 +8,7 @@ using TheOneHeMissed.scripts;
 // (i dont want it to be required, so people take it every run)". The genre's answer is Vampire
 // Survivors' Vacuum - not a choice but a find - and that is what this is: no level-up offers it, no
 // chest card names it, nothing raises its chance, so there is nothing to build around and nothing to
-// take every run. It is carried by the bodies that carry chests (an elite, a Warden, the Sketchbook's
-// ghost) at a chance that rises with every one that paid none (DropTable, Node2DGame.GleaningBell.cs),
+// take every run. It is carried by the bodies that carry chests (an elite, a Warden) at a chance that rises with every one that paid none (DropTable, Node2DGame.GleaningBell.cs),
 // so a run finds one or two. .ai/passives-and-items.md section 8i.
 //
 // In an English village the gleaning bell was rung to say when the poor could go into the reaped

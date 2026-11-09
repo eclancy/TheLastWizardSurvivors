@@ -409,7 +409,7 @@ public partial class OrbOfAges : Node2D
 	//
 	//   the ward    the midpoint circle one art pixel thick at Radius, in Light's edge (the gold), and a second a
 	//               cell's gap inside it in Arcane's edge: the line he must not cross, which reads on the dark floors
-	//               by its gold and on the Sketchbook's paper by its violet. Seven points of light where the star
+	//               by its gold and on pale ground by its violet. Seven points of light where the star
 	//               touches it, a white-hot cell with arms of the hot and mid stops, set in a square of the gold.
 	//   the star    the strokes an orb has flown this star, a cell wide in Light's mid; the stroke it is flying, a
 	//               seam of the hot stop on a band of the edge three cells wide, from the point it turned at to it.
@@ -495,7 +495,7 @@ public partial class OrbOfAges : Node2D
 		for (int v = 0; v < StarPoints; v++)
 		{
 			Vector2 p = PointCell(v);
-			// Lit, its four corners in the gold too, so the point still shows on the Sketchbook's paper, where the
+			// Lit, its four corners in the gold too, so the point still shows on pale ground, where the
 			// white-hot cross alone is lost.
 			if (lit)
 			{

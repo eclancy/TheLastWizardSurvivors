@@ -551,7 +551,8 @@ HUD_SLOT_ALPHA = 0.85
 HUD_RIMS = (("held (steel base)", h2rgb(f2h(0.416, 0.494, 0.596))), ("mutated (gold lit)", h2rgb(f2h(0.847, 0.690, 0.290))),
             ("ascended (arcane lit)", h2rgb(f2h(0.416, 0.722, 0.910))), ("apotheosis (fire mid)", h2rgb(f2h(0.910, 0.478, 0.102))))
 # The grounds the strip floats over: the darkest stage floor (floor stone deep) and the brightest
-# (the Sketchbook's paper, taken as white - the worst case for a dark backing gone translucent).
+# (taken as white - the worst case for a dark backing gone translucent; it was the Sketchbook's paper
+# until that chapter was removed on 2026-11-09, and white still bounds the Fallow Fields' stubble).
 HUD_GROUNDS = (("dark floor", h2rgb("#0B0F18")), ("white paper", WHITE))
 
 
@@ -573,7 +574,7 @@ def hud_pairs(add):
 # --- the damage numbers (scripts/DamageNumberInk.cs, .ai/art-direction.md "Damage numbers wear the element") --
 # Copied from DamageNumberInk and ElementColors.GetRamp: change a stop there, change it here. Every number
 # is outlined in occlusion, opaque, so its letterforms are read against the outline whatever it rose
-# from - the Sketchbook's paper, a skeleton's bone, the Dungeon's black - and that is the ground each ink
+# from - the Fallow Fields' pale stubble, a skeleton's bone, the Dungeon's black - and that is the ground each ink
 # is measured on, at the body-text floor (a number is large, but it is read moving and fading).
 NUMBER_OUTLINE = h2rgb("#05070C")
 ELEMENT_RAMPS = (

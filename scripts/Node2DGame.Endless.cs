@@ -449,7 +449,7 @@ public partial class Node2DGame
 	}
 
 	// From FinishRunAndReward, after the boss's unlocks: the run that first takes the Throne back lists endless among
-	// what it opened, after the Sketchbook's page (section 2.3). No reel and no lesson: the vigil's banner teaches it.
+	// what it opened (section 2.3). No reel and no lesson: the vigil's banner teaches it.
 	private void ApplyEndlessOpenedEntry(SaveData data, RunUnlockSummary summary)
 	{
 		if (endlessOpenAtStart || data == null || summary == null || !EndlessCatalog.IsOpen(data))

@@ -11,8 +11,8 @@ Two sets, and they are consumed by two different systems:
 
 They replace two bought prop packs and four bought sheets - art licensed for use and not for
 redistribution, see `.ai/asset-licensing.md`. The manifest is ours and separate from the bought
-ones for the reason the Sketchbook's tile manifest is: appending to somebody else's inventory
-file is how an asset update silently deletes your work.
+ones for the reason the Sketchbook's tile manifest was (until that chapter's removal, 2026-11-09):
+appending to somebody else's inventory file is how an asset update silently deletes your work.
 
 THEY ARE SEEN FROM ABOVE AND THEY ARE NEVER THE SUBJECT. A prop competes with the swarm for the
 player's attention and must lose, so everything here is drawn darker and flatter than an actor:

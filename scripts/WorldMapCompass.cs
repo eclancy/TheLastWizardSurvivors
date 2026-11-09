@@ -14,7 +14,7 @@ using TheOneHeMissed.scripts;
 ///
 /// It takes no focus. A pad steps with left and right, which this shows; a focus stop for the stick
 /// here would be a second selection fighting the first. A tap on a mark jumps to it - on a phone it
-/// is the quickest way from the first chapter to the Sketchbook, and the walk is still a walk.
+/// is the quickest way from the first chapter to the far end of the road, and the walk is still a walk.
 ///
 /// The marks are 16x16 art saved x2 (tools/art/world_map.py, mark-*.png), drawn at a whole number of
 /// screen pixels per texture pixel. The numerals are the engine's sans at the Label role, in an ink

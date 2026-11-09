@@ -135,8 +135,8 @@ public static partial class RegressionChecks
 		}
 	}
 
-	// The three Feats: listed only once endless is open, never an unlock, counted on Default or harder and never in the
-	// Sketchbook, and each completed by the record it names.
+	// The three Feats: listed only once endless is open, never an unlock, counted on Default or harder and only on the
+	// road's endless chapters, and each completed by the record it names.
 	private static void ValidateEndlessFeats(List<string> warnings)
 	{
 		SaveData closed = EndlessSampleSave(takenBack: false);
@@ -166,11 +166,13 @@ public static partial class RegressionChecks
 		EndlessCatalog.Record(two, Rec(EndlessCatalog.RoadChapterIds[0], 2));
 		if (!Done(two, EndlessCatalog.IntoTheNightId) || Done(two, EndlessCatalog.LongWatchId))
 			warnings.Add("Endless: a second warden felled completes Into the Night and not The Long Watch.");
+		// Off the road: a record that names a chapter not on the list (a far shore chapter, never endless; or one a save
+		// kept from before its chapter was removed - the schema 28 step takes the Sketchbook's out) counts for nothing.
 		SaveData offRoad = EndlessSampleSave(takenBack: true);
-		EndlessCatalog.Record(offRoad, Rec(EndlessCatalog.SketchbookId, 5));
+		EndlessCatalog.Record(offRoad, Rec(StageCatalog.FarShore.Count > 0 ? StageCatalog.FarShore[0].Id : "stage_14", 5));
 		EndlessCatalog.Record(offRoad, Rec(EndlessCatalog.RoadChapterIds[1], 5, GlobalStatsManager.BalancePresetCasual));
 		if (Done(offRoad, EndlessCatalog.IntoTheNightId))
-			warnings.Add("Endless: a night in the Sketchbook or on Casual counts toward a Feat.");
+			warnings.Add("Endless: a night off the road or on Casual counts toward a Feat.");
 		SaveData every = EndlessSampleSave(takenBack: true);
 		foreach (string id in EndlessCatalog.RoadChapterIds.Take(EndlessCatalog.RoadChapterIds.Count - 1))
 			EndlessCatalog.Record(every, Rec(id, 2, GlobalStatsManager.BalancePresetHardcore));
@@ -191,12 +193,12 @@ public static partial class RegressionChecks
 			warnings.Add("Endless: the records do not survive the save's round trip.");
 	}
 
-	// Every endless chapter is playable, on the road or the Sketchbook, has a warden with a scene of its own, and is
-	// never the Bridge, the Court, the Throne or a chapter of the far shore (section 1.3, question 5).
+	// Every endless chapter is playable, on the road, has a warden with a scene of its own, and is never the Bridge,
+	// the Court, the Throne or a chapter of the far shore (section 1.3, question 5).
 	private static void ValidateEndlessChapters(List<string> warnings)
 	{
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (string id in EndlessCatalog.RoadChapterIds.Append(EndlessCatalog.SketchbookId))
+		foreach (string id in EndlessCatalog.RoadChapterIds)
 		{
 			if (!seen.Add(id))
 				warnings.Add($"Endless: '{id}' is listed twice.");
@@ -208,7 +210,7 @@ public static partial class RegressionChecks
 			}
 			if (!stage.IsPlayable)
 				warnings.Add($"Endless: {stage.DisplayName} is listed but not playable.");
-			if (!EndlessCatalog.IsRecordsOnly(stage) && !StageCatalog.IsInCampaign(stage))
+			if (!StageCatalog.IsInCampaign(stage))
 				warnings.Add($"Endless: {stage.DisplayName} is listed as a road chapter but is not on the road.");
 			if (StageCatalog.IsOnFarShore(stage))
 				warnings.Add($"Endless: {stage.DisplayName} is on the far shore, which is never endless (question 5).");

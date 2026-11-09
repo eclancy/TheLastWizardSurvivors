@@ -115,8 +115,8 @@ vec4 shade_cell(vec2 world, vec2 origin, vec2 axis_x, vec2 axis_y) {
 	}
 
 	// An art pixel of Wind's saturated edge round the cutting edge: a cold glow on the dark floors, and
-	// the contour that keeps a white edge from vanishing on the pale ones (it did, on the Sketchbook's
-	// paper, until it had one).
+	// the contour that keeps a white edge from vanishing on the pale ones (it did, on the palest ground
+	// the game has had, until it had one).
 	{
 		float d_out = R - length(p);
 		float d_in = length(p + vec2(0.3 * R, 0.0)) - 0.9 * R;

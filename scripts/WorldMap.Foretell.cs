@@ -65,8 +65,6 @@ public partial class WorldMap
 		card.OffsetTop -= row;
 		if (view != null)
 			view.OffsetBottom -= row;
-		if (pageView != null)
-			pageView.OffsetBottom -= row;
 	}
 
 	private void CycleForetold()

@@ -26,7 +26,8 @@ public partial class ThroneEnding : Control
 
 	// THE CREDITS. Every line is a fact the repository states (README.md, NOTICE): who made it, what it is built
 	// with, and the fonts' licence. Eric: edit freely - nothing reads them. (The
-	// Sketchbook's "drawn by Eric's kids" line came out at his word, 2026-11-02.)
+	// Sketchbook's "drawn by Eric's kids" line came out at his word, 2026-11-02, and the chapter itself on
+	// 2026-11-09.)
 	private static readonly (string Text, bool Heading)[] Credits =
 	{
 		(DisplayProfile.GameTitle, true),
