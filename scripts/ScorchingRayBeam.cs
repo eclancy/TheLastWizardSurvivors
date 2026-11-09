@@ -889,6 +889,7 @@ public partial class ScorchingRayBeam : Node2D
 		float flare2 = flare * flare;
 		int sear = Math.Max(1, Mathf.RoundToInt(damage * FlareSearShare));
 		bool canSear = PlayerRef != null && IsInstanceValid(PlayerRef);
+		Node2D? arena = GetParent() as Node2D;
 		FlaresThisRun++;
 		foreach (Enemy e in EnemyRegistry.Snapshot)
 		{
@@ -898,8 +899,12 @@ public partial class ScorchingRayBeam : Node2D
 			{
 				if (e != target && canSear)
 				{
+					// Seared, and seen to be: a small burst of the sun's own fire on the body, not the blind's glint.
+					Vector2 searedAt = e.GlobalPosition;
 					PlayerRef!.DealDamageToEnemy(e, sear, source: SpellData);
 					ElitesSearedThisRun++;
+					if (arena != null)
+						FireburstLayer.Spawn(arena, searedAt, SearBurstRadius, FireburstLayer.Style.Sun);
 				}
 				continue;
 			}
@@ -909,11 +914,14 @@ public partial class ScorchingRayBeam : Node2D
 			if (e.IsBlinded)
 				BlindedThisRun++;
 		}
-		// The flare itself, drawn out to exactly the reach it blinds (SunFlare), its white heart a quarter of that: the
-		// arena's, since this beam frees itself once its scorch has cooled.
-		if (GetParent() is Node2D arena)
-			SunFlare.Spawn(arena, at, MathF.Max(BaseSplashRadius, flare * 0.25f), flare);
+		// The flare itself, the sun breaking out to exactly the reach it blinds, hotter from a hotter ray (SunFlare): the
+		// arena's, since this beam frees itself once its scorch has cooled. Each blinded body wears its glint from there.
+		if (arena != null)
+			SunFlare.Spawn(arena, at, flare, Heat);
 	}
+
+	// The burst of the sun's fire on a seared elite: about the body, a hit on it alone (FireburstLayer's Sun style).
+	private const float SearBurstRadius = 26f;
 
 	private void UpdateVisual(Vector2 from, Vector2 to, float alphaScale)
 	{
