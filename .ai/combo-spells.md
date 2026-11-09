@@ -198,7 +198,8 @@ named Ascensions' gains; "four" names the level 4 path that would make one, whic
   reach into **orbit** at the flare's rim, unable to close, burnt each time the pulse passes. When he
   steps, Black Sun's last collapse takes the whole orbit to one point before him.
 - **Elements:** Light, Fire, Darkness. Hollow Star's Eclipse path adds Light: still three. Never four.
-  Hollow Star is John Dee's starting spell (and Black Sun his path): not his to fuse.
+  Hollow Star was John Dee's starting spell until 2026-11-09; nobody opens on it now (he opens on Folio,
+  `.ai/character-fit.md`), so every wizard may fuse it.
 - **Card:** *"While you stand still, the sun draws what is near into orbit round its rim. Step away and
   the orbit falls in."* **Tagline:** *"Hold still. They circle."*
 

@@ -152,7 +152,7 @@ Eric's feedback on Imhotep's build, given at Tituba's turn (2026-11-09):
 | # | wizard | verdict | Eric's words | status |
 |---|---|---|---|---|
 | 7 | Väinämöinen | keeps Bramble Seed and Song of Making, unchanged. The kantele passive (section 4) stays a proposal | "next" | kept |
-| 8 | John Dee | **opens on a new spell, Folio**, and keeps Scattered Library. **Hollow Star becomes nobody's opener**. His Apotheosis, The Spirit Mirror (*pull*), moves onto Folio | "I don't think hollow star feels like a good spell for him - what spell could feel like his? can we trade hollow star to someone else, like someone who did more with science/stars, and have something that feels more like his?" / "I like your suggestions - how would john dee produce the first orb if he only fires when he picks up an orb? also, can we still keep his spirit mirror finale to work with this?" / "yes" | building (section 6) |
+| 8 | John Dee | **opens on a new spell, Folio**, and keeps Scattered Library. **Hollow Star becomes nobody's opener**. His Apotheosis, The Spirit Mirror (*pull*), moves onto Folio | "I don't think hollow star feels like a good spell for him - what spell could feel like his? can we trade hollow star to someone else, like someone who did more with science/stars, and have something that feels more like his?" / "I like your suggestions - how would john dee produce the first orb if he only fires when he picks up an orb? also, can we still keep his spirit mirror finale to work with this?" / "yes" | built `84e24368` (section 6); not yet played |
 | 9 | Laelaps | keeps Cyclone Slash and Fated to Catch, unchanged. (Re-drawing the blades as a hound and fox of wind, the endless chase, stays an unasked idea) | "next" | kept |
 | 10 | Abe no Seimei | keeps Kindled Ward and Exorcist, unchanged | "next" | kept |
 | 11 | The Dark Wizard | keeps The Taking and Dread, unchanged. **His unlock is a mystery achievement**: The Taker Taken shows its condition (every chapter's boss on Hardcore) from the first run, and reads "???" for its name and its reward, with the seal, until done (`SealedName`/`SealedReward`, as a Conjunction's Feat reads before it is made). It was already listed under the Throne as "The Taker Taken - Frees someone": the title gave away who is taken | "do not change the dark wizard, but add his unlock condition as a mystery achievement" | built `ff5fa9a6`, validated (0 errors); the page not looked at |
@@ -188,5 +188,10 @@ what he gathers.
 - **Hollow Star** stays a spell anyone can earn and stays in Ra's Orrery (`second-half.md` 3.2); no wizard
   opens on it, so Dee may now fuse The Taking. A future star-gazer wizard could take it: **Tycho Brahe**, the
   astronomer-astrologer-alchemist who saw the new star of 1572 (and wore a metal nose) - a separate job.
-- **Open when built:** the one achievement that earns Folio for everyone else (a chest feat, e.g. open 10
-  chests in one run), its level 4 and level 8 cards, its icon and look.
+- **Built `84e24368`** (`spell-roster.md` 2a, row 36): 7 damage a page to 16 at level 8; one page a turn, two at
+  level 3, three at level 6; an orb turns exactly one page, a timed turn all of the level's. The cards are Torn
+  Leaf, Inkblot (+Darkness), Gilt Edge, Bound Volume (+Arcane) and Commonplace Book. The Spirit Mirror's last
+  sentence sits on its card's second line (the first ran past the 130-character budget). Others earn it through
+  the **Magpie** Feat, open 10 chests in a single run. Pages, a small book at his shoulder and the ink are drawn
+  in code on the 2 px grid. Still to see in play: the pages' size on the phone (about 10x12 px), the mirror,
+  the orb-to-page loop, and whether 10 chests is the right bar.

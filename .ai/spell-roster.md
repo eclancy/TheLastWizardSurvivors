@@ -124,6 +124,23 @@ Both are earned through the two element adepts the first five never covered (Lig
 Darkness Adept), and both carry thin elements: Lightning and Water are the roster's thinnest
 ordinary carriers, and Darkness lost Shadow Bolt to the Conjunctions.
 
+### Folio - the spell paid for by gathering (2026-11-09)
+
+John Dee's opener since 2026-11-09 (`.ai/character-fit.md` section 6; Hollow Star is nobody's now). The
+first spell that fires on a **pickup**: every XP orb he gathers turns a page, on top of a timed turn.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 36 | **Folio** (`scripts/Folio.cs`, `Player.Folio.cs`) | Arcane+Darkness | the nearest enemy with the fewest pages already heading for it | **the cooldown (2.0 s to 1.6 s) plus one page for every orb gathered**; 5 pages wait in the book, leaving 0.08 s apart | **go and gather** | a homing page, spent in the first body unless Gilt Edge | mid |
+
+Cards: **Torn Leaf** (L4: tears in two on its first strike, the halves fly on for half), **Inkblot** (L4,
++Darkness: a black stain that slows 35%), **Gilt Edge** (L4: +2 pierce, 25% faster), **Bound Volume** (L8,
++Arcane: the timed turn flies as one book to the thickest pack and bursts there, +2 pages), **Commonplace
+Book** (L8: a kill sends its ink home and turns a page). Dee's form **The Spirit Mirror** (pull) moved here
+from Hollow Star: every tenth page the mirror opens over the thickest pack and draws every orb and flask in
+its reach to him, and every orb it brings turns a page. Earned by everyone else through the **Magpie** Feat
+(open 10 chests in a single run, `LifetimeStats.BestChestsInRun`). Built `84e24368`; numbers untuned.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack
