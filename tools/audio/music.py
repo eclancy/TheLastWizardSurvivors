@@ -8,6 +8,7 @@
     python tools/audio/music.py --journey [--scratch]  # one audition reel per chapter, plus a sampler
     python tools/audio/music.py cave --balance       # how loud each voice is inside each stem
     python tools/audio/music.py forest --stems pulse,boss   # only these stems of the named pieces
+    python tools/audio/music.py --beats              # write assets/music/beats.json only (no render)
 
 The generators are the source and the .wav files are output, exactly as for assets/sfx/: edit a
 piece here and re-run, never edit a rendered file. Every random draw is seeded, so a re-render is
@@ -57,6 +58,7 @@ The contract this file works to is section 11 of .ai/audio-direction.md. In shor
 """
 from __future__ import division
 
+import io
 import math
 import os
 import random
@@ -743,15 +745,92 @@ class Grid(object):
         return 0.8 if step % 2 == 0 else 0.66
 
 
+# ---------------------------------------------------------------------------
+# the key and the counted beat, for the game (2026-11-09)
+# ---------------------------------------------------------------------------
+# The Cumaean Sibyl's spell, the Canticle, is sung on the music's beat (.ai/character-fit.md section 5,
+# row 19): its burst waits for the next counted beat of the set that is playing and sounds its chord in
+# that set's key. So the game has to know, for every piece, where its beats fall and what its key is -
+# and both are decided HERE, by the score. They are written with every render, and on their own by
+# --beats (no render), to assets/music/beats.json, which scripts/MusicBeats.cs reads; RegressionChecks
+# holds every set that can play to an entry, and every entry's loop length to its rendered stems'. One
+# source: a tempo changed here and re-rendered is a beat the game counts, with no second copy in C#.
+
+MODES = {
+    "ionian": [0, 2, 4, 5, 7, 9, 11],
+    "dorian": [0, 2, 3, 5, 7, 9, 10],
+    "phrygian": [0, 1, 3, 5, 7, 8, 10],
+    "lydian": [0, 2, 4, 6, 7, 9, 11],
+    "mixolydian": [0, 2, 4, 5, 7, 9, 10],
+    "aeolian": [0, 2, 3, 5, 7, 8, 10],
+    "locrian": [0, 1, 3, 5, 6, 8, 10],
+    # A minor with its leading note: the Court's, the Emberdeep's and the Throne's (whose B flat is a
+    # colour in the score, not a tone of the chord).
+    "harmonic minor": [0, 2, 3, 5, 7, 8, 11],
+    # The White Downs: E minor with no second at all (music_downs.py's SCALE).
+    "hexatonic minor": [0, 3, 5, 7, 8, 10],
+}
+
+
+class Key(object):
+    """A piece's key: its tonic, its mode, and how the Canticle voices a chord in it - in thirds
+    ("tertian", every piece but one), or in open fifths ("fifths": the Frozen Waste, which has no
+    thirds anywhere)."""
+
+    def __init__(self, tonic, mode, voicing="tertian"):
+        if mode not in MODES:
+            raise ValueError("no mode %r" % mode)
+        self.tonic = tonic
+        self.mode = mode
+        self.voicing = voicing
+
+    def tonic_midi(self):
+        """The tonic in the octave from middle C (60..71): where the Canticle's chord is rooted."""
+        return 60 + (_PITCH_CLASS[self.tonic] + 9) % 12
+
+    def pitch_classes(self):
+        root = (_PITCH_CLASS[self.tonic] + 9) % 12
+        return set([(root + d) % 12 for d in MODES[self.mode]])
+
+    def chord(self):
+        """The Canticle's chord on the tonic, as semitones above it in the order its notes gather:
+        root, fifth, third, octave, seventh, ninth, then the third and the fifth an octave up - each
+        only if the mode has it (a Locrian fifth is its flat one, a Phrygian ninth its flat one; the
+        Downs has no ninth). The open fifths stack fifth on fifth instead. Eight at most: a level 1
+        Canticle gathers eight notes, and ArcaneExplosion folds every one into A3..A5 as it sounds."""
+        tones = set(MODES[self.mode])
+
+        def pick(*options):
+            for o in options:
+                if o % 12 in tones:
+                    return o
+            return None
+
+        if self.voicing == "fifths":
+            order = [0, 7, 12, 14, 19, 21, 24, 26]
+        else:
+            third, fifth, seventh, ninth = pick(3, 4), pick(7, 6), pick(10, 11), pick(2, 1)
+            order = [0, fifth, third, 12, seventh, ninth + 12 if ninth is not None else None,
+                     third + 12 if third is not None else None, fifth + 12 if fifth is not None else None]
+        return [o for o in order if o is not None and o % 12 in tones][:8]
+
+
 class Piece(object):
     """One loop: its clock, and a list of (stem name, event function, reverb mix).
 
     beat_seconds is the counted pulse - a dotted quarter for 6/8, a quarter for 4/4 and 3/4, an
     eighth for 7/8. Events are (beat, instrument, note name or None, length in beats, velocity).
-    `scale` is the set of pitch classes the piece may use; build_piece() refuses any other."""
+    `scale` is the set of pitch classes the piece may use; build_piece() refuses any other.
+
+    `key` is the piece's Key, for the game. `counted` is where in a bar the game counts a beat, in
+    beats from the barline: every beat unless given. The Swamp's 7/8, an eighth of 280, is counted on
+    its three group starts (2+2+3): a beat a fifth of a second long is a pulse to feel, not one to
+    land a burst on."""
 
     def __init__(self, name, bpm, beats_per_bar, bars, stems, tail_beats=8, describe="",
-                 scale=None, room=(0.82, 0.5)):
+                 scale=None, room=(0.82, 0.5), key=None, counted=None):
+        self.key = key
+        self.counted = list(counted) if counted is not None else list(range(beats_per_bar))
         self.name = name
         self.bpm = bpm
         self.beat = 60.0 / bpm
@@ -1029,6 +1108,7 @@ def menu_theme():
 
 
 MENU = Piece("menu", 72.0, 4, 8, [("theme", menu_theme, 0.32)], tail_beats=8, scale=SEVEN,
+             key=Key("A", "aeolian"),
              describe="the menu theme - A Aeolian, 4/4 at 72, 8 bars")
 
 
@@ -1125,7 +1205,7 @@ FOREST = Piece(
     "forest", 112.0, 2, 24,
     [("bed", forest_bed, 0.28), ("pulse", forest_pulse, 0.16), ("lead", forest_lead, 0.24),
      ("boss", forest_boss, 0.14)],
-    tail_beats=4, scale=SEVEN,
+    tail_beats=4, scale=SEVEN, key=Key("D", "dorian"),
     describe="Enchanted Forest - D Dorian, 6/8 at dotted quarter 112, A/B of 12 bars")
 
 
@@ -1218,7 +1298,7 @@ DUNGEON = Piece(
     "dungeon", 132.0, 4, 16,
     [("bed", dungeon_bed, 0.28), ("pulse", dungeon_pulse, 0.3), ("lead", dungeon_lead, 0.24),
      ("boss", dungeon_boss, 0.2)],
-    tail_beats=8, scale=SEVEN, room=(0.88, 0.45),
+    tail_beats=8, scale=SEVEN, room=(0.88, 0.45), key=Key("B", "locrian"),
     describe="Cursed Dungeon - B Locrian over a B drone, 4/4 at 132, A/B of 8 bars")
 
 
@@ -1304,7 +1384,7 @@ CAVE = Piece(
     "cave", 160.0, 3, 24,
     [("bed", cave_bed, 0.38), ("pulse", cave_pulse, 0.26), ("lead", cave_lead, 0.34),
      ("boss", cave_boss, 0.26)],
-    tail_beats=6, scale=SEVEN, room=(0.93, 0.42),
+    tail_beats=6, scale=SEVEN, room=(0.93, 0.42), key=Key("A", "aeolian"),
     describe="Sunken Cave - A Aeolian, 3/4 at 160, A/B of 12 bars")
 
 
@@ -1391,7 +1471,8 @@ SWAMP = Piece(
     "swamp", 280.0, 7, 16,
     [("bed", swamp_bed, 0.3), ("pulse", swamp_pulse, 0.16), ("lead", swamp_lead, 0.24),
      ("boss", swamp_boss, 0.14)],
-    tail_beats=14, scale=SEVEN,
+    tail_beats=14, scale=SEVEN, key=Key("E", "phrygian"),
+    counted=[s / float(SWAMP_GRID.steps_per_beat) for s in SWAMP_GRID.groups],
     describe="Blighted Swamp - E Phrygian, 7/8 (2+2+3) at eighth 280, A/B of 8 bars")
 
 
@@ -1480,7 +1561,7 @@ RUINS = Piece(
     "ruins", 128.0, 4, 16,
     [("bed", ruins_bed, 0.28), ("pulse", ruins_pulse, 0.16), ("lead", ruins_lead, 0.24),
      ("boss", ruins_boss, 0.14)],
-    tail_beats=8, scale=SEVEN,
+    tail_beats=8, scale=SEVEN, key=Key("F", "lydian"),
     describe="Mystic Ruins - F Lydian, 4/4 at 128, A/B of 8 bars")
 
 
@@ -1565,7 +1646,7 @@ FROZEN = Piece(
     "frozen", 144.0, 4, 16,
     [("bed", frozen_bed, 0.3), ("pulse", frozen_pulse, 0.16), ("lead", frozen_lead, 0.26),
      ("boss", frozen_boss, 0.14)],
-    tail_beats=8, scale=SEVEN, room=(0.86, 0.6),
+    tail_beats=8, scale=SEVEN, room=(0.86, 0.6), key=Key("C", "ionian", "fifths"),
     describe="Frozen Waste - C Ionian in open fifths, 4/4 at 144 (half time), A/B of 8 bars")
 
 
@@ -1651,7 +1732,7 @@ SANDS = Piece(
     "sands", 104.0, 2, 24,
     [("bed", sands_bed, 0.26), ("pulse", sands_pulse, 0.14), ("lead", sands_lead, 0.22),
      ("boss", sands_boss, 0.12)],
-    tail_beats=4, scale=SEVEN,
+    tail_beats=4, scale=SEVEN, key=Key("G", "mixolydian"),
     describe="Scorched Sands - G Mixolydian, 6/8 at dotted quarter 104, A/B of 12 bars")
 
 
@@ -1737,7 +1818,7 @@ EMBER = Piece(
     "emberdeep", 150.0, 4, 16,
     [("bed", ember_bed, 0.26), ("pulse", ember_pulse, 0.14), ("lead", ember_lead, 0.22),
      ("boss", ember_boss, 0.14)],
-    tail_beats=8, scale=EMBER_SCALE, room=(0.86, 0.5),
+    tail_beats=8, scale=EMBER_SCALE, room=(0.86, 0.5), key=Key("A", "harmonic minor"),
     describe="The Emberdeep - A minor with bII and V, 4/4 at 150, A/B of 8 bars")
 
 
@@ -1829,7 +1910,7 @@ SKETCH = Piece(
     "sketchbook", 168.0, 3, 24,
     [("bed", sketch_bed, 0.24), ("pulse", sketch_pulse, 0.14), ("lead", sketch_lead, 0.22),
      ("boss", sketch_boss, 0.12)],
-    tail_beats=6, scale=SEVEN,
+    tail_beats=6, scale=SEVEN, key=Key("C", "ionian"),
     describe="The Sketchbook - C major, 3/4 at 168, A/B of 12 bars")
 
 
@@ -1901,7 +1982,7 @@ def boss_events():
 
 
 BOSS = Piece("boss", 138.0, 4, BOSS_BARS, [("loop", boss_events, 0.22)],
-             tail_beats=8, describe="the boss loop - A minor, 4/4 at 138, 24 bars, 42 s")
+             tail_beats=8, key=Key("A", "aeolian"), describe="the boss loop - A minor, 4/4 at 138, 24 bars, 42 s")
 
 
 # The menu, then the chapters in StageCatalog roster order (index 0..8), then the shared boss loop.
@@ -1962,6 +2043,63 @@ PEAK_CEILING_DB = -3.0
 
 def file_name(piece, stem):
     return "%s_%s.wav" % (piece.name, stem) if piece.name != "boss" else "boss_loop.wav"
+
+
+# ---------------------------------------------------------------------------
+# the beat map (2026-11-09): every piece's key and counted beat, for the game
+# ---------------------------------------------------------------------------
+
+BEATS_JSON = os.path.join(OUT, "beats.json")
+
+
+def check_key(piece):
+    """A key the score does not keep would put the Canticle's chord out of tune with it: every tone of
+    the declared mode must be in the piece's declared scale, and every counted beat inside the bar."""
+    if piece.key is None:
+        raise SystemExit("%s has no key - give its Piece key=Key(tonic, mode)" % piece.name)
+    if piece.scale is not None and not piece.key.pitch_classes() <= piece.scale:
+        raise SystemExit("%s: %s %s has tones outside the piece's scale" % (piece.name, piece.key.tonic,
+                                                                            piece.key.mode))
+    if not piece.counted or any([b < 0 or b >= piece.beats_per_bar for b in piece.counted]) \
+            or sorted(piece.counted) != list(piece.counted):
+        raise SystemExit("%s: counted beats %r are not in order inside a bar of %d" % (
+            piece.name, piece.counted, piece.beats_per_bar))
+
+
+def beat_map():
+    """{piece name: its key and counted beat}, in the units the game reads them in."""
+    out = {}
+    for piece in PIECES:
+        check_key(piece)
+        out[piece.name] = {
+            "file": file_name(piece, piece.stems[0][0]),
+            "bpm": piece.bpm,
+            "beat_seconds": piece.beat,
+            "beats_per_bar": piece.beats_per_bar,
+            "counted": [float(b) for b in piece.counted],
+            "bars": piece.bars,
+            "loop_seconds": piece.seconds(),
+            "tonic": piece.key.tonic,
+            "tonic_midi": piece.key.tonic_midi(),
+            "mode": piece.key.mode,
+            "voicing": piece.key.voicing,
+            "chord": piece.key.chord(),
+        }
+    return out
+
+
+def write_beats(path=BEATS_JSON):
+    import json
+    data = {
+        "_": "Written by tools/audio/music.py (--beats, and every render). Read by scripts/MusicBeats.cs. "
+             "Do not edit: change the Piece and re-run.",
+        "pieces": beat_map(),
+    }
+    text = json.dumps(data, sort_keys=True, indent=1, separators=(",", ": "))
+    with io.open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(unicode(text) if sys.version_info[0] < 3 else text)
+        f.write(u"\n")
+    print("wrote %s - %d pieces" % (os.path.relpath(path, ROOT), len(data["pieces"])))
 
 
 # ---------------------------------------------------------------------------
@@ -2271,6 +2409,9 @@ def main(argv):
     if "--journey" in argv:
         journeys(out_dir, SCRATCH)
         return 0
+    if "--beats" in argv:
+        write_beats()
+        return 0
     only_stems = None
     for a in argv:
         if a.startswith("--stems"):
@@ -2284,6 +2425,9 @@ def main(argv):
             continue
         build_piece(piece, out_dir, balance="--balance" in argv, only_stems=only_stems)
     print("%d unique note renders cached" % len(_CACHE))
+    # The beat map follows what was rendered into the game, never a scratch render.
+    if out_dir == OUT:
+        write_beats()
     return 0
 
 

@@ -156,5 +156,5 @@ PIECE = M.Piece(
     "fields", 116.0, 3, 16,
     [("bed", fields_bed, 0.28), ("pulse", fields_pulse, 0.16), ("lead", fields_lead, 0.24),
      ("boss", fields_boss, 0.14)],
-    tail_beats=3, scale=M.SEVEN,
+    tail_beats=3, scale=M.SEVEN, key=M.Key("G", "mixolydian"),
     describe="The Fallow Fields - G Mixolydian, 9/8 slip jig at dotted quarter 116, A/B of 8 bars")

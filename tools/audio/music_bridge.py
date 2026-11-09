@@ -150,5 +150,5 @@ def lead():
 PIECE = M.Piece(
     "bridge", 120.0, 2, 24,
     [("bed", bed, 0.24), ("pulse", pulse, 0.14), ("lead", lead, 0.2)],
-    tail_beats=8, scale=M.SEVEN, room=(0.72, 0.55),
+    tail_beats=8, scale=M.SEVEN, room=(0.72, 0.55), key=M.Key("A", "aeolian"),
     describe="The Last Bridge - A Aeolian, a 2/4 march at 120, A/B of 12 bars")

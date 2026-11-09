@@ -78,6 +78,10 @@ def _make_impact(el):
     return lambda: P.impact(el)
 
 
+def _make_note(el):
+    return lambda: P.note(el)
+
+
 # ---------------------------------------------------------------------------
 # spell shapes that no element table can express
 # ---------------------------------------------------------------------------
@@ -2623,6 +2627,14 @@ def hind_bolt():
 # casts in a minute than the table was drawn for; both come down to where the table puts them.
 CAST_DB = -11.0
 IMPACT_DB = -15.0
+# The Canticle's notes (palette.note) sit far under the table's rows because they are never heard one
+# at a time: the burst sounds three to six of them on one frame, every second or two. Summed at their
+# chord pitches (a sim over every key's voicing, 2026-11-09) a chord peaks at -20 to -15 dBFS - the
+# quiet end of the once-a-second row - with an RMS of -33 to -29 over its first half second: level with
+# a chapter's bed and pulse (-30.5) and under its whole set (-29.4). The chord joins the music; it does
+# not sit on top of it. While the chord gathers, each cast's own note plays SfxPlayer.CanticleChargeDb
+# under this, under the XP orb.
+NOTE_DB = -26.0
 
 REGISTRY = []
 
@@ -2630,6 +2642,9 @@ for _el in P.ORDER:
     REGISTRY.append(("cast_%s" % _el, "cast", CAST_DB, _make_cast(_el), False))
 for _el in P.ORDER:
     REGISTRY.append(("impact_%s" % _el, "impact", IMPACT_DB, _make_impact(_el), False))
+# The Canticle's notes, one per element at A4, pitched at play time (NOTE_DB says why so quiet).
+for _el in P.ORDER:
+    REGISTRY.append(("note_%s" % _el, "note", NOTE_DB, _make_note(_el), False))
 
 REGISTRY += [
     ("spell_explosion",     "spell",  -5.0,  spell_explosion,     False),
