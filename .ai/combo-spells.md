@@ -244,7 +244,8 @@ named Ascensions' gains; "four" names the level 4 path that would make one, whic
 - Prism splits at the target; here it splits at the **lens**: where a ray crosses Witching Hour's
   turning hand it **refracts** into Prism's fan, each new ray ramping on its own target, so the fan turns
   with the hand across the field. The crossing burns hottest.
-- **Elements:** Fire, Arcane, Darkness (Arcane deep). Both parents hybrids: never four.
+- **Elements:** Fire, Arcane, Darkness (Arcane deep). Both parents hybrids: never four. Scorching Ray is
+  Imhotep's starting spell since 2026-11-09 (`.ai/character-fit.md`): not his to fuse.
 - **Card:** *"Where your rays cross the turning lance they split into fans that sweep round with it."*
   **Tagline:** *"Put the lance between you."*
 

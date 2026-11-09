@@ -93,7 +93,7 @@ The questions as they were put:
 | 3 | Sunken Cave | **the Cumaean Sibyl** | Arcane | Arcane Explosion | **echo** | The Hundred Mouths | **listen** for the true mouth | none (R1 if Ma Liang too) |
 | 4 | Blighted Swamp | **Paracelsus** | Poison | Contagion | **distil** | The Dose | **escort** him to the ferry | none |
 | 5 | Mystic Ruins | **Abe no Seimei** | Light | Kindled Ward | **banish** | The Five-Pointed Seal | **solve** the four stones | none |
-| 6 | Scorched Sands | **Imhotep** | Fire | Fireball | **blind** | Eye of Ra | **aim** bronze mirrors to bring the sun to his door (was kindle three beacons; `.ai/unlock-puzzles.md` 3.1) | R1 |
+| 6 | Scorched Sands | **Imhotep** | Fire (Fire+Arcane) | Scorching Ray (Fireball until 2026-11-09, `.ai/character-fit.md`) | **blind** | Eye of Ra | **aim** bronze mirrors to bring the sun to his door (was kindle three beacons; `.ai/unlock-puzzles.md` 3.1) | R1 |
 | 7 | The Emberdeep | **Wayland the Smith** | Metal | Iron Palisade | **temper** | The Tempered Line | **bait** the hammers onto his chains | none |
 | 8 | The Court (second event; was the Sketchbook) | **Ma Liang** | Arcane | Familiar (crow) | **displace** | The Painted Door | **trace** the dotted door | R1; P2 |
 | 9 | The Last Bridge | **Morgan le Fay** | Ice (Ice+Wind) | Sleet Runes | **double** | Fata Morgana | **light the lamps ahead** of her barge (was keep pace; `.ai/unlock-puzzles.md` 3.7) | R2 (R1 on Stormsweep) |
@@ -800,11 +800,17 @@ measured and not heard; and the form's numbers - the bot took it at 9.9 minutes,
   Ra at Heliopolis; revered as a sage and healer for two thousand years after.
 - **Why here.** "He hid the water." The builder who could find water and raise it is sealed in a dry
   tomb beside the road the water left.
-- **Spell.** **Fireball** (Fire), the Long Coil's deed: the sun's fire in one slow, heavy blast. Shares
-  Fire with the Pyromancer (R1).
-- **Form: Eye of Ra (blind).** *"The blast flares like the sun. Whatever sees it loses you for two
-  seconds and wanders."* Tagline: *"What sees it forgets you."* A wander state through
-  `Enemy.AdjustSteering`; bosses immune.
+- **Spell.** **Scorching Ray** (Fire+Arcane) since 2026-11-09: the sun focused through his bronze mirror onto
+  one target, the act that frees him (Eric: "I like your imhotep suggestion, implement that as well";
+  `.ai/character-fit.md`). It was **Fireball** (Fire), the Long Coil's deed, which stays in the game as the
+  Sands boss's spell. Shares Fire with the Pyromancer (R1). He can no longer fuse Dark Lens, whose parent
+  the ray is (`ComboSeal.OwnSpell`).
+- **Form: Eye of Ra (blind)**, `scorching_ray_eye_of_ra` (`fireball_eye_of_ra` until 2026-11-09; a save
+  that saw the old one still has it seen, `SaveData.MovedAscensions`). *"Each cast, the hottest ray flares
+  like the sun. Whatever sees it loses you for two seconds and wanders. Hotter rays flare wider."* Tagline:
+  *"What sees it forgets you."* One flare a cast where the hottest ray first lands, 120 px cold to 240 px at
+  full heat (untuned); a body already blind does not see the next flare, or a held target's crowd would stay
+  blind for good. A wander state through `Enemy.AdjustSteering`; bosses immune.
 - **Passive: Surveyor**, +20% pickup reach.
 - **Freed by: kindle.** Three signal beacons on the dunes round his tomb, about 700 px apart. Stand by
   one 1.5 s to light it; a lit beacon burns 25 s before the dry wind puts it out. All three alight at

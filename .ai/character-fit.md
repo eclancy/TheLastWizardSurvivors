@@ -53,7 +53,7 @@ A fit is judged on four things: the character's **story**, their **look**, their
 | who | passive | fit | why |
 |---|---|---|---|
 | The Archmage | Overlooked: a killing blow misses, once | strong | he was missed once already |
-| Aedan | Kindled Focus: +10% spell damage | good | a plain stat for the glass cannon |
+| Aedan | Kindled Focus: +10% spell damage (+15% close by since 2026-11-09) | good | a plain stat for the glass cannon |
 | Isbrand | Rimeblood: +9 HP a minute | ok | sustain for the tank; nothing frosty in it |
 | Levina | Quickened Cadence: -10% cooldowns | strong | lightning-quick, with her speed |
 | Gabbro | Stoneskin: -10% damage taken | strong | stone skin on the heaviest body |
@@ -127,8 +127,8 @@ opportunity for feedback."* His feedback on each is recorded here as it comes.
 
 | # | wizard | verdict | Eric's words | status |
 |---|---|---|---|---|
-| 1 | The Archmage | keeps Magic Missile and Overlooked; **Overlooked's 10 s grace also makes him semi-transparent** (on top of the white he already turns), so it reads that he cannot be touched | "his passive should also make him semi-transparent for those 10 seconds, to make it clear that he is untouchable. with that small change, go ahead and move onto the next wizard" | building |
-| 2 | Aedan, the Pyromancer | keeps Cinderbreath; **Kindled Focus becomes +15% damage to enemies close to you** (was +10% spell damage everywhere), so the passive asks what his spell asks: fight up close. Close is a first guess of 200 px, a little past Cinderbreath's reach | "implement your suggestion, then next" | building |
-| 3 | Isbrand, the Frostweaver | **Cone of Cold aims the way the player faces**, not at the nearest enemy, for every wizard who holds it (`spell-variety.md` phase 1, the facing family); keeps Rimeblood, his steady trickle of health, the only starter sustain now that healing is scarce | "implement your suggestion." and, of the whole pass: "you do not need to run the balance bots for these changes" | building |
+| 1 | The Archmage | keeps Magic Missile and Overlooked; **Overlooked's 10 s grace also makes him semi-transparent** (on top of the white he already turns), so it reads that he cannot be touched | "his passive should also make him semi-transparent for those 10 seconds, to make it clear that he is untouchable. with that small change, go ahead and move onto the next wizard" | built `8a7e382d` (opacity 0.45 on the body sprite, on the white's clock); not yet seen rendered |
+| 2 | Aedan, the Pyromancer | keeps Cinderbreath; **Kindled Focus becomes +15% damage to enemies close to you** (was +10% spell damage everywhere), so the passive asks what his spell asks: fight up close. Close is a little past Cinderbreath's reach | "implement your suggestion, then next" | built `c7ecd205` at **250 px**, not 200: Cinderbreath reaches 230 px at level 1 since 2026-11-04 (300 by level 8), so 250 keeps "a little past its reach". New id `close_damage_15` |
+| 3 | Isbrand, the Frostweaver | **Cone of Cold aims the way the player faces**, not at the nearest enemy, for every wizard who holds it (`spell-variety.md` phase 1, the facing family); keeps Rimeblood, his steady trickle of health, the only starter sustain now that healing is scarce | "implement your suggestion." and, of the whole pass: "you do not need to run the balance bots for these changes" | built `b99ffbc8`: every cone takes the facing (Arctic Blast's half-moon, Zero Point's relayed cone); tagline "A freezing cone where you face." Walking away fires it away from the chase: needs a playtest |
 | 4 | Levina, the Stormcaller | keeps Chain Lightning and Quickened Cadence, unchanged | "next" | kept |
 | 5 | Gabbro, the Geomancer | keeps Obsidian Spike and Stoneskin, unchanged | "next" | kept |
