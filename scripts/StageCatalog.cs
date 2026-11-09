@@ -294,8 +294,8 @@ public static class StageCatalog
 			TerrainCategory = "Chalk downland",
 			FlavorText = "Chalk downland at night: white turf, flint and barrows, and a hound and a hart cut in the hills.",
 			CorruptionText = "No moon has risen here since he came.",
-			// Stand-in ground: the Broken Circle's heath, the nearest open upland.
-			EnvironmentKind = StageEnvironmentKind.Heath,
+			// Its own ground (F3): cropped turf on chalk, flint, and the barrows standing on it as walls.
+			EnvironmentKind = StageEnvironmentKind.WhiteDowns,
 			Gate = StageGate.FarShore,
 			IsPlayable = false,
 		},

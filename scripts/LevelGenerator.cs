@@ -24,6 +24,8 @@ public enum StageTopology
 	Ruin,
 	/// <summary>The Sunken Cave's caverns, on the maze's lattice (LevelGenerator.Caverns.cs, piece V2).</summary>
 	Caverns,
+	/// <summary>The White Downs' barrows on open turf, on the maze's lattice (LevelGenerator.Downs.cs, piece F3).</summary>
+	Barrows,
 }
 
 /// <summary>
@@ -387,7 +389,29 @@ public sealed partial class LevelGenerator
 		// replacing its comment line. Two shapes the road lacks belong here as topologies in partial files (the
 		// pattern below): the Drowned Shore's tide channels and the Three Ways' hedged roads, both the lattice
 		// drawn another way (endgame-castle.md 7.3).
-		// F3: [StageEnvironmentKind.WhiteDowns] = new Palette { ... },
+		// THE WHITE DOWNS (stage_14, F3): a Barrows topology (LevelGenerator.Downs.cs) - open turf with the
+		// barrows standing on it as walls, so they block, route the swarm round them and stop a shot, and the
+		// Unstrung Hunter's line stops at one. The floor is `downs_turf` (terrain_downs.py), cropped turf at
+		// night, laid as the Cave lays its floor (a terrain, because tiles.py's floor styles on the lichen row
+		// are the Forest's turf); graystone only if it were missing. Between the barrows, what chalk downland
+		// shows where the turf is broken: bare chalk scars and spoil, and flint rubble. And the dew ponds -
+		// water, the one other blocker, small and rare: a hollow on the chalk that holds the dew.
+		[StageEnvironmentKind.WhiteDowns] = new Palette
+		{
+			GroundTerrain = "downs_turf",
+			GroundMaterial = "graystone",
+			Blobs = new[]
+			{
+				new BlobSpec("downs_chalk", 1.7f, 1.8f, 3.4f),
+				new BlobSpec("downs_flint", 1.0f, 1.6f, 2.8f),
+				new BlobSpec("water", 0.35f, 1.4f, 2.2f),
+			},
+			Density = 0.0055f,
+			// The bones of what died on the downs, sparse. Not the flora set's bracken or logs: cropped chalk turf
+			// grows neither, and the downs' own growth is Foliage.WhiteDowns'.
+			PropThemes = new[] { "bones" },
+			Topology = StageTopology.Barrows,
+		},
 		// (F6's line is below; leave this one as it is)
 		// F6: [StageEnvironmentKind.DrownedShore] = ... (LevelGenerator.<Tide>.cs),
 		// (F7's line is below; leave this one as it is)
@@ -467,6 +491,7 @@ public sealed partial class LevelGenerator
 	static partial void BuildAuthoredTopology(ref TopologyBuild build);
 	static partial void BuildRuinTopology(ref TopologyBuild build);
 	static partial void BuildCavernsTopology(ref TopologyBuild build);
+	static partial void BuildBarrowsTopology(ref TopologyBuild build);
 
 	// Resolved on first use rather than in a static initialiser: C# does not order the static fields of
 	// a partial class across its files, so a topology file's own statics (a layout read from JSON, say)
@@ -482,6 +507,7 @@ public sealed partial class LevelGenerator
 		BuildAuthoredTopology(ref builds[(int)StageTopology.Authored]);
 		BuildRuinTopology(ref builds[(int)StageTopology.Ruin]);
 		BuildCavernsTopology(ref builds[(int)StageTopology.Caverns]);
+		BuildBarrowsTopology(ref builds[(int)StageTopology.Barrows]);
 		return builds;
 	}
 
