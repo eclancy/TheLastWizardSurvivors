@@ -8199,6 +8199,8 @@ public partial class Player : CharacterBody2D
 			// not offered at all - the ascension browser says what is missing.
 			if (!option.IsEvolutionMilestone)
 				continue;
+			// Tonight's recipe names one of these: it is the first card on the page (the far sky, Player.FarSky.cs).
+			FavourNamedAscension(option, spell);
 			ApplyElementPreview(option, spell, counts, isNewUnlock: false);
 			offers.Add(option);
 		}
@@ -8431,6 +8433,10 @@ public partial class Player : CharacterBody2D
 		RemoveBanned(boonCandidates, boonWeights);
 		// The Betrothal Hoop leans the upgrade group toward the lowest-level spell (Player.ItemRules.cs).
 		WeightLowestUpgrades(heldUpgrades, heldUpgradeWeights);
+		// The far sky's favour (Player.FarSky.cs): tonight's two parents' cards, taken out of both pools to be dealt
+		// first - before the roll that decides whether held upgrades are in the hand, which they bypass. Not in a browse.
+		List<LevelUpOption> favoured = browseAll ? new List<LevelUpOption>()
+			: TakeFarSkyFavoured(candidates, weights, heldUpgrades, heldUpgradeWeights);
 
 		// A browse (GetDealableCandidates) lists every boon as well as every new spell.
 		if (browseAll)
@@ -8447,7 +8453,7 @@ public partial class Player : CharacterBody2D
 		// upgrades there would only deal a hand of one boon or of nothing.
 		if (!browseAll)
 		{
-			bool somethingElseToTake = candidates.Count > 0
+			bool somethingElseToTake = candidates.Count > 0 || favoured.Count > 0
 				|| (boonOnOfferThisLevelUp && boonCandidates.Count > 0);
 			if (upgradesOnOfferThisLevelUp || loadoutFull || !somethingElseToTake)
 			{
@@ -8458,7 +8464,9 @@ public partial class Player : CharacterBody2D
 
 		NormalizeOfferWeightsByGroup(candidates, weights);
 
-		var picked = new List<LevelUpOption>();
+		// Tonight's parents first (the far sky), then the draw fills the hand.
+		var picked = new List<LevelUpOption>(favoured.Take(Math.Max(0, maxOptions)));
+		int keptForFarSky = picked.Count;
 		var pool = new List<LevelUpOption>(candidates);
 		var poolWeights = new List<float>(weights);
 		while (picked.Count < maxOptions && pool.Count > 0)
@@ -8483,9 +8491,13 @@ public partial class Player : CharacterBody2D
 					boonIndex = forced;
 			}
 			LevelUpOption boon = boonCandidates[boonIndex];
-			// A random position, so the rare card is not always the one on the right.
+			// A random position, so the rare card is not always the one on the right - and never over one of
+			// tonight's parents (the far sky): a hand that is all theirs keeps them and goes without the boon.
 			if (picked.Count >= maxOptions)
-				picked[levelUpRng.RandiRange(0, picked.Count - 1)] = boon;
+			{
+				if (keptForFarSky < picked.Count)
+					picked[levelUpRng.RandiRange(keptForFarSky, picked.Count - 1)] = boon;
+			}
 			else
 				picked.Insert(levelUpRng.RandiRange(0, picked.Count), boon);
 		}

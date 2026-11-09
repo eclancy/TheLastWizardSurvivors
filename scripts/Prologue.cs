@@ -254,6 +254,17 @@ public partial class Prologue : Control
 		new("rite-seal", 5.6f, "The rest fall silent; their levels feed it.", new Vector2(-3f, 0f), new Vector2(-8f, 0f), new Vector2(-18f, 0f)),
 	};
 
+	// THE FAR SKY (.ai/second-half.md 6.3, piece F4; Teachings.FarSkyLesson): taught by the huntress, after her
+	// rekindling reel, so it opens on the White Downs under the moon she has just put back. Two stars meeting over the
+	// downs; then their light coming down to the two stones the deal now favours.
+	private static readonly Beat[] FarSkyBeats =
+	{
+		// The downs at night, the moon up again, and two stars leaning together over them.
+		new("far-sky-meet", 5.0f, "Each night the far sky names a Conjunction.", new Vector2(-3f, 0f), new Vector2(-10f, -4f), new Vector2(-20f, 0f)),
+		// Their light coming down to two spells' stones: its two spells come to your hand first.
+		new("far-sky-favour", 6.0f, "Its two spells come to your hand first.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+	};
+
 	// THE FREEINGS (.ai/cutscenes.md; tools/art/freed.py; Freeings). One panel each, made once as a template: the
 	// shared ground, and a mid layer per wizard - the Archmage beside the one he has freed, that wizard's own light
 	// coming back to him. Its line is the wizard's freed line from QuestLog.Prisoners, with his name in it. A god's
@@ -268,7 +279,7 @@ public partial class Prologue : Control
 			},
 			wizardId);
 
-	/// <summary>Every reel, by id: the prologue, the four lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
+	/// <summary>Every reel, by id: the prologue, the five lessons (Teachings.All's ids) and the freeings (Freeings).</summary>
 	public static readonly System.Collections.Generic.IReadOnlyDictionary<string, Reel> Reels = BuildReels();
 
 	private static System.Collections.Generic.Dictionary<string, Reel> BuildReels()
@@ -283,6 +294,8 @@ public partial class Prologue : Control
 		};
 		foreach (string wizardId in Freeings.WizardIds)
 			reels[Freeings.ReelIdFor(wizardId)] = FreedReel(wizardId);
+		// F4, the far sky's lesson (Teachings.FarSkyLesson).
+		reels[Teachings.FarSkyLesson.Id] = new Reel(Teachings.FarSkyLesson.Id, LessonFolder, FarSkyBeats);
 		return reels;
 	}
 

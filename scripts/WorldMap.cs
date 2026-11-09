@@ -668,6 +668,8 @@ public partial class WorldMap : Control
 				cardBox.AddChild(GlyphLine("duration", $"Longest stand: {FormatMinutes(best)}", InkSoft, "CardBest"));
 		}
 
+		// F4, the far sky: tonight's Conjunction on every far-shore stop (FarSky.CardLine; .ai/second-half.md 5).
+		if (!stop.IsBossRush && FarSky.CardLine(save, stage, CharacterRoster.GetByIndex(Global.SelectedCharacterIdx)) is string sky) cardBox.AddChild(GlyphLine("conjunction", sky, InkPlace, "CardFarSky"));
 		if (!stop.IsBossRush)
 			AddRewards(stage);
 

@@ -333,7 +333,8 @@ public partial class Player
 		Teaching.Ascension => AscensionLearned,
 		Teaching.Apotheosis => ApotheosisLearned,
 		Teaching.Conjunctions => ConjunctionsLearned,
-		_ => Teachings.HasLearned(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data, Teaching.SovereignRite),
+		// The Rite by ownership, live, as its offer is; the far sky (F4) by the save, as nothing reads it mid-run.
+		_ => Teachings.HasLearned(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data, system),
 	};
 
 	/// <summary>Adds to the run's reroll and ban pools. Tools (_UiShot --chest-charges) and, later, the Bone Dice.</summary>

@@ -80,6 +80,8 @@ public static partial class RegressionChecks
 		ValidateBoonSlotMigration(warnings);
 		ValidateSpellBook(warnings);
 		ValidateTeachers(warnings);
+		// F4, the far sky (RegressionChecks.FarSky.cs).
+		ValidateFarSky(warnings);
 		ValidatePrologueReel(warnings);
 		ValidateFreeings(warnings);
 		ValidateCinematicRules(warnings);
@@ -7508,8 +7510,10 @@ public static partial class RegressionChecks
 			case AchievementKind.Feat:
 			case AchievementKind.Collection:
 				// A combination's Feat is the one Feat that waits: listed once the save owns both parents (Recipe).
+				// The far sky's two wait for its lesson (FarSky, .ai/second-half.md 6.2: nothing of the far shore on show).
 				if (deed.Visibility != AchievementVisibility.Always
-					&& !(deed.Kind == AchievementKind.Feat && deed.Visibility == AchievementVisibility.Recipe && !string.IsNullOrEmpty(deed.ComboId)))
+					&& !(deed.Kind == AchievementKind.Feat && deed.Visibility == AchievementVisibility.Recipe && !string.IsNullOrEmpty(deed.ComboId))
+					&& deed.Visibility != AchievementVisibility.FarSky)
 					warnings.Add($"Achievement '{id}' is a {deed.Kind} shown {deed.Visibility}; a {deed.Kind} is listed from the first run.");
 				break;
 			case AchievementKind.Road:

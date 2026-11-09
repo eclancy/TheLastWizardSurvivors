@@ -11,11 +11,13 @@ public enum Teaching
 	Apotheosis,
 	Conjunctions,
 	SovereignRite,
+	// The far shore's one system (.ai/second-half.md 5, 6.2): taught by its first god, not a vault.
+	FarSky,
 }
 
 /// <summary>
-/// The one authority on what a save has been taught: the Ascension, the Apotheosis, Conjunctions and the
-/// Sovereign Rite (.ai/slow-start.md, "Systems, and what teaches each"). Eric, 2026-11-02: "new systems
+/// The one authority on what a save has been taught: the Ascension, the Apotheosis, Conjunctions, the
+/// Sovereign Rite (.ai/slow-start.md, "Systems, and what teaches each") and the far sky (.ai/second-half.md 6.2). Eric, 2026-11-02: "new systems
 /// should be unlocked in a post-run cutscene, after fulfilling an achievement, like finding a landmark.
 /// The cutscene can then explain the new system."
 /// </summary>
@@ -73,8 +75,29 @@ public static class Teachings
 	public static readonly Lesson Rite = new(Teaching.SovereignRite, "sovereign_rite", "The Sovereign Rite", string.Empty,
 		"One spell may take the strength of the rest");
 
-	/// <summary>Every lesson, the ladder first.</summary>
-	public static IEnumerable<Lesson> All => Ladder.Append(Rite);
+	/// <summary>
+	/// The far sky (.ai/second-half.md 5, 6.2; piece F4): the far shore's one system, taught by a god rather than a
+	/// vault - Eric's latest word on teaching is that characters teach systems (in-flight item 37), and the huntress
+	/// who relights the night sky is the one to teach reading it. Owed when the far shore's first god is rekindled
+	/// (<see cref="FarSkyTeacherId"/>), as the Rite is owed by owning it, and played after her rekindling reel - story
+	/// before systems, as Node2DGame.PlayOwedLessonsThen orders them. Its reel is tools/art/lessons.py's far-sky panels.
+	/// </summary>
+	public static readonly Lesson FarSkyLesson = new(Teaching.FarSky, "far_sky", "The Far Sky", string.Empty,
+		"Each night the far sky names a Conjunction");
+
+	/// <summary>Every lesson, the ladder first, then the Rite, then the far sky.</summary>
+	public static IEnumerable<Lesson> All => Ladder.Append(Rite).Append(FarSkyLesson);
+
+	/// <summary>
+	/// The god whose rekindling teaches the far sky: whoever is seated at the far shore's first chapter (UnlockCatalog
+	/// .GodSeatedAt, Artemis at the White Downs). Read from the catalogs, so moving the seat or the order moves it.
+	/// </summary>
+	public static string FarSkyTeacherId =>
+		StageCatalog.FarShore.Count == 0 ? null : UnlockCatalog.GodSeatedAt(StageCatalog.FarShore[0].Id)?.Id;
+
+	/// <summary>Whether the far sky's teacher is rekindled on this save: her character is the save's.</summary>
+	public static bool FarSkyTeacherRekindled(SaveData data) =>
+		data != null && FarSkyTeacherId is string god && GlobalStatsManager.IsCharacterUnlocked(data, god);
 
 	public static Lesson Get(Teaching system) => All.First(l => l.System == system);
 
@@ -126,6 +149,10 @@ public static class Teachings
 			return true;
 		if (system == Teaching.SovereignRite)
 			return GlobalStatsManager.IsSpellUnlockedForLevelUp(data, SovereignRite.SpellId);
+		// The far sky is usable once its reel has played: nothing of it shows before (IsShown), so there is no
+		// owned-but-unexplained state as the Rite has.
+		if (system == Teaching.FarSky)
+			return HasBeenTaught(data, FarSkyLesson);
 		// The Ascension's schema 20 flag still counts: a save that had it kept it (SaveData.AscensionLearned).
 		if (system == Teaching.Ascension && data.AscensionLearned)
 			return true;
@@ -141,13 +168,15 @@ public static class Teachings
 	/// <summary>
 	/// Whether the system may be SHOWN on this save, sealed or not (Q8, "one locked thing visible at a time"):
 	/// the Ascension always; the Apotheosis once the Ascension is learned; Conjunctions once the Apotheosis
-	/// is; the Rite once it is owned or Conjunctions are learned.
+	/// is; the Rite once it is owned or Conjunctions are learned; the far sky only once it is learned (nothing of the
+	/// far shore is on show before Taken Back, .ai/second-half.md 6.2, and the sky has no sealed state to show).
 	/// </summary>
 	public static bool IsShown(SaveData data, Teaching system) => system switch
 	{
 		Teaching.Ascension => true,
 		Teaching.Apotheosis => HasLearned(data, Teaching.Ascension),
 		Teaching.Conjunctions => HasLearned(data, Teaching.Apotheosis),
+		Teaching.FarSky => HasLearned(data, Teaching.FarSky),
 		_ => HasLearned(data, Teaching.SovereignRite) || HasLearned(data, Teaching.Conjunctions),
 	};
 
@@ -178,6 +207,9 @@ public static class Teachings
 		}
 		if (HasLearned(data, Teaching.SovereignRite) && !HasBeenTaught(data, Rite))
 			owed.Add(Rite);
+		// The far sky, once its god is rekindled - after her freeing reel, which PlayOwedLessonsThen plays first.
+		if (FarSkyTeacherRekindled(data) && !HasBeenTaught(data, FarSkyLesson))
+			owed.Add(FarSkyLesson);
 		return owed;
 	}
 
@@ -200,6 +232,8 @@ public static class Teachings
 	{
 		if (system == Teaching.SovereignRite)
 			return "Learned by defeating the Warden of the Deep";
+		if (system == Teaching.FarSky)
+			return "Learned on the far shore";
 		// Found this run: it is taught when the run ends, and the line says so rather than send him back out.
 		if (Owed(data).Any(l => l.System == system))
 			return "Learned at the end of a run";
