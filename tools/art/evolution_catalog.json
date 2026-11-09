@@ -188,15 +188,15 @@
     {
       "spell": "arcane_explosion",
       "variant": "",
-      "spell_name": "Arcane Explosion",
+      "spell_name": "Canticle",
       "spell_icon": "res://assets/bonelight/ui/spells/arcane-explosion.png",
       "spell_elements": {
         "Arcane": 1
       },
       "milestone": 4,
       "id": "arcane_explosion_dual_shockwave",
-      "name": "Sympathetic Blast",
-      "description": "Takes the element of the last spell you cast: ice slows, lightning staggers, poison poisons, others hit harder. \u002B20% damage.",
+      "name": "Harmony",
+      "description": "Takes the element of the spell in the next slot: ice slows, lightning staggers, poison poisons, others hit harder. \u002B20% damage.",
       "synergy": "Arcane / Loadout",
       "visual_tag": "SympatheticBlast",
       "gains": {},
@@ -223,15 +223,15 @@
     {
       "spell": "arcane_explosion",
       "variant": "",
-      "spell_name": "Arcane Explosion",
+      "spell_name": "Canticle",
       "spell_icon": "res://assets/bonelight/ui/spells/arcane-explosion.png",
       "spell_elements": {
         "Arcane": 1
       },
       "milestone": 4,
       "id": "arcane_explosion_static_nova",
-      "name": "Static Nova",
-      "description": "The blast crackles with static: \u002B20% damage, and hits stagger for 0.3 s.",
+      "name": "Storm Chord",
+      "description": "The chord crackles with static: \u002B20% damage, and hits stagger for 0.3 s.",
       "synergy": "Arcane / Lightning",
       "visual_tag": "StaticNova",
       "gains": {
@@ -260,15 +260,15 @@
     {
       "spell": "arcane_explosion",
       "variant": "",
-      "spell_name": "Arcane Explosion",
+      "spell_name": "Canticle",
       "spell_icon": "res://assets/bonelight/ui/spells/arcane-explosion.png",
       "spell_elements": {
         "Arcane": 1
       },
       "milestone": 4,
       "id": "arcane_explosion_lingering_rift",
-      "name": "Lingering Rift",
-      "description": "Each blast leaves a rift on the ground for 2.5s that hurts what stands in it (\u002B40% Area).",
+      "name": "Sustain",
+      "description": "Each burst\u0027s note rings on in the ground for 2.5s and hurts what stands in it (\u002B40% Area).",
       "synergy": "Arcane / Zone",
       "visual_tag": "LingeringRift",
       "gains": {
@@ -297,7 +297,7 @@
     {
       "spell": "arcane_explosion",
       "variant": "",
-      "spell_name": "Arcane Explosion",
+      "spell_name": "Canticle",
       "spell_icon": "res://assets/bonelight/ui/spells/arcane-explosion.png",
       "spell_elements": {
         "Arcane": 1
@@ -305,7 +305,7 @@
       "milestone": 8,
       "id": "arcane_explosion_supernova",
       "name": "Resonance",
-      "description": "Every blast goes off again wherever each of your other spells last struck. \u002B180% damage.",
+      "description": "Every burst goes off again wherever each of your other spells last struck. \u002B180% damage.",
       "synergy": "Ascension / Loadout",
       "visual_tag": "Resonance",
       "gains": {},
@@ -332,15 +332,15 @@
     {
       "spell": "arcane_explosion",
       "variant": "",
-      "spell_name": "Arcane Explosion",
+      "spell_name": "Canticle",
       "spell_icon": "res://assets/bonelight/ui/spells/arcane-explosion.png",
       "spell_elements": {
         "Arcane": 1
       },
       "milestone": 8,
       "id": "arcane_explosion_event_horizon",
-      "name": "Event Horizon",
-      "description": "Time stops for 2.5s where the blast goes off: everything caught, and whatever walks in, freezes. \u002B190% damage, 80% wider.",
+      "name": "Fermata",
+      "description": "A held note: time stops for 2.5s where it sounds - all it catches, and whatever walks in, freezes. \u002B190% damage, 80% wider.",
       "synergy": "Arcane / Stasis",
       "visual_tag": "EventHorizon",
       "gains": {
@@ -8142,7 +8142,7 @@
     {
       "spell": "arcane_explosion",
       "variant": "",
-      "spell_name": "Arcane Explosion",
+      "spell_name": "Canticle",
       "spell_icon": "res://assets/bonelight/ui/spells/arcane-explosion.png",
       "spell_elements": {
         "Arcane": 1
@@ -8150,7 +8150,7 @@
       "milestone": 9,
       "id": "arcane_explosion_hundred_mouths",
       "name": "The Hundred Mouths",
-      "description": "Each burst sounds your other spells again from where you stand, at 40% strength.",
+      "description": "Each burst sounds your other spells again on the beats that follow, at 40% strength.",
       "synergy": "Apotheosis",
       "visual_tag": "Apotheosis",
       "gains": {

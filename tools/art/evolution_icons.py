@@ -2385,23 +2385,45 @@ def _(sp, c):
     sp.why = "the world dimmed round the tear"
 
 
-# --- Arcane Explosion ------------------------------------------------------------------------------
+# --- The Canticle (Arcane Explosion's id) ----------------------------------------------------------
+# Renamed 2026-11-09 (.ai/character-fit.md section 5, row 19): a chord sung on the music's beat. The cards
+# kept their ids; Harmony, Sustain and Fermata were redrawn for what they now say, the rest repaint with the
+# spell's own picture (spell_icons_core.arcane_explosion: the rings, a note at their heart).
+
+def m_slot(cv, x0, y0, size, ramp):
+    """A spell slot, as the loadout strip draws one: a square of the steel rim on the deep backing, the
+    element it lends lit inside it."""
+    st = M["steel"]
+    cv.rect(x0, y0, x0 + size - 1, y0 + size - 1, OCC)
+    cv.rect(x0 + 1, y0 + 1, x0 + size - 2, y0 + size - 2, st[2])
+    cv.rect(x0 + 2, y0 + 2, x0 + size - 3, y0 + size - 3, M["violet"][4])
+    cx, cy = x0 + (size - 1) / 2.0, y0 + (size - 1) / 2.0
+    cv.disc(cx, cy, size * 0.26, size * 0.26, ramp[2])
+    cv.disc(cx - 0.5, cy - 0.5, size * 0.15, size * 0.15, ramp[1])
+    cv.set(cx - 1, cy - 1, ramp[0])
+
 
 @card("arcane_explosion_dual_shockwave")
 def _(sp, c):
-    """Sympathetic Blast (Dual Shockwave's id): the blast wearing the element of the spell that set it
-    off - its ring broken into three arcs, each in another spell's light."""
+    """Harmony (Sympathetic Blast's id, 2026-11-09): the burst takes the element of the spell in the NEXT
+    SLOT - so the chord, re-lit in that element's light (Fire, for the picture: Storm Chord is the Lightning
+    one), and tied by a slur to the slot that lends it, in the corner."""
     reset(sp)
-    sp.place = Place(0.62)
+    sp.place = Place(0.6, at=(12.5, 12.5))
+    sp.recolour = "fire"
 
-    def arcs(cv, x):
-        for (el, a0, a1) in (("lightning", -150, -40), ("ice", -20, 90), ("poison", 110, 200)):
-            ramp = E[el]
-            for d in range(a0, a1, 4):
-                t = math.radians(d)
-                for (rr, tone) in ((13.0, ramp[2]), (12.0, ramp[1]), (11.0, ramp[0] if d % 12 == 0 else ramp[1])):
-                    cv.set(C0 + math.cos(t) * rr, C0 + math.sin(t) * rr, tone)
-    O(sp, arcs)
+    def lent(cv, x):
+        ramp = E["fire"]
+        m_slot(cv, 19, 19, 9, ramp)
+        # The slur, from under the chord to the slot's side.
+        for k in range(0, 9):
+            t = k / 8.0
+            sx = 9.0 + t * 9.0
+            sy = 22.0 + math.sin(t * math.pi) * 3.0
+            cv.set(sx, sy + 1, OCC)
+            cv.set(sx, sy, ramp[1] if k % 3 else ramp[0])
+    O(sp, lent)
+    sp.why = "the next slot lends the burst its element"
 
 
 @card("arcane_explosion_static_nova")
@@ -2412,16 +2434,21 @@ def _(sp, c):
 
 @card("arcane_explosion_lingering_rift")
 def _(sp, c):
-    """Lingering Rift: a rift left on the ground under the blast."""
+    """Sustain (Lingering Rift's id, 2026-11-09): the note rings on in the ground under the burst - a standing
+    wave, bands of its light lying in the floor, the outermost on the reach, the neighbours in opposite phase."""
     reset(sp)
-    sp.place = Place(0.72, dy=-4)
+    sp.place = Place(0.68, dy=-5)
 
-    def rift(cv, x):
+    def ringing(cv, x):
         a = E["arcane"]
-        cv.disc(C0, 24.5, 12.5, 4.2, a[3])
-        cv.disc(C0, 24.5, 10.0, 2.8, OCC)
-        zig(cv, (6, 24.5), (26, 24.5), a[1], 1.0, 6, a[0])
-    U(sp, rift)
+        cv.disc(C0, 24.5, 13.0, 4.6, M["violet"][4])
+        for (rx, ry, tone) in ((12.5, 4.2, a[1]), (8.5, 2.9, a[3]), (4.6, 1.6, a[1])):
+            for d in range(0, 360, 6):
+                t = math.radians(d)
+                cv.set(C0 + math.cos(t) * rx, 24.5 + math.sin(t) * ry, tone)
+        cv.set(C0, 24.5, a[0])
+    U(sp, ringing)
+    sp.why = "the note ringing in the ground"
 
 
 @card("arcane_explosion_supernova")
@@ -2464,10 +2491,20 @@ def _(sp, c):
 
 @card("arcane_explosion_event_horizon")
 def _(sp, c):
-    """Event Horizon: a sphere of stopped time where the blast went off - motes hung still in it, and
-    what walked in frozen."""
+    """Fermata (Event Horizon's id, 2026-11-09): a held note - the sphere of stopped time where the burst went
+    off, motes hung still in it, what walked in frozen, and the fermata over it all."""
     reset(sp)
-    sp.place = Place(0.55)
+    sp.place = Place(0.5, dy=3)
+
+    def fermata(cv, x):
+        # Inside the disc, clear of the Ascension's top gem: the arc over the sphere's top, its dot under it.
+        a = E["arcane"]
+        for d in range(180, 361, 6):
+            t = math.radians(d)
+            for (rr, tone) in ((6.0, a[1]), (5.0, a[0])):
+                cv.set(C0 + math.cos(t) * rr, 11.0 + math.sin(t) * (rr - 1.0), tone)
+        cv.rect(C0 - 0.5, 9.0, C0 + 0.5, 10.0, a[0])
+    O(sp, fermata)
 
     def sphere(cv, x):
         a = E["arcane"]
