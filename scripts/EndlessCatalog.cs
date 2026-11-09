@@ -295,7 +295,8 @@ public static class EndlessCatalog
 	}
 
 	/// <summary>"Night 3 · 41:20": a run's or a record's standing in the words the HUD, the results and the card share.</summary>
-	public static string NightLine(int night, float clockSeconds) => $"Night {Math.Max(1, night)} · {FormatClock(clockSeconds)}";
+	/// <remarks>Non-breaking spaces: a wrapping line (the card's) never parts "Night 4 ·" from its clock.</remarks>
+	public static string NightLine(int night, float clockSeconds) => $"Night {Math.Max(1, night)} · {FormatClock(clockSeconds)}";
 
 	/// <summary>The night a record or a run stood in: one past the vigils it kept.</summary>
 	public static int NightOf(EndlessRecord record) => record == null ? 1 : Math.Max(1, record.NightsReached);

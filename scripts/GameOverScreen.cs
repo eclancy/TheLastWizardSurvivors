@@ -464,7 +464,8 @@ public partial class GameOverScreen : CanvasLayer
 			SizeFlagsHorizontal = narrow ? Control.SizeFlags.ExpandFill : Control.SizeFlags.ShrinkBegin,
 			CustomMinimumSize = new Vector2(0f, ResponsiveLayout.MinTouchTarget),
 		};
-		ResponsiveLayout.SetFont(title, ResponsiveLayout.TextRole.Display);
+		// Endless's heading is a sentence, not a word: at the Display size it pushed a PC's band past 1280.
+		ResponsiveLayout.SetFont(title, EndlessHeading(result) != null && !narrow ? ResponsiveLayout.TextRole.Title : ResponsiveLayout.TextRole.Display);
 		title.AddThemeColorOverride("font_color", won ? VictoryInk : result.Outcome == RunOutcome.Quit || EndlessHeading(result) != null ? Stone.Heading : DefeatInk);
 		bandRow.AddChild(title);
 
@@ -502,6 +503,8 @@ public partial class GameOverScreen : CanvasLayer
 		left.AddThemeConstantOverride("separation", 0);
 		bandRow.RemoveChild(title);
 		title.CustomMinimumSize = Vector2.Zero;
+		// Endless's sentence of a heading wraps in the column's own width rather than widening it (GameOverScreen.Endless.cs).
+		WrapEndlessHeading(title);
 		left.AddChild(title);
 		where.HorizontalAlignment = HorizontalAlignment.Left;
 		// Its own width, not the column's: wrapped at 250 a chapter name broke over two lines.

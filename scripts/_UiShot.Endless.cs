@@ -13,6 +13,8 @@ using TheOneHeMissed.scripts;
 //                            keep the vigil (the next night), bring the next warden, fell him... --endless-steps=2 is
 //                            the fall with the vigil open; 3 is night 2 begun.
 //   --endless-after=F        the first step waits for frame F as well (the run's opening banner and note are over).
+//   --endless-leave          once a fall's portal is open, his feet are held in it every frame until the run ends (a
+//                            level-up opened on the frame --walk-into-portal stood him there let the bot walk him out).
 //   --vigil-stand=K          K frames before the shutter, his feet set in the open vigil, so the hold's arc is filling
 //                            (it keeps the vigil at 1.5 s - pick K under that, about 30 at 60 fps).
 //   --endless-night=N,CLOCK  a quarter of the way in, the run put straight into night N at CLOCK seconds, as if every
@@ -29,6 +31,7 @@ public partial class _UiShot
 	private int endlessNextStepFrame = -1;
 	private int endlessAfter;
 	private int vigilStandLead = -1;
+	private bool endlessLeave;
 	private bool vigilStood;
 	private int endlessNightTo;
 	private float endlessNightClock;
@@ -52,6 +55,12 @@ public partial class _UiShot
 		if (arg.StartsWith("--endless-after="))
 		{
 			endlessAfter = int.Parse(arg.Substring("--endless-after=".Length));
+			return true;
+		}
+		if (arg == "--endless-leave")
+		{
+			endlessLeave = true;
+			SaveManager.WritesDisabled = true;
 			return true;
 		}
 		if (arg.StartsWith("--vigil-stand="))
@@ -133,6 +142,10 @@ public partial class _UiShot
 			endlessNextStepFrame = frames + 40;
 			GD.Print($"_UiShot: endless step {endlessStepsDone} of {endlessSteps} on frame {frames} (night {run.EndlessNight}, vigil {(run.VigilOffered ? "open" : "shut")}, endless run: {run.IsEndlessRun})");
 		}
+
+		if (endlessLeave && hero != null && !hero.IsDead && !GetTree().Paused && run.VictoryPortalOpen
+			&& FindNodeOfType<ArcanePortal>(GetTree().Root) is ArcanePortal door && door.Openness >= 1f)
+			hero.GlobalPosition += door.GlobalPosition - hero.FootPosition;
 
 		if (vigilStandLead >= 0 && !vigilStood && frames >= WarmupFrames - vigilStandLead && hero != null
 			&& FindNodeOfType<VigilRing>(GetTree().Root) is VigilRing ring && ring.Openness >= 1f)

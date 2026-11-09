@@ -365,8 +365,8 @@ public partial class Node2DGame
 			return null;
 		var list = new VBoxContainer { Name = "EscapeEndless" };
 		list.AddThemeConstantOverride("separation", 4);
-		list.AddChild(BuildDetailLabel(EndlessCatalog.NightLine(EndlessNight, timeElapsed), PauseInk.Ink, ResponsiveLayout.TextRole.Body));
-		list.AddChild(BuildDetailLabel($"The night: {EndlessCatalog.DescribeStrength(endlessHealthStrength, endlessDamageStrength)}", PauseInk.InkSoft));
+		// The clock is the tile above and the timer; this says what the night has made of the field.
+		list.AddChild(BuildDetailLabel($"Night {EndlessNight}: {EndlessCatalog.DescribeStrength(endlessHealthStrength, endlessDamageStrength)}", PauseInk.Ink, ResponsiveLayout.TextRole.Body));
 		BossDefinition? warden = BossCatalog.ForStageIndex(Global.SelectedStageIdx);
 		string felled = endlessWardensFelled == 1 ? "1 warden felled" : $"{endlessWardensFelled} wardens felled";
 		string returns = bossFightActive ? "the warden is here"
@@ -508,6 +508,8 @@ public partial class Node2DGame
 		victoryBossId = warden?.Id ?? string.Empty;
 		bossPhaseTriggered = true;
 		bossVictoryPending = true;
+		// The first night as a real one would have ended: at the chapter's victory time, so its payout counts its minutes.
+		timeElapsed = EndlessVictorySeconds;
 		endlessLedger = SnapshotRunResult();
 		bossVictoryPending = false;
 		endlessLedgerClock = EndlessVictorySeconds;

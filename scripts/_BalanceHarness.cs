@@ -1155,6 +1155,13 @@ public partial class _BalanceHarness : Node
 		}
 		else if (position >= 0)
 			road.AddRange(StageCatalog.Campaign.Take(position));
+		// --endless: whoever keeps a vigil has taken the Throne back, so he stands behind the whole road wherever he
+		// plays it - every chapter's deeds and the Arcane they paid (_BalanceHarness.Endless.cs).
+		if (Endless)
+		{
+			road.Clear();
+			road.AddRange(StageCatalog.Campaign);
+		}
 		var behind = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		for (int i = 0; i < road.Count; i++)
 		{

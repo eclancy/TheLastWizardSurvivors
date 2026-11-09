@@ -5,7 +5,8 @@ using TheOneHeMissed.scripts;
 
 // ENDLESS ON THE CARD (.ai/endless-mode.md 2.4, 3.4). An endless chapter's card gains one glyph-led line under the
 // warden's state, after "Longest stand": this wizard's longest night here on the preset he is about to play
-// ("Longest night: Night 3 · 41:20"), with the best of any wizard beside it when that is better - or, before there
+// ("Longest night: Night 3 · 41:20"), with another wizard's best under it when that is better ("Merlin's longest:
+// Night 4 · 52:30") - or, before there
 // is a record, what the mode is ("Endless: keep the vigil when Elderbark falls"), marked new until the save keeps its
 // first vigil. Only once endless is open on the chapter (EndlessCatalog.IsOpenOn): nothing of it is on show before
 // Taken Back, and after it it is shown open, never sealed. No new focus stop and no new button.
@@ -24,11 +25,11 @@ public partial class WorldMap
 		{
 			text = $"Longest night: {EndlessCatalog.NightLine(EndlessCatalog.NightOf(mine), mine.ClockSeconds)}";
 			if (best != null && !ReferenceEquals(best, mine) && best.Beats(mine))
-				text += $"\nAny wizard: {EndlessCatalog.NightLine(EndlessCatalog.NightOf(best), best.ClockSeconds)}, {WizardName(best.CharacterId)}";
+				text += $"\n{WizardName(best.CharacterId)}'s longest: {EndlessCatalog.NightLine(EndlessCatalog.NightOf(best), best.ClockSeconds)}";
 		}
 		else if (best != null)
 		{
-			text = $"Longest night: {EndlessCatalog.NightLine(EndlessCatalog.NightOf(best), best.ClockSeconds)}, {WizardName(best.CharacterId)}";
+			text = $"{WizardName(best.CharacterId)}'s longest night: {EndlessCatalog.NightLine(EndlessCatalog.NightOf(best), best.ClockSeconds)}";
 		}
 		else
 		{
@@ -47,6 +48,8 @@ public partial class WorldMap
 		{
 			// The New mark the results' cards wear, in the flag ink: the one way into the mode is a line on this card.
 			Label mark = MakeText("New", ResponsiveLayout.TextRole.Label, InkFlag, "CardEndlessNew");
+			// Never wrapped: in a row beside a line that takes the width, a wrapping word stood one letter a line.
+			mark.AutowrapMode = TextServer.AutowrapMode.Off;
 			mark.SizeFlagsVertical = SizeFlags.ShrinkBegin;
 			row.AddChild(mark);
 		}
