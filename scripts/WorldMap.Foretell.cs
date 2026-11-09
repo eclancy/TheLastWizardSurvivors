@@ -30,21 +30,43 @@ public partial class WorldMap
 		return foretellButton;
 	}
 
-	// RebuildCard's last word: shown, and what it names, for this stop and the wizard chosen.
+	// RebuildCard's last word: shown, and what it names, for this stop and the wizard chosen. Once the rung is earned the
+	// button keeps its place on every stop - greyed where nothing may be foretold (a locked chapter, the far shore, the
+	// Boss Rush) - so the card, and on a phone the map above it, never change size as the player walks the road.
 	private void RefreshForetell(Stop stop, bool open)
 	{
 		if (foretellButton == null)
 			return;
 		CharacterData who = CharacterRoster.GetByIndex(Global.SelectedCharacterIdx);
-		bool can = open && stop != null && !stop.IsBossRush && ConjunctionLadder.MayForetellOn(stop.Stage, bossRush: false)
-			&& ConjunctionLadder.ForetellCandidates(save, who).Count > 0;
-		foretellButton.Visible = can;
-		if (!can)
+		bool earned = ConjunctionLadder.ForetellCandidates(save, who).Count > 0;
+		bool can = earned && open && stop != null && !stop.IsBossRush && ConjunctionLadder.MayForetellOn(stop.Stage, bossRush: false);
+		foretellButton.Visible = earned;
+		foretellButton.Disabled = !can;
+		foretellButton.FocusMode = can ? FocusModeEnum.All : FocusModeEnum.None;
+		MakeRoomForForetell(earned);
+		if (!earned)
 			return;
-		ComboDefinition foretold = ConjunctionLadder.Foretold(save, who, stop.Stage, bossRush: false);
-		foretellButton.Text = foretold == null
-			? "✶ Nostradamus foretells nothing"
+		ComboDefinition foretold = can ? ConjunctionLadder.Foretold(save, who, stop.Stage, bossRush: false) : null;
+		foretellButton.Text = !can ? "✶ Nostradamus foretells on the road"
+			: foretold == null ? "✶ Nostradamus foretells nothing"
 			: $"✶ Foretold: {ConjunctionLadder.ShownName(foretold, save)}";
+	}
+
+	private bool foretellRoomMade;
+
+	// On a phone the card has a fixed height (NarrowCardHeight) and the map stops above it: the button's row is taken
+	// from the map, once, when the rung is first on show, so Enter is never pushed off the foot of the screen.
+	private void MakeRoomForForetell(bool earned)
+	{
+		if (!narrow || !earned || foretellRoomMade || GetNodeOrNull<Control>("Card") is not Control card)
+			return;
+		foretellRoomMade = true;
+		float row = foretellButton.GetCombinedMinimumSize().Y + 10f;
+		card.OffsetTop -= row;
+		if (view != null)
+			view.OffsetBottom -= row;
+		if (pageView != null)
+			pageView.OffsetBottom -= row;
 	}
 
 	private void CycleForetold()

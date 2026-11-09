@@ -941,7 +941,7 @@ public partial class MainMenu : Control
 		// card, never whether. Shown once the Conjunctions lesson is learned (ConjunctionLadder.KindredDrawShown; the
 		// section build skips it before), priced 100 / 160 / 220.
 		RegisterUpgrade(ConjunctionLadder.KindredDrawId, ConjunctionLadder.KindredDrawName,
-			"+100% as often: the partner of a known Conjunction's spell you hold, then both their upgrades",
+			"a held Conjunction spell's partner, then both their upgrades, are dealt more often",
 			ConjunctionLadder.KindredDrawBaseCost, ConjunctionLadder.KindredDrawCostPerLevel, ConjunctionLadder.KindredDrawLevels);
 
 		// The boons the catalog prices, driven by UnlockCatalog rather than a hand-kept list. No screen

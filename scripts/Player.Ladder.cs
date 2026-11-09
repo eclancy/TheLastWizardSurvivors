@@ -273,7 +273,7 @@ public partial class Player
 				int have = Math.Min(gate.Have + gate.Shared, gate.Need);
 				// "Pyre: Light 2, Hollow Star 2 of 4" once the partner shares (rung III); the far sky's words where it waives.
 				string count = gate.Waived ? FarSky.WaiverLine
-					: gate.Shared > 0 ? $"{ElementWords(gate)} {gate.Have}, {gate.SharedBy} {gate.Shared}: {have} of {gate.Need}"
+					: gate.Shared > 0 ? $"{ElementWords(gate)} {gate.Have}, {gate.SharedBy}{NoBreak}{gate.Shared}: {have} of {gate.Need}"
 					: $"{ElementWords(gate)} {have} of {gate.Need}";
 				list.Lines.Add(new RecipeCheck { Glyph = gate.Met ? "done" : "todo", Met = gate.Met,
 					Text = $"{part.AscensionName}: {count}" });
@@ -314,6 +314,9 @@ public partial class Player
 		list.NextStep = next;
 		return list;
 	}
+
+	// The partner's name and its share stay on one line ("Contagion 1"), never split by a wrap.
+	private const char NoBreak = (char)0xA0;
 
 	// "Light", or "Metal or Wind" for a path any of two may open.
 	private static string ElementWords(AscensionRequirement gate) =>

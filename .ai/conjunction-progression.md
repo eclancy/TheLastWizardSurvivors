@@ -3,8 +3,9 @@
 Eric, 2026-11-08: *"start brainstorming ways to help combination spells happen in a way that the player
 can naturally work towards in the campaign through unlocks, etc."*
 
-**Status: decided by Eric (2026-11-08) and being built** - section 3's four rungs, every question in
-section 5 answered as recommended. Section 6 says what was built and where.
+**Status: decided by Eric (2026-11-08) and built (2026-11-09)** - section 3's four rungs, every question in
+section 5 answered as recommended. Section 6 says what was built and where, what the measurement found (rung III ships at
+half strength by the doc's own rule 3), and what is left for Eric.
 
 **Decided, Eric, 2026-11-08:** having read the summary (the four-rung ladder, and that the doc's other
 recommendations would be taken as they stand), *"Build the ladder"*. So the shortlist (section 3) is built
@@ -387,7 +388,8 @@ like a chore; whether the Sibyl's reel lands; whether a recipe made on the road 
 
 ## 6. Built
 
-Built 2026-11-08/09 on the branch `worktree-agent-a68bd101e5d22e3c4`, cut from `main-ff86ni`, rung by rung.
+Built 2026-11-08/09 on the branch `worktree-agent-a68bd101e5d22e3c4`, cut from `main-ff86ni`, rung by rung; the trunk
+was merged in (the far sky's element waiver) before rungs III and IV. **One save schema step: 26** (the pin).
 `scripts/ConjunctionLadder.cs` is the one authority on what each rung shows and allows, as `ComboCatalog` is on the
 recipes; nothing here changes `ComboCatalog.Evaluate`, the Ascension's gates' own numbers, XP, rerolls, bans or a tag.
 
@@ -414,3 +416,223 @@ parent held, the other's new-spell card is **x2 / x3 / x4** as heavy among the n
 upgrades that much heavier among the upgrades. `ConjunctionLadder.ApplyKindredDraw` only re-weighs cards already in a
 pool, so it can never deal a card the save could not be dealt, and the group shares (`NormalizeOfferWeightsByGroup`)
 keep it "which card, never whether": `UpgradeOfferChance` is untouched.
+
+### Rung III, the pair shares its light (built)
+
+**The rule** (`ConjunctionLadder.PairShareFor`): while both parents of a recipe are held, each named Ascension's element
+gate also counts the **other parent's** tags - its current weight in every element the gate does not already count, so a
+shared element is never counted twice. Zero unless earned, never for a path no recipe names on that spell (a third
+Ascension), never with the partner not held, never for a sealed or made recipe (a parent down its other path, a fourth
+element, the wizard's own spell). At the parents' level 7 and with no level 4 element path, the shares are: Hunter's
+Mark +1 (Starfall's Light), Constellation +2 (Hunter's Draw's Metal and Wind), Cosmic Collapse +1, Pandemic +2, Black Sun
++1, Pyre +1; a deepening level 4 adds to them. **It moves no tag**: the element tiers, attunement and every other gate
+read the counts as they were. `AscensionRequirement.Shared` / `SharedBy` carry it beside `Have`, which stays the player's
+own count; `Met` and `Missing` read both.
+
+**The one reading** (`Player.EvaluateElementGateInRun`): the strip's lock (`MarkUnearnedAscensions`), the browser
+(`BuildAscensionPreview`), the pinned checklist and the Codex's chips all read the gate through it. The locked card says
+"Requires 4 Light (Light 2, Hollow Star 1: 3/4)"; the Codex adds a "Hollow Star +1" chip; the checklist "Pyre: Light 2,
+Hollow Star 1: 3 of 4".
+
+**With the far sky's waiver** (F4's decision 10, merged into the trunk while this was built): the waiver is applied only
+where the gate still stands unmet with the share (`Waived = !Met && FarSkyWaivesElementGate`), so the two never stack.
+On the far shore tonight's two named paths are open anyway and the share only shows how close the player is; every
+other recipe's named paths, there and on the road, get the share alone.
+
+**Earned** by the Archivist's deed (`ruins_delver`, the Mystic Ruins, chapter 6), whose card now reads "Unlocks Spiritual
+Weapon and teaches a lesson". It is a lesson (`Teaching.PairShares`, `Teachings.PairSharesLesson`, "A Conjunction's two
+spells share their light"), owed once the deed is done **and** the Conjunctions lesson learned - never before the system
+it eases, never on the same evening - and learned when its reel plays after a run. The reel reuses the Conjunctions
+lesson's two panels with lines of its own (`Prologue.Ladder.cs`: "The Archivist kept how two pages are bound." / "Held
+together, two spells share their light."): no new art. Nothing of it is shown before it is learned.
+
+**It ships at half strength** - the partner counts at most 1 toward each named path - because question 1 said "full;
+half if the bot then makes recipes before pace 10", and at full it made them at 7.3-9.4 on four of six road runs
+(Measured, below). `ConjunctionLadder.PairShareHalf` is the switch; `_BalanceHarness --pair-shares=full` measures the
+full rule.
+
+### Rung IV, Nostradamus foretells (built)
+
+**Earned** by freeing Nostradamus (the Court, chapter 12) on a save that has learned Conjunctions
+(`ConjunctionLadder.ForetellEarned`). **Named on the world map's card**, over Enter (`WorldMap.Foretell.cs`): one button,
+"✶ Foretold: Void Lance + Contagion" (the name once made), that turns to the next recipe that may be foretold, then to
+"Nostradamus foretells nothing", then round. Only on an open campaign chapter - never the far shore, where the sky's
+night wins, never the Boss Rush, never off the road - and only when there is a recipe to foretell. **What may be
+foretold** is exactly what the far sky may name for that wizard (`FarSky.Candidates`): a fusion of two spells, never the
+one he opens on, never one naming his own spell, both parents dealable from the save. The choice is the session's
+(`ConjunctionLadder.ForetoldChoice`), and until one is made the **pin stands in** for it - so the plan the player pinned
+is the one foretold unless he turns it.
+
+**The run** (`Node2DGame.StartForetold`, after `StartFarSky`): the foretold recipe is dealt by **the far sky's favour
+itself** - `Player.FarSky.cs`'s three hooks read `FavouredRecipe` (tonight's, else the foretold) and `FavourHolds` - so its
+parents come first when a slot is free, their upgrades are always in the hand, the named Ascension leads the level 8
+page. No fork. What stays the sky's: the Arcane Energy and the Feat (they read `FarSkyRecipe` / `FarSkyMade`, never the
+foretold), and the element waiver (the far shore's alone). The pause screen's section becomes **Foretold Conjunction**
+("Nostradamus foretold it: its two spells come to your hand first.") and the quest corner follows it.
+
+### Measured (2026-11-09, section 4's protocol)
+
+`_BalanceHarness --headless --fixed-fps 30 ... --seek-combo=<recipe> --planner --immortal --minutes=15 --stop-when-made
+--timescale=3`, one or two runs at a time. Every minute is a **pace** minute. Two changes to the protocol, both forced:
+
+- **`--planner`, not `--farmed`.** The farmed save finds the teachers but never plays their reels, so it had learned
+  nothing - not the Ascension, not Conjunctions - and could make no recipe at all. `--planner` is `--farmed` as a
+  planner stands there: the lessons the road behind him taught (`Teachings.Owed`, lowest first) and Fate Fracture 5 and
+  Proscription 3 (the rerolls and bans section 4 says a planner buys). A planner at the Frozen Waste has beaten the
+  Archivist, so **rung III is learned there naturally**: the "A" and "A'" rows for The Taking marked "III" had it, and the
+  true baseline is the `--pair-shares=off` rows.
+- **Sagittarius on the Blighted Swamp (`--stage=3`), not the Sunken Cave.** The Cave is where Conjunctions are taught (the
+  Geode Heart is its own vault), so a save standing in it has not learned them yet; the Swamp is the chapter after.
+
+Wizards: the Archmage (14) for Shadow Bolt, Medea (20) for The Taking and Sagittarius - each suits his recipe (rung I's
+`Suits`). Cells: **A** none; **A'** `--curate=8 --give-relics=betrothal_hoop`; **B** A' + `--kindred=3`; **C** B +
+`--pair-shares` (full); **C½** B + `--pair-shares=half`; **D** C + `--foretell=<recipe>` in the Court (C½ there, the
+planner having beaten the Archivist); **E** C's flags, `--policy=ordinary`, no `--seek-combo`.
+
+| recipe | ground | seed | cell | parents in the book | named paths taken | **made** |
+|---|---|---|---|---|---|---|
+| Shadow Bolt | Mystic Ruins | 1234 | A | 0.3 / 0.9 | 5.6 / 9.1 | **9.4** |
+| Shadow Bolt | Mystic Ruins | 7 | A | 0.3 / 3.1 | 5.6 / - (Pandemic's Poison) | not by 15 |
+| Shadow Bolt | Mystic Ruins | 1234 | A' | 0.2 / 2.6 | 8.2 / 13.7 | **14.0** |
+| Shadow Bolt | Mystic Ruins | 1234 | B | 0.3 / 0.9 | 5.3 / 14.7 | not by 15 (met 14.7) |
+| Shadow Bolt | Mystic Ruins | 7 | B | 2.0 / 0.9 | 9.7 / - (Pandemic's Poison) | not by 15 |
+| Shadow Bolt | Mystic Ruins | 1234 | C | 0.2 / 0.8 | 5.4 / 6.7 | **7.3** |
+| Shadow Bolt | Mystic Ruins | 7 | C | 2.0 / 1.0 | 8.8 / 6.8 | **9.4** |
+| Shadow Bolt | Mystic Ruins | 1234 | C½ | 0.2 / 0.9 | 5.4 / 14.0 | **14.3** |
+| Shadow Bolt | Mystic Ruins | 7 | C½ | 2.0 / 0.8 | 8.8 / 7.9 | **9.3** |
+| Shadow Bolt | Mystic Ruins | 99 | C½ | 0.5 / 0.3 | 5.6 / 7.0 | **7.4** |
+| The Taking | Frozen Waste | 1234 | A, III off | 0.3 / 6.0 | 6.3 / 11.2 | **11.4** |
+| The Taking | Frozen Waste | 7 | A, III off | 0.4 / 3.8 | 7.2 / 11.6 | **11.8** |
+| The Taking | Frozen Waste | 1234 | A, III learned | 0.2 / 6.2 | 6.5 / 9.8 | **10.0** |
+| The Taking | Frozen Waste | 1234 | A', III learned | 0.5 / 0.3 | 6.8 / 5.4 | **7.2** |
+| The Taking | Frozen Waste | 1234 | B, III off | 0.4 / 0.3 | 6.2 / 8.3 | **8.9** |
+| The Taking | Frozen Waste | 7 | B, III off | 1.2 / 0.4 | 13.6 / 6.5 | **14.0** |
+| The Taking | Frozen Waste | 1234 | C | 0.5 / 0.3 | 5.6 / 7.7 | **8.2** |
+| The Taking | Frozen Waste | 7 | C | 1.3 / 0.5 | 8.0 / 6.5 | **8.3** |
+| The Taking | Frozen Waste | 1234 | C½ | 0.5 / 0.3 | 6.0 / 8.0 | **8.3** |
+| The Taking | Frozen Waste | 7 | C½ | 1.4 / 0.5 | 7.7 / 6.6 | **8.5** |
+| The Taking | Frozen Waste | 99 | C½ | 0.2 / 0.5 | 5.1 / 6.2 | **6.6** |
+| Sagittarius | Blighted Swamp | 1234 | A | 1.1 / 2.5 | 9.9 / 11.6 | **11.8** |
+| Sagittarius | Blighted Swamp | 7 | A | 0.4 / 5.7 | 11.4 / 12.9 | **13.2** |
+| Sagittarius | Blighted Swamp | 1234 | B | 1.0 / 2.3 | 9.0 / 10.7 | **10.9** |
+| Sagittarius | Blighted Swamp | 7 | B | 0.6 / 1.5 | - / 11.8 (Hunter's Mark not reached) | not by 15 |
+| Sagittarius | Blighted Swamp | 1234 | C | 1.0 / 2.4 | 9.0 / 11.1 | **11.5** |
+| Sagittarius | Blighted Swamp | 7 | C | 0.6 / 1.5 | 10.6 / 11.8 | **12.1** |
+| Shadow Bolt | the Court | 1234 | C½ | 0.2 / 0.7 | 6.2 / 8.0 | **8.3** |
+| Shadow Bolt | the Court | 1234 | **D** | 0.3 / 0.3 | 4.8 / 5.3 | **5.5** |
+| The Taking | the Court | 1234 | C½ | 0.4 / 0.2 | 5.4 / 6.9 | **7.2** |
+| The Taking | the Court | 1234 | **D** | 0.3 / 0.5 | 5.4 / 5.2 | **5.9** |
+| Sagittarius | the Court | 1234 | C½ | 2.3 / 0.6 | 7.7 / 6.2 | **8.2** |
+| Sagittarius | the Court | 1234 | **D** | 0.3 / 0.5 | 6.5 / 5.2 | **6.8** |
+
+**E, the guard rail: 0 of 5.** Ordinary bot with C's flags (Kindred Draw III, the share at full, the set-aside, the
+hoop): the Ruins (the Archmage, 1234; Laelaps, 7), the Frozen Waste (Medea, 1234; the Archmage, 7) and the Swamp (Medea,
+1234), fifteen minutes each - no recipe offered in any run (the summary's `met=[]`). A recipe stays a plan, not a drop.
+
+**Unmoved:** the runs that went to minute 15 stood at level 42-43 (the Archmage on the Ruins, A and B alike); nothing
+touched XP. No run took more than four Ascensions.
+
+What it says:
+
+- **The road with a planner is kinder than section 1 assumed.** Cell A - no rung at all - made Shadow Bolt at 9.4 (and
+  not at all on seed 7), The Taking at 11.4 and 11.8, Sagittarius at 11.8 and 13.2. Section 1 read F4's far-shore rows
+  (an every-spell pool, Laelaps, the favour off: nothing made in twenty minutes); a planner's farmed road save owns far
+  fewer spells, so its deal is less diluted, and he fishes with ten rerolls and three bans. Decision rule 1 ("A' lands by
+  11-12: hold II-IV") was not the question any more - Eric chose the ladder - but it is the honest reading of the A rows.
+- **Kindred Draw (B) gets the late parent into the book** (Kindled Ward at 0.3 instead of 6.0; Starfall at 1.5 instead
+  of 5.7) **but moves the made minute little**: for a planner fishing with rerolls the cards were no longer the brake.
+  B landed alone once (The Taking, 8.9) and missed or ran late on the other five (rule 2: III is not moved to the castle).
+- **The element gate is the brake, as section 1 said, and rung III takes it off.** Every A/B miss on Shadow Bolt is
+  Pandemic's four Poison; with the share (C) the Archmage made it at 7.3 and 9.4. Sagittarius is held by the level clock
+  and Hunter's Draw's own climb to 7, not an element - III leaves it near 11.5-12.1.
+- **Rule 3 fired: C landed before pace 10 on four of six road runs**, so the share ships **at half**
+  (`ConjunctionLadder.PairShareHalf = true`). At half it still lands The Taking at 6.6-8.5 (Pyre's share is 1 either way
+  until Hollow Star deepens, and Kindred Draw and the set-aside carry the rest) and Shadow Bolt at 7.4-14.3. **So the
+  ladder overshoots the doc's road target (11-12) for this bot**; see "For Eric" below.
+- **D, the Court: every recipe by 6.8 foretold** (5.5, 5.9, 6.8), against 7.2-8.3 not foretold - section 4's 12.5 with six
+  minutes to spare. The castle's farmed budget puts the level clock far ahead of the road's; the favour then does what F4
+  measured it does, the parents in the book inside a minute.
+- **Noise.** `--seed` fixes the ground and the chests, not the level-up roll (Player's own RNG is randomised), so two
+  runs of one cell differ by up to five minutes (The Taking B: 8.9 and 14.0). Two or three runs a cell read a direction,
+  not a number.
+
+**For Eric** (not decided here): for a planner the four rungs together make a road recipe at about minute 7-9 and a
+castle one at 5.5-7, two to four minutes ahead of the targets section 4 set. Three levers, smallest first: Kindred Draw at
+x1.5 / x2 / x2.5 (it mattered least); rung III on the road only from the castle (rule 2's move, though B did not land);
+or accept it - the targets were set from the far shore's numbers, and a person who does not fish with ten rerolls and
+three bans will be slower than the bot.
+
+### Decisions this build made (the doc left them open)
+
+1. **A recipe stays sealed until made, on every ladder surface.** Section 2 of `combo-spells.md` hides a recipe's result
+   until it is made; the doc's examples ("Seals Sagittarius", a wizard who "suits Sagittarius") named it. The ladder keeps
+   the existing rule: a recipe is "Hunter's Draw + Starfall" until made, its name after (`ConjunctionLadder.ShownName`) -
+   on the checklist, the corner, Suits, the foretelling, and "Seals the Conjunction with Starfall" on the level 4 card.
+2. **The corner's one line is the two linked rings and the next step**, not the recipe's name (which is sealed until
+   made, and long by its parents' names): "Void Lance to level 7 · 1/7", the last row of the tracker. The next step is the
+   first unmet thing in a planner's order - a parent to find or take, a parent's level, your level, then an element short.
+3. **The pin is pinned from the Codex** (Pin / Unpin on a recipe's page, menu and pause alike), not the level-up browser.
+4. **The level 4 mark covers every shown recipe**, not only the pinned one, as the level 8 rings do; never one he cannot
+   make (his own spell, the one he opens on) or one already sealed or made.
+5. **Suits excludes a recipe naming any spell of his own** - his starting spell, and one that is his alone
+   (`UnlockDefinition.ExclusiveTo`) - and the one he opens on; the named path's gate is read off the parent's resource.
+6. **Kindred Draw's recipes are those the save knows from both halves** (it only re-weighs cards already in the deal, so a
+   half not owned is never there to lean toward), not made, not sealed, not his own spell's or his opener. Effect text:
+   "a held Conjunction spell's partner, then both their upgrades, are dealt more often"; stat line "Partner cards +100% as
+   often" per level. Not in `--full-shop`'s caps, so older full-shop reports stay comparable.
+7. **The pair's share counts the partner's tags outside the gate's own elements** (a shared element is already in the
+   player's count; counting it again would double it), and only for a live recipe (not made, not sealed). It ships at
+   half (rule 3).
+8. **Rung III is a lesson** (`Teaching.PairShares`), because the Archivist's card says "teaches a lesson": owed only
+   once Conjunctions are learned, never on the same evening, its reel the Conjunctions lesson's own two panels with two new
+   lines (no new art). A save that has already beaten the Archivist is taught it at the end of its next run.
+9. **The foretelling's choice is the session's, and the pin stands in until one is made.** So a player who pinned a recipe
+   and has freed Nostradamus has it foretold on every campaign run unless he turns the button to "nothing". This is the
+   generous reading of "the player names one known recipe"; the strict one (nothing until named each session) is one
+   line (`ConjunctionLadder.Foretold`, drop the `?? Pinned(save)`).
+10. **What may be foretold is exactly the far sky's candidates** (`FarSky.Candidates`), so the two never disagree on what a
+    wizard can make; and the foretold run pays nothing (no Arcane Energy, no Feat, no waiver) - those read `FarSkyRecipe`.
+11. **No schema step for rungs II-IV**: Kindred Draw is an `ArcaneUpgradeLevels` key like every Power, the lesson rides
+    `LessonsLearned`, and the foretelling is not saved. **One for rung I: schema 26**, `PinnedRecipeId`
+    (`MigrateToPinnedRecipe` pins nothing; `ValidatePinnedRecipeMigration`). The trunk was still at 25 when it was numbered;
+    if the Sovereign Rite's branch takes 26 first, this renumbers at the merge.
+12. **The harness:** `--planner` (the farmed save with the lessons its road taught, and the rerolls and bans a planner buys),
+    `--curate=N` (the last N spells in book order that are not the target's parents or his own - a stable, seedless pick;
+    a real planner would choose better), `--kindred=N`, `--pair-shares[=half|full|off]`, `--foretell=ID|off`, and a `met=`
+    field listing every fusion the strip offered (the guard rail).
+
+### Verified
+
+- `dotnet build`: 0 errors.
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1 warning**
+  (`test_wizard`). New checks, each a warning when broken: `ValidateConjunctionLadder` (rung I: a recipe shown from one
+  half only once Conjunctions are learned, never from neither half, never the Rite; the Feat row follows; the pin refused
+  before the lesson, for the Rite and for an unknown recipe, one at a time, through the save's round trip, cleared by a
+  story reset; Suits derived by its rule; the level 4 mark agrees with `ComboCatalog.Evaluate`'s own seal on every
+  parent's every level 4 path - two paths mark today, Frostfall and Marsh Fever; rung II: the shelf hidden before the
+  lesson, 100 / 160 / 220, x2-x4, re-weighs only the recipe's own cards and never adds one; rung III, `ValidatePairShares`:
+  never off its deed, never a third Ascension, never an unheld partner, never a sealed recipe or the wizard's own spell,
+  never more than 1 at half, never stacked with the far sky's waiver, its lesson owed and shown as section 3 says; rung IV,
+  `ValidateForetell`: nothing before Nostradamus is freed or the lesson learned, exactly the far sky's candidates, never
+  on the far shore or a Boss Rush, the pin standing in, a press walking every recipe and nothing) and
+  `ValidatePinnedRecipeMigration`.
+- `_UiShot` at 1280x720 and 540x1212 `--portrait --safe-area`, looked at (`user://ladder-*.png`): the pause screen's
+  Pinned and Foretold Conjunction sections, the quest corner's line in a run, the shop's Kindred Draw card, the character
+  select's Suits row, the level 4 page's "Seals Sagittarius" on Frostfall, the world map card's foretelling (a phone's card
+  first pushed Enter off the foot of the screen; the map now gives up the row once the rung is earned), and the Codex's
+  recipe page known from one half (the missing Contagion by its hint, the result "???", Unpin).
+
+### Not run, and needs a person's eyes
+
+- **Nobody has played any rung.** Whether a person reads the checklist and plans, whether a pinned line in the corner feels
+  like a chore, whether the share's "Light 2, Hollow Star 1: 3 of 4" is understood without the lesson's two lines, whether
+  Nostradamus's button reads as an offer on the map card, and whether a foretold road recipe feels earned or handed over.
+- **The pace (Measured, "For Eric")**: the four rungs together land a planner's recipe two to four minutes ahead of section
+  4's targets.
+- **The lesson reel's two lines** are new words in Eric's story voice, after his 2026-11-08 review of the others.
+- **Not built:** the Sibyl as the Conjunctions teacher (question 3, item 37's work), the lesson reel naming the save's first
+  recipe (idea 1's last line), a recipe chapter 4 completes (question 5, F6's), the map card's "Completes Shadow Bolt"
+  (idea 3), the share in the Codex's collection-mode tree (it reads `Player.EvaluateElementGate` without a run; the in-run
+  browser and the checklist show it).
+- **The Sovereign Rite's two-spell Conjunction** was not on the trunk when this was built; the ladder's code treats the Rite
+  by `IsRite` throughout, and needs re-validating once that branch merges.
