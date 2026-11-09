@@ -449,6 +449,10 @@ the targets moved with it as the fractions below say):
 | a skilled player, on average | 4.5-6 min | 8.5-10 min |
 | an ordinary player | | 11-12.5 min |
 
+**On the far shore's 20-minute run** (since 2026-11-09, `.ai/run-pacing.md` section 12) the same targets
+travel as shares of the run: the floor at 10 minutes, a skilled Ascension at 6-8 and form at 11.3-13.3, an
+ordinary form at 14.7-16.7. The XP curve there (13 + 60 a level) is what keeps the gates at those shares.
+
 On the 30-minute run these were 15 / 9-12 / 17-20 / 22-25; the reasoning below was written for it
 and holds as fractions. The 15-minute balance was first set from the model (`Player.XpCostPerLevel`
 27, gates unchanged at 17/23); measured on 2026-10-23 with bots that open chests it put the form

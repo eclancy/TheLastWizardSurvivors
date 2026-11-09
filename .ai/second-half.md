@@ -15,7 +15,8 @@ starting power, passive and unlock around that later story.
 data; F2, Artemis (2026-11-08, "F2, built"): the first god, whole; F3, the White Downs (2026-11-08, "F3,
 built"): the first far chapter, playable behind the far shore's gate; F5, reel E and the map (2026-11-08,
 "F5, built"): the far shore is drawn across the dark sea and announced; and F4, the far sky (2026-11-08, "F4,
-built"): tonight's Conjunction, its favour, its lesson and its measurement.**
+built"): tonight's Conjunction, its favour, its lesson and its measurement. Since 2026-11-09 the far shore runs twenty
+minutes (section 9, "The far shore runs twenty minutes").**
 Section 8 is the list of decisions that are his;
 every other choice below is a recommendation he can overturn.
 
@@ -268,7 +269,12 @@ taken is what they are now - which keeps the carve-out his alone.
   levels inside its budget).
 - **Its own music, foliage (`Foliage.<Chapter>.cs`), cast of about five (`StageBestiary.<Chapter>.cs`) and a
   boss** (`BossEnemy`'s five hooks and a themed entrance, `ValidateBossPatterns`).
-- **A 15-minute run on the pace clock**, as every chapter (`run-pacing.md`; `TimerVictorySeconds` 900).
+- **A 20-minute run on the pace clock** - the boss at 20:00 - where every road chapter runs 15 (Eric, 2026-11-08:
+  *"still make the far shore longer"*; section 9, "The far shore runs twenty minutes"). `StageCatalog.FarShoreRunSeconds`
+  on every chapter of `FarShoreOrder`, read through `StageCatalog.VictorySecondsFor`; the pace clock stretches with it
+  and the XP curve follows (13 + 60 a level against the road's 10 + 45), so a far-shore run reaches every moment of the
+  road's at the same share of its length and its warden meets a build of the same strength (`run-pacing.md` section 12).
+  *(It said "a 15-minute run ... `TimerVictorySeconds` 900" until then.)*
 - **A difficulty row** in `ChapterDifficultyCatalog`, starting from the castle's (3.80 / 1.35 / 0.75 / 1.65,
   which is the Emberdeep's) and, recommended, held there across the half: it is a place to try builds, and
   Hardcore is the climb for those who want one (question 11).
@@ -317,7 +323,10 @@ mostly not see them.
 
 **Measured before it ships:** `_BalanceHarness --stage=14 --seek-combo=<tonight's> --all-unlocked --immortal`
 with the favour on, against the same run with it off. The target is the planned bot meeting the recipe
-**by about minute 10**, leaving five minutes and the boss to use it. If it cannot, the fallback is a short
+**by about minute 10**, leaving five minutes and the boss to use it. **On the far shore's twenty-minute run (since
+2026-11-09, 4.3) the target travels as a share of the run: by about pace minute 10, which is real minute 13-14
+(13:20), leaving about a third of the run - six to seven minutes - and the boss to use it** (section 9, "The far shore
+runs twenty minutes", has it measured). If it cannot, the fallback is a short
 opening Muster of a few levels on far-shore runs - the Throne's machinery (`endgame-castle.md` 6.2,
 `Node2DGame`'s `queuedLevelUps`) - sized by the same measurement (question 10). **Measured and decided
 2026-11-08**: the cards were no longer the brake but the element gates were, and a Muster big enough to matter was
@@ -453,6 +462,13 @@ cap, player level 17 and both named paths still stand (section 5). Re-measured o
 earliest the rules allow - Shadow Bolt at 10.1 and 10.5, The Taking at 9.3 and 13.1 - and Sagittarius was never made
 (level 15 and 13 at minute 20). The player-level 17 gate is now the one thing that holds a recipe past minute 10, and it
 stays.
+
+**And the far shore runs twenty minutes (Eric, 2026-11-08: *"okay lets let the waiver land ... still make the far
+shore longer"*; built 2026-11-09).** Asked whether twenty-minute runs would make the recipes reliable, the answer was
+that time alone would not - the element gates were the brake - so the waiver came first and the length second, for
+its own sake: more of the night with the combination once it is made. Every far chapter's boss arrives at 20:00 and
+every road chapter's still at 15:00; the pace clock stretches with the run and so does the XP curve, so a recipe is
+made at the same share of the run as before, not earlier (4.3, 5; section 9, "The far shore runs twenty minutes").
 
 1. **The premise.** The gods lived on the light the wizards carried and went dark when he took it, and his
    castle stands between the land and the far shore so it could never cross back (recommended) - or the
@@ -1294,3 +1310,90 @@ leaned into it; a player may not), whether 100 Arcane Energy is worth chasing, w
 recipe by should be named it again, and whether the reel's two stars read as two spells rather than two stars. The
 results-screen line and the Under the Far Sky moment were never photographed: no run on this branch made a recipe with
 the screen on.
+
+### The far shore runs twenty minutes (2026-11-09, branch `worktree-agent-a714e88d3c81ab750`, on `main-ff86ni` after the waiver)
+
+Eric, after the waiver: *"okay lets let the waiver land ... still make the far shore longer"*. Every far-shore
+chapter's boss now arrives at **20:00**; every road chapter's, the castle's and the Sketchbook's still at 15:00. **No
+save schema step** (still 25: nothing is stored), and the story epoch is not raised. The whole design and its numbers
+are `.ai/run-pacing.md` section 12; in short:
+
+- **The length is the chapter's**: `StageDefinition.RunSeconds`, `StageCatalog.FarShoreRunSeconds` (1200) on all six
+  of `FarShoreOrder`, read through **`StageCatalog.VictorySecondsFor(stageId)`** - the run's clock
+  (`Node2DGame.ResolveRunLength`), the tools, and endless mode's shim at its merge. `RegressionChecks.ValidateRunLengths`
+  holds the road at 900 and the far shore at 1200. A far chapter built later (F6-F10) gets the length from its block's
+  `RunSeconds` line, already written.
+- **The pace clock stretches with it, untouched** (`RunPace` 4/3): elites, Wardens, spawn growth, introductions, hints,
+  the XP multiplier and the swarm's start all land at the same share of twenty minutes as of fifteen. Real-second
+  rhythms stay real; Arcane Energy pays the four extra minutes.
+- **The XP curve follows the length** - 13 + 60 a level here, 10 + 45 on the road, never written there - because a run
+  4/3 as long spawns and pays 4/3 the XP at every share of it. Without it a far-shore run would reach level 17 at about
+  the road's real minute and meet its warden about seven levels richer (measured: 56 against 49); with it, every level
+  comes at the same share and the warden meets a build of the same strength.
+
+**The White Downs at twenty minutes** (`run-pacing.md` 12.3: F3's protocol, the Stormcaller on the far shore's farmed
+save, `--fixed-fps 30`, one run each on the tree before and after):
+
+| | 15-minute run (before) | 20-minute run (after) | F3's run (its branch) |
+|---|---|---|---|
+| level 17 / 21 at | 5.5 / about 6.7 (0.37 / 0.45 of the run) | 7.2 / about 8.8 (0.36 / 0.44) | 5.5 / 7.3 |
+| level when the Unstrung Hunter arrives | 48, at 15:00 | **49, at 20:00** | 45, at 15:00 |
+| the fight | down at 18.9 (3.9 minutes) | 90% gone four minutes in, on course for about 4.4 | down at 18.1 (3.1) |
+| swarm pressure at most; overrun | 0.11; none | 0.02; none | 0.27; none |
+| HP lost / healed / regenerated a minute; need | 12.2 / 9.8 / 31.6; x0.3 | 3.6 / 14.3 / 28.0; x0.1 | 37 all run; x0.1 |
+
+Survivable, the boss at 20:00, the castle's row unchanged (decision 11), and the warden met by a build of the same
+strength (49 against 48) at the same share of the night.
+
+**The far sky at twenty minutes** (`run-pacing.md` 12.5: F4's "With the waiver" table - the White Downs, Laelaps,
+`--all-unlocked --immortal --seek-combo`, timescale 3, favour on, `--stop-when-made` - with `--fixed-fps 30` added
+so a frame is 0.1 s of game time whatever the shared machine does, and every row repeated on the tree before the change
+as its control). Minutes are pace / real; on the fifteen-minute run they are the same:
+
+| recipe | seed | favour | 15-minute run: level 17 / **made** | 20-minute run: level 17 | 20-minute run: **made** | F4's run (no fixed frame) |
+|---|---|---|---|---|---|---|
+| Shadow Bolt | 1234 | on | 8.7 / **9.2** | 10.4 / 13.9 | **10.9 / 14.6** | 10.1 |
+| Shadow Bolt | 7 | on | 9.8 / **10.6** | 9.5 / 12.7 | **10.2 / 13.6** | 10.5 |
+| The Taking | 1234 | on | 10.0 / **10.5** | 10.8 / 14.4 | **11.3 / 15.1** | 9.3 |
+| The Taking | 7 | on | 10.2 / **10.9** | 10.6 / 14.2 | **11.5 / 15.3** | 13.1 |
+| Sagittarius | 1234 | on | never; level 11 at 15:00 | never; level 12 at 20:00 | - | never |
+| Sagittarius | 7 | on | never; level 13 at 15:00 | never; level 11 at 20:00 | - | never |
+| Shadow Bolt | 1234 | **off** | never (Contagion dealt at 9.6; level 17 at 14.8) | never (Contagion at 13.1 / 17.5; level 17 at 11.3 / 15.1) | - | never |
+
+- **Every recipe made, was made at player level 19 and at about the same share as before**: pace 10.2-11.5 against
+  9.2-10.9 on the same seeds, a gap of -0.4 to +1.7 pace minutes with both signs - a seed's swing, not a trend one run
+  a cell can show. In real minutes that is **13.6-15.3, against the target of about 13-14**, leaving 4.7-6.4 minutes
+  and the warden with the combination (4.1-5.8 on the fifteen-minute run).
+- **Sagittarius does not reach player level 17 inside the longer run** (12 and 11 at 20:00). The longer night was never
+  going to bring it in: the curve follows the run, so the five extra minutes buy no levels by share. Only the level
+  gate or the slow pair's kill rate could, and neither was touched.
+- **Without the favour the control never made it**, before or after.
+- **Why the frame was fixed**: F4's protocol on this machine, shared with a dozen other sessions' Godot runs, drew
+  frames of 0.24-0.40 s of game time at timescale 3; the one twenty-minute run made that way (Shadow Bolt, 1234) made
+  its recipe at pace 8.5, 2.4 pace minutes from the fixed-frame run of the same seed. F4's column is that protocol on a
+  less crowded day, for reference rather than comparison.
+
+**Verified.**
+
+- `dotnet build`: 0 errors; no warning in a file this piece touched.
+- The validator (`MainMenu.tscn --quit-after 300 -- --no-save-writes --validate-content`): **0 errors and 1 warning**
+  (`test_wizard`), and `ValidateRunLengths` prints "run lengths - 14 chapters at 15 minutes, 6 far-shore chapters at 20;
+  XP curves 15 min: 10 + 45, 20 min: 13 + 60".
+- **The road did not move** (`run-pacing.md` 12.4): the Forest, the Pyromancer, seed 1234, `--fixed-fps 30`, once before
+  and twice after - level 34 at 15:00 in all three, levels 17 / 20 / 23 at 6.2-6.3 / 7.6 / 9.2-9.3. Not identical to the
+  frame, because the harness is not deterministic run to run (the two after runs differ from each other by as much),
+  and the curve the summary prints is 10 + 45 in all three.
+- `_BossProbe --stage=14`: "the chapter's clock is 20 minutes; shortened to 6 s"; the Hunter arrived (the field held
+  12.9 s, spells held, unhurt), both phases entered, 25 draws loosed (5 cut short by a barrow), fell cleanly (3.2 s).
+- `_UiShot` (`user://fs20-*.png`, looked at): the HUD at 1280x720 and at 540x1212 `--portrait --safe-area` reading
+  **20:00** under the Unstrung Hunter's bar (`--stage=14 --rush-steps=1 --frames=1200`); the defeat results on both
+  canvases, "Far Shore 1 - The White Downs" and **"Boss at 20:00"** under the time (`--force-death`); the world map's
+  White Downs card, "Longest stand: 20:00" on the all-unlocked save. The card names no run length, and was not given
+  one: it has no line to spare (F4, the card row).
+
+**Not run, and needs eyes.** Nobody has played a twenty-minute night: whether its middle ten minutes, the road's
+density curve stretched over a third more time, feel like the far shore's "time to try builds" or like a wait, is
+Eric's call. Whether a player should be told the night is longer before entering (the map card has no room; the
+chapter's note or the arrival banner could). The Hunter's fight at twenty minutes was not seen to its end on the bot.
+The other five far chapters inherit the length unmeasured. The phone. And endless mode, building in another worktree,
+reads the victory time through its own shim, which is to be pointed at `StageCatalog.VictorySecondsFor` when it merges.
