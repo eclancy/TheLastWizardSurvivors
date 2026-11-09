@@ -106,6 +106,7 @@ public partial class HoundInTheHill : SecretSite
 				state.Done = true;
 				state.Progress = LingerSeconds;
 				player.ApplyTemporaryBuff(0f, PaceBonus, PaceSeconds);
+				GD.Print($"SECRETS found The Hound in the Hill at {GlobalPosition}: its pace for {PaceSeconds:0} s");
 				Director.Found(SecretCatalog.HoundInTheHillId);
 			}
 		}

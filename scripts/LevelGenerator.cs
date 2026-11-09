@@ -403,10 +403,11 @@ public sealed partial class LevelGenerator
 			Blobs = new[]
 			{
 				new BlobSpec("downs_chalk", 1.7f, 1.8f, 3.4f),
-				new BlobSpec("downs_flint", 1.0f, 1.6f, 2.8f),
+				// Fewer and smaller than first laid: at 1.0 and up to 2.8 the flint read as grey paving in the photographs.
+				new BlobSpec("downs_flint", 0.55f, 1.3f, 2.2f),
 				new BlobSpec("water", 0.35f, 1.4f, 2.2f),
 			},
-			Density = 0.0055f,
+			Density = 0.005f,
 			// The bones of what died on the downs, sparse. Not the flora set's bracken or logs: cropped chalk turf
 			// grows neither, and the downs' own growth is Foliage.WhiteDowns'.
 			PropThemes = new[] { "bones" },

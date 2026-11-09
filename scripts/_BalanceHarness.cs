@@ -1119,10 +1119,23 @@ public partial class _BalanceHarness : Node
 	{
 		StageDefinition stage = StageCatalog.GetByIndex(Global.SelectedStageIdx);
 		int position = StageCatalog.CampaignPositionOf(stage.Id);
-		var behind = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		for (int i = 0; i < position; i++)
+		// A far chapter (.ai/second-half.md) stands behind the whole road - the far shore opens on the Throne taken
+		// back and every spell recovered - and behind the far chapters before it in their own order. Read as the
+		// campaign's position it was -1, and its "farmed" save was a new one with 300 Arcane (F3, measured).
+		var road = new List<StageDefinition>();
+		int farPosition = StageCatalog.FarShorePositionOf(stage.Id);
+		if (farPosition >= 0)
 		{
-			StageDefinition earlier = StageCatalog.Campaign[i];
+			road.AddRange(StageCatalog.Campaign);
+			road.AddRange(StageCatalog.FarShore.Take(farPosition));
+			position = road.Count;
+		}
+		else if (position >= 0)
+			road.AddRange(StageCatalog.Campaign.Take(position));
+		var behind = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		for (int i = 0; i < road.Count; i++)
+		{
+			StageDefinition earlier = road[i];
 			if (!earlier.IsPlayable)
 				continue;
 			behind.Add(earlier.Id);

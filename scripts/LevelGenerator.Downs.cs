@@ -80,15 +80,30 @@ public sealed partial class LevelGenerator
 		public float Reach => MathF.Max(HalfX, HalfY);
 
 		/// <summary>Whether the tile whose centre is (x + 0.5, y + 0.5) is barrow.</summary>
+		/// <remarks>
+		/// No row or column of a barrow may end in a one-tile spike: the wall set draws one as a stub, and on the
+		/// first photographs every mound wore a nub on its crown. A disc centred on a tile centre ends in a row
+		/// one tile wide whenever the row past it is just inside the radius, so the radii are kept to the bands
+		/// where the last row is three wide (BarrowCandidate). A long barrow is a stadium - a band its own width,
+		/// capped with half-discs of that width - so its ends are as wide as it is.
+		/// </remarks>
 		public bool Covers(int x, int y)
 		{
 			if (Kind == BarrowKind.None)
 				return false;
-			float dx = (x + 0.5f - Cx) / HalfX, dy = (y + 0.5f - Cy) / HalfY;
+			float dx = x + 0.5f - Cx, dy = y + 0.5f - Cy;
 			if (Kind == BarrowKind.Round)
-				return dx * dx + dy * dy <= 1f;
-			float ax = dx * dx, ay = dy * dy;
-			return ax * ax + ay * ay <= 1f;
+				return dx * dx + dy * dy <= HalfX * HalfX;
+			// The stadium: along its axis, the body runs to (half-length - width) and a half-disc of the width caps it.
+			bool alongX = HalfX >= HalfY;
+			float along = MathF.Abs(alongX ? dx : dy), across = MathF.Abs(alongX ? dy : dx);
+			float width = alongX ? HalfY : HalfX, body = (alongX ? HalfX : HalfY) - width;
+			if (across > width)
+				return false;
+			if (along <= body)
+				return true;
+			float over = along - body;
+			return over * over + across * across <= width * width;
 		}
 	}
 
@@ -117,17 +132,20 @@ public sealed partial class LevelGenerator
 		Barrow barrow;
 		if (kindRoll < BarrowLongShare)
 		{
-			float half = 3.5f + sizeRoll * 2f;          // 4 to 6 tiles either side: 8 to 12 long
-			float width = 1.4f + widthRoll * 0.5f;     // 3 or 4 tiles across
+			float half = 4f + sizeRoll * 2f;            // 4 to 6 tiles either side of the middle: 9 to 13 long
+			// Three across (1.5) or five (2.4), the widths whose caps end three tiles wide; 2.2 ends in a one-tile point.
+			float width = widthRoll < 0.65f ? 1.5f : 2.4f;
 			barrow = axisRoll < 0.5f
 				? new Barrow(BarrowKind.Long, cx, cy, half, width, priority)
 				: new Barrow(BarrowKind.Long, cx, cy, width, half, priority);
 		}
 		else
 		{
+			// Radii whose last row is three tiles wide (Barrow.Covers): a bowl barrow 3.2 to 3.6 (rows 3-5-7-7-7-5-3),
+			// a great round one 4.15 to 4.45 (9 across). Between them, and below 3.17, the crown ends in a nub.
 			float r = kindRoll < BarrowLongShare + BarrowGreatRoundShare
-				? 3.8f + sizeRoll * 0.5f                // a great round barrow
-				: 3.1f + sizeRoll * 0.45f;              // a bowl barrow: 3.1 to 3.55 (never 2.9's square)
+				? 4.15f + sizeRoll * 0.3f
+				: 3.2f + sizeRoll * 0.4f;
 			barrow = new Barrow(BarrowKind.Round, cx, cy, r, r, priority);
 		}
 

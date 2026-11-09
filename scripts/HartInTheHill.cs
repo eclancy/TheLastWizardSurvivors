@@ -139,6 +139,7 @@ public partial class HartInTheHill : SecretSite
 	{
 		if (index >= 0 && index < knots.Count)
 			SfxPlayer.AtPosition(SfxCatalog.BearingFound, knots[index], 0f);
+		GD.Print($"SECRETS the Hart in the Hill: knot {index} lifted, {Gather?.Gathered ?? 0} of {knots.Count}");
 	}
 
 	private void OnCompleted()
@@ -149,6 +150,7 @@ public partial class HartInTheHill : SecretSite
 		state.Done = true;
 		Player player = Player;
 		player?.Heal(player.MaxHP / 2);
+		GD.Print($"SECRETS found The Hart in the Hill at {GlobalPosition}: every knot lifted");
 		Director.Found(SecretCatalog.HartInTheHillId);
 	}
 
