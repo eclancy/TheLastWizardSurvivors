@@ -297,20 +297,31 @@ mostly not see them.
   from `ComboCatalog.Fusions` whose two parents the save owns; never one the wizard opens on
   (`StartsFused`), never one that names the wizard's own starting spell (`ComboSeal.OwnSpell`); **weighted
   toward recipes the save has never made**. Rerolled after every far-shore run, won or lost.
-- **It is named before the run**, on the world map's card for every far-shore stop ("Tonight: Maelstrom -
-  Riptide (Tidal Wall) and Cyclone Slash (Vortex Reaper)"), and on the pause screen.
+- **It is named before the run**, on the world map's card for every far-shore stop ("Tonight: Maelstrom" -
+  as built, the name alone, for want of room; section 9, "F4, built"), and in full on the pause screen
+  ("Tonight: Maelstrom - Riptide (Tidal Wall) and Cyclone Slash (Vortex Reaper)").
 - **The deal favours it; the recipe is unchanged.** When a slot is free its parents are offered before
   other new spells; while held, their upgrade cards are always in the hand (as if `Player.UpgradeOfferChance`
   were 1 for those two); at level 8 the named Ascension is shown first, under the two linked rings it
   already carries (`stat-conjunction`). Both parents at 8 down both named Ascensions, as every recipe asks
   (`combo-spells.md` 0) - Eric's rule is not loosened.
+- **The far sky waives its element gate** (decision 10, Eric 2026-11-08: *"Waive element gate"*, in place of
+  a Muster). On a far-shore run, while tonight's recipe is live - neither made nor sealed - the two Ascensions it
+  names, one on each parent, stop asking for four of the path's element (`Player.AscensionElementRequirement`).
+  Nothing else loosens: each parent still reaches its card cap and its level 8, the player still reaches level 17
+  (`Player.AscensionMinimumPlayerLevel`), both named Ascensions are still the recipe, and every other path on the
+  page keeps its gate. Never on the road, never another recipe's. The path says why it is open: *"The far sky
+  waives its element"*, on the level 8 page in the linked rings' gold and in the Codex's Ascension row
+  (`FarSky.WaivesElementGate` is the rule, `RegressionChecks.ValidateFarSkyWaiver` holds it).
 - **Making it pays**: a bonus of Arcane Energy at the run's end, and the *Under the Far Sky* Feat.
 
 **Measured before it ships:** `_BalanceHarness --stage=14 --seek-combo=<tonight's> --all-unlocked --immortal`
 with the favour on, against the same run with it off. The target is the planned bot meeting the recipe
 **by about minute 10**, leaving five minutes and the boss to use it. If it cannot, the fallback is a short
 opening Muster of a few levels on far-shore runs - the Throne's machinery (`endgame-castle.md` 6.2,
-`Node2DGame`'s `queuedLevelUps`) - sized by the same measurement (question 10).
+`Node2DGame`'s `queuedLevelUps`) - sized by the same measurement (question 10). **Measured and decided
+2026-11-08**: the cards were no longer the brake but the element gates were, and a Muster big enough to matter was
+the Throne's whole seventeen levels, so Eric chose the waiver above instead (section 8, 10; section 9, "F4, built").
 
 ---
 
@@ -429,15 +440,19 @@ Cross-checked on this tip (`main-ff86ni`, merged 2026-11-07).
 
 **Decided 2026-11-07 (Eric: "Accept them" - every recommendation below taken as written).** Where a
 question carried no "(recommended)": **2** keeps the six as proposed (Artemis, Manannán mac Lir, Hecate, Ra,
-Ukko, Hephaestus); **15** names the half and its stretch of the map **The Far Shore**. **10 stays open** -
-whether far-shore runs open with a Muster depends on how late tonight's recipe lands, which is measured in
-F4 (`_BalanceHarness --far-sky`, section 5) before anyone decides it. So the half is greenlit to build, F0
-first and alone (section 9). **Measured 2026-11-08** (section 9, "F4, built"): on the White Downs, with the favour,
-the planned bot made Shadow Bolt at 10.7 and The Taking at 12.4 and never made Sagittarius; across ten favoured runs
-three met it by about minute 10, all Shadow Bolt, and without the favour none made it at all. What holds the rest is the Ascension's own gates
-(player level 17, four of the named path's element), not the cards, and a Muster that bought the level gate back would
-be 16-20 levels - the Throne's whole Muster, not a few - and would not touch the element gates. Still Eric's to
-decide.
+Ukko, Hephaestus); **15** names the half and its stretch of the map **The Far Shore**. **10** was left open until
+F4 measured it (`_BalanceHarness --far-sky`, section 5), and is now decided (below). So the half is greenlit to
+build, F0 first and alone (section 9).
+
+**Decision 10, decided 2026-11-08 (Eric, after F4's measurement: "Waive element gate").** No Muster. With the favour
+the cards were no longer the brake but the named Ascensions' element gates were (two of four short in most runs), and
+a Muster big enough to move the level gate was 16-20 levels, the Throne's whole Muster. So on a far-shore run, while
+tonight's recipe is live, **the two Ascensions it names waive their element gate** - and nothing else: the spell's card
+cap, player level 17 and both named paths still stand (section 5). Re-measured on the White Downs the same day
+(section 9, "F4, built", "With the waiver"): every favoured recipe that was made was made at player level 19, the
+earliest the rules allow - Shadow Bolt at 10.1 and 10.5, The Taking at 9.3 and 13.1 - and Sagittarius was never made
+(level 15 and 13 at minute 20). The player-level 17 gate is now the one thing that holds a recipe past minute 10, and it
+stays.
 
 1. **The premise.** The gods lived on the light the wizards carried and went dark when he took it, and his
    castle stands between the land and the far shore so it could never cross back (recommended) - or the
@@ -462,7 +477,8 @@ decide.
 9. **Tonight's Conjunction.** A new recipe each far-shore run (recommended) or one a day - and should the
    deal favour its parents (recommended), or only name it?
 10. **If tonight's recipe still lands too late** - after minute 12 for the planned bot - should far-shore
-    runs open with a short Muster of a few levels, or is late acceptable?
+    runs open with a short Muster of a few levels, or is late acceptable? *(Decided 2026-11-08: neither - the
+    named Ascensions' element gates are waived; above.)*
 11. **Difficulty.** Hold the castle's difficulty flat across the far shore, with Hardcore as the climb
     (recommended), or keep climbing chapter by chapter?
 12. **The map.** Widen the one world east across the dark sea (recommended - one contiguous drawing, as you
@@ -1162,10 +1178,56 @@ few**; a recipe that already lands near 10 (Shadow Bolt) needs none, since it is
 the 0.7 minutes the White Downs' run was late (0.9 in the Court) would cost 12 levels, because by then that build earns
 2,300-3,000 XP a minute. And a Muster buys only the level gate. The element gates (Pyre's Light, Hunter's Mark's Wind,
 Constellation's Light, Pandemic's Poison - two of four short in most rows) want picks of the right element, which the
-Muster's extra cards could pay for only if something steered them; the favour as section 5 wrote it does not. Two levers that are not
-a Muster, for Eric to weigh and not built: count tonight's named Ascensions' element gates as met (the recipe is still
+Muster's extra cards could pay for only if something steered them; the favour as section 5 wrote it does not. Two
+levers that are not a Muster, for Eric to weigh and not built: count tonight's named Ascensions' element gates as met (the recipe is still
 both parents at 8 down both named paths), or let the favour deal one card carrying the named path's element when the
 gate is all that is missing. Either changes what "the recipe is unchanged" means, which is why neither was done.
+**Eric took the first, the same day** (below).
+
+**With the waiver (decision 10, decided 2026-11-08: "Waive element gate").** Built on `main-ff86ni` after F4's merge.
+`FarSky.WaivesElementGate` is the rule: one of the two Ascensions tonight's recipe names, on its own parent, on a
+far-shore run, while the recipe is live (`Player.FarSkyFavourHolds`: not made, not sealed).
+`Player.MarkUnearnedAscensions` leaves that path open and records it (`LevelUpOption.ElementGateWaived`); `BuildAscensionPreview` marks its gate
+`AscensionRequirement.Waived` (met); the level 8 page's path says **"The far sky waives its element"** under its Joins
+line, in the same gold (`CardFamilyArt.AscensionAdvice`, 7.8:1 on the obsidian plate) with the met tick, and the Codex's
+Ascension row shows the same words as a met chip in place of the element chip. Only where the gate would otherwise
+stand unmet: a player already deep enough in the element sees nothing new. A tool's `--far-sky` on a road chapter names
+a recipe but waives nothing (`BeginFarSky` carries whether the run is on the far shore). The planned bot stops chasing a
+waived path's element (`_BalanceHarness` `ComboFocus`). `RegressionChecks.ValidateFarSkyWaiver`: 6 named paths opened,
+36 cases refused (the road, made or sealed, every third path, the named path on the wrong parent, another recipe's
+path, the Rite, no recipe), shown to fire on a scratch break that was not committed (all 36).
+
+Re-measured the same way (the White Downs, Laelaps, `--all-unlocked --immortal --seek-combo`, timescale 3, pace
+minutes; `--stop-when-made` on the favoured runs):
+
+| recipe | seed | favour | level 17 at | named Ascensions taken | **made** | what holds it now |
+|---|---|---|---|---|---|---|
+| Shadow Bolt | 1234 | on | 9.6 | 9.6 / 9.8 | **10.1** (level 19) | player level 17 |
+| Shadow Bolt | 7 | on | 9.7 | 9.7 / 10.0 | **10.5** (level 19) | player level 17 |
+| The Taking | 1234 | on | 8.8 | 8.8 / 9.0 | **9.3** (level 19) | player level 17 |
+| The Taking | 7 | on | 12.2 | 12.2 / 12.7 | **13.1** (level 19) | player level 17 |
+| Sagittarius | 1234 | on | never (level 15 at 20) | - / - (both parents at 7) | not by 20 | player level 17 |
+| Sagittarius | 7 | on | never (level 13 at 20) | - / - (Hunter's Draw at 7, Starfall at 5) | not by 20 | player level 17, and with it the cards: 12 level-ups in twenty minutes |
+| Shadow Bolt | 1234 | **off** | 15.4 | 15.0 / - | not by 20 | the cards: Contagion never dealt |
+
+What it says:
+
+- **Every favoured run that made its recipe made it at player level 19** - the earliest the rules allow: the first
+  named Ascension at 17, the second at 18, the fusion at 19. The element gates hold nothing now, the cards held nothing
+  already, and what is left is the one gate Eric's rule keeps, **player level 17**
+  (`Player.AscensionMinimumPlayerLevel`). The recipe lands about half a minute after the build reaches level 17.
+- **So minute 10 is met when the build reaches level 17 by about minute 9.5.** Shadow Bolt does on both seeds (10.1,
+  10.5) and The Taking on seed 1234 (9.3, inside minute 10 for the first time). The Taking on seed 7 reached level 17 at
+  12.2 and made it at 13.1 - **3.1 minutes late, all of it the level clock**: Hollow Star and Kindled Ward kill this
+  crowd slowly, and that seed dealt the build little else. **Sagittarius never reaches level 17 inside the run** (level
+  15 at minute 20 on seed 1234, 13 on seed 7): Hunter's Draw and Starfall, walking to orbs, are the slowest-killing
+  pair here, and on seed 7 the slow clock also starved Starfall of cards (level 5 at 20). For Sagittarius only the level
+  gate or the level clock could bring it in, and neither was loosened.
+- **Without the favour the control never made it** (Contagion was never dealt; Void Lance ascended at 15.0, its gate
+  being met by then): the waiver opens nothing off the favour's road, since the parents still have to be in the book.
+- Against the measurement before the waiver: Shadow Bolt 10.7 -> 10.1 (seed 1234), never -> 10.5 (seed 7); The Taking
+  12.4 -> 9.3 (1234); Sagittarius never -> never. The waiver moved every recipe to the level gate, and the level gate
+  is now the whole of what is late.
 
 **Decisions F4 made** (the doc left them open):
 
