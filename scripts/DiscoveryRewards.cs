@@ -50,6 +50,13 @@ public static class DiscoveryRewards
 			if (!owned)
 				return false;
 		}
+		// A far chapter's event gives no unlock: what it gives is its deed - the keepsake - and Arcane Energy, once
+		// (.ai/second-half.md 4.3, AchievementDefinitions.SideEventCurrency). It is exhausted once that deed is done;
+		// until then the first win completes it, and every win after pays a chest as an exhausted road site does.
+		// Without this a site with nothing in UnlockCatalog would read as exhausted from the start, pay a chest the
+		// first time too, and never record its deed.
+		if (AchievementDefinitions.IsKeepsakeEvent(siteId))
+			return data != null && data.Lifetime.HasWonEvent(siteId);
 		return true;
 	}
 

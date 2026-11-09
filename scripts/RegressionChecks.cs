@@ -165,7 +165,8 @@ public static partial class RegressionChecks
 				warnings.Add($"{at}: {chapters.Count} chapters' side events stand on that site; a site is one place.");
 
 			var gives = UnlockCatalog.ForDiscoverySite(hint.SiteId).ToList();
-			if (gives.Count == 0)
+			// A far chapter's event gives its deed and Arcane Energy instead (AchievementDefinitions.SideEventCurrency).
+			if (gives.Count == 0 && !AchievementDefinitions.IsKeepsakeEvent(hint.SiteId))
 				warnings.Add($"{at}: site '{hint.SiteId}' gives nothing in UnlockCatalog, so there is never anything to hint at.");
 
 			if (!SfxCatalog.AllNames.Contains(hint.Sound))
@@ -4996,6 +4997,12 @@ public static partial class RegressionChecks
 				warnings.AddRange(constable.TuningProblems());
 				break;
 
+			// The Unstrung Hunter (F3) holds his lane to the telegraph contract and the wizard's walk: it follows,
+			// then holds still long enough to step out of; it reaches past the range he keeps; hounds and stars come.
+			case UnstrungHunterBoss hunter:
+				warnings.AddRange(hunter.TuningProblems());
+				break;
+
 			// The dark wizard holds his own (ThroneDarkWizardBoss.TuningProblems): the taking's long tell,
 			// a hand and an orb slower than the wizard walks, a seal that ends, room between his lanes.
 			case ThroneDarkWizardBoss darkWizard:
@@ -7430,7 +7437,13 @@ public static partial class RegressionChecks
 				|| !string.IsNullOrWhiteSpace(achievement.CharacterUnlockId)
 				|| achievement.CurrencyReward > 0
 				|| achievement.Kind == AchievementKind.Secret;
-			if (!grantsSomething)
+			// A far warden's seat deed whose god has not merged yet pays nobody by design (.ai/second-half.md 9, "F1,
+			// built": a chapter's piece and its god's may merge in either order). Its chapter's far-shore to-do says
+			// "no god seated here" while it stays unplayable, and ValidateGods makes it a fault the day it is playable.
+			bool seatAwaitingGod = achievement.Id.Equals(AchievementDefinitions.SeatDeedId(achievement.StageId), StringComparison.OrdinalIgnoreCase)
+				&& UnlockCatalog.GodSeatedAt(achievement.StageId) == null
+				&& StageCatalog.GetById(achievement.StageId)?.IsPlayable != true;
+			if (!grantsSomething && !seatAwaitingGod)
 				warnings.Add($"Achievement '{achievement.Id}' grants nothing, so completing it is not a reward.");
 
 			if (!string.IsNullOrWhiteSpace(achievement.CharacterUnlockId)
@@ -7676,7 +7689,7 @@ public static partial class RegressionChecks
 		foreach (var (siteId, clue) in ChapterNotes.SiteClueLines)
 		{
 			var gives = UnlockCatalog.ForDiscoverySite(siteId).ToList();
-			if (gives.Count == 0)
+			if (gives.Count == 0 && !AchievementDefinitions.IsKeepsakeEvent(siteId))
 				warnings.Add($"Chapter notes: the clue for '{siteId}' belongs to no Discovery site.");
 			foreach (UnlockDefinition give in gives)
 			{

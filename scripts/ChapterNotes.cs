@@ -187,7 +187,7 @@ public static class ChapterNotes
 		["the_well"] = "Something glints at the bottom of the well.",
 		["the_moot"] = "Embers still glow somewhere among the stones.",
 		// THE FAR SHORE (marked by F0): each far chapter's side event pays a keepsake, so each wants a clue.
-		// F3 (White Downs)
+		["silver_hind"] = "Something pale grazes out on the down. It has not been caught.",
 		// (F6's line is below; leave this one as it is)
 		// F6 (Drowned Shore)
 		// (F7's line is below; leave this one as it is)
@@ -255,10 +255,12 @@ public static class ChapterNotes
 		// his held line, above.
 		foreach (SideEventEntry site in SideEventDirector.EventsFor(stageId))
 		{
+			// A far chapter's event pays its deed and Arcane Energy rather than an unlock: its clue holds until it is won.
 			if (SiteClueFor(site.SiteId) is string siteClue
 				&& !DiscoveryRewards.IsSiteExhausted(save, site.SiteId)
-				&& UnlockCatalog.ForDiscoverySite(site.SiteId).Any(u => u.Kind != UnlockKind.Character
-					&& !IsOwned(save, u)))
+				&& (AchievementDefinitions.IsKeepsakeEvent(site.SiteId)
+					|| UnlockCatalog.ForDiscoverySite(site.SiteId).Any(u => u.Kind != UnlockKind.Character
+						&& !IsOwned(save, u))))
 				clues.Add(siteClue);
 		}
 

@@ -119,6 +119,13 @@ public static class StageRewards
 			{
 				foreach (UnlockDefinition found in UnlockCatalog.ForDiscoverySite(site.SiteId))
 					Add(new StageReward { StageId = stage.Id, Kind = KindOf(found.Kind), Source = StageRewardSource.SideEvent, Id = found.Id });
+				// A far chapter's event pays Arcane Energy with its deed, never an unlock (.ai/second-half.md 4.3).
+				int keepsakeArcane = AchievementDefinitions.SideEventCurrency(site.SiteId);
+				if (keepsakeArcane > 0)
+				{
+					string deed = AchievementDefinitions.EventDeedId(site.SiteId);
+					Add(new StageReward { StageId = stage.Id, Kind = StageRewardKind.ArcaneEnergy, Source = StageRewardSource.SideEvent, Id = deed, DeedId = deed, Amount = keepsakeArcane });
+				}
 			}
 
 			foreach (UnlockDefinition revealed in UnlockCatalog.All.Where(d =>

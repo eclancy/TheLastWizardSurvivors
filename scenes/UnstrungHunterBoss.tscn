@@ -1,0 +1,42 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/UnstrungHunterBoss.cs" id="1"]
+[ext_resource type="SpriteFrames" path="res://scenes/resources/DownsUnstrungHunterFrames.tres" id="2_frames"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hunter"]
+radius = 30.0
+
+; The White Downs' warden (.ai/second-half.md 4.2, F3): the hunter the sky lost, who draws on the wizard along a
+; lane that follows him, cut short at the first barrow (UnstrungHunterBoss.cs). A tall lean man beside a bow, so a
+; narrower body than the Constable's; he stalks and keeps his range rather than closing, so a slower walk. The
+; draw is BossEnemy's slam as a Line (SlamRadius its reach on open ground, SlamTelegraphSeconds its wind-up, the
+; last DrawLockSeconds of it held still). Health and the Arcane bonus are BossCatalog's [14] block.
+[node name="UnstrungHunterBoss" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1")
+Speed = 78
+Health = 12000
+EnemyType = "Boss"
+IsMiniBoss = true
+ContactDamage = 4
+KnockbackResistance = 0.9
+MinSlowMultiplier = 0.4
+EnemySpacingRadius = 96.0
+MinPlayerSeparation = 40.0
+BossId = "downs_unstrung_hunter"
+BossDisplayName = "The Unstrung Hunter"
+SlamIntervalSeconds = 2.4
+SlamTelegraphSeconds = 1.5
+SlamRadius = 1150.0
+SlamDamage = 6
+EnrageHealthFraction = 0.33
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2, 2)
+sprite_frames = ExtResource("2_frames")
+animation = &"moving"
+autoplay = "moving"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_hunter")

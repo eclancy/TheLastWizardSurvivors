@@ -229,7 +229,7 @@ public static partial class SecretCatalog
 		Throne.Build(),
 		// THE FAR SHORE (.ai/second-half.md 4.3, marked by F0): two or three secrets a chapter, in
 		// SecretCatalog.<Chapter>.cs; each piece replaces its own comment line with its Build().
-		// F3: WhiteDowns.Build(),
+		WhiteDowns.Build(),
 		// (F6's line is below; leave this one as it is)
 		// F6: DrownedShore.Build(),
 		// (F7's line is below; leave this one as it is)

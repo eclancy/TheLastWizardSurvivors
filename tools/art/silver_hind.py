@@ -490,10 +490,58 @@ def turf(w, h):
     return c
 
 
+# --- the pictogram (the arrows that point to the event, ExploreArt.Glyphs "hind") -------------------------
+#
+# Her head and neck in profile, ears up - the alert she is stalked through - in the bone row, as she is, with the
+# occlusion edge every pictogram carries. 12 x 12, saved at x2 as the others are (tomb_beacons.py's glyph).
+OUT_UI = os.path.join(ROOT, "assets", "bonelight", "ui", "poi")
+
+GLYPH = [
+    "....h..h....",
+    "....hh.hh...",
+    ".....hhhh...",
+    ".....hlhhh..",
+    "....bhhhhhh.",
+    "...bbhh..hh.",
+    "...bbh......",
+    "..bbbh......",
+    "..bbb.......",
+    ".bbbb.......",
+    ".bbb........",
+    "bbbb........",
+]
+
+
+def glyph():
+    c = raster.Canvas(12, 12)
+    pal = {"h": bl.tone("skin", "hi"), "l": bl.OCC, "b": bl.tone("skin", "base")}
+    for y, row in enumerate(GLYPH):
+        for x, ch in enumerate(row):
+            if ch != ".":
+                c.set(x, y, pal[ch])
+    w, h = c.w, c.h
+    solid = [[c.get(x, y)[3] != 0 for x in range(w)] for y in range(h)]
+    for y in range(h):
+        for x in range(w):
+            if solid[y][x]:
+                continue
+            if any(0 <= x + dx < w and 0 <= y + dy < h and solid[y + dy][x + dx]
+                   for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                c.set(x, y, bl.OCC)
+    return c
+
+
 def main():
-    for d in (OUT, SCRATCH):
+    for d in (OUT, SCRATCH, OUT_UI):
         if not os.path.isdir(d):
             os.makedirs(d)
+    g = glyph()
+    bad = g.audit()
+    if bad:
+        print("OFF-CONTRACT COLOURS in the hind glyph: %s" % bad[:5])
+        return 1
+    g.scaled(2).save(os.path.join(OUT_UI, "poi-hind.png"))
+    print("  glyph poi-hind")
     frames = []
     ok = True
     eye = None
