@@ -1,5 +1,7 @@
 # Chapter wizards: one held in every place
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 **Latest placement, 2026-11-06 (Eric): Merlin belongs to the Broken Circle.** Restore the Moot's
 shattered council wards to free him and unlock Orb of Ages, keeping Gilded Mote. Medea's granary
 returns to the Fields, alongside the separate Laelaps rescue. This supersedes the interim move below.

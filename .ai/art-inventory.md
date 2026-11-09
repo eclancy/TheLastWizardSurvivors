@@ -1,5 +1,11 @@
 # Art inventory — what we own, what we use, and where the rest could go
 
+> **2026-11-09:** the last art in `assets/` that was not generated is gone: the Sketchbook's kids' drawings
+> (`assets/kidsart/`), Elim's Boo (`assets/enemies/`) and the Test Wizard's drawing (`assets/testwizard/`)
+> were removed with the Sketchbook chapter and the Test Wizard at Eric's request; git history holds them.
+> Every image under `assets/` is now generated, under `assets/bonelight/`. This doc's `assets/organized/`
+> inventory below is history too (`.ai/asset-licensing.md`).
+
 ## How to regenerate these numbers
 
 ```bash

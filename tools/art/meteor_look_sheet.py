@@ -17,7 +17,7 @@ The demo's sprites are read from the site's repo if it sits beside this one; wit
 skipped, not faked. Captures (one Godot at a time; a burst of one volley against a held crowd):
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- \\
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=meteor_swarm \\
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=meteor_swarm \\
       --spell-stage=24,230,0 --frames=300 --burst=30,3 --shot=mtrA-pc
   (phone: --resolution 540x1212 ... --portrait --safe-area --spell-stage=24,0,170 --shot=mtrA-phone;
    level 8: --demo-spell-level=8 --demo-evolutions=meteor_cluster,meteor_orbital_bombardment)

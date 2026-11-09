@@ -1,5 +1,7 @@
 # Merlin, the old enchanter
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 **2026-11-06 decision (Eric), superseding the historical unlock below:** Merlin is now held at the
 Broken Circle, the great meeting place. Restoring the existing Moot's council wards frees him and
 unlocks his existing Orb of Ages, alongside the existing Gilded Mote. His kit is unchanged. He has a

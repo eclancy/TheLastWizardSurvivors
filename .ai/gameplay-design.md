@@ -781,7 +781,8 @@ Two consequences worth knowing:
 - Obsidian Spike was retagged from Earth + Darkness to pure Earth as part of that swap, since a
   starter must carry exactly one element. Its Darkness half was flavour taken from the word
   "black"; the change also separates it from Glacial Spike, which is the Earth/Ice hybrid.
-- Test Wizard remains a development entry that picks its own loadout, and is exempt from both rules.
+- The Test Wizard, the development entry that picked its own loadout and was exempt from both rules, was
+  removed on 2026-11-09; every wizard on the roster now keeps both.
 
 ### Unlock Economy
 Nothing is free except the opening hand. `scripts/UnlockCatalog.cs` is the single authority on how
@@ -841,7 +842,7 @@ reached *reliably*, and items depend on what the chests happen to offer. Items a
 of the guaranteed floor that spells and boons provide - they are never the floor.
 
 **Chests are carried, not timed** (since 2026-10-22). An elite drops one 65% of the time (the
-run's first elite always does), the Warden and the Sketchbook's ghost always, and a side event pays one;
+run's first elite always does), the Warden always, and a side event pays one;
 there is no chest clock. A collector build acts on that: the Curio Ledger and the Cabinet of
 Curiosities make more elites carry one, the Hidden Drawer shows one more relic in every chest, the
 Lodestone widens the pickup radius, the Reliquary Key brings chests to its holder, and John Dee makes

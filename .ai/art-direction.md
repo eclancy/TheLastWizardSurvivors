@@ -1,5 +1,7 @@
 # Art direction — Candle Ward, Bonelight tone
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 The chosen direction, decided 2026-09-03 after an audit of the existing art, three drawn
 direction proposals, and a five-option tone study at the chosen pixel density. This file is the
 contract: the grid, the light model, the palette, the silhouette rules, the animation and import
@@ -175,7 +177,8 @@ one stop down, or a rim one notch softer: 82% of rim pixels and 4.8% of all acto
 up its ramps, which compresses the top of every ramp, so few of its jumps exceed the threshold).
 Not finished, by design: the title art and app icon (`hero.py`, `splash.py`, `icon_concepts.py`,
 which use the full key as a painting's light), the evolution and spell icons that paint the familiar
-(they call `Fig.render()` bare), the test wizard, and the kids' art.
+(they call `Fig.render()` bare). (The test wizard and the kids' art were on this list until both were
+removed on 2026-11-09.)
 
 ## 3. Palette — Bonelight
 
@@ -312,8 +315,8 @@ holds both.
   applied it), the Lightning tier's chain and the Stormbound set's arc (Lightning), the boon chain's
   retaliation (Metal, as its burst is), the Fulgurite's storm bolts (Lightning), a bolt's impact splash
   (`ElementalBolt.AoEOnImpact`, which is deliberately not credited to the spell: its spell's element).
-- **Hits with no element** - Bastion of Spikes, the Iron Fang, the Sketchbook's dog, a spell that names
-  none - keep the red every number was.
+- **Hits with no element** - Bastion of Spikes, the Iron Fang, a spell that names none - keep the red
+  every number was.
 - **A turned enemy's blow** on its own kind is not his hit at all, and is written in bone's base
   (`#9AA4B8`, 8.0:1), the horde's own colourless material. It was a warm gold, which is now Light's
   ink (7.3 apart); bone's base is 12.7 from the nearest element ink.
@@ -329,8 +332,8 @@ own ramp that clears 4.5:1 against that outline. With the outline opaque, the gr
 letterforms, so one table serves every chapter, dark or pale. Size, rise and fade are unchanged.
 Sampled from the photographs (the colour covering most of the frame's middle), the floors are darker
 than their names: the Dungeon and the Cave `#1E2634`, the Forest `#24404A`, the Frozen Waste `#38404F`,
-the Scorched Sands `#2E2208`; only the Sketchbook's paper (`#DDD5C0`) is pale, and there Water's crit
-without the outline would be 1.02:1. **What it costs:** one draw call per number on screen (the outline is its own pass: 27 numbers drew
+the Scorched Sands `#2E2208`; only the Sketchbook's paper (`#DDD5C0`) was pale (the chapter was removed on
+2026-11-09), and there Water's crit without the outline would have been 1.02:1. **What it costs:** one draw call per number on screen (the outline is its own pass: 27 numbers drew
 27 calls without it and 54 with it, `_UiShot --number-swatch`'s `SWATCH draws` lines), and nothing on
 the CPU that the harness can see (`.ai/performance.md` method, 8 minutes, seed 1234, last 90 s: number
 spawn 108 / 88 us a call before / after, frame 9.49 / 9.39 ms). The ink is the label's `Modulate`,

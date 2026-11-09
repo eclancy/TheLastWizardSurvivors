@@ -409,7 +409,7 @@ public partial class LoadoutHud : BoxContainer
 	// slot it is and what it lends: a quaver standing on the slot's top left corner in the element's colour, and a
 	// tie under the two slots from the Canticle's to this one. An empty slot after the Canticle wears it in the ghost
 	// ink (the burst stays Arcane until a spell is taken into it). Whole canvas units, two to an art pixel, every
-	// stroke outlined in the occlusion ink so it reads over any icon and on the Sketchbook's paper.
+	// stroke outlined in the occlusion ink so it reads over any icon and on the palest ground.
 	private static readonly Color HarmonyOutline = new(0.020f, 0.027f, 0.047f, 1f);   // OCC #05070C
 	private static readonly Color HarmonyGhost = new(0.604f, 0.643f, 0.722f, 0.75f);  // bone base #9AA4B8
 

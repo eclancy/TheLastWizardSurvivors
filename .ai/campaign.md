@@ -1,5 +1,7 @@
 # The campaign: its order, two early chapters, and the Dungeon in the middle
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-10-24: *"cursed dungeon should be a later level. there should be another few levels that
 open up earlier."* Asked to clarify, he chose to **build new chapters that open early** and to move
 **the Cursed Dungeon to the middle of the campaign**, after the open-field chapters - a maze is a

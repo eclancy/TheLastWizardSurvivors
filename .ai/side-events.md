@@ -1,5 +1,7 @@
 # Side events: what the dark wizard keeps in each place
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 **Latest 2026-11-06 update (Eric):** the Broken Circle's existing `the_moot` frees **Merlin** and
 grants Orb of Ages as well as Gilded Mote. The six-stone ward-restoration route and restart rules
 stay intact. Merlin is visibly bound at its center and receives a freeing reel. Medea's `tithe_scale`
@@ -194,7 +196,7 @@ wayfinders 1.5 to 2.2, 66 to 106 degrees apart; every site on open ground with n
 footprint, identical after its chunks were forgotten and reloaded. At 220 px/s with no swarm the
 main site is 28 to 42 s of straight walking; a real walk through the horde is longer, and the
 distance is the price of the trip, which is what the band is for. Stages without an event
-(Sketchbook) place nothing. The Emberdeep has had the great anvil since 2026-11-02, placed the seal's way
+(the Court and the Throne) place nothing. The Emberdeep has had the great anvil since 2026-11-02, placed the seal's way
 (open ground over its whole 230 px disc, so the anvil never stands in lava): seeds 4242, 31 and 7 put it 5.9, 5.1 and
 4.3 chunks out. The Cave has had the nine mouths since 2026-11-02, a 300 px open disc found by
 `ExplorePlacer.EventSiteInBand` in a chamber or a hall (3.6 to 5.3 chunks out on four seeds). The Ruins has had
@@ -294,8 +296,8 @@ no roster slot. `BogLanternsEvent.TenderScenePath` names it; the health is uncha
 health times `TenderHealthMultiplier` (22) - so it is as hard as the run wherever the mire is found,
 and the win, the discovery and the chest are unchanged.
 
-**How it is found.** On the 96 cell at x2 (`tools/art/swamp_tender.py`, the Boo's precedent for a
-miniboss on the boss cell): a stooped keeper in a wet linen coat, a violet cape over a hunched back, a
+**How it is found.** On the 96 cell at x2 (`tools/art/swamp_tender.py`, the Boo's precedent - since
+removed with the Sketchbook - for a miniboss on the boss cell): a stooped keeper in a wet linen coat, a violet cape over a hunched back, a
 sodden hat with bog weed off the brim, wading in its own wake - about 144 px of body, twice a swamp
 creature, under a crook that reaches about 180. From the crook hangs **one of the bog lanterns**,
 cage and all, burning their cold poison flame, and it carries their far tell: a glow and a column of
@@ -507,7 +509,7 @@ first: it says a secret gets no text and no pointer, and a hint is both a line a
 - Every hint prints one `StageHint:` line with its pace time and distance.
 - `_UiShot --hint-preview=STAGE_ID[,DEG]` plays that chapter's hint (sound, cue, line) on whatever stage
   is running, from 3000 px at DEG (0 east, 90 south), touching no schedule or save - for grounds no hint
-  plays on: `--stage=9` (the Fallow Fields), `--stage=8` (the Sketchbook's paper). Add `--notes-seen=all`
+  plays on: `--stage=9` (the Fallow Fields, the palest ground since the Sketchbook's paper went). Add `--notes-seen=all`
   so the chapter note is not up beside it.
 
 **Not verified: whether anyone hears them as intended**, or whether the cues read at a glance mid-fight

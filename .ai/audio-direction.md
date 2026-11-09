@@ -1,5 +1,7 @@
 # Audio direction — the Bonelight sound contract
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Decided 2026-09-05, alongside the first complete SFX set. This file is to sound what
 `.ai/art-direction.md` is to pixels: the format, the element palette, the mix, the frequency
 budget, the engine settings, and the rules that keep seventy-one sounds behaving like one
@@ -592,7 +594,7 @@ Broken Circle (D Dorian, 5/4 at 138), each scored in its own `tools/audio/music_
 | 6 | Frozen Waste (the Still Warden) | C Ionian in open fifths, 4/4 at 144 in half time | 16 bars, 26.7 s | glass pad, strings in octaves, root-fifth ticking in eighths - no thirds anywhere | the lub-dub taiko on one and three every bar, a snare on three (the half-time backbeat), brushed eighths, the bass root-fifth in eighths | a spare flute; the glass shadows it in B | G to C |
 | 7 | Scorched Sands (the Long Coil) | G Mixolydian, 6/8, dotted quarter 104 | 24 bars, 27.7 s | a G-D drone fifth, strings, an oud riff in scale degrees from each root | taiko on the downbeat, hand drum dum and tek, a snare on two, rattle, the bass in dotted eighths against the 6/8 | shawm, landing on the flat seventh in bar one; paired shawms in B | F to G, bVII - I |
 | 8 | The Emberdeep (the Warden of the Deep) | A minor with the Neapolitan B flat and E major, 4/4, 150 | 16 bars, 25.6 s | full choir, strings, a spiccato motor in sixteenths | four-on-the-floor kick with pickups, taiko on a 3-3-2, snare with ghosts and rolls, the boss loop's square bass and pluck | low brass; a chant over brass in B | E to Am, harmonic V - i |
-| 9 | The Sketchbook (Wizard Dude) | C major, 3/4, 168 | 24 bars, 25.7 s | soft strings, pizzicato oom-pah-pah | a frame drum's oom with a pickup, a snare's pah-pah on two and three, the toy tick, a plucked bass, harp eighths | music box; a soft flute in B with the music box counting the beats above it | G to C, V - I |
+| 9 | ~~The Sketchbook (Wizard Dude)~~ - removed 2026-11-09 | C major, 3/4, 168 | 24 bars, 25.7 s | soft strings, pizzicato oom-pah-pah | a frame drum's oom with a pickup, a snare's pah-pah on two and three, the toy tick, a plucked bass, harp eighths | music box; a soft flute in B with the music box counting the beats above it | G to C, V - I |
 | 10 | The Fallow Fields (the Hayward) | G Mixolydian, 9/8 slip jig, dotted quarter 116 | 16 bars, 24.8 s | G-D drone, held strings, the fiddle's figure in spiccato through the three groups | taiko on the three dotted beats, frame drums through every eighth, a snare on the third, the bass jigging root-root-octave, a harp rocking through the chord | flute; a solo fiddle answers in B, a second an octave under | Dm to G, v - I |
 | 11 | The Broken Circle (the Ninth Stone) | D Dorian, 5/4 counted 3+2, 138 | 12 bars, 26.1 s | D-A drone, held strings, a low male choir, the horn call as ostinato; a high choir joins in B | taiko on both downbeats with a stroke into each, a snare on the second beat of each group, frame drums, the bass in eighths leaping its octave, harp walking the chord | two horns in fifths; a wordless solo voice in B | C to Dm, bVII - i |
 | 12 | The Last Bridge (the Constable) | A Aeolian, a 2/4 march at 120 | 24 bars, 24.0 s | held low strings, the march figure (dotted eighth, sixteenth, two eighths) in spiccato every bar, and the wind: long gusts of noise between 110 and 650 Hz | a side drum on the march rhythm with rolls, a bass drum, the bass plucked on the beats and pizzicato on the off-beats | two horns in octaves; two fifes over a horn an octave under them in B | G to Am, bVI - bVII - i |
@@ -643,7 +645,7 @@ Three things in that table are constraints, not taste:
   in *amplitude* at 1.6 Hz, not in pitch at 9; the bass flute's bend is 90 cents over 140 ms, not
   a droplet's octave-and-a-half sweep; the tek and the rattle are bands (1.7 and 2.2 kHz), never
   an open highpass. Check a new instrument against the element table in section 4.
-- **The Sketchbook is the kids' chapter** and its music respects that the same way the art does:
+- **The Sketchbook was the kids' chapter** (removed, with its set, on 2026-11-09) and its music respected that the same way the art did:
   nothing in it mocks the drawings, and nothing pretends to be what they drew. It was planned as
   a lullaby and the brief asked for energy, so it is a toy waltz - quick, warm, played straight. A
   music box is a toy that is taken seriously by whoever owns it; that is the register.

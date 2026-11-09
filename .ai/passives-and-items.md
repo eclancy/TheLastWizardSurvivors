@@ -1,5 +1,7 @@
 # Passives, boons and items — the loadout economy shift
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 > **Status: all five phases have landed.** The reachability audit, the boon system, the removal of
 > all eleven passive spells (save schema 9), chest item rarities, and Full Set Enchantment tags.
 > `gameplay-design.md` describes what shipped; the rest of this document is the plan it was built

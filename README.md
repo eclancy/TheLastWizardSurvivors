@@ -22,7 +22,7 @@ repository, and most of what follows is about it.
 
 ## The art is code
 
-**3,764 images, 1,754 of them ground tiles**, drawn by the 179 Python scripts in
+**3,807 images, 1,754 of them ground tiles**, drawn by the 179 Python scripts in
 [`tools/art/`](tools/art). Not exported from an editor — *drawn in code*, pixel by pixel, against
 a fixed palette. One command rebuilds every image in the game:
 
@@ -87,7 +87,7 @@ console on launch.
 ## Layout
 
 ```
-scripts/      ~535 C# files, flat — no subdirectories
+scripts/      ~540 C# files, flat — no subdirectories
 scenes/       ~235 .tscn, flat
 SpellData_*.tres, CharacterData_*.tres   at the repo root, where they all live
 assets/       generated art and synthesised audio

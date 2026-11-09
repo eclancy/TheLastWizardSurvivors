@@ -1,5 +1,7 @@
 # The dark wizard, playable
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-11-02: *"the dark wizard should be unlockable if you beat the whole game on hard mode"*.
 
 **Status: proposed for Eric's review, and built on `wip/dark-wizard-playable` (section 5).** Nobody can earn

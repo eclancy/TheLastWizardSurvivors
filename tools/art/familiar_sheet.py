@@ -14,7 +14,7 @@ The captures (one Godot at a time; --no-save-writes disables saving before the s
 _UiShot's own switch is too late for):
 
   "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --no-save-writes \\
-      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=0 --start-spell=familiar:familiar_dog \\
+      --scene=res://scenes/node_2d_game.tscn --stage=0 --character=1 --start-spell=familiar:familiar_dog \\
       --demo-spell-level=4 --demo-evolutions=familiar_dog_great_hound \\
       --spell-stage=16,220,0 --fx-lead=150 --frames=400 --burst=4,10 --shot=familiar-greathound-pc
   (phone: --resolution 540x1212 ... --portrait --safe-area --shot=familiar-greathound-phone)

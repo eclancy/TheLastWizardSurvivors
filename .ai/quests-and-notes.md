@@ -1,5 +1,7 @@
 # Quests and chapter notes
 
+> **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
+
 Eric, 2026-10-31:
 
 > "Starting every new map can have a little context as well, such as the players wizard making a small
@@ -57,7 +59,7 @@ what the place smells or feels like. `ChapterNotes` holds them.
 | Frozen Waste | Too cold to smell anything. The wind cuts through the robe. / + Väinämöinen's line |
 | Scorched Sands | Heat off cracked ground, and no water anywhere. / Hot dust and old salt. The dead still walk the road. |
 | The Emberdeep | Sulphur, and stone too hot to touch. / The end of the road. His seat is close. |
-| The Sketchbook | Squared paper underfoot. It smells of pencil. / He has never been here. |
+| ~~The Sketchbook~~ | (removed with the chapter, 2026-11-09: "Squared paper underfoot. It smells of pencil. / He has never been here.") |
 
 The castle's three chapters have no note yet. The validator reports the day one flips playable without one.
 
@@ -84,16 +86,15 @@ was (intro, then the held or freed line), without the clues.
 the intro and the clues. **On a later run, while a clue remains, it shows again with the clues alone** - the
 place was described the first time, and text stays minimal - and once nothing is left there it does not
 show at all (the chapter banner again). Either way it replaces the chapter banner on that run, so there is
-one piece of writing about the place, not two. It does not pause the run. The Sketchbook has no clue (no
-event, no vault); its slate would set one in the slate's own ink, as it does the intro.
+one piece of writing about the place, not two. It does not pause the run.
 
 **The card** (`ChapterNoteCard`, CanvasLayer 7) is a torn scrap of paper, drawn in code. The heading is
 bold Cinzel. The intro is the engine sans, upright; the clues are the same sans slanted by a fifth with a
 `FontVariation` (italics that stay legible, `.ai/level-up-screen.md` 4a). They are written in letter by letter. On a
 PC it sits in the lower right. On a phone it sits just under the HUD band, because the lower half
 belongs to the thumb. It goes after about ten seconds, or earlier on a click or tap on the paper, or on
-A, Enter or Space. **In the Sketchbook it is a slate of floor stone, not paper**: that chapter's ground
-is already paper, and the note must not repeat the material it sits on.
+A, Enter or Space. (In the Sketchbook it was a slate of floor stone, since that ground was paper already;
+the slate went with the chapter on 2026-11-09, and every note is paper now.)
 
 **Its torn outline must triangulate.** `DrawColoredPolygon` draws nothing for one that does not, without a
 word, so the Fallow Fields' note showed only its rim, dark ink on bare stubble (2026-11-01). The corners
@@ -143,7 +144,7 @@ already measures, through the same `Measure` the achievements page uses. The onl
 - the camera hole on a phone.
 
 Each quest is a Cinzel heading at Body size, then one sans line with the count. There is no plate
-behind it; the text is outlined in occlusion black, which reads on the Sketchbook's white paper too.
+behind it; the text is outlined in occlusion black, which reads on the palest ground too.
 It ignores the mouse and sits on the HUD's layer, under the touch stick, so a thumb on it still steers.
 
 `Node2DGame.TickAchievementWatch` refreshes it **once a second** with the run folded in
@@ -266,7 +267,6 @@ The note is fully written by about frame 330.
 
 - Pad and touch walks of the journal, on the pause screen and on the map: the inner tabs, Track, Back,
   and the selection returning to the Journal button. These are reasoned from `MenuNavigator`, not driven.
-- The Sketchbook's slate note has never been photographed (`--stage=8 --notes-unseen --frames=330`).
 - The "3 at most" refusal has never been pressed.
 - No sound is wired to the opening (`.ai/audio-direction.md` would decide one).
 - The `StageHintCaption`, which floats near the player, does not read `HudKeepOut`.

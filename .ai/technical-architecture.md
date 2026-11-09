@@ -121,12 +121,13 @@ full.
 - **Checks**. `python tools/art/ui_contrast.py` has a "HUD" block: the twelve chips, the numeral
   on its outline over white, and the four rims against the slot backing on the darkest floor and
   on white paper. The slot backing is floor stone deep at 0.85 because at 0.62 the plain steel rim
-  measured 1.3:1 on the Sketchbook's paper. Photograph it with `_UiShot`: `--fill-book` for a
+  measured 1.3:1 on white (the Sketchbook's paper, removed with that chapter on 2026-11-09). Photograph it with `_UiShot`: `--fill-book` for a
   full book, `--give-relics=blank_folio` for the seventh slot, `--grant-boons=` for tags,
   `--hud-milestones` for one spell at each of the three milestones (through the real Apotheosis
   pick, so its field attaches), `--touch-controls` on the phone canvas for the band and the pause
   button. `tools/art/_hud_loadout_sheet.png` (gitignored) is the strip on the dungeon, the swamp
-  and the Sketchbook at 1280x720, 1920x1080 and the Pixel 9 canvas.
+  and the Fallow Fields (the palest ground, in place of the removed Sketchbook) at 1280x720, 1920x1080
+  and the Pixel 9 canvas.
 
 ## Performance Notes
 - Use object pooling for projectiles.
