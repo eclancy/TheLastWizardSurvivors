@@ -117,7 +117,7 @@ public partial class XPOrb : Area2D
 
 	/// <summary>
 	/// Fly to the player from wherever this orb is, as if it had come into pickup range. The Spirit
-	/// Mirror (John Dee's Apotheosis) pulls every orb inside its well's reach to him when it closes.
+	/// Mirror (John Dee's Apotheosis, on Folio since 2026-11-09) draws every orb in its reach to him when it opens.
 	/// </summary>
 	public void PullToPlayer()
 	{
@@ -258,6 +258,8 @@ public partial class XPOrb : Area2D
 		{
 			body.Call("AddXp", Value);
 			SfxPlayer.PickupXp(GlobalPosition);
+			// Folio, John Dee's opener: every orb he gathers turns a page of his book (Player.Folio.cs).
+			(body as Player)?.NotifyOrbGathered();
 			QueueFree();
 		}
 	}

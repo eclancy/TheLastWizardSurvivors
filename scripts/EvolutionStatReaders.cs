@@ -320,6 +320,15 @@ public static class EvolutionStatReaders
 		["orb_of_ages"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Area | EvolutionStat.Speed | EvolutionStat.Amount,
 			"Player.FireOrbOfAges (Projectiles and Amount are orbs, Area the ring, Speed the orb, ZoneDuration the ward's time; Burning Rim, Missile Ward, Walking Ward and The Once and Future by id, in OrbOfAges)",
 			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.CritDamage),
+		// John Dee's opener (.ai/character-fit.md section 6): Folio.Refresh reads the turn's numbers, Player.FireFolio the
+		// count. Projectiles and Amount are pages a timed turn throws (an orb's turn is always one); Range is the reach a
+		// page finds its quarry in; Pierce is Gilt Edge's, the only pierce it has; Speed is the page's flight. No Area and
+		// no Scale: no card sets either (the ink and the mirror grow with the wizard's own Area), and the pages are drawn
+		// at one size. Torn Leaf, Inkblot, Gilt Edge's gold, Bound Volume, Commonplace Book and the Spirit Mirror by id.
+		[Folio.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Pierce | EvolutionStat.Speed
+				| EvolutionStat.Rider | EvolutionStat.Amount,
+			"Folio.Refresh, Folio.Strike and Player.FireFolio (pages a timed turn throws plus Amount; Range is the reach a page finds its quarry in; Torn Leaf, Inkblot, Gilt Edge, Bound Volume, Commonplace Book and the Spirit Mirror by id)",
+			SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",

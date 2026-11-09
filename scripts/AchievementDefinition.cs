@@ -233,6 +233,13 @@ public static class AchievementDefinitions
 	public const int MortlakeChestTarget = 100;
 
 	/// <summary>
+	/// Chests in ONE run that pay Folio (the Magpie feat): John Dee opens on it, and everyone else earns it by collecting
+	/// as he does. A run that reaches the boss opens about seventeen on the elite-chest economy (_ChestSim,
+	/// .ai/passives-and-items.md section 8), so ten is a good run's worth, not a full one's.
+	/// </summary>
+	public const int MagpieChestTarget = 10;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -466,6 +473,18 @@ public static class AchievementDefinitions
 			RewardText = "300 Arcane Energy", CurrencyReward = 300,
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.TotalKills, Target = 2000,
+		},
+		// FOLIO'S FEAT (.ai/character-fit.md section 6, 2026-11-09): John Dee opens on Folio, and everyone else earns it by
+		// collecting the way he does - ten chests in a single run. One run, not a lifetime: Elite Hunter and The Library at
+		// Mortlake already count every chest ever opened. Measured off the best run kept in the lifetime stats
+		// (LifetimeStats.BestChestsInRun), so the menu shows the best run so far and the pause screen this run's count.
+		new()
+		{
+			Id = "magpie", DisplayName = "Magpie",
+			Description = $"Open {MagpieChestTarget} chests in a single run.",
+			RewardText = "Unlocks Folio", SpellUnlockId = "folio",
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestChestsInRun, Target = MagpieChestTarget,
 		},
 		new()
 		{

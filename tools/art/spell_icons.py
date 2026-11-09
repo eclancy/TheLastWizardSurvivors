@@ -536,6 +536,61 @@ def hollow_star():
     return c
 
 
+def folio():
+    """Folio, John Dee's opener (.ai/character-fit.md section 6): an open book, and one page torn loose and flying.
+
+    Three things, in the order the eye takes them: the loose page up and to the right - the one bright shape on the
+    plate, the bone ramp lit from the upper left, two lines of ink and a violet-black edge on its shaded sides, as the
+    game draws every page (scripts/Folio.cs); the open book it came from, low and wide, its pages pale over violet
+    boards with a dark gutter; and between them a short trail of Arcane motes thinning into Darkness's - the spell's
+    two elements, and the page's flight. Nothing on it is a mirror or a well: those were Hollow Star's, and the Spirit
+    Mirror is the form's own icon.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    hi, lit, base, shade = bl.tone("skin", "hi"), bl.tone("skin", "lit"), bl.tone("skin", "base"), bl.tone("skin", "shade")
+    vhi, vlit, vbase, vshade, vdeep = bl.MATERIALS["violet"]
+    acore, ahot, amid, aedge = bl.ELEMENTS["arcane"]
+    dcore, dhot, dmid, dedge = bl.ELEMENTS["darkness"]
+
+    # The boards, under the pages: a row of violet showing all round, deepest at the spine.
+    c.poly_shade([(2, 19), (15, 21), (16, 21), (29, 19), (29, 27), (16, 29), (15, 29), (2, 27)],
+                 [vlit, vbase, vshade, vdeep], bias=0.1)
+    # The two pages: the left facing the key and lit, the right a stop down.
+    c.poly_shade([(3, 19), (15, 21), (15, 27), (3, 25)], [hi, lit, lit, base], bias=-0.05)
+    c.poly_shade([(16, 21), (28, 19), (28, 25), (16, 27)], [lit, base, base, shade], bias=0.1)
+    # The gutter, and the shadow the left page throws into it.
+    c.vline(15, 21, 28, vdeep)
+    c.vline(16, 21, 27, shade)
+    # Lines of ink on both pages, following the pages' slope.
+    for (x0, x1, y) in ((5, 12, 21), (5, 10, 23)):
+        for x in range(x0, x1 + 1):
+            c.set(x, y + (x - 3) // 6, dedge)
+    for (x0, x1, y) in ((18, 26, 23), (18, 23, 25)):
+        for x in range(x0, x1 + 1):
+            c.set(x, y - (x - 16) // 6, dedge)
+
+    # The loose page, tilted, up and to the right.
+    leaf = [(17, 5), (25, 2), (28, 10), (20, 13)]
+    c.poly_shade(leaf, [hi, hi, lit, base], bias=-0.1)
+    # Its shaded sides: the lower edge and the right, in Darkness's edge.
+    c.line(20, 13, 28, 10, dedge)
+    c.line(25, 2, 28, 10, dedge)
+    # Two lines of ink across it, along its tilt.
+    c.line(19, 7, 24, 5, vdeep)
+    c.line(20, 9, 24, 8, vdeep)
+    # The key's fleck on its upper-left corner.
+    c.set(18, 5, hi)
+
+    # The flight: motes from the gutter up to the page, Arcane near the page and Darkness near the book.
+    trail = [(16, 19, dmid), (16, 17, dhot), (17, 15, amid), (18, 14, ahot), (14, 16, dmid), (13, 13, amid)]
+    for (x, y, col) in trail:
+        c.set(x, y, col)
+    c.set(16, 20, acore)
+    # Occlusion under the book, one row, so it sits on the card.
+    c.hline(3, 28, 30, OCC)
+    return c
+
+
 def the_taking():
     """The dark wizard's own (.ai/dark-wizard-playable.md): a hand of his dark light closing on a warm mote.
 
@@ -1278,6 +1333,7 @@ ICONS = [
     ("sovereign-rite-light", sovereign_rite, CELL),
     ("riptide-water", riptide, CELL),
     ("hollow-star-dark", hollow_star, CELL),
+    ("folio-arcane", folio, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
     ("contagion-poison", contagion, CELL),
     ("bramble-seed-grass", bramble_seed, CELL),

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://87a62n7se1t7"
-path="res://.godot/imported/hollow_star_spirit_mirror.png-81e1329f2394e70afaeed9a8dd5823e2.ctex"
+uid="uid://cxgytpnww3tx5"
+path="res://.godot/imported/folio-arcane.png-49fe37ae841cea15c91badab1d72f713.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bonelight/ui/evolutions/hollow_star_spirit_mirror.png"
-dest_files=["res://.godot/imported/hollow_star_spirit_mirror.png-81e1329f2394e70afaeed9a8dd5823e2.ctex"]
+source_file="res://assets/bonelight/ui/spells/folio-arcane.png"
+dest_files=["res://.godot/imported/folio-arcane.png-49fe37ae841cea15c91badab1d72f713.ctex"]
 
 [params]
 

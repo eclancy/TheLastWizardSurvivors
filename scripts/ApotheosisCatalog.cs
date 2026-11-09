@@ -134,18 +134,25 @@ public static class ApotheosisCatalog
 				"Swarm: the ground you stand your crowd on is ground that fights for you.",
 				new Color(0.55f, 0.90f, 0.40f), NoVisualScale),
 		},
-		// John Dee, the collector, freed by opening chests. "Pull" was on the ADR's unclaimed list and
-		// Hollow Star is the one spell in the roster that is ABOUT pulling, so the verb was his to take.
-		// The Spirit Mirror is Dee's obsidian scrying glass (the British Museum's): a well that drags
-		// the swarm from half again as far and, when it closes, draws every orb and flask in its reach
-		// to him.
+		// John Dee, the collector, freed by opening chests. "Pull" was on the ADR's unclaimed list, and it was his when he
+		// opened on Hollow Star, the spell ABOUT pulling. He opens on Folio since 2026-11-09 (.ai/character-fit.md section
+		// 6; Eric: "I don't think hollow star feels like a good spell for him ... can we still keep his spirit mirror
+		// finale to work with this?"): a book paid for by what he gathers, a page for every orb. The verb and the form moved
+		// with him; Hollow Star is nobody's opener now and has no form. The Spirit Mirror is Dee's obsidian scrying glass
+		// (the British Museum's): every tenth page it opens over the thickest pack and draws every orb and flask in its
+		// reach to him, and every orb it brings turns a page through the same pickup hook (Folio.SpiritMirrorId). What it
+		// pulls is what the dead dropped, never a body, so no boss is touched. Darkness, the one of Folio's two the form
+		// deepens; no card on Folio trades it away (Inkblot deepens it, Bound Volume adds Arcane beside it). No visual
+		// scale: the pages are drawn at one size. A save that saw the form on Hollow Star still has it seen
+		// (SaveData.MovedAscensions). The card's last sentence ("Every orb it brings turns a page") is its second line:
+		// with it the first ran past the card's 130 characters.
 		new()
 		{
-			CharacterId = "john_dee", SpellId = "hollow_star",
+			CharacterId = "john_dee", SpellId = Folio.SpellId,
 			Element = Element.Darkness, Verb = "pull",
-			Form = Make("hollow_star_spirit_mirror", "The Spirit Mirror", Element.Darkness,
-				"The well opens half again as wide and drags harder. Its collapse pulls every orb, potion and flask in reach to you.",
-				"Pull: the knot comes to your spells, and what it drops comes to your hands.",
+			Form = Make(Folio.SpiritMirrorId, "The Spirit Mirror", Element.Darkness,
+				"Every tenth page, your black mirror opens over the thickest pack and draws every orb and flask in its reach to you.",
+				"Pull: every orb it brings turns a page. Fight where they fall thickest.",
 				new Color(0.62f, 0.42f, 0.92f), NoVisualScale),
 		},
 		// Laelaps, the hound fated to catch whatever it hunted, freed by the coursing deed. "Reflect" was on
@@ -426,6 +433,8 @@ public static class ApotheosisCatalog
 	// Hollow Star and Obsidian Spike (since 2026-10-28) draw themselves out of the radius they hit and
 	// drop any scale, so on those five the 1.15 reached nothing (EvolutionStatReaders: no Scale) and is
 	// left off.
+	// Folio (John Dee's since 2026-11-09, when the Spirit Mirror left Hollow Star) draws its pages at one size, so its
+	// form is left off too.
 	private const float FormVisualScale = 1.15f;
 	private const float NoVisualScale = 1.0f;
 

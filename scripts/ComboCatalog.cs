@@ -246,7 +246,8 @@ public static class ComboCatalog
 		// again, Pyre a kindled light grown into a small sun. Together, a hand of his dark light seizes the
 		// strongest and crushes what stands round it (the collapse), and the light it tears out drifts home
 		// burning what it passes (the pyre), to be caught and thrown as his lanes. Hollow Star's Nova Seed or
-		// Kindled Ward's Kindling Flock seals it. Not John Dee's to make (Hollow Star is his), nor Seimei's (Kindled Ward).
+		// Kindled Ward's Kindling Flock seals it. Not Seimei's to make (Kindled Ward is his, ComboSeal.OwnSpell). John Dee
+		// could not make it while he opened on Hollow Star; he opens on Folio since 2026-11-09, and may.
 		new()
 		{
 			Id = TheTaking.SpellId,

@@ -27,6 +27,7 @@ public partial class CharacterSelection : Control
 		("familiar", "res://SpellData_Familiar.tres"),
 		("stormsweep", "res://SpellData_Stormsweep.tres"),
 		("sleet_runes", "res://SpellData_SleetRunes.tres"),
+		("folio", "res://SpellData_Folio.tres"),
 		("iron_palisade", "res://SpellData_IronPalisade.tres"),
 		("contagion", "res://SpellData_Contagion.tres"),
 		("bramble_seed", "res://SpellData_BrambleSeed.tres"),

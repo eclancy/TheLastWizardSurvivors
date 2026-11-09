@@ -56,6 +56,8 @@ public static partial class RegressionChecks
 		ValidateSpellVariants(warnings);
 		ValidateSpiritualWeapon(warnings);
 		ValidateFacingFamily(warnings);
+		// John Dee's opener and his Spirit Mirror on it (RegressionChecks.Folio.cs).
+		ValidateFolio(warnings);
 		ValidateSpawnFormations(warnings);
 		ValidateSwarmPressure(warnings);
 		ValidateQuestsAndNotes(warnings);

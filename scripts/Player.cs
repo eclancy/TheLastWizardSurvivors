@@ -53,6 +53,9 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene TheTakingScene { get; set; }
 	// Merlin's own spell (.ai/merlin.md): the ward and the orb that ricochets in it (scripts/OrbOfAges.cs).
 	[Export] public PackedScene OrbOfAgesScene { get; set; }
+	// John Dee's opener (.ai/character-fit.md section 6): one node in the arena that carries the book and every page
+	// it throws (scripts/Folio.cs, Player.Folio.cs).
+	[Export] public PackedScene FolioScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -1295,6 +1298,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_SleetRunes.tres"));
 		if (!spellCatalog.ContainsKey(OrbOfAges.SpellId))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_OrbOfAges.tres"));
+		if (!spellCatalog.ContainsKey(Folio.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Folio.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -4842,6 +4847,7 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase)) outcome = FireSleetRunes(spell, SleetRunesScene);
 		else if (spell.Id.Equals(TheTaking.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireTheTaking(spell, TheTakingScene);
 		else if (spell.Id.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireOrbOfAges(spell, OrbOfAgesScene);
+		else if (spell.Id.Equals(Folio.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireFolio(spell, FolioScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -6183,7 +6189,7 @@ public partial class Player : CharacterBody2D
 		bool twins = spell.HasEvolution(HollowStar.TwinStarsId);
 		int wells = Math.Clamp(spell.GetProjectileCountAtLevel(spell.CurrentLevel), 1, HollowStar.MaxPerCast);
 		// Every well of the cast pulls at this reach, so it is what each is cleared of the wizard by and
-		// spaced by (it was the area alone, without the level 3 reach or the Spirit Mirror's).
+		// spaced by (it was the area alone, without the level 3 reach).
 		float reach = HollowStarReach(spell);
 		sporeSpots[0] = HollowStar.OpenSpot(GlobalPosition, centre.GlobalPosition, reach);
 		int opened = 1;
@@ -6239,12 +6245,10 @@ public partial class Player : CharacterBody2D
 			script.CollapseRadius *= reach / MathF.Max(1f, script.PullRadius);
 			script.PullRadius = reach;
 			// 120 px/s (0.9.3, halved) brings the rim of a Black Sun well (about 260 px) within its
-			// collapse in about a second, so only the Spirit Mirror - half as wide again - drags harder.
-			// Twin Stars' Speed drags harder too: the knot it closes on is tighter, which is the spell's
-			// whole payload.
+			// collapse in about a second. Only Twin Stars' Speed drags harder: the knot it closes on is
+			// tighter, which is the spell's whole payload. (The Spirit Mirror, half as wide again, dragged
+			// harder too until it moved to Folio with John Dee, 2026-11-09.)
 			script.PullSpeed *= MathF.Max(0.25f, spell.GetSpeedMultiplier());
-			if (spell.IsApotheosis)
-				script.PullSpeed *= HollowStar.SpiritMirrorPullSpeed;
 			script.PullSeconds = (script.PullSeconds
 				+ spell.GetEffectValueAtLevel(SpellEffect.ZoneDuration, spell.CurrentLevel)) * durationMultiplier;
 			// A knot held where it closed, for the area spells beside it: read, though since Infinite
@@ -6263,14 +6267,12 @@ public partial class Player : CharacterBody2D
 	// The reach a Hollow Star well of this spell pulls at. The evolutions' area belongs in it - Bramble
 	// Seed's bug again (.ai/gameplay-design.md): Amplified Impact's +30% and Titan Cataclysm's +100% once
 	// grew nothing, while Titan's x2 visual scale drew the well twice as wide as it pulled (found putting
-	// John Dee's Apotheosis path through Titan Cataclysm). The level 3 reach is pixels on the scene's 150,
-	// and the Spirit Mirror opens half again as wide. FireHollowStar clears the wizard by this before any
-	// well exists; OpenHollowStar sizes the well by it.
+	// John Dee's Apotheosis path through Titan Cataclysm, when he still opened on it). The level 3 reach is
+	// pixels on the scene's 150. FireHollowStar clears the wizard by this before any well exists;
+	// OpenHollowStar sizes the well by it.
 	private float HollowStarReach(SpellData spell)
 	{
 		float area = GetEffectiveAreaMultiplier() * spell.GetAreaMultiplierAtLevel(spell.CurrentLevel);
-		if (spell.IsApotheosis)
-			area *= HollowStar.SpiritMirrorReach;
 		float reachBonus = spell.GetEffectValueAtLevel(SpellEffect.AreaSize, spell.CurrentLevel);
 		return (HollowStar.DefaultPullRadius + reachBonus) * area;
 	}
@@ -8072,6 +8074,8 @@ public partial class Player : CharacterBody2D
 		// Fata Morgana's mirage goes with the runes it casts.
 		if (spell.Id.Equals("sleet_runes", StringComparison.OrdinalIgnoreCase))
 			ReleaseFataMorgana();
+		// The book lives in the arena too, with every page it has thrown (Player.Folio.cs).
+		ReleaseFolio(spell);
 	}
 
 	// --- Level-up charges ---
@@ -9169,6 +9173,8 @@ public partial class Player : CharacterBody2D
 		"sagittarius" => "Stars",
 		"stormsweep" => "Sweeps",
 		"sleet_runes" => "Runes",
+		// Folio's projectiles are the pages a turn of the book throws (scripts/Folio.cs).
+		"folio" => "Pages",
 		// The Familiar counts in its form's noun (Hounds, Crows, Cats - SpellVariant.CountNoun); this is the
 		// template's, which no run plays.
 		"familiar" => "Hounds",

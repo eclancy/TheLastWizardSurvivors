@@ -86,7 +86,7 @@ PALETTE = B.build_palette({
     "B": E["grass"][0], ",": E["grass"][1], "'": E["grass"][2], "`": E["grass"][3],
 })
 
-# Darkness, for John Dee's scrying mirror (Hollow Star). Every printable character is a colour
+# Darkness, for John Dee's scrying mirror (his Spirit Mirror). Every printable character is a colour
 # above already, so these four are control characters - single bytes like any other cell - and
 # are only ever written through these names. Core / hot / mid / edge, as the other element ramps.
 DK0, DK1, DK2, DK3 = "\x01", "\x02", "\x03", "\x04"
@@ -147,7 +147,7 @@ ROBES = {
     "tituba": ("w", "v", "x"),          # violet cloth  - Riptide, the sea she was taken from
     "vainamoinen": ("c", "d", "b"),     # wool, blue-grey - Bramble Seed, the forests he sowed
     # Freed by collecting rather than out of a cell, and dressed by the same rule: a material row.
-    "dee": ("N", "p", "j"),             # stone, near-black - a scholar's gown; Hollow Star
+    "dee": ("N", "p", "j"),             # stone, near-black - a scholar's gown; Folio
     # The onmyoji's white hunting robe over black, both material rows: linen's pale end for the robe,
     # stone for the cap and the trousers. Kindled Ward is in his fingers, not on his clothes.
     "seimei": ("l", "L", "e"),          # linen, pale - the kariginu; Kindled Ward
@@ -1970,8 +1970,10 @@ def hexer():
 
 
 def dee(phase=None):
-    """Hollow Star. John Dee, Elizabeth's astrologer and the greatest collector of books in
-    England, whose library at Mortlake was looted while he was abroad.
+    """John Dee, Elizabeth's astrologer and the greatest collector of books in England, whose
+    library at Mortlake was looted while he was abroad. Drawn when he opened on Hollow Star (the
+    pull below); he opens on Folio since 2026-11-09 (.ai/character-fit.md section 6) and the sprite
+    was not redrawn - the girdle book at his hip is his spell now, and the mirror his form's.
 
     The spell opens a well in the thick of the swarm and DRAWS it in, so he is the one figure in
     the cast who is receiving rather than throwing: stooped over a cupped free hand held out low,

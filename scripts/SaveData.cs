@@ -361,13 +361,15 @@ public class SaveData
 	/// Apotheosis forms that moved to another spell after a save could have seen them: the key now, to the key a
 	/// save holds from before. A seen key is spell AND branch, so a form that changed spell would read as never
 	/// seen, and the browser would seal again a form the player had already met. Imhotep's Eye of Ra moved from
-	/// Fireball to Scorching Ray with his opener on 2026-11-09 (.ai/character-fit.md section 1). Read in
+	/// Fireball to Scorching Ray with his opener on 2026-11-09 (.ai/character-fit.md section 1), and John Dee's Spirit
+	/// Mirror from Hollow Star to Folio with his the same day (section 6). Read in
 	/// <see cref="IsAscensionSeen"/>, as the Familiar's renames are, so no save is rewritten and no schema step is needed.
 	/// </summary>
 	public static readonly IReadOnlyDictionary<string, string> MovedAscensions =
 		new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
 		{
 			[AscensionKey("scorching_ray", ScorchingRayBeam.EyeOfRaId)] = AscensionKey("fireball", "fireball_eye_of_ra"),
+			[AscensionKey(Folio.SpellId, Folio.SpiritMirrorId)] = AscensionKey("hollow_star", Folio.HollowStarSpiritMirrorId),
 		};
 
 	public bool IsAscensionSeen(string spellId, string branchId)

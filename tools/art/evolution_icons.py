@@ -1206,6 +1206,8 @@ SPELLS = {
     "contagion":         dict(paint=si.contagion, travel=None, tip=(16, 16), rows=("poison",)),
     "bramble_seed":      dict(paint=si.bramble_seed, travel=(0, -1), tip=(16, 4), rows=("grass",)),
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
+    # John Dee's opener (.ai/character-fit.md section 6): the open book and the page flying from it (the tip).
+    "folio":             dict(paint=si.folio, travel=(0.8, -1), tip=(26, 4), rows=("arcane", "darkness")),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -3974,12 +3976,194 @@ def _(sp, c):
     O(sp, shards)
 
 
-@card("hollow_star_spirit_mirror")
+# The Spirit Mirror left Hollow Star with John Dee's opener on 2026-11-09: it is Folio's form now (below).
+
+
+# --- Folio -------------------------------------------------------------------------------------------
+
+# John Dee's book (scripts/Folio.cs). Every card is something more a PAGE does (.ai/spell-roster.md 2e), and every icon
+# draws the page doing it: torn in two over what it struck, spilling its ink on the ground, edged in gold and cut
+# through a line of them, the book thrown shut and bursting open, the ink of the slain flying home into it.
+
+def _lerp(a, b, t):
+    return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
+
+
+def leaf(cv, pts, edge=None, ink=True):
+    """One page, as the game draws it: the bone ramp lit from the upper left, its shaded sides (right and bottom) in
+    Darkness's edge - or gold, gilt - and two lines of violet ink across it. pts: top-left, top-right, bottom-right,
+    bottom-left."""
+    b = M["skin"]
+    edge = edge or E["darkness"][3]
+    tl, tr, br, bl = pts
+    cv.poly_shade(pts, [b[0], b[0], b[1], b[2]], bias=-0.1)
+    cv.line(tr[0], tr[1], br[0], br[1], edge)
+    cv.line(br[0], br[1], bl[0], bl[1], edge)
+    if ink:
+        for (t, w) in ((0.3, 0.8), (0.58, 0.5)):
+            left, right = _lerp(tl, bl, t), _lerp(tr, br, t)
+            a, z = _lerp(left, right, 0.18), _lerp(left, right, 0.18 + 0.64 * w)
+            cv.line(a[0], a[1], z[0], z[1], M["violet"][4])
+
+
+def open_book(cv, dy=0):
+    """The open book alone, low and wide: pale pages over violet boards, the gutter dark - si.folio's book."""
+    b, v = M["skin"], M["violet"]
+    cv.poly_shade([(2, 19 + dy), (15, 21 + dy), (16, 21 + dy), (29, 19 + dy), (29, 27 + dy), (16, 29 + dy),
+                   (15, 29 + dy), (2, 27 + dy)], [v[1], v[2], v[3], v[4]], bias=0.1)
+    cv.poly_shade([(3, 19 + dy), (15, 21 + dy), (15, 27 + dy), (3, 25 + dy)], [b[0], b[1], b[1], b[2]], bias=-0.05)
+    cv.poly_shade([(16, 21 + dy), (28, 19 + dy), (28, 25 + dy), (16, 27 + dy)], [b[1], b[2], b[2], b[3]], bias=0.1)
+    cv.vline(15, 21 + dy, 28 + dy, v[4])
+    cv.vline(16, 21 + dy, 27 + dy, b[3])
+
+
+def torn_leaf():
+    """Torn Leaf: a page torn in two over the skull it struck, the halves flung apart either way."""
+    c = _cv()
+    a = E["arcane"]
+    b = M["skin"]
+    foe(c, 16, 25, 1.15)
+    # Where each half went: a short streak from the strike up to it.
+    c.line(14, 21, 10, 18, a[2])
+    c.line(18, 21, 22, 18, a[2])
+    leaf(c, [(3, 8), (12, 6), (13, 15), (5, 17)])
+    leaf(c, [(19, 6), (28, 8), (27, 17), (18, 15)])
+    # The torn edges, ragged: teeth of the paper's lit tone along the two inner sides.
+    for (x, y) in ((13, 7), (12, 9), (13, 11), (12, 13)):
+        c.set(x, y, b[1])
+    for (x, y) in ((18, 7), (19, 9), (18, 11), (19, 13)):
+        c.set(x, y, b[1])
+    # Scraps thrown up between them.
+    c.set(15, 4, b[0])
+    c.set(16, 12, b[1])
+    c.set(15, 16, a[1])
+    return c
+
+
+def gilt_page():
+    """Gilt Edge: one page edged in gold, and the clean cut it made through the line of skulls behind it."""
+    c = _cv()
+    g = GOLD
+    foe(c, 20, 13, 1.0)
+    foe(c, 26, 7, 0.9)
+    # The cut, along the page's line, through both: gold, dashed.
+    for i in range(0, 19):
+        x, y = 12 + i * 0.95, 21 - i * 0.95
+        if i % 4 != 3:
+            c.set(x, y, g[0] if i % 2 == 0 else g[1])
+    leaf(c, [(2, 19), (11, 16), (13, 25), (5, 28)], edge=g[1])
+    # The gilt runs along its top too, and catches the key at the corner.
+    c.line(2, 19, 11, 16, g[1])
+    c.set(2, 19, g[0])
+    c.set(13, 25, g[2])
+    return c
+
+
+def bound_volume():
+    """Bound Volume: the book thrown shut and bursting open in the thick of them - its pages flying out every way."""
+    c = _cv()
+    v, b, a = M["violet"], M["skin"], E["arcane"]
+    for k in range(6):
+        ang = -math.pi / 2 + k * TAU / 6.0
+        px, py = C0 + math.cos(ang) * 11.5, C0 + math.sin(ang) * 11.5
+        leaf(c, [(px - 2, py - 2), (px + 2, py - 2.5), (px + 2.5, py + 2), (px - 1.5, py + 2.5)], ink=False)
+        c.line(C0 + math.cos(ang) * 6.5, C0 + math.sin(ang) * 6.5, C0 + math.cos(ang) * 8.5, C0 + math.sin(ang) * 8.5, a[1])
+    # The closed book: violet boards lit along the spine and the top, the page block's pale fore-edge, a gold clasp.
+    c.poly_shade([(11, 9), (20, 10), (20, 22), (11, 21)], [v[0], v[1], v[2], v[3]])
+    c.vline(11, 9, 21, v[0])
+    c.line(11, 9, 20, 10, v[0])
+    c.vline(19, 11, 21, b[1])
+    c.vline(20, 11, 21, b[2])
+    c.set(18, 15, GOLD[0])
+    c.set(19, 15, GOLD[1])
+    c.set(20, 15, GOLD[2])
+    c.set(12, 10, a[0])
+    return c
+
+
+def commonplace_book():
+    """Commonplace Book: the open book, and the ink of two of the slain flying home into it - dark letters with a
+    spark of Arcane at their hearts, on curving paths from the skulls they left."""
+    c = _cv()
+    a, d = E["arcane"], E["darkness"]
+    foe(c, 6, 8, 0.95)
+    foe(c, 26, 8, 0.95)
+    open_book(c, dy=1)
+    for side in (-1, 1):
+        for i in range(1, 9):
+            t = i / 9.0
+            x = 16 + side * (10 - 10 * t) - side * math.sin(t * math.pi) * 2.0
+            y = 11 + 9 * t - math.sin(t * math.pi) * 4.0
+            if i % 3 == 0:
+                c.set(x, y, M["violet"][4])
+                c.set(x + 1, y, M["violet"][4])
+                c.set(x, y + 1, M["violet"][4])
+                c.set(x + 1, y + 1, a[1])
+            else:
+                c.set(x, y, d[2] if i < 5 else a[2])
+    return c
+
+
+@card("folio_torn_leaf")
 def _(sp, c):
-    """The Spirit Mirror: Dee's obsidian glass, and every orb in its reach pulled to it."""
+    reset(sp)
+    sp.subject = torn_leaf
+
+
+@card("folio_inkblot")
+def _(sp, c):
+    """Inkblot: the book and its page drawn up, the ink dripping off the page, and the black stain on the ground."""
+    reset(sp)
+    sp.place = Place(0.74, dy=-5)
+
+    def stain(cv, x):
+        d, v = E["darkness"], M["violet"]
+        # A rim a stop up from the Darkness night it lies on, or the black blot vanishes into it.
+        cv.disc(C0, 25.5, 12.0, 4.0, d[2])
+        cv.disc(C0 + 0.5, 25.8, 10.5, 3.2, d[3])
+        cv.disc(C0 + 0.5, 26.0, 9.0, 2.4, v[4])
+        cv.set(C0 - 5, 24.5, d[1])
+        cv.set(C0 - 4, 24.5, d[2])
+    U(sp, stain)
+
+    def drips(cv, x):
+        v, d = M["violet"], E["darkness"]
+        for (px, py) in ((21, 14), (21, 16), (20, 19)):
+            cv.set(px, py, v[4])
+            cv.set(px + 1, py, d[3])
+    O(sp, drips)
+
+
+@card("folio_gilt_edge")
+def _(sp, c):
+    reset(sp)
+    sp.subject = gilt_page
+
+
+@card("folio_bound_volume")
+def _(sp, c):
+    reset(sp)
+    sp.subject = bound_volume
+
+
+@card("folio_commonplace_book")
+def _(sp, c):
+    reset(sp)
+    sp.subject = commonplace_book
+
+
+@card("folio_spirit_mirror")
+def _(sp, c):
+    """The Spirit Mirror (John Dee's Apotheosis, on Folio since 2026-11-09): Dee's obsidian glass, and the orbs and the
+    loose pages it draws in from round it."""
     reset(sp)
     sp.subject = spirit_mirror
-    O(sp, lambda cv, x: m_orbs(cv, [(4, 9), (27, 8), (5, 21), (26, 21)]))
+
+    def drawn_in(cv, x):
+        m_orbs(cv, [(4, 9), (27, 8), (5, 21), (26, 21)])
+        leaf(cv, [(2, 13), (6, 12), (6.5, 16), (2.5, 17)], ink=False)
+        leaf(cv, [(25, 13), (29, 12.5), (29.5, 16.5), (25.5, 17)], ink=False)
+    O(sp, drawn_in)
 
 
 # --- Hunter's Draw ---------------------------------------------------------------------------------

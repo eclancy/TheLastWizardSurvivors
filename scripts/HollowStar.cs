@@ -28,7 +28,12 @@ using TheOneHeMissed.scripts;
 //
 // **Its own four cards** (2026-10-29, .ai/spell-roster.md section 2e: "lets make all mutations more
 // unique per spell"). Each develops the pull, which is this spell's and no other's; the ids are the
-// template's, so John Dee's path (Crush, then Black Sun) and every save carry over.
+// template's, so every save carries over.
+//
+// **Nobody's opener since 2026-11-09** (.ai/character-fit.md section 6). John Dee opened on it, and his Apotheosis,
+// the Spirit Mirror, was a well half again as wide whose collapse drew the orbs in its reach to him. He opens on Folio
+// now and the form went with him (Folio.SpiritMirrorId); Hollow Star is a spell anyone can earn (Survivor), with its
+// four cards and Eclipse and no form, and it is still Black Sun's half of The Taking and of Ra's planned Orrery.
 //   - Crush (level 4): the collapse hits harder for every body in the knot, and the core swells as
 //     the knot fills - CrushPerBody a body, up to CrushMostBodies.
 //   - Twin Stars (level 4): two wells a cast, on two packs, that drift together while they pull,
@@ -180,12 +185,6 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 	// Wells a single cast may open (Twin Stars' pair, with room for level bonuses).
 	public const int MaxPerCast = 6;
 
-	// THE SPIRIT MIRROR (John Dee's Apotheosis, verb "pull"). The reach is set by Player.FireHollowStar
-	// (x SpiritMirrorReach); what is here is the second half - the well hands over what it gathered.
-	public const float SpiritMirrorReach = 1.5f;
-	public const float SpiritMirrorPullSpeed = 1.35f;
-	private bool IsSpiritMirror => SpellData?.IsApotheosis == true;
-
 	private enum Phase { Opening, Pulling, Collapsing }
 
 	private Phase phase = Phase.Opening;
@@ -244,7 +243,6 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 	private static readonly StringName ParamClock = "clock";
 	private static readonly StringName ParamCorona = "corona";
 	private static readonly StringName ParamBlackSun = "black_sun";
-	private static readonly StringName ParamMirror = "mirror";
 	private static readonly StringName ParamHeatRadius = "heat_radius";
 	private static readonly StringName ParamHeat = "heat";
 	// The heat: the collapse's falloff drawn on the floor of the well (the shader's accretion glow), dense
@@ -302,7 +300,6 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 		wellMaterial.SetShaderParameter("ramp_mid", ramp.Mid);
 		wellMaterial.SetShaderParameter("ramp_edge", ramp.Edge);
 		wellMaterial.SetShaderParameter(ParamBlackSun, blackSun);
-		wellMaterial.SetShaderParameter(ParamMirror, IsSpiritMirror);
 		well = new Node2D { Name = "Well", ShowBehindParent = true, Material = wellMaterial };
 		AddChild(well);
 		well.Draw += DrawWell;
@@ -493,9 +490,6 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 		if (PlayerRef == null || !IsInstanceValid(PlayerRef))
 			return;
 
-		if (IsSpiritMirror)
-			PullLootToPlayer();
-
 		float radiusSquared = CollapseRadius * CollapseRadius;
 		EnemyRegistry.CollectNear(GlobalPosition, CollapseRadius, near);
 		int damage = Damage;
@@ -611,25 +605,6 @@ public partial class HollowStar : Node2D, IPaintsElementPath
 			seed.GlobalPosition = PlayerRef != null && IsInstanceValid(PlayerRef)
 				? OpenSpot(PlayerRef.GlobalPosition, shardTo[i], seed.PullRadius)
 				: shardTo[i];
-		}
-	}
-
-	// Every XP orb and every pickup that answers the magnet (a potion, a flask - never a chest) inside
-	// the reach flies to the player, from the frame the well closes. Orbs live in the group; pickups
-	// are children of the current scene, where Enemy.TryDropBonusItem puts them, so they are read
-	// there rather than by a walk of the whole tree.
-	private void PullLootToPlayer()
-	{
-		float reachSquared = PullRadius * PullRadius;
-		foreach (Node node in GetTree().GetNodesInGroup(XPOrb.GroupName))
-		{
-			if (node is XPOrb orb && IsInstanceValid(orb) && GlobalPosition.DistanceSquaredTo(orb.GlobalPosition) <= reachSquared)
-				orb.PullToPlayer();
-		}
-		foreach (Node node in GetTree().CurrentScene?.GetChildren() ?? new Godot.Collections.Array<Node>())
-		{
-			if (node is PickupBase pickup && IsInstanceValid(pickup) && GlobalPosition.DistanceSquaredTo(pickup.GlobalPosition) <= reachSquared)
-				pickup.PullToPlayer();
 		}
 	}
 

@@ -186,6 +186,10 @@ public static class SpellEvolutionCatalog
 			case OrbOfAges.SpellId:
 				SetupOrbOfAgesEvolutions(spell);
 				break;
+			// John Dee's opener (.ai/character-fit.md section 6): a book whose pages fly at the crowd.
+			case Folio.SpellId:
+				SetupFolioEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -2602,7 +2606,8 @@ public static class SpellEvolutionCatalog
 	// that collapses three times, a collapse that seeds wells on the next packs. The pull is this spell's
 	// verb and no other's, so its cards may develop it. Branch() keeps each id, its element gain and the
 	// gain's price; the name and the look are set here, after it. Crush and Black Sun (ids
-	// amplified_impact and titan_cataclysm) are John Dee's Apotheosis path, as their ids always were.
+	// amplified_impact and titan_cataclysm) were John Dee's Apotheosis path while he opened on it (his form
+	// moved to Folio with his opener on 2026-11-09), as their ids always were.
 	// The behaviours are HollowStar's, by id; only the numbers on the cards ride the stat fields.
 	private static void SetupHollowStarEvolutions(SpellData spell)
 	{
@@ -3835,6 +3840,97 @@ public static class SpellEvolutionCatalog
 			VisualTag = "TurningGale",
 			SynergyTag = "Ascension / Wind",
 			SynergyDescription = "Ascension: deepens Wind. Every rune is two passes, and the second comes from behind them."
+		});
+	}
+
+	// Folio (scripts/Folio.cs, .ai/character-fit.md section 6): John Dee's book, whose pages fly at the crowd - turned
+	// every cooldown and once more for every orb he gathers. Every card is something more a PAGE does, which is this
+	// spell's and no other's: it tears, it spills its ink, it is gilt and cuts on, the book is thrown whole, the dead are
+	// written back into it (spell-roster.md section 2e: every spell its own evolutions). Arcane + Darkness, a hybrid, so
+	// its element path is deepening either half, each at the hybrid's price: level 4 deepens Darkness (Inkblot) and
+	// level 8 Arcane (Bound Volume) - never both at one milestone, or a hybrid would reach three of one element
+	// (ValidateEvolutionElementCeiling). No card trades Darkness away: John Dee's form deepens it (ApotheosisCatalog).
+	// Every number on these cards is one Folio reads: damage and the turn through Folio.Refresh and the fire loop, the
+	// count through GetProjectileCountAtLevel, pierce through GetPierceAtLevel, a page's speed through
+	// GetSpeedMultiplier; the behaviours by id. Each percentage is computed from the number the option carries.
+	private static void SetupFolioEvolutions(SpellData spell)
+	{
+		const float inkDamage = 1.15f;
+		const int giltPierce = 2;
+		const float giltSpeed = 1.25f;
+		const int volumePages = 2;
+		const float volumeDamage = 1.3f;
+		const float commonplaceDamage = 1.35f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.TornLeafId,
+			DisplayName = "Torn Leaf",
+			// "Half" is Folio.TornShare; RegressionChecks.ValidateFolio holds the two together.
+			Description = "A page tears in two on its first strike, and each half flies on at another enemy nearby for half its cut.",
+			MilestoneLevel = 4,
+			VisualTag = "TornLeaf",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. One page, three wounds, where the crowd is thick."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.InkblotId,
+			DisplayName = "Inkblot",
+			Description = $"Where a page strikes, its ink spills: a black stain that slows whatever walks through it by {Folio.InkSlow * 100f:0}%. "
+				+ $"+{(inkDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 4,
+			DamageMultiplier = inkDamage,
+			BonusElementWeights = new() { { "Darkness", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "Inkblot",
+			SynergyTag = "Darkness / Slow",
+			SynergyDescription = "Deepens Darkness. The pack wades through the ground you have already cut."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.GiltEdgeId,
+			DisplayName = "Gilt Edge",
+			Description = $"Every page is edged in gold and cuts on through {giltPierce} more enemies, flying {(giltSpeed - 1f) * 100f:0}% faster.",
+			MilestoneLevel = 4,
+			PierceBonus = giltPierce,
+			SpeedMultiplier = giltSpeed,
+			VisualTag = "GiltEdge",
+			SynergyTag = "Pierce",
+			SynergyDescription = "No new element. A page goes on through the line it was thrown at."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.BoundVolumeId,
+			DisplayName = "Bound Volume",
+			Description = "Each turn of the book flies bound as one volume to the thickest pack and bursts open there. "
+				+ $"+{volumePages} pages a turn, +{(volumeDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			ProjectileCountBonus = volumePages,
+			DamageMultiplier = volumeDamage,
+			BonusElementWeights = new() { { "Arcane", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "BoundVolume",
+			SynergyTag = "Ascension / Arcane",
+			SynergyDescription = "Ascension: deepens Arcane. The timed turn lands as one burst of pages in the thick of them."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Folio.CommonplaceBookId,
+			DisplayName = "Commonplace Book",
+			Description = "Whatever a page kills is written into the book: its ink flies back to you and turns another page. "
+				+ $"+{(commonplaceDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = commonplaceDamage,
+			VisualTag = "CommonplaceBook",
+			SynergyTag = "Ascension / Pages",
+			SynergyDescription = "Ascension: no new element. Every kill is another page; the faster they fall, the faster it turns."
 		});
 	}
 }
