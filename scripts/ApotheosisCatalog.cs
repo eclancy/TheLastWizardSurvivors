@@ -201,7 +201,8 @@ public static class ApotheosisCatalog
 		// The Cumaean Sibyl, freed at the nine mouths in the Sunken Cave (.ai/chapter-wizards.md 4.3). "Echo" was
 		// nobody's: her cave had a hundred mouths and spoke with a hundred voices, and Arcane Explosion is the
 		// one spell set off by the others - so each burst sounds them again, from where she stands, at 40%
-		// (ArcaneExplosion.HundredMouthsId, Player.Echo.cs). Nothing is pulled, linked or doubled behind her:
+		// (ArcaneExplosion.HundredMouthsId, Player.Echo.cs) - since the Canticle (2026-11-09), on the beats of the
+		// music that follow the burst. Nothing is pulled, linked or doubled behind her:
 		// it is her own loadout, heard twice. Arcane, the spell's only element; no card on it trades Arcane
 		// away (Static Nova adds Lightning beside it). No visual scale: the blast is drawn from its range.
 		new()
@@ -209,7 +210,7 @@ public static class ApotheosisCatalog
 			CharacterId = "sibyl", SpellId = "arcane_explosion",
 			Element = Element.Arcane, Verb = "echo",
 			Form = Make(ArcaneExplosion.HundredMouthsId, "The Hundred Mouths", Element.Arcane,
-				"Each burst sounds your other spells again from where you stand, at 40% strength.",
+				"Each burst sounds your other spells again on the beats that follow, at 40% strength.",
 				"Echo: everything you cast, twice. An echo is never echoed, and never charges the burst.",
 				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
 		},

@@ -153,7 +153,7 @@ public static class EvolutionStatReaders
 			SpellEffect.ProjectileSpeed, SpellEffect.AreaSize, SpellEffect.ExplosionOnHit, SpellEffect.SplitOnHit,
 			SpellEffect.Pierce, SpellEffect.CritChance, SpellEffect.CritDamage),
 		["arcane_explosion"] = R(EvolutionStat.Damage | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Knockback | EvolutionStat.Rider,
-			"ArcaneExplosion.RefreshComputedStats, TriggerExplosion and OpenLingeringRift; charge-driven and persistent, so no cooldown and no visual scale (Sympathetic Blast, Resonance and Event Horizon's stasis by id)",
+			"ArcaneExplosion.RefreshComputedStats, TriggerExplosion and OpenLingeringRift; charge-driven and persistent, so no cooldown and no visual scale (the Canticle's cards by id: Harmony's element from the next slot, Resonance, and Fermata's stasis)",
 			SpellEffect.VortexPull, SpellEffect.Knockback, SpellEffect.Freeze, SpellEffect.ZoneDuration, SpellEffect.AreaSize, SpellEffect.CritDamage),
 		// Spiritual Weapon is read by FORM (SpellData.Variants): one script, but what reaches a blow differs by
 		// weapon, so each form has its own row and TryGet(SpellData) takes the form's before the spell's. The

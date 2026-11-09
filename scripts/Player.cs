@@ -1272,7 +1272,7 @@ public partial class Player : CharacterBody2D
 
 		if (!spellCatalog.ContainsKey("arcane_explosion"))
 		{
-			AddSpellToCatalog(CreateFallbackSpellData("arcane_explosion", "Arcane Explosion", 5, 1.5f, 1, 100f, "Creates a blast around the caster that damages nearby enemies."));
+			AddSpellToCatalog(CreateFallbackSpellData("arcane_explosion", "Canticle", 5, 1.5f, 1, 100f, "Creates a blast around the caster that damages nearby enemies."));
 		}
 
 		if (!spellCatalog.ContainsKey("spiritual_weapon"))
@@ -4796,9 +4796,10 @@ public partial class Player : CharacterBody2D
 					// starting spell to set it off. She has only it until her first level-up, so with nothing
 					// else held that can charge it, its own cooldown sets it off - the old timed pulse - and
 					// the moment a second spell is held it is charge-driven again.
+					// The Canticle (2026-11-09): alone, it still goes off on the music's next beat (RequestBurst).
 					if (!HasArcaneCharger())
 					{
-						existing.TriggerNow(null);
+						existing.RequestBurst();
 						outcome = CastOutcome.Fired;
 					}
 				}
@@ -5535,13 +5536,37 @@ public partial class Player : CharacterBody2D
 			return;
 
 		arcaneCharge++;
-		if (arcaneCharge < GetArcaneChargeRequired(arcane))
+		int required = GetArcaneChargeRequired(arcane);
+		// THE CANTICLE (2026-11-09, .ai/character-fit.md section 5, row 19): each charge is a note of a chord, in the
+		// voice of the spell that cast it, and the full chord bursts on the music's next beat (ArcaneExplosion). The
+		// charge is the chord's size, unchanged; Harmony's element is the next slot's now, not this caster's.
+		ArcaneExplosion live = LiveCanticle();
+		live?.AddNote(caster, required);
+		if (arcaneCharge < required)
 			return;
 
 		arcaneCharge = 0;
-		ArcaneExplosion live = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
-		// The cast that filled the charge: Sympathetic Blast goes off in its element.
-		live?.TriggerNow(caster);
+		live?.RequestBurst();
+	}
+
+	// The Canticle's node, found once rather than on every cast that now adds a note to it.
+	private ArcaneExplosion canticleNode;
+
+	private ArcaneExplosion LiveCanticle()
+	{
+		if (canticleNode == null || !IsInstanceValid(canticleNode) || canticleNode.IsQueuedForDeletion())
+			canticleNode = GetChildren().OfType<ArcaneExplosion>().FirstOrDefault();
+		return canticleNode;
+	}
+
+	/// <summary>
+	/// The spell in the slot right after <paramref name="spell"/>'s, or null when that slot is empty or there is
+	/// none. Harmony takes its element from it (ArcaneExplosion.HarmonyElementOf), and the strip marks it.
+	/// </summary>
+	public SpellData SpellInSlotAfter(SpellData spell)
+	{
+		int index = spell == null ? -1 : equippedSpells.IndexOf(spell);
+		return index >= 0 && index + 1 < equippedSpells.Count ? equippedSpells[index + 1] : null;
 	}
 
 	// Whether anything else held can set Arcane Explosion off: any other equipped spell that is not

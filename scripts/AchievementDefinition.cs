@@ -392,7 +392,7 @@ public static class AchievementDefinitions
 		{
 			Id = "first_blood", DisplayName = "First Blood",
 			Description = "Defeat 1 enemy.",
-			RewardText = "Unlocks Arcane Explosion", SpellUnlockId = "arcane_explosion",
+			RewardText = "Unlocks Canticle", SpellUnlockId = "arcane_explosion",
 			Category = AchievementCategory.Progress,
 			Measure = c => c.Lifetime.TotalKills, Target = 1,
 		},

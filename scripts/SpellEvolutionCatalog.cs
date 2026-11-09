@@ -305,6 +305,10 @@ public static class SpellEvolutionCatalog
 		});
 	}
 
+	// THE CANTICLE (Arcane Explosion's id; .ai/character-fit.md section 5, row 19, 2026-11-09): the Cumaean Sibyl's
+	// spell became a chord sung on the music's beat, and its cards were renamed for it - Sympathetic Blast is Harmony,
+	// Static Nova Storm Chord, Lingering Rift Sustain, Event Horizon Fermata; Resonance keeps its name, which the
+	// Sovereign Rite's recipe names. The ids, and every number, did not move ("pending balance testing").
 	private static void SetupArcaneExplosionEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
@@ -316,19 +320,19 @@ public static class SpellEvolutionCatalog
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = ArcaneExplosion.SympatheticBlastId,
-			DisplayName = "Sympathetic Blast",
-			// "The spell that set it off" was the code's word for it, not the player's (Eric, 2026-11-04: "What does
-			// Spell that set it off mean? Update wording"). It is the cast that fills the charge (lastCharger,
-			// ArcaneExplosion.SympathyElement): the last spell you cast before the blast. The elements with no status
-			// hit harder (SympathyBareShare), so "others", not "fire". 124 of the 130 (DescriptionBudget).
-			Description = "Takes the element of the last spell you cast: ice slows, lightning staggers, poison poisons, others hit harder. +20% damage.",
+			DisplayName = "Harmony",
+			// The element is the NEXT SLOT'S spell's since 2026-11-09 (Eric: "i want the player to be able to
+			// purposefully select the element"; ArcaneExplosion.SympathyElement, Player.SpellInSlotAfter), not the last
+			// cast's, which nobody could aim. The strip marks the slot. The elements with no status hit harder
+			// (SympathyBareShare), so "others", not "fire". 127 of the 130 (DescriptionBudget).
+			Description = "Takes the element of the spell in the next slot: ice slows, lightning staggers, poison poisons, others hit harder. +20% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
 			VisualTag = "SympatheticBlast",
 			ModulateColor = Colors.White,
 			SynergyTag = "Arcane / Loadout",
-			// It said "whichever spell you cast most"; it is the last.
-			SynergyDescription = "The blast wears the last spell you cast."
+			// It said "whichever spell you cast most", then "the last spell you cast"; it is the next slot's.
+			SynergyDescription = "Choose its element: whatever you take into the next slot."
 		});
 
 		// The element path (ElementPaths): Arcane's branch into Lightning. Its three chain sparks were
@@ -339,8 +343,8 @@ public static class SpellEvolutionCatalog
 		{
 			Id = "arcane_explosion_static_nova",
 			BonusElementWeights = new() { { "Lightning", 1 } },
-			DisplayName = "Static Nova",
-			Description = "The blast crackles with static: +20% damage, and "
+			DisplayName = "Storm Chord",
+			Description = "The chord crackles with static: +20% damage, and "
 				+ ElementPaths.Describe(ElementRider.Shock, 0f, 0.3f) + ".",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
@@ -349,15 +353,15 @@ public static class SpellEvolutionCatalog
 			VisualTag = "StaticNova",
 			ModulateColor = ElementColors.GetEvolutionTint(Element.Lightning),
 			SynergyTag = "Arcane / Lightning",
-			SynergyDescription = "Branches into Lightning. Every detonation pins the crowd where it stands for a moment."
+			SynergyDescription = "Branches into Lightning. Every burst pins the crowd where it stands for a moment."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = "arcane_explosion_lingering_rift",
 			BonusElementWeights = new() { { "Arcane", 1 } },
-			DisplayName = "Lingering Rift",
-			Description = "Each blast leaves a rift on the ground for 2.5s that hurts what stands in it (+40% Area).",
+			DisplayName = "Sustain",
+			Description = "Each burst's note rings on in the ground for 2.5s and hurts what stands in it (+40% Area).",
 			MilestoneLevel = 4,
 			AreaMultiplier = 1.4f,
 			Effect = SpellEffect.ZoneDuration,
@@ -365,7 +369,7 @@ public static class SpellEvolutionCatalog
 			VisualTag = "LingeringRift",
 			ModulateColor = new Color(0.85f, 0.35f, 0.95f),
 			SynergyTag = "Arcane / Zone",
-			SynergyDescription = "Creates persistent defensive zones against advancing waves."
+			SynergyDescription = "The note holds the ground against advancing waves."
 		});
 
 		// Level 8 (2 choices)
@@ -373,7 +377,7 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ArcaneExplosion.ResonanceId,
 			DisplayName = "Resonance",
-			Description = "Every blast goes off again wherever each of your other spells last struck. +180% damage.",
+			Description = "Every burst goes off again wherever each of your other spells last struck. +180% damage.",
 			MilestoneLevel = 8,
 			// x2.8, echoes at full: at x1.6 and echoes at 75% it measured 244 a second at level 8 with one
 			// partner spell, at x2.2 285 (band 331-465; the old Supernova 372). One partner is one echo.
@@ -388,9 +392,10 @@ public static class SpellEvolutionCatalog
 		{
 			Id = ArcaneExplosion.EventHorizonId,
 			BonusElementWeights = new() { { "Arcane", 1 } },
-			DisplayName = "Event Horizon",
-			// No pull since 2h: the pull is Hollow Star's, and it turned Dual Shockwave's throw inward.
-			Description = "Time stops for 2.5s where the blast goes off: everything caught, and whatever walks in, freezes. +190% damage, 80% wider.",
+			DisplayName = "Fermata",
+			// No pull since 2h: the pull is Hollow Star's, and it turned Dual Shockwave's throw inward. A held note
+			// since 2026-11-09 (the Canticle): the mechanic is Event Horizon's, unchanged. 123 of the 130.
+			Description = "A held note: time stops for 2.5s where it sounds - all it catches, and whatever walks in, freezes. +190% damage, 80% wider.",
 			MilestoneLevel = 8,
 			AreaMultiplier = 1.8f,
 			// x2.9: at x2.2 and x2.5 it measured 300 and 309 a second at level 8 (band 331-465; the old card,
@@ -401,7 +406,7 @@ public static class SpellEvolutionCatalog
 			VisualTag = "EventHorizon",
 			ModulateColor = Colors.White,
 			SynergyTag = "Arcane / Stasis",
-			SynergyDescription = "Ascension: deepens Arcane. A sphere of stopped time the pack walks into and does not leave."
+			SynergyDescription = "Ascension: deepens Arcane. A held note the pack walks into and does not leave."
 		});
 	}
 

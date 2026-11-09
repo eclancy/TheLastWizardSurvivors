@@ -297,7 +297,7 @@ public static class ComboCatalog
 			First = new ComboIngredient
 			{
 				SpellId = SovereignRiteCaster.BlastSpellId, AscensionId = ArcaneExplosion.ResonanceId,
-				SpellName = "Arcane Explosion", AscensionName = "Resonance",
+				SpellName = "Canticle", AscensionName = "Resonance",
 			},
 			Second = new ComboIngredient
 			{

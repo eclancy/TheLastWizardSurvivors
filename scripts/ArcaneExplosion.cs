@@ -63,6 +63,9 @@ namespace TheOneHeMissed.scripts
 		private static readonly StringName ParamSupernova = "supernova";
 		private static readonly StringName ParamEventHorizon = "event_horizon";
 		private static readonly StringName ParamGilded = "gilded";
+		// The Canticle's look (arcane_blast.gdshader, `canticle`): rings that pulse out to the reach it hits, a
+		// sound going out, where the Sovereign Rite's crowned blast keeps the front of force it was drawn with.
+		private static readonly StringName ParamCanticle = "canticle";
 		private ShaderMaterial blastMaterial;
 		private float blastAge = -1f;
 		private float blastRadius;
@@ -84,8 +87,8 @@ namespace TheOneHeMissed.scripts
 			// Apply initial scaling if weapon is already set
 			UpdateScale();
 
-			// Trigger immediately on spawn, then start cooldown timer
-			TriggerExplosion();
+			// The first cast goes off at once - on the music's next beat (RequestBurst) - then the charge takes over.
+			RequestBurst();
 			fireTimer = 0f;
 		}
 
@@ -134,6 +137,8 @@ namespace TheOneHeMissed.scripts
 			}
 
 			clock += (float)delta;
+			TickPending(delta);
+			TickMotes((float)delta);
 			TickEchoes((float)delta);
 			TickStasis((float)delta);
 
@@ -157,10 +162,10 @@ namespace TheOneHeMissed.scripts
 			DrawRect(new Rect2(-half, -half, half * 2f, half * 2f), Colors.White);
 		}
 
-		// The blast's look, from what this detonation does: the storm's crackle for Static Nova, a collapse
-		// for anything that pulls inward, the element of the spell that set it off for Sympathetic Blast,
-		// gold for a Legendary. Set once a blast, with the radius it hit. (The shader's second front was
-		// Dual Shockwave's look; the card is Sympathetic Blast since 2h, so it is no longer asked for.)
+		// The blast's look, from what this detonation does: the Canticle's rings of sound going out (2026-11-09),
+		// the storm's crackle for Storm Chord (Static Nova's id), a collapse for anything that pulls inward, the
+		// element Harmony takes for Harmony, gold for a Legendary. Set once a blast, with the radius it hit. (The
+		// shader's second front was Dual Shockwave's look; that card is Harmony now, so it is no longer asked for.)
 		private void StartBlast(bool isVortex, Element? mimic)
 		{
 			if (blastMaterial == null)
@@ -182,6 +187,7 @@ namespace TheOneHeMissed.scripts
 			material.SetShaderParameter(ParamSupernova, false);
 			material.SetShaderParameter(ParamEventHorizon, isVortex);
 			material.SetShaderParameter(ParamGilded, SpellData?.IsLegendary ?? false);
+			material.SetShaderParameter(ParamCanticle, true);
 			material.SetShaderParameter(ParamMimic, mimic.HasValue);
 			if (mimic.HasValue)
 			{
@@ -212,15 +218,338 @@ namespace TheOneHeMissed.scripts
 		public const string HundredMouthsId = "arcane_explosion_hundred_mouths";
 		private bool hundredMouths;
 
-		/// <summary>Detonate now. Called by Player when the charge comes due, with the cast that filled it.</summary>
-		public void TriggerNow(SpellData charger = null)
+		// THE CANTICLE (Eric, 2026-11-09; .ai/character-fit.md section 5, row 19): "Maybe Sybil's arcane explosion
+		// actually adds to the music of the game." This is the one spell set off by the others, so now they sing it:
+		// every cast that charges it adds a NOTE to a chord - in the voice of that spell's element (note_<element>,
+		// tools/audio/palette.py), pitched to the next degree of the chord in the key of the music playing
+		// (MusicBeats, written by the score) - and when the chord is full the burst does not go off at once. It
+		// waits for the next counted beat of that music (MusicPlayer.TryGetBeat) and goes off ON it, sounding the
+		// gathered notes together. Never more than a beat late: the wait is bounded by the longest gap between two
+		// counted beats. Where no music with a known beat is sounding - a headless run, the music fading out, a
+		// piece missing from the map - it bursts the moment the chord is full, as it always did.
+		//
+		// THE NUMBERS DID NOT MOVE ("pending balance testing"): the same charge (Player.GetArcaneChargeRequired is
+		// the chord's size), the same hit, one burst per full chord - two chords filling inside one beat both go
+		// off on it. Only when, by at most a beat.
+		public const int MaxNotes = 8;
+		// Every degree folds into A3..A5 (MIDI 57..80): a pitch scale of 0.5 to 2 on the A4 files, the range the
+		// notes were built for (palette.NOTE_CEILING, NOTE_FLOOR).
+		private const int NoteFoldBottom = 57;
+		private const int NoteFoldTop = 81;
+		// A beat counts as "now" this long after it fell: a frame or so. Past it (a level-up paused the run across
+		// the beat), the burst waits for the next one rather than going off between two.
+		private const double OnBeatTolerance = 0.1;
+		private static readonly int[] DefaultChord = { 0, 7, 3, 12, 10, 14, 15, 19 };   // A minor, as the menu's
+
+		private readonly Element[] gathered = new Element[MaxNotes];
+		private readonly float[] gatheredAge = new float[MaxNotes];
+		private int gatheredCount;
+		private int chordSize = MaxNotes;
+		// The chord that is full and waiting for its beat, and how many bursts it owes.
+		private readonly Element[] chord = new Element[MaxNotes];
+		private int chordCount;
+		private int pendingBursts;
+		private MusicBeats.Piece waitPiece;
+		private int waitOrdinal;
+		private double waited;
+		private double maxWait;
+
+		private static bool? logBeats;
+		/// <summary>--canticle-log: one line per full chord and per burst, the burst's time against the beat.</summary>
+		private static bool LogBeats => logBeats ??= Array.IndexOf(OS.GetCmdlineUserArgs(), "--canticle-log") >= 0;
+
+		/// <summary>
+		/// One cast's note: <paramref name="caster"/> has charged the spell, and its element's voice joins the chord.
+		/// Played quietly, at the pitch it will hold in the chord. <paramref name="required"/> is the chord's size
+		/// (Player.GetArcaneChargeRequired), which places the motes round her.
+		/// </summary>
+		public void AddNote(SpellData caster, int required)
 		{
-			lastCharger = charger;
-			TriggerExplosion();
-			fireTimer = 0f;
+			chordSize = Math.Clamp(required, 1, MaxNotes);
+			if (gatheredCount >= MaxNotes)
+				return;
+			Element voice = SfxCatalog.DominantElement(caster);
+			gathered[gatheredCount] = voice;
+			gatheredAge[gatheredCount] = 0f;
+			gatheredCount++;
+			SfxPlayer.CanticleNote(voice, GlobalPosition, NotePitch(CurrentKey(), gatheredCount - 1), chord: false);
+			EnsureMoteCanvas();
 		}
 
-		private SpellData lastCharger;
+		/// <summary>
+		/// The chord is full (or, held alone, her own cooldown has come round): burst on the music's next counted
+		/// beat, or at once if no beat is sounding.
+		/// </summary>
+		public void RequestBurst()
+		{
+			// The full chord is the one that sounds; the next begins gathering at once. Alone she has no other
+			// voices, and the burst sounds her own.
+			if (gatheredCount == 0)
+			{
+				gathered[0] = Element.Arcane;
+				gatheredCount = 1;
+			}
+			Array.Copy(gathered, chord, gatheredCount);
+			chordCount = gatheredCount;
+			gatheredCount = 0;
+			pendingBursts++;
+			fireTimer = 0f;
+			EnsureMoteCanvas();
+			if (pendingBursts > 1)
+				return;   // already waiting: this chord goes off on the same beat
+			waited = 0.0;
+			if (!TryBeat(out MusicPlayer.BeatClock clock))
+			{
+				if (LogBeats)
+					GD.Print($"Canticle: chord of {chordCount} full, no beat sounding - burst at once");
+				Burst();
+				return;
+			}
+			waitPiece = clock.Piece;
+			waitOrdinal = clock.Ordinal;
+			maxWait = clock.Piece.LongestGap + OnBeatTolerance;
+			if (LogBeats)
+				GD.Print($"Canticle: chord of {chordCount} full at {clock.Position:0.000} s into '{clock.Piece.Id}' "
+					+ $"(beat {clock.Ordinal}, {clock.SinceBeat * 1000.0:0} ms after it); next beat due in {clock.ToNextBeat * 1000.0:0} ms");
+		}
+
+		private static bool TryBeat(out MusicPlayer.BeatClock clock)
+		{
+			clock = default;
+			return MusicPlayer.Instance != null && MusicPlayer.Instance.TryGetBeat(out clock);
+		}
+
+		private void TickPending(double delta)
+		{
+			if (pendingBursts == 0)
+				return;
+			if (PlayerRef is Player holder)
+			{
+				if (holder.IsDead)
+				{
+					pendingBursts = 0;
+					return;
+				}
+				// A boss walking in holds her spells silent (Player.HeldForBossEntrance): the chord waits it out.
+				if (holder.HeldForBossEntrance)
+				{
+					if (TryBeat(out MusicPlayer.BeatClock held))
+					{
+						waitPiece = held.Piece;
+						waitOrdinal = held.Ordinal;
+					}
+					waited = 0.0;
+					return;
+				}
+			}
+			waited += delta;
+			if (!TryBeat(out MusicPlayer.BeatClock clock))
+			{
+				if (LogBeats)
+					GD.Print("Canticle: the beat stopped sounding while the chord waited - burst at once");
+				Burst();
+				return;
+			}
+			if (clock.Piece != waitPiece)
+			{
+				// The music changed under the wait (a boss's loop came in): its own next beat.
+				waitPiece = clock.Piece;
+				waitOrdinal = clock.Ordinal;
+				maxWait = waited + clock.Piece.LongestGap + OnBeatTolerance;
+				return;
+			}
+			if (clock.Ordinal != waitOrdinal)
+			{
+				if (clock.SinceBeat <= Math.Max(OnBeatTolerance, delta * 1.5))
+				{
+					if (LogBeats)
+						GD.Print($"Canticle: burst on beat {clock.Ordinal} of '{clock.Piece.Id}' at {clock.Position:0.000} s, "
+							+ $"{clock.SinceBeat * 1000.0:0} ms after it fell, having waited {waited * 1000.0:0} ms");
+					Burst();
+					return;
+				}
+				// A beat went by unseen - the run was paused across it - so wait for the next.
+				waitOrdinal = clock.Ordinal;
+				maxWait = waited + clock.Piece.LongestGap + OnBeatTolerance;
+			}
+			if (waited > maxWait)
+			{
+				if (LogBeats)
+					GD.Print($"Canticle: no beat seen in {waited * 1000.0:0} ms - burst late");
+				Burst();
+			}
+		}
+
+		// Every burst the chord owes, on this frame: its notes sounded once, together, and its motes thrown out.
+		private void Burst()
+		{
+			int times = pendingBursts;
+			pendingBursts = 0;
+			SoundChord();
+			ReleaseMotes();
+			for (int i = 0; i < times; i++)
+				TriggerExplosion();
+		}
+
+		private void SoundChord()
+		{
+			MusicBeats.Piece key = CurrentKey();
+			int voices = Math.Min(chordCount, SfxPlayer.CanticleChordVoices);
+			for (int i = 0; i < voices; i++)
+				SfxPlayer.CanticleNote(chord[i], GlobalPosition, NotePitch(key, i), chord: true);
+		}
+
+		/// <summary>The key she sings in: the music's that is sounding, else the chapter's own, else A minor.</summary>
+		private static MusicBeats.Piece CurrentKey()
+		{
+			if (TryBeat(out MusicPlayer.BeatClock clock))
+				return clock.Piece;
+			return MusicPlayer.KeyForStage(Global.SelectedStageIdx);
+		}
+
+		/// <summary>
+		/// The pitch scale (1 is the files' A4) of the chord's <paramref name="degree"/>th note in
+		/// <paramref name="key"/>: its tone of the chord on the tonic, folded into A3..A5.
+		/// </summary>
+		public static float NotePitch(MusicBeats.Piece key, int degree)
+		{
+			int[] tones = key?.Chord ?? DefaultChord;
+			if (tones.Length == 0)
+				tones = DefaultChord;
+			int tonic = key?.TonicMidi ?? 69;
+			int d = Math.Max(0, degree);
+			int midi = tonic + tones[d % tones.Length] + 12 * (d / tones.Length);
+			while (midi >= NoteFoldTop)
+				midi -= 12;
+			while (midi < NoteFoldBottom)
+				midi += 12;
+			return MathF.Pow(2f, (midi - 69) / 12f);
+		}
+
+		// --- the motes: the chord gathering round her ----------------------------------------------------------
+		// Each note is a small quaver in its element's light, standing in a ring round her at chest height - one
+		// place for each note the chord needs, filling as it gathers - which ticks white on every beat while the
+		// music has one, and flies out to the burst's reach when the chord sounds. One canvas, fixed arrays, on the
+		// world's 2 px grid; nothing allocates.
+		// Clear of her own silhouette (about forty wide): at 26 the notes stood on her robe and read as part of it.
+		private const float MoteRing = 36f;
+		private const float MoteHeight = -16f;
+		private const float MoteSquash = 0.66f;
+		private const float MoteAppear = 0.12f;
+		private const float MoteReleaseSeconds = 0.3f;
+		private static readonly Color MoteOutline = new(0.020f, 0.027f, 0.047f, 1f);   // OCC #05070C
+		private readonly Element[] released = new Element[MaxNotes];
+		private int releasedCount;
+		private int releasedSlots = 1;
+		private float releaseAge = -1f;
+		private float moteTurn;
+		private float beatFlash;
+		private int lastMoteOrdinal = -1;
+		private Node2D moteCanvas;
+		private bool motesDrawn;
+
+		private void EnsureMoteCanvas()
+		{
+			if (moteCanvas != null && IsInstanceValid(moteCanvas))
+				return;
+			moteCanvas = new Node2D { Name = "ChordMotes", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.Air };
+			moteCanvas.Draw += DrawMotes;
+			AddChild(moteCanvas);
+			moteCanvas.GlobalPosition = Vector2.Zero;
+		}
+
+		private void ReleaseMotes()
+		{
+			Array.Copy(chord, released, chordCount);
+			releasedCount = chordCount;
+			releasedSlots = Math.Max(chordSize, chordCount);
+			releaseAge = 0f;
+		}
+
+		private void TickMotes(float delta)
+		{
+			if (moteCanvas == null || !IsInstanceValid(moteCanvas))
+				return;
+			bool any = gatheredCount > 0 || pendingBursts > 0 || releaseAge >= 0f;
+			if (any)
+			{
+				moteTurn += delta * 0.6f;
+				for (int i = 0; i < gatheredCount; i++)
+					gatheredAge[i] += delta;
+				if (releaseAge >= 0f)
+				{
+					releaseAge += delta;
+					if (releaseAge >= MoteReleaseSeconds)
+						releaseAge = -1f;
+				}
+				beatFlash = MathF.Max(0f, beatFlash - delta / 0.15f);
+				if (TryBeat(out MusicPlayer.BeatClock clock) && clock.Ordinal != lastMoteOrdinal)
+				{
+					if (lastMoteOrdinal >= 0)
+						beatFlash = 1f;
+					lastMoteOrdinal = clock.Ordinal;
+				}
+			}
+			if (any || motesDrawn)
+				moteCanvas.QueueRedraw();
+			motesDrawn = any;
+		}
+
+		private Vector2 MotePoint(int index, int slots, float offset, float reach)
+		{
+			float a = moteTurn + (index + offset) * Mathf.Tau / Math.Max(1, slots) - Mathf.Pi * 0.5f;
+			return GlobalPosition + new Vector2(MathF.Cos(a) * reach, MathF.Sin(a) * reach * MoteSquash + MoteHeight);
+		}
+
+		private void DrawMotes()
+		{
+			int slots = Math.Max(chordSize, 1);
+			// The full chord, waiting for its beat: white-hot, every note in its place.
+			if (pendingBursts > 0)
+			{
+				for (int i = 0; i < chordCount; i++)
+					DrawNoteMote(MotePoint(i, slots, 0f, MoteRing), chord[i], 1f, 1f);
+			}
+			// The next chord gathering (between its places, if one is still waiting).
+			float offset = pendingBursts > 0 ? 0.5f : 0f;
+			for (int i = 0; i < gatheredCount; i++)
+			{
+				float grow = Mathf.Clamp(gatheredAge[i] / MoteAppear, 0f, 1f);
+				DrawNoteMote(MotePoint(i, slots, offset, MoteRing * (0.6f + 0.4f * grow)), gathered[i], grow, beatFlash);
+			}
+			// The chord just sounded, carried out to the reach it hit.
+			if (releaseAge >= 0f)
+			{
+				float t = releaseAge / MoteReleaseSeconds;
+				float reach = Mathf.Lerp(MoteRing, MathF.Max(MoteRing, range - 6f), 1f - (1f - t) * (1f - t));
+				for (int i = 0; i < releasedCount; i++)
+					DrawNoteMote(MotePoint(i, releasedSlots, 0f, reach), released[i], 1f - t, 1f - t);
+			}
+		}
+
+		// A quaver sixteen world px tall, outlined in the occlusion ink so it reads over the grass and the crowd: a head
+		// of three by two cells, a stem of six, a hooked flag. Its identity is the element's MID, as every element
+		// effect's is (.ai/art-direction.md section 3), lit from the upper left in its hot; `flash` 1 is white-hot.
+		private void DrawNoteMote(Vector2 at, Element element, float alpha, float flash)
+		{
+			if (alpha <= 0.02f)
+				return;
+			ElementColors.Ramp ramp = ElementColors.GetRamp(element);
+			Color body = new(flash > 0.5f ? ramp.Core : ramp.Mid, alpha);
+			Color lit = new(flash > 0.5f ? ramp.Core : ramp.Hot, alpha);
+			float g = WhipLimb.Grid;
+			// `at` is the glyph's middle; o is its head's top-left cell.
+			Vector2 o = new(MathF.Round(at.X / g) * g - g * 2f, MathF.Round(at.Y / g) * g + g * 2f);
+			var outline = new Color(MoteOutline, alpha);
+			moteCanvas.DrawRect(new Rect2(o.X - g, o.Y - g, g * 5f, g * 4f), outline);
+			moteCanvas.DrawRect(new Rect2(o.X + g, o.Y - g * 7f, g * 3f, g * 7f), outline);
+			moteCanvas.DrawRect(new Rect2(o.X + g * 3f, o.Y - g * 7f, g * 3f, g * 5f), outline);
+			moteCanvas.DrawRect(new Rect2(o.X, o.Y, g * 3f, g * 2f), body);
+			moteCanvas.DrawRect(new Rect2(o.X, o.Y, g, g), lit);
+			moteCanvas.DrawRect(new Rect2(o.X + g * 2f, o.Y - g * 6f, g, g * 6f), body);
+			moteCanvas.DrawRect(new Rect2(o.X + g * 3f, o.Y - g * 6f, g, g * 2f), lit);
+			moteCanvas.DrawRect(new Rect2(o.X + g * 4f, o.Y - g * 5f, g, g * 2f), body);
+		}
 
 		private void TriggerExplosion()
 		{
@@ -254,7 +583,7 @@ namespace TheOneHeMissed.scripts
 		}
 
 		// One detonation's hits at `at`: the damage, the throw (scaled by `throwShare`; inward for a pull),
-		// the freeze and Sympathetic Blast's rider.
+		// the freeze and Harmony's rider.
 		private void BlastAt(Vector2 at, int amount, float throwShare, bool isVortex, float freezeSeconds, Element? mimic)
 		{
 			ElementRider rider = mimic.HasValue ? ElementPaths.RiderFor(mimic.Value) : ElementRider.None;
@@ -282,24 +611,43 @@ namespace TheOneHeMissed.scripts
 			}
 		}
 
-		// SYMPATHETIC BLAST (arcane_explosion_dual_shockwave's id, .ai/spell-roster.md 2h, 2026-10-31). The
-		// card was Dual Shockwave: +35% damage and a 70% longer throw. Arcane Explosion is the one spell that
-		// is set off by the others, so this card lets the one that set it off show: the blast goes off in
-		// that spell's element - repainted in its ramp - and lays that element's status on what it catches
-		// (ElementPaths.RiderFor: ice and water slow, lightning staggers, poison poisons, darkness exposes,
-		// light weakens, metal withers). The five elements with no status (fire, earth, grass, wind, arcane)
-		// make it hit SympathyBareShare harder instead. The element is the spell's strongest that is not
-		// Arcane - Spiritual Weapon's Light, Magic Missile's Lightning once Twin Volley or Overcharge has branched it - and
-		// Arcane only for a pure Arcane one (Magic Missile unbranched, since it went pure on 2026-11-02).
+		// HARMONY (arcane_explosion_dual_shockwave's id; Sympathetic Blast until 2026-11-09, Dual Shockwave before
+		// .ai/spell-roster.md 2h). The blast goes off in another spell's element - repainted in its ramp - and lays
+		// that element's status on what it catches (ElementPaths.RiderFor: ice and water slow, lightning staggers,
+		// poison poisons, darkness exposes, light weakens, metal withers); the five with no status (fire, earth,
+		// grass, wind, arcane) make it hit SympathyBareShare harder instead.
+		//
+		// WHICH SPELL: THE ONE IN THE NEXT SLOT (Eric, 2026-11-09: "'takes the element of the last spell cast'
+		// should pick a certain spell slot. we are trying to add more spell slot play, and i want the player to be
+		// able to purposefully select the element"). It was the last spell cast - whichever cast happened to fill
+		// the charge, which nobody could aim. Now it is the spell in the slot right after the Canticle's
+		// (Player.SpellInSlotAfter), so the player chooses it by what they take next; an empty next slot leaves the
+		// blast Arcane and plain. The loadout strip marks that slot in the element it will lend (LoadoutHud).
+		//
+		// For a spell of two elements, the old rule stands: its strongest that is not Arcane - Spiritual Weapon's
+		// Light, Magic Missile's Lightning once Twin Volley or Overcharge has branched it - and Arcane only for a
+		// pure Arcane one (Magic Missile unbranched, since it went pure on 2026-11-02).
 		public const float SympathyBareShare = 1.3f;
 
 		private Element? SympathyElement()
 		{
-			if (SpellData == null || !SpellData.HasEvolution(SympatheticBlastId) || lastCharger == null)
+			if (SpellData == null || !SpellData.HasEvolution(SympatheticBlastId))
+				return null;
+			return HarmonyElementOf((PlayerRef as Player)?.SpellInSlotAfter(SpellData));
+		}
+
+		/// <summary>
+		/// The element Harmony takes from <paramref name="next"/>, the spell in the slot after the Canticle's: its
+		/// strongest that is not Arcane, Arcane for a pure Arcane spell - or null for an empty slot (the blast stays
+		/// plain). One rule for the blast and for the strip that marks the slot.
+		/// </summary>
+		public static Element? HarmonyElementOf(SpellData next)
+		{
+			if (next == null)
 				return null;
 			Element best = Element.Arcane;
 			int bestWeight = 0;
-			foreach (var pair in lastCharger.GetElementWeights())
+			foreach (var pair in next.GetElementWeights())
 			{
 				if (pair.Key == Element.Arcane || pair.Value <= bestWeight)
 					continue;
@@ -462,7 +810,8 @@ namespace TheOneHeMissed.scripts
 			}
 		}
 
-		// EVENT HORIZON STOPS TIME (2h). Where the blast goes off, a sphere of stopped time hangs for as long
+		// FERMATA STOPS TIME (Event Horizon's id and card until 2026-11-09, when the Canticle made it a held note -
+		// a fermata over the chord, the mark drawn at the sphere's top). Where the blast goes off, a sphere of stopped time hangs for as long
 		// as the freeze: what the blast caught stays frozen in it, and whatever walks in freezes at once, for
 		// what is left of it (a boss only slows, Enemy.MinSlowMultiplier). Drawn on the ground under the
 		// bodies, as the thing it is - motes of the force hung still in the air over a faint dark floor and a
@@ -572,13 +921,30 @@ namespace TheOneHeMissed.scripts
 					Color c = k % 5 == 0 ? StasisCore : StasisMote;
 					stasisCanvas.DrawRect(WhipLimb.Cell(p, WhipLimb.Grid), new Color(c, 0.85f * fade));
 				}
+				DrawFermata(s.At + new Vector2(0f, -s.Radius * CraterGround.Squash - 8f), fade);
 			}
 		}
 
-		// Lingering Rift (Effect ZoneDuration = seconds): the ground the blast went off on keeps hurting
-		// for a while after. It promised "a pulsating hazard zone" and ArcaneExplosion left none until
-		// 2026-10-26. The rift is a LingeringZone, Mirefoot's pool, in arcane colour: it stays where the
-		// blast was while the player walks on, which is what makes it a zone.
+		// The fermata over the held note: an arc and a dot standing on the sphere's far rim, in the motes' own
+		// light. Thirteen cells on the world's grid - a mark, not a sign.
+		private void DrawFermata(Vector2 at, float fade)
+		{
+			float g = WhipLimb.Grid;
+			Vector2 o = new(MathF.Round(at.X / g) * g, MathF.Round(at.Y / g) * g);
+			for (int k = 0; k <= 10; k++)
+			{
+				float a = Mathf.Pi + Mathf.Pi * k / 10f;
+				Vector2 p = o + new Vector2(MathF.Cos(a) * 9f, MathF.Sin(a) * 8f);
+				stasisCanvas.DrawRect(WhipLimb.Cell(p, g), new Color(k == 5 ? StasisCore : StasisMote, fade));
+			}
+			stasisCanvas.DrawRect(new Rect2(o.X - g, o.Y - g, g * 2f, g * 2f), new Color(StasisCore, fade));
+		}
+
+		// Sustain (Lingering Rift's id; Effect ZoneDuration = seconds): the ground the blast went off on keeps
+		// hurting for a while after - since 2026-11-09 the Canticle's note ringing on there, drawn as a standing
+		// wave out to the zone's radius (scenes/shaders/arcane_rift.gdshader). It promised "a pulsating hazard
+		// zone" and ArcaneExplosion left none until 2026-10-26. The zone is a LingeringZone, Mirefoot's pool: it
+		// stays where the blast was while the player walks on, which is what makes it a zone.
 		private const float RiftTickShare = 0.25f;
 		private const float RiftRadiusShare = 0.8f;
 

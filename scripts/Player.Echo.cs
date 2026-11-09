@@ -22,6 +22,12 @@ using TheOneHeMissed.scripts;
 //
 // WHAT IT LOOKS LIKE. Each echo that puts something out throws a ring of six arcane motes off her, on the
 // world's 2-unit grid (the stasis motes' look, not a vector ring), and plays its spell's own cast voice.
+//
+// ON THE BEATS THAT FOLLOW (the Canticle, 2026-11-09; .ai/character-fit.md section 5, row 19). The burst goes off
+// on a beat of the music, so its echoes answer on the next ones: while music with a known beat is sounding
+// (MusicPlayer.TryGetBeat), the queue is spent EchoesPerBeat at each counted beat after the burst's - more a beat
+// if that many would not all land inside the bar after it, so an echo is never more than a bar late. With no
+// beat known, or once a bar has passed, it goes out a few a frame as before.
 public partial class Player
 {
 	/// <summary>An echo's strength: the share of the damage the spell's own cast would hand its projectiles.</summary>
@@ -29,6 +35,15 @@ public partial class Player
 
 	/// <summary>How many queued echoes are cast in one physics frame.</summary>
 	public const int EchoesPerFrame = 2;
+
+	/// <summary>How many queued echoes land on one beat of the music, at least.</summary>
+	public const int EchoesPerBeat = 2;
+
+	// The beat the echoes are counted from: the burst's, then the last one they landed on. Null with no beat known.
+	private MusicBeats.Piece echoBeatPiece;
+	private int echoBeatOrdinal;
+	private int echoesPerBeat = EchoesPerBeat;
+	private double echoBeatWaited;
 
 	// What may be echoed: every spell whose cast puts something NEW into the world. The Black Cat's list, and
 	// the two the cat may not cast for the cat's own reason - Scorching Ray and Cone of Cold make a fresh ray
@@ -71,6 +86,15 @@ public partial class Player
 			echoQueue[(echoHead + echoCount) % echoQueue.Length] = spell;
 			echoCount++;
 		}
+		echoBeatPiece = null;
+		if (echoCount > 0 && MusicPlayer.Instance != null && MusicPlayer.Instance.TryGetBeat(out MusicPlayer.BeatClock clock))
+		{
+			echoBeatPiece = clock.Piece;
+			echoBeatOrdinal = clock.Ordinal;
+			echoBeatWaited = 0.0;
+			int beatsInBar = Math.Max(1, clock.Piece.Counted.Length);
+			echoesPerBeat = Math.Max(EchoesPerBeat, (echoCount + beatsInBar - 1) / beatsInBar);
+		}
 	}
 
 	private bool IsEchoQueued(SpellData spell)
@@ -86,7 +110,30 @@ public partial class Player
 		TickEchoMotes(delta);
 		if (echoCount == 0 || IsDead || HeldForBossEntrance)
 			return;
-		for (int n = 0; n < EchoesPerFrame && echoCount > 0; n++)
+		int release = EchoesPerFrame;
+		if (echoBeatPiece != null)
+		{
+			echoBeatWaited += delta;
+			MusicPlayer.BeatClock clock = default;
+			bool onBeat = MusicPlayer.Instance != null && MusicPlayer.Instance.TryGetBeat(out clock)
+				&& clock.Piece == echoBeatPiece;
+			if (!onBeat || echoBeatWaited > echoBeatPiece.BarSeconds + 0.1)
+			{
+				// The beat stopped sounding, or a bar has gone by: whatever is left goes out now, as it always did.
+				echoBeatPiece = null;
+			}
+			else
+			{
+				if (clock.Ordinal == echoBeatOrdinal)
+					return;
+				echoBeatOrdinal = clock.Ordinal;
+				// A beat that went by while the run was paused is not one to land on: wait for the next.
+				if (clock.SinceBeat > Math.Max(0.1, delta * 1.5))
+					return;
+				release = echoesPerBeat;
+			}
+		}
+		for (int n = 0; n < release && echoCount > 0; n++)
 		{
 			SpellData spell = echoQueue[echoHead];
 			echoQueue[echoHead] = null;
