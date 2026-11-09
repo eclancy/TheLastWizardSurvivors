@@ -237,29 +237,32 @@ public partial class Prologue : Control
 	// THE LESSONS (.ai/slow-start.md, "The lessons"; tools/art/lessons.py). Each explains one system in two
 	// panels and two lines, held longer than the prologue's because the line is the lesson. A line says what
 	// the system does; the picture says what it feels like. Ids are Teachings' lesson ids.
+	// Every lesson line below and every freeing line (QuestLog.Prisoners) is Eric's own wording from the story review
+	// of 2026-11-08 (.ai/cutscenes.md, "The story review"). The Conjunctions' first line carries no full stop on
+	// purpose: with one it would be 47 characters, over the PC's one-line 46.
 	private static readonly Beat[] AscensionBeats =
 	{
 		// The find giving up its light to the one he missed. Reworded 2026-11-07 (Eric: the old
 		// "What he missed kept what the wizards knew." read as a riddle at the moment of the lesson).
 		new("ascension-gift", 5.0f, "He took the wizards, but not what they knew.", new Vector2(-3f, 0f), new Vector2(-8f, -6f), new Vector2(-18f, 0f)),
 		// A spell's light climbing seven marks and branching at the eighth.
-		new("ascension-rise", 6.0f, "At level 7 a spell may ascend down one path.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
+		new("ascension-rise", 6.0f, "Spells may now ascend after max level.", new Vector2(0f, 3f), new Vector2(0f, -12f), new Vector2(0f, 12f)),
 	};
 
 	private static readonly Beat[] ApotheosisBeats =
 	{
 		// The circle where the wizards met, and his own spell burning in its middle.
-		new("apotheosis-circle", 5.0f, "Your wizard's own spell has a final form.", new Vector2(-3f, 0f), new Vector2(-10f, 0f), new Vector2(-22f, 0f)),
+		new("apotheosis-circle", 5.0f, "The wizards unlock an ancient power.", new Vector2(-3f, 0f), new Vector2(-10f, 0f), new Vector2(-22f, 0f)),
 		// The spell at its last level, ascended, becoming it.
-		new("apotheosis-form", 6.0f, "Ascend it and take it to its last level.", new Vector2(0f, 4f), new Vector2(0f, -14f), new Vector2(0f, 10f)),
+		new("apotheosis-form", 6.0f, "Your wizard's starting spell has a final form.", new Vector2(0f, 4f), new Vector2(0f, -14f), new Vector2(0f, 10f)),
 	};
 
 	private static readonly Beat[] ConjunctionBeats =
 	{
 		// Two lights, each on its own stone, leaning toward each other.
-		new("conjunctions-two", 5.0f, "Two ascended spells may become one.", new Vector2(2f, 0f), new Vector2(10f, -2f), new Vector2(-18f, 0f)),
+		new("conjunctions-two", 5.0f, "The whole is greater than the sum of its parts", new Vector2(2f, 0f), new Vector2(10f, -2f), new Vector2(-18f, 0f)),
 		// The two made one.
-		new("conjunctions-one", 6.0f, "Linked rings mark a path with a partner.", new Vector2(0f, 3f), new Vector2(0f, -10f), new Vector2(0f, 12f)),
+		new("conjunctions-one", 6.0f, "Two ascended spells may now become one.", new Vector2(0f, 3f), new Vector2(0f, -10f), new Vector2(0f, 12f)),
 	};
 
 	private static readonly Beat[] RiteBeats =

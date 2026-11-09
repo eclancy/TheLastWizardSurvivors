@@ -73,11 +73,11 @@ public static class QuestLog
 		// The singer of the Kalevala: he is heard before he is found.
 		new Prisoner("vainamoinen", "the singer under the ice", "Someone is singing under the ice.", "{0} sings above the ice now."),
 		// The onmyoji, sealed in his own five-pointed seal: "the old wards were broken from the inside".
-		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0} keeps his own wards again."),
+		new Prisoner("seimei", "the master of wards", "Someone here was sealed in by his own wards.", "{0}'s wards are his own again."),
 		// The smith who struck every chain in the game, chained to his own anvil: "every shackle came from here". The
 		// held line says he is a slave there (Eric, 2026-11-08: make it "clearer that he is unable to stop or is a
 		// slave"); it was "Someone below is still at the anvil. He may not stop.", which read as a choice.
-		new Prisoner("wayland", "the smith at the anvil", "Someone below is chained to the anvil and cannot stop forging.", "{0} has put his hammer down."),
+		new Prisoner("wayland", "the smith at the anvil", "Someone below is chained to the anvil and cannot stop forging.", "{0} rests his hammer."),
 		// The prophetess of Cumae, kept where nobody comes to ask: she is heard in more places than one.
 		new Prisoner("sibyl", "the voice in the rock", "A woman's voice comes out of the rock, from more than one place.", "{0} speaks with one voice again."),
 		// The witch of the deep wood, kept in her own hut and the hut kept walking its circle for ever (4.1). The Forest
@@ -87,7 +87,7 @@ public static class QuestLog
 		new Prisoner("paracelsus", "the man in the gibbet's cage", "A man is coughing in a cage somewhere over the rot.", "{0} has crossed the water."),
 		// The seer kept in the Court to read what is coming - and what is coming is the player (4.10). Heard reading,
 		// room to room, never seen until the third.
-		new Prisoner("nostradamus", "the reader in the house", "Somewhere in the house a voice is reading aloud.", "{0} has closed his book."),
+		new Prisoner("nostradamus", "the reader in the house", "Somewhere in the house a voice is reading aloud.", "{0} rests his eyes."),
 		// The builder who could find water in the desert and raise it, sealed in a dry tomb beside the road the water
 		// left (4.6). He is heard knocking under the sand.
 		new Prisoner("imhotep", "the builder in the dry tomb", "Something knocks, stone on stone, under the sand.", "{0} walks in the sun again."),
@@ -95,14 +95,14 @@ public static class QuestLog
 		// village could never pay (4.2).
 		// "Counted with the grain" read as a riddle (Eric, 2026-11-06): say the tally plainly, and let
 		// the hint name the scale the event actually asks the player to balance.
-		new Prisoner("medea", "the one in the granary", "Someone is locked in the reeve's granary, tallied like grain.", "{0} has walked out of the granary."),
+		new Prisoner("medea", "the one in the granary", "Someone is locked in the reeve's granary, tallied like grain.", "{0} is free from her prison."),
 		// The painter kept to paint the portraits in the Gallery (4.8), who drew himself a door and was never let finish it.
 		new Prisoner("ma_liang", "the painter in the gallery", "Along the walls a line of wet paint keeps running.", "{0} has stepped out of his door."),
 		// The hound's light is bound with the other companions inside the Fields' sealed pen.
 		// The freed line names him as the myth does - the hound no quarry escapes - rather than the old
 		// "{0} runs free with his companions.", which read as if Laelaps were a fourth animal beside the
 		// three in the pen (Eric, 2026-11-07: the unlock text was weird). He IS the hound of the three.
-		new Prisoner("laelaps", "the hound in the pen", "Three pale companions pace a sealed pen beyond the furrows.", "{0} runs free. Nothing he chases escapes."),
+		new Prisoner("laelaps", "the hound in the pen", "Three pale companions pace a sealed pen beyond the furrows.", "{0} runs free."),
 		// His library was looted while he was abroad, and he is kept the same way: scattered through chests.
 		new Prisoner("john_dee", "the scattered scholar", "", "{0} has his library back."),
 		// Not a prisoner: the one who took them (.ai/dark-wizard-playable.md), taken in his turn on the hardest
@@ -115,7 +115,7 @@ public static class QuestLog
 		new Prisoner("morgan", "the woman in the barge", "A lantern on the water under the bridge, where no boat could be.", "{0} has come ashore."),
 		// The Lady of the Lake (.ai/endgame-castle.md decision 11): the one wizard he did not lock in a place, but kept by
 		// him, at the Throne, to the end. Freed by his fall; the Throne note says she is near him until then.
-		new Prisoner("nimue", "the one he kept", "He keeps one wizard by him still, close at hand.", "{0} is out of his keeping."),
+		new Prisoner("nimue", "the one he kept", "He keeps one wizard by him still, close at hand.", "{0} is freed from his grasp."),
 		// THE GODS OF THE FAR SHORE (.ai/second-half.md 6.3, marked by F0): epithet, held line, rekindled line - the
 		// doc's table. Each god's piece replaces its own comment line once its god is in UnlockCatalog (a row naming
 		// a character the catalog does not is a validator fault, so none is written ahead of its god).

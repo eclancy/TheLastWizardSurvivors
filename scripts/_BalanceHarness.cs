@@ -3415,6 +3415,9 @@ public partial class _BalanceHarness : Node
 			SpellData held = player.GetEquippedSpells().FirstOrDefault(s => s != null && s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
 			if (held != null && !string.IsNullOrEmpty(held.SelectedLevel8EvolutionId))
 				continue;
+			// The far sky waives this path's element gate (decision 10): nothing to chase for it.
+			if (player.FarSkyWaivesElementGate(ingredient.SpellId, ingredient.AscensionId))
+				continue;
 			SpellData template = held ?? ContentValidator.LoadAllSpells().FirstOrDefault(s => s.Id.Equals(ingredient.SpellId, StringComparison.OrdinalIgnoreCase));
 			SpellEvolutionOption named = ComboCatalog.Level8OptionsOf(template, ingredient).FirstOrDefault(o => o.Id == ingredient.AscensionId);
 			IEnumerable<string> gate = named?.BonusElementWeights?.Count > 0

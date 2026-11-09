@@ -66,6 +66,12 @@ public sealed class LevelUpOption
 	/// Player.NoteRecipeSeals). Absent means the path seals nothing.
 	/// </summary>
 	public Dictionary<string, string> RecipeSeals { get; set; } = new();
+
+	/// <summary>
+	/// Evolution ids open only because the far sky waives their element gate (Player.FarSkyWaivesElementGate): the
+	/// level 8 page says so on the path, so the player sees why it is offered.
+	/// </summary>
+	public HashSet<string> ElementGateWaived { get; set; } = new();
 	public string SynergyTag { get; set; } = string.Empty;
 	public string SynergyDescription { get; set; } = string.Empty;
 
@@ -332,6 +338,12 @@ public sealed class AscensionRequirement
 	/// <summary>For a Learned gate: where the system is learned (Teachings.SealedLine). Empty otherwise.</summary>
 	public string Line { get; set; } = string.Empty;
 
-	public bool Met => Have >= Need;
-	public int Missing => System.Math.Max(0, Need - Have);
+	/// <summary>
+	/// An element gate the far sky waives (Player.FarSkyWaivesElementGate, decision 10 of .ai/second-half.md): tonight's
+	/// recipe's named Ascension on a far-shore run. Met whatever Have says; set only when Have alone would not meet it.
+	/// </summary>
+	public bool Waived { get; set; }
+
+	public bool Met => Waived || Have >= Need;
+	public int Missing => Waived ? 0 : System.Math.Max(0, Need - Have);
 }

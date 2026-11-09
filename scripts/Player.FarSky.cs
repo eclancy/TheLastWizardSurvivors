@@ -19,10 +19,19 @@ using TheOneHeMissed.scripts;
 // Both parents at 8 down both named Ascensions is still what the strip asks (Eric's rule, .ai/combo-spells.md 0):
 // nothing here changes ComboCatalog.Evaluate, the player level the Ascension waits for, or a ban the player made.
 // A parent banned is banned; a parent set aside is never named (FarSky.MayName).
+//
+// And one gate is waived (decision 10, Eric 2026-11-08: "Waive element gate", in place of a Muster): on a far-shore
+// run, while the recipe is live, the two Ascensions it names stop asking for four of the path's element
+// (FarSkyWaivesElementGate; the rule itself is FarSky.WaivesElementGate). Spell level, player level 17 and every other
+// path's element gate stand.
 public partial class Player
 {
 	/// <summary>Tonight's Conjunction for this run, or null (Node2DGame.StartFarSky; FarSky.ForRun).</summary>
 	public ComboDefinition FarSkyRecipe { get; private set; }
+
+	// The run is on a far-shore chapter. A tool can name a recipe on any chapter (FarSky.ToolOverride) to measure the
+	// favour there, but the element gate is waived on the far shore alone.
+	private bool farSkyOnFarShore;
 
 	/// <summary>True once tonight's Conjunction was made in this run: the Feat and the run's-end bonus read it.</summary>
 	public bool FarSkyMade { get; private set; }
@@ -30,15 +39,28 @@ public partial class Player
 	/// <summary>Cards the favour put in a hand this run that the deal alone might not have: for the harness.</summary>
 	public int FarSkyFavouredCards { get; private set; }
 
-	/// <summary>Names tonight's Conjunction for this run (null for none). Called once, as the run starts.</summary>
-	public void BeginFarSky(ComboDefinition recipe)
+	/// <summary>
+	/// Names tonight's Conjunction for this run (null for none), and whether the run is on the far shore. Called once, as
+	/// the run starts.
+	/// </summary>
+	public void BeginFarSky(ComboDefinition recipe, bool onFarShore)
 	{
 		FarSkyRecipe = recipe;
+		farSkyOnFarShore = onFarShore;
 		FarSkyMade = false;
 		FarSkyFavouredCards = 0;
 		if (recipe != null)
-			GD.Print($"FAR SKY: tonight's Conjunction is {FarSky.Describe(recipe)}");
+			GD.Print($"FAR SKY: tonight's Conjunction is {FarSky.Describe(recipe)}"
+				+ (onFarShore ? "; its two Ascensions' element gates are waived" : " (off the far shore: no gate is waived)"));
 	}
+
+	/// <summary>
+	/// True when the far sky waives this Ascension's element gate now: it is one of the two tonight's recipe names, the
+	/// run is on the far shore, and the recipe is live (FarSkyFavourHolds - not made, not sealed). FarSky.WaivesElementGate
+	/// is the rule; this is the run's state put to it.
+	/// </summary>
+	public bool FarSkyWaivesElementGate(string spellId, string ascensionId) =>
+		FarSky.WaivesElementGate(FarSkyRecipe, farSkyOnFarShore, FarSkyRecipe != null && FarSkyFavourHolds, spellId, ascensionId);
 
 	/// <summary>
 	/// Whether the favour still holds: a recipe named, Conjunctions learned, not made, nothing sealing it, and no Rite
