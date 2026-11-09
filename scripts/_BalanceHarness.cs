@@ -85,6 +85,9 @@ public partial class _BalanceHarness : Node
 	// --all-unlocked --immortal. The report's FAR SKY line and the summary's farSky= say when the recipe was made, in
 	// the run's PACE minutes (Node2DGame.PaceSeconds), and how many cards the favour put in a hand.
 	private string farSkyArg;
+	// --stop-when-made: end the run the moment the --far-sky / --seek-combo recipe is made - the measurement's one
+	// number is when, and a swarm at the cap runs at a few frames a second.
+	private bool stopWhenMade;
 	// --seek-sovereign (.ai/sovereign-spell.md section 6; pair with --all-unlocked --immortal): a planned
 	// build (it switches on --seek-ascensions; with --policy=ordinary, the ordinary build) that takes the Sovereign Rite once the spell it wants is open.
 	// --anoint=top (the default) wants the spell that dealt the most in the last minute, =own the wizard's
@@ -357,6 +360,7 @@ public partial class _BalanceHarness : Node
 			else if (arg.StartsWith("--seek-combo=")) { SeekCombo = arg.Substring(13).Trim(); SeekAscensions = true; }
 			else if (arg == "--far-sky") farSkyArg = string.Empty;
 			else if (arg.StartsWith("--far-sky=")) farSkyArg = arg.Substring(10).Trim();
+			else if (arg == "--stop-when-made") stopWhenMade = true;
 			else if (arg == "--seek-sovereign") SeekSovereign = true;
 			else if (arg.StartsWith("--anoint=")) AnointPolicy = arg.Substring(9).Trim();
 			else if (arg.StartsWith("--anoint-wait=")) AnointWaitSeconds = float.Parse(arg.Substring(14));
@@ -3598,6 +3602,8 @@ public partial class _BalanceHarness : Node
 			farSkyMadeAtPace = pace;
 			GD.Print($"HARNESS FAR SKY {recipe.Name} made at pace minute {pace:0.0} (t={elapsed:0}s), player level {player.CurrentLevel}"
 				+ $", favour {(player.FarSkyRecipe != null ? "on" : "off")}");
+			if (stopWhenMade)
+				Finish("tonight's Conjunction made");
 		}
 	}
 
