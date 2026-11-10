@@ -109,7 +109,9 @@ public partial class _FunctionProbe : Node
 			var visible = pages.Where(p => p.IsVisibleInTree()).ToArray();
 			Check(visible.Length == 1, "exactly one shop page is visible");
 			var cards = Descendants(visible.Single()).OfType<ArcaneShopCard>().ToArray();
-			Check(cards.Length is > 0 and <= 2, "page contains at most two cards");
+			// Three on a phone tall enough to show them (MainMenu.ShopCardsPerPage, in-flight 71); two elsewhere.
+			int most = ResponsiveLayout.IsNarrow(menu) ? 3 : 2;
+			Check(cards.Length > 0 && cards.Length <= most, $"page contains at most {most} cards");
 			foreach (var card in cards) seen.Add(card.Name);
 			next.GrabFocus();
 			await KeyPress(Key.Enter);
@@ -117,10 +119,10 @@ public partial class _FunctionProbe : Node
 		}
 		Check(seen.Count == Descendants(menu).OfType<ArcaneShopCard>().Count(), "every upgrade and boon is reachable; Next wraps");
 		GD.Print($"FUNCTION saw {seen.Count} / {Descendants(menu).OfType<ArcaneShopCard>().Count()} cards");
-		next.GrabFocus();
-		await KeyPress(Key.Enter);
+		// Next has wrapped back to the first page, which since in-flight 71 holds Bound Pages and then the first Powers.
 		var damage = menu.FindChild("ShopCard_damage", true, false) as ArcaneShopCard;
-		Check(damage.IsVisibleInTree(), "Power page follows Spell book");
+		var boundPages = menu.FindChild("ShopCard_" + SpellBook.ShopUpgradeId, true, false) as ArcaneShopCard;
+		Check(damage.IsVisibleInTree() && boundPages != null && boundPages.IsVisibleInTree(), "the first page holds Bound Pages, then the Powers");
 		int purse = save.Data.TotalCurrency;
 		Vector2 parked = GetViewport().GetScreenTransform() * damage.Plate.GetGlobalRect().GetCenter();
 		GetViewport().WarpMouse(damage.Plate.GetGlobalRect().GetCenter());
@@ -162,8 +164,8 @@ public partial class _FunctionProbe : Node
 		await Click(previous, OS.GetCmdlineUserArgs().Contains("--portrait"));
 		Check(MenuFocusHighlight.PointerActive, "mouse or touch returns from controller navigation");
 		await Shot("powers");
-		selector.Select(1);
-		selector.EmitSignal(OptionButton.SignalName.ItemSelected, 1L);
+		selector.Select(0);
+		selector.EmitSignal(OptionButton.SignalName.ItemSelected, 0L);
 		await Frames();
 		await Shot("power");
 		selector.GrabFocus();

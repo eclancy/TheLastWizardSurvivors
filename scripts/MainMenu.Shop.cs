@@ -61,7 +61,8 @@ public partial class MainMenu
 
 	private readonly Dictionary<string, ShopRow> shopRows = new();
 	// Each section's "2 of 7 mastered" (or "1 of 3 owned"), re-counted after every purchase.
-	private readonly List<(Label Tally, string[] Ids, bool Boons)> shopTallies = new();
+	// The word is the section's: "mastered" for upgrades, "owned" for boons, "complete" where a page holds both.
+	private readonly List<(Label Tally, string[] Ids, string Word)> shopTallies = new();
 	private ScrollContainer upgradeScroll = null!;
 	private int shopColumnsBuilt;
 	private readonly List<(string Title, VBoxContainer View)> shopPages = new();
@@ -141,27 +142,30 @@ public partial class MainMenu
 	// The upgrades by what they do. An id that is registered and listed in no section still gets a
 	// card, in a last "More" section, with a warning - a new upgrade must never vanish from the shop
 	// because nobody added it here.
-	private static readonly (string Title, string Note, string[] Ids)[] UpgradeSections =
+	//
+	// THREE SECTIONS, NOT SIX (in-flight 71, Eric 2026-11-09: "The power ups pages can be consolidated more - for
+	// example the first page with just one power up"). The Spell book was a section of one card, so the shop opened
+	// on a page holding Bound Pages alone; Survival and Fortune, and Level-ups and the Boons, were each two short
+	// sections. Merged in those pairs, every section still turns two cards a page (AddShopSectionSteps), so a page
+	// fits the phone exactly as before - only the half-empty pages between sections are gone.
+	private static readonly (string Title, string Note, string[] Ids, bool WithBoons)[] UpgradeSections =
 	{
-		// At the top (.ai/slow-start.md 4): a new player can afford the first page after his second run, and
+		// Bound Pages first (.ai/slow-start.md 4): a new player can afford the first page after his second run, and
 		// it is likely worth more than any Power it displaces, so the shop teaches itself with its first buy.
-		("Spell book", "Room for more spells in every run.",
-			new[] { SpellBook.ShopUpgradeId }),
-		("Power", "Every spell you cast, harder and more often.",
-			new[] { "damage", "attack_speed", "area", "duration", "amount", "crit_chance" }),
-		("Survival", "Staying alive long enough to use it.",
-			new[] { "vitality", "recovery", "extra_lives", "movespeed" }),
-		("Fortune", "What each run gives back.",
-			new[] { "magnet", "growth", "greed", "luck" }),
+		("Power", "Room for more spells, and every spell harder and more often.",
+			new[] { SpellBook.ShopUpgradeId, "damage", "attack_speed", "area", "duration", "amount", "crit_chance" }, false),
+		("Survival", "Staying alive, and what each run gives back.",
+			new[] { "vitality", "recovery", "extra_lives", "movespeed", "magnet", "growth", "greed", "luck" }, false),
 		// The Reliquary Shelf sits here rather than under Survival: a boon slot is one more thing a
-		// level-up can offer, the same lever as a reroll or a ban.
-		("Level-ups", "More say over what each level-up offers you.",
-			new[] { "rerolls", "bans", GlobalStatsManager.BoonSlotsUpgradeId, GlobalStatsManager.CurationUpgradeId, ConjunctionLadder.KindredDrawId }),
+		// level-up can offer, the same lever as a reroll or a ban. The boons for sale
+		// (UnlockCatalog.PurchasableBoons) follow them, the last cards of Powers whether or not any is left to
+		// buy: decision 5 put them there, and cards that moved to the top while something in them was for sale
+		// would move the selection with them the moment the last was bought.
+		("Level-ups & boons", "More say over what each level-up offers, and new boons for it to offer.",
+			new[] { "rerolls", "bans", GlobalStatsManager.BoonSlotsUpgradeId, GlobalStatsManager.CurationUpgradeId, ConjunctionLadder.KindredDrawId }, true),
 	};
 
-	// The boons for sale (UnlockCatalog.PurchasableBoons), the last section of Powers whether or not
-	// any is left to buy: decision 5 put them there, and a section that moved to the top while
-	// something in it was for sale would move the selection with it the moment the last was bought.
+	// Only if no section takes the boons (UpgradeSections' WithBoons): never a lost shelf.
 	private const string BoonSectionTitle = "Boons";
 	private const string BoonSectionNote = "Each is bought once, and from then on your level-ups can offer it.";
 
@@ -418,51 +422,75 @@ public partial class MainMenu
 		// shelf until the Conjunctions lesson is learned (rung II of .ai/conjunction-progression.md).
 		if (!ConjunctionLadder.KindredDrawShown(GetNodeOrNull<SaveManager>("/root/SaveManager")?.Data))
 			placed.Add(ConjunctionLadder.KindredDrawId);
-		foreach ((string title, string note, string[] ids) in UpgradeSections)
+		var boons = upgradeDefinitions.Values.Where(d => d.IsBoon).ToList();
+		bool boonsShelved = false;
+		foreach ((string title, string note, string[] ids, bool withBoons) in UpgradeSections)
 		{
 			var defs = ids.Where(upgradeDefinitions.ContainsKey).Where(id => !placed.Contains(id)).Select(id => upgradeDefinitions[id]).ToList();
 			placed.UnionWith(defs.Select(d => d.Id));
+			if (withBoons && !boonsShelved)
+			{
+				defs.AddRange(boons);
+				boonsShelved = true;
+			}
 			if (defs.Count > 0)
-				foreach (int step in AddShopSectionSteps(title, note, defs, narrow, boonSection: false)) yield return step;
+				foreach (int step in AddShopSectionSteps(title, note, defs, narrow)) yield return step;
 		}
 		var stray = upgradeDefinitions.Values.Where(d => !d.IsBoon && !placed.Contains(d.Id)).ToList();
 		if (stray.Count > 0)
 		{
 			GD.PushWarning($"MainMenu: Arcane Upgrades has no section for {string.Join(", ", stray.Select(d => d.Id))}; listed under More (MainMenu.Shop.cs, UpgradeSections).");
-			foreach (int step in AddShopSectionSteps("More", string.Empty, stray, narrow, boonSection: false)) yield return step;
+			foreach (int step in AddShopSectionSteps("More", string.Empty, stray, narrow)) yield return step;
 		}
 
-		var boons = upgradeDefinitions.Values.Where(d => d.IsBoon).ToList();
-		if (boons.Count > 0)
+		if (!boonsShelved && boons.Count > 0)
 		{
 			// This page is cached, so its note must also remain true after a purchase or progress reset.
-			foreach (int step in AddShopSectionSteps(BoonSectionTitle, BoonSectionNote, boons, narrow, boonSection: true)) yield return step;
+			foreach (int step in AddShopSectionSteps(BoonSectionTitle, BoonSectionNote, boons, narrow)) yield return step;
 		}
 
 		RefreshUpgradeControls();
 		ShowShopPage(activeShopPage);
 	}
 
-	private IEnumerable<int> AddShopSectionSteps(string title, string note, List<UpgradeDefinition> defs, bool narrow, bool boonSection)
+	// A portrait canvas at least this tall shows three cards between the category and the page controls (measured on
+	// the Pixel 9's 720 x 1616 with _UiShot: two cards left room for a third and some 150 to spare, the chrome above
+	// and below the cards taking about 710). A 16:9 or 18:9 phone is shorter and keeps two; so does a PC, whose one
+	// row of two is all its 720 of height holds.
+	private const float ThreeCardPageMinHeight = 1480f;
+
+	private int ShopCardsPerPage(bool narrow) => narrow && GetViewportRect().Size.Y >= ThreeCardPageMinHeight ? 3 : 2;
+
+	private IEnumerable<int> AddShopSectionSteps(string title, string note, List<UpgradeDefinition> defs, bool narrow)
 	{
 		shopCategory.AddItem(title);
-		// Two cards per page: one desktop row, two phone rows. The current category, purse,
-		// page controls and Back stay on screen rather than living at the end of a long list.
-		for (int offset = 0; offset < defs.Count; offset += 2)
+		int boonCount = defs.Count(d => d.IsBoon);
+		string tallyWord = boonCount == defs.Count ? "owned" : boonCount == 0 ? "mastered" : "complete";
+		// Two cards per page: one desktop row, two phone rows - three on a phone tall enough to show them
+		// (ShopCardsPerPage). The current category, purse, page controls and Back stay on screen rather than
+		// living at the end of a long list. The section's cards are spread EVENLY over its pages, fuller pages
+		// first, so a section with more than a page's worth never ends on a lone card where it need not (in-flight
+		// 71: seven at three a page are 3, 2, 2, not 3, 3, 1; at two a page a seventh still stands alone).
+		int perPage = ShopCardsPerPage(narrow);
+		int pageCount = (defs.Count + perPage - 1) / perPage;
+		int taken = 0;
+		for (int page = 0; page < pageCount; page++)
 		{
+			int take = defs.Count / pageCount + (page < defs.Count % pageCount ? 1 : 0);
 			VBoxContainer section = CodexRows.AddSection(upgradeList, title, " ", CodexRows.Stone, shopColumnsBuilt, Array.Empty<Control>());
 			section.Name = "ShopPage" + shopPages.Count;
 			section.Visible = false;
 			shopPages.Add((title, section));
 			GridContainer grid = section.GetNode<GridContainer>(CodexRows.SectionRowsName);
-			foreach (UpgradeDefinition def in defs.Skip(offset).Take(2))
+			foreach (UpgradeDefinition def in defs.Skip(taken).Take(take))
 			{
 				grid.AddChild(BuildShopCard(def, narrow));
 				yield return 0;
 			}
+			taken += take;
 			// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
 			if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
-				shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), boonSection));
+				shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), tallyWord));
 			if (!string.IsNullOrEmpty(note))
 			{
 				Label line = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
@@ -942,10 +970,10 @@ public partial class MainMenu
 			}
 		}
 
-		foreach ((Label tally, string[] ids, bool boons) in shopTallies)
+		foreach ((Label tally, string[] ids, string word) in shopTallies)
 		{
 			int done = ids.Count(id => shopRows.TryGetValue(id, out ShopRow r) && r.State is ShopRowState.Mastered or ShopRowState.Owned);
-			tally.Text = boons ? $"{done} of {ids.Length} owned" : $"{done} of {ids.Length} mastered";
+			tally.Text = $"{done} of {ids.Length} {word}";
 		}
 	}
 

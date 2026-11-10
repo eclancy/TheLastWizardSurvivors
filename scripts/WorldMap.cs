@@ -35,9 +35,13 @@ public partial class WorldMap : Control
 	public static HashSet<string> LastShownStops { get; set; }
 
 	private const float CardWidth = 404f;
-	// Room for the longest card - a two-line lock, the finale's "Still held" line and a row of five
-	// slots - at the phone's type sizes; what is left over goes to the map.
+	// The phone card's FLOOR: room for an ordinary card - a two-line lock, the finale's "Still held" line and a
+	// row of five slots - at the phone's type sizes, so walking the road does not move the map for most stops.
+	// A card with more on it grows up from there (FitNarrowCard), never down past the foot of the screen.
 	private const float NarrowCardHeight = 456f;
+	// The most of the phone's height the card BODY may take before it scrolls; Start and the foretelling stay
+	// below it, always on screen, and the map keeps the rest.
+	private const float NarrowCardBodyShare = 0.36f;
 	private const float RepeatDelay = 0.40f;
 	private const float RepeatInterval = 0.18f;
 
@@ -71,6 +75,8 @@ public partial class WorldMap : Control
 	// SaveData.HasSeenPrologue, either way.
 	private Button replayIntroButton;
 	private VBoxContainer cardBox;
+	private PanelContainer card;
+	private ScrollContainer cardScroll;
 	private SaveData save;
 	private CharacterData character;
 	private bool narrow;
@@ -426,18 +432,27 @@ public partial class WorldMap : Control
 
 	private void BuildCard()
 	{
-		var card = new PanelContainer { Name = "Card" };
+		card = new PanelContainer { Name = "Card" };
 		BonelightSkin.ApplyPanel(card, BonelightSkin.Register.Stone);
 		if (narrow)
 		{
+			// THE CARD FITS WHAT IT HOLDS, AND GROWS UP (in-flight 86, Eric 2026-11-09: Start was still off the bottom
+			// of the phone). It was a fixed NarrowCardHeight pinned to the foot; a card whose rows needed more - the far
+			// sky's line, Endless's vigil, the rewards, the foretelling - grew the default way, DOWN, and pushed Start
+			// under the edge and the gesture bar. Now its foot is pinned and it grows up from it (GrowVertical Begin),
+			// from NarrowCardHeight to what its body needs, the body scrolling past NarrowCardBodyShare of the screen.
 			card.AnchorLeft = 0f;
 			card.AnchorRight = 1f;
 			card.AnchorTop = 1f;
 			card.AnchorBottom = 1f;
 			card.OffsetLeft = 12f;
 			card.OffsetRight = -12f;
-			card.OffsetTop = -(NarrowCardHeight + 12f);
+			card.OffsetTop = -12f;
 			card.OffsetBottom = -12f;
+			card.GrowVertical = GrowDirection.Begin;
+			card.CustomMinimumSize = new Vector2(0f, NarrowCardHeight);
+			// The map stops above the card's REAL top, whatever height it took (FollowCardTop).
+			card.ItemRectChanged += FollowCardTop;
 		}
 		else
 		{
@@ -461,9 +476,21 @@ public partial class WorldMap : Control
 		column.AddThemeConstantOverride("separation", 10);
 		margin.AddChild(column);
 
-		cardBox = new VBoxContainer { Name = "CardBody", SizeFlagsVertical = SizeFlags.ExpandFill };
+		// The body scrolls inside the card, so Start below it is never pushed off: TouchScroll prepares it for a finger
+		// (MenuNavigator rescans), and a slot the pad selects is scrolled into view.
+		cardScroll = new ScrollContainer
+		{
+			Name = "CardScroll",
+			HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+			FollowFocus = true,
+			SizeFlagsVertical = SizeFlags.ExpandFill,
+		};
+		column.AddChild(cardScroll);
+		cardBox = new VBoxContainer { Name = "CardBody", SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ExpandFill };
 		cardBox.AddThemeConstantOverride("separation", 8);
-		column.AddChild(cardBox);
+		cardScroll.AddChild(cardBox);
+		if (narrow)
+			cardBox.MinimumSizeChanged += FitNarrowCard;
 
 		startButton = new Button
 		{
@@ -509,6 +536,27 @@ public partial class WorldMap : Control
 	private static readonly Color InkFlag = CodexRows.Stone.Flag;
 	// The gold of the inlay, for the "Chapter 3 of 10" line over the name.
 	private static readonly Color InkPlace = new(0.85f, 0.69f, 0.29f);
+
+	// The phone card's body as tall as what it holds, to its cap: a ScrollContainer reports no height of its own, so
+	// it is told its content's, and the card (growing up) follows. Rerun whenever the body's rows change - a new
+	// stop, or a label rewrapping once it knows its width.
+	private void FitNarrowCard()
+	{
+		if (!narrow || cardScroll == null || cardBox == null)
+			return;
+		float content = cardBox.GetCombinedMinimumSize().Y;
+		float cap = Mathf.Max(160f, GetViewportRect().Size.Y * NarrowCardBodyShare);
+		cardScroll.CustomMinimumSize = new Vector2(0f, Mathf.Min(content, cap));
+	}
+
+	// The map's foot on the card's top, 12 above it, on every change of the card's rect (it already includes the
+	// safe area's inset, which SafeArea.Apply put on the card).
+	private void FollowCardTop()
+	{
+		if (!narrow || view == null || card == null)
+			return;
+		view.OffsetBottom = card.Position.Y - Size.Y - 12f;
+	}
 
 	private void RebuildCard()
 	{
@@ -584,6 +632,11 @@ public partial class WorldMap : Control
 			: "Locked";
 		startButton.TooltipText = open || stop.IsBossRush ? string.Empty : StageCatalog.LockedHintFor(stage, save);
 		RefreshForetell(stop, open);
+		// A new stop's card opens at its top, and on a phone takes the height its rows need (the foretelling's row
+		// is the column's, outside the body, so the card grows for it without FitNarrowCard).
+		if (cardScroll != null)
+			cardScroll.ScrollVertical = 0;
+		FitNarrowCard();
 	}
 
 	private void AddRewards(StageDefinition stage)

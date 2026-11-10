@@ -43,28 +43,12 @@ public partial class WorldMap
 		foretellButton.Visible = earned;
 		foretellButton.Disabled = !can;
 		foretellButton.FocusMode = can ? FocusModeEnum.All : FocusModeEnum.None;
-		MakeRoomForForetell(earned);
 		if (!earned)
 			return;
 		ComboDefinition foretold = can ? ConjunctionLadder.Foretold(save, who, stop.Stage, bossRush: false) : null;
 		foretellButton.Text = !can ? "✶ Nostradamus foretells on the road"
 			: foretold == null ? "✶ Nostradamus foretells nothing"
 			: $"✶ Foretold: {ConjunctionLadder.ShownName(foretold, save)}";
-	}
-
-	private bool foretellRoomMade;
-
-	// On a phone the card has a fixed height (NarrowCardHeight) and the map stops above it: the button's row is taken
-	// from the map, once, when the rung is first on show, so Enter is never pushed off the foot of the screen.
-	private void MakeRoomForForetell(bool earned)
-	{
-		if (!narrow || !earned || foretellRoomMade || GetNodeOrNull<Control>("Card") is not Control card)
-			return;
-		foretellRoomMade = true;
-		float row = foretellButton.GetCombinedMinimumSize().Y + 10f;
-		card.OffsetTop -= row;
-		if (view != null)
-			view.OffsetBottom -= row;
 	}
 
 	private void CycleForetold()
