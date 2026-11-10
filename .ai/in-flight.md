@@ -46,6 +46,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | M |
 | 89 | The Archmage's passive card: "Avoids death once per run." | text | S |
 | 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | S |
+| 91 | Cinderbreath's Backdraft: two flames on different enemies and directions, damage rebalanced (Fire Fan overlap) | spell | S-M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1215,6 +1216,18 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     the point - in its elements' ramps (Metal, Poison), and keep the evolution icons that reuse `lancet_needle` /
     `lancet_skull` (`tools/art/evolution_icons.py`) in step. Judge it at icon size beside the other spells; edit the
     generator and re-run it, never the PNG.
+91. **Cinderbreath's Backdraft makes two flames** (Eric, 2026-11-10: *"update cinderbreath's 'backdraft' so it
+    produces two flames, and balance the damage. they should never face the same direction / target the same enemy -
+    we want to feel like there are two different flames around him"*). Today Backdraft (level 4,
+    `SpellEvolutionCatalog.cs` ~3069, `Flamethrower.cs` `BackdraftDamageShare` 3) is one jet whose far end explodes
+    for 3x when each breath ends, +35% damage. Make it two jets: the first on the nearest enemy, the second on a
+    DIFFERENT enemy at a wide angle from the first (say at least 90 degrees; with no such enemy it points opposite
+    the first), each re-aiming on its own clock so they never line up. Damage: two jets at about 60% each (some gain
+    over one, not double) in place of the explosion and the +35% - measure with `_BalanceHarness --spell=cinderbreath`
+    against the other level-4 branches. **The overlap to settle:** Fire Fan (level 8) is already "three jets, each
+    turned on its own enemy" (`Flamethrower.SpreadAims`, reuse it for the second jet). Decide what Backdraft then Fire
+    Fan gives (three jets in all? Fire Fan reworked?) so the two do not collide (the spell-collision rule in memory).
+    Reword the card in player words.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
