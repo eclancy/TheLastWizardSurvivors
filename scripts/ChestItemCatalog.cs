@@ -410,7 +410,7 @@ public static class ChestItemCatalog
 			ElementTags = new[] { ("Darkness", 1), ("Poison", 1) },
 			Name = "The Reaper's Scythe",
 			RequiredItemIds = new[] { SpectralFang, WrathAmulet, DuellistsChalk },
-			Description = "+25% spell damage, and any hit on an enemy below 30% health kills it outright. Not bosses.",
+			Description = "+25% spell damage, and any hit on an enemy below 30% health kills it outright (except bosses).",
 			IconPath = SetIconRoot + "deathbringer.png",
 			Effects = new[]
 			{

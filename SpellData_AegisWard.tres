@@ -32,7 +32,7 @@ CooldownBonus = -1.5
 
 [resource]
 script = ExtResource("1")
-Tagline = "Soaks hits; recharges once broken."
+Tagline = "Soaks hits; refills on a timer."
 Id = "aegis_ward"
 Name = "Aegis Ward"
 CurrentLevel = 1
@@ -42,7 +42,7 @@ BaseCooldown = 9.0
 BaseProjectileCount = 1
 BaseRange = 0.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_aegis_lvl2"), SubResource("Resource_aegis_lvl4"), SubResource("Resource_aegis_lvl6"), SubResource("Resource_aegis_lvl8")])
-Description = "Raises a shield that absorbs damage, then recharges once it breaks."
+Description = "Raises a shield that absorbs damage, and refills it to full every few seconds, broken or not."
 Icon = ExtResource("3_icon")
 ElementWeights = {
 "Metal": 1,
