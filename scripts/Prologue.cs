@@ -197,21 +197,24 @@ public partial class Prologue : Control
 		// wizards gone, no one is left to defend the land. 41 characters, under the PC's one-line 46
 		// (RegressionChecks.Cutscenes).
 		new("taken", 5.2f, "He took every wizard who might rival him.", new Vector2(2f, 0f), new Vector2(14f, -2f), new Vector2(-20f, 0f)),
-		// His shadows over the land, coming down on a town that is still lit. Moved after the procession and given a line
-		// (Eric, 2026-11-08: "move this panel after the 'he took every wizard who might rival him' panel", "There was no
-		// one left to defend them" - the full stop added, as on every other line; 37 characters) and redrawn as "a town
-		// being overrun by shadows, with the people running away. the tower should be in the distant background with
-		// the glowing eye". THE RUSH (Eric, 2026-11-05: the army must rush over the horizon; the old beat slid the whole
-		// crowd across a still picture as one layer): its box animates (tools/art/prologue.py, TIDE_BOX) - the slope
-		// empty for a breath, heads behind the crest, the wave over it, the flood down the slope and into the town's
-		// near half, its people running from the other, the front rank in its streets as the panel ends. Back and mid
-		// drift as ONE, so the flood never slides on the ground it runs on; the motion is the bodies' own. THE IMPACT
-		// (rule 1): at 1.4 s the wave bursts over the crest (TIDE_BURST) - cold speed lines out of the ridge, a shake,
-		// his violet: the one impact that is his, not the player's. Its point, (600, 404), is crest inside the 360x360
-		// square both canvases show, so the phone sees the burst too - and a step west of the tower's column, so the
-		// burst is the wave's and not the tower exploding.
-		new("tide", 5.6f, "There was no one left to defend them.", new Vector2(-6f, 0f), new Vector2(-6f, 0f), new Vector2(-20f, 0f),
-			Impact: new PanelImpact(1.4f, new Vector2(600f, 404f), Warm: false, ShakePx: 7f, FlashScale: 0.6f)),
+		// His shadows over the land: a town overrun. Moved after the procession and given a line (Eric, 2026-11-08: "move
+		// this panel after the 'he took every wizard who might rival him' panel", "There was no one left to defend them" -
+		// the full stop added, as on every other line; 37 characters) and drawn as "a town being overrun by shadows, with
+		// the people running away. the tower should be in the distant background with the glowing eye" - then seen from a
+		// hill, the flood pouring over the crest into it. THE RUSH (Eric, 2026-11-05: the army must rush; the old beat
+		// slid the whole crowd across a still picture as one layer): its box animates (tools/art/prologue.py, TIDE_BOX),
+		// every body moving on its own. FROM INSIDE THE TOWN since 2026-11-10 (Eric: "when the town is attacked in the
+		// opening sequence, i want that scene to be different cinematically. the 'camera' should be from within the
+		// town, looking up at the houses burning, people running, and monsters attacking."): low in a street, looking
+		// up, the houses towering on both sides and burning, its people running down it toward us, his creatures over
+		// the rise at its end and on the roofs, the tower's eye small between the roofs. Back and mid drift as ONE, so nothing slides on the street; the
+		// fore carries the two nearest houses and drifts further - a slow tilt up, the camera looking up at the fire,
+		// still for the dissolve and a beat first (rule 3). THE IMPACT (rule 1): at 2.0 s one of his drops off a burning
+		// eave and lands in the street among the people (tools/art/prologue.py, TIDE_LAND and tide_land_art, which the
+		// generator prints) - cold speed lines out of it, a shake, his violet: the one impact that is his, not the
+		// player's, inside the 360x360 square both canvases show.
+		new("tide", 5.6f, "There was no one left to defend them.", new Vector2(0f, 5f), new Vector2(0f, 5f), new Vector2(0f, 16f),
+			Impact: new PanelImpact(2.0f, new Vector2(502f, 483f), Warm: false, ShakePx: 8f, FlashScale: 0.6f)),
 		// The one he missed, hiding behind the biggest of the stones while his creatures search (its box animates; since
 		// 2026-11-08, Eric: "the wizard is standing out in the open. he should be hiding properly", pressed against the
 		// stone's far side from the hound). The back and the mid drift as one, so the searchers never slide on the

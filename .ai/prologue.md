@@ -17,7 +17,7 @@ choice below comes from it.
 | 1 | The moot (`moot`) | *The stones where we used to meet.* | The Broken Circle before (`.ai/campaign.md` chapter 3): a ring of standing stones on the heath at night, a warded fire in the middle, and round it four of the game's own wizards (below) - the disciplines, standing square round the fire - each staff burning his own element, each in the deep end of his own colour. The only frame with more than one warm light in it - every light the world had is still in it. |
 | 2 | He comes (`throne`) | *He came here first.* | **Animated** (2026-11-08, Eric: *"it's hard to see what he's doing in the background, it should show him lifting each of the wizards into the air to capture them"*, then *"the silhouette of 4 wizards, cast in shadow, in the background, with the dark wizard in the foreground. remove the purple wizard, since he is the wizard that you are"*, then *"when the dark wizard lifts the wizards into the air, they should still be at the stone circles. you can also show the colored dark silhouettes when he lifts them"*; below). **Only his silhouette**, in the foreground and with his back to us: a tall cowled shape inside a collar of points, his black sun behind his head as an eclipse, one arm raised and reaching up into the scene. No face, folds, trim or keys; the shadow running out of his hem has eyes in it. Beyond him, the moot's ring of standing stones round its cold ward - the far stones tall behind and between them, the near ones thrown down outward - and in it the four disciplines (the four the break frees, in its order), cast in shadow against his sun's glow, each with nothing on him in colour but his own light. Then he takes them one at a time, far to near: his reach leaves his hand, a hoop of his violet closes on one, his own colour comes up on him in its light - the moot's red, green, blue or gold, dark and shaded - and he is lifted out of the ring into the sky, where he hangs in the dark wizard's grip while his light streams back into the hand. They end in an arc over the empty ring that curves down into the hand. Never Dee, whose grey robe and violet light read as the player, who is never taken. |
 | 3 | Taken (`taken`) | *He took every wizard who might rival him.* | The wizards - six of them, the secret three among them, never Dee - led along a ridge to his tower between his guards, bound wrist to wrist by a chain of his light, their own light drawn out of them toward the eclipse over the tower. |
-| 4 | The tide (`tide`) | *There was no one left to defend them.* | **Animated** (2026-11-07, Eric: the army must *rush* over the horizon, not sit as a layer sliding over a picture; moved after the procession and redrawn 2026-11-08, Eric: *"show a town being overrun by shadows, with the people running away. the tower should be in the distant background with the glowing eye"*). His shadows over the land: a town at the foot of a hill - a street's depth of houses and a hall with a spire, its windows lit - quiet for a breath; then heads come up behind the crest, clipped by the ridge line, the wave bursts over it (the panel's impact beat: cold speed lines, a shake, his violet), and the flood pours down the slope and into the town, over the houses of its near half, every body on its own lane with its feet on the ground, growing as it comes, the front rank in its streets as the panel ends. Out of the town's far side its people run - small figures with the town's light on their backs, children and cloaks and packs among them - away from it and down the slope toward us. The tower stands far off on the horizon, its eye burning. Every one of the flood wears his mark in its eyes. |
+| 4 | The tide (`tide`) | *There was no one left to defend them.* | **Animated** (2026-11-07, Eric: the army must *rush*, not sit as a layer sliding over a picture; moved after the procession 2026-11-08, Eric: *"show a town being overrun by shadows, with the people running away. the tower should be in the distant background with the glowing eye"*). **From inside the town since 2026-11-10** (Eric: *"when the town is attacked in the opening sequence, i want that scene to be different cinematically. the 'camera' should be from within the town, looking up at the houses burning, people running, and monsters attacking."*; it was a far view from a hill, the flood pouring over the crest into the town). Low in a street, looking up: timbered houses tower on both sides, leaning in as they climb, their jettied storeys stepping out over the street, and they burn - fire out of the windows and off the roofs, smoke pouring up the walls, embers flying, a sky of smoke lit red from under. The town's people run down the street toward us, growing as they come: a mother with a child in her arms, a man pulling a child by the hand, hands thrown up. Behind them his creatures come up over the street's rise out of the burning square, head first, and pour down it; others come up behind the eaves and stand black among the roofs' flames, a caster with its orb raised; at 2.0 s one drops off a burning eave into the street among the people (the panel's impact beat: cold speed lines, a shake, his violet) and comes on. Small at the street's end, between the roofs, the tower with its eye burning. Every one of his wears his mark in its eyes. |
 | 5 | The one he missed (`missed`) | *You are the one he missed.* | **Animated** (below): the hiding. The broken ring's near stones in a row, and pressed against the far side of the biggest of them - in its shadow, behind a low rock - the player, the title's figure, still as the stone, his light put out to an ember (since 2026-11-08, Eric: *"the wizard is standing out in the open. he should be hiding properly"*; he stood in the gap between two stones). His creatures search: a hound trots along the row nose down to the stone's other edge, lifts its head and works the air there, a stone's width from him - his ember goes out - and turns back; a caster further along watches; two small ones turn their heads; pair by pair the eyes in the dark turn away and back. We see both of them and the stone between; they never find him. |
 | 6 | The break (`break`) | *You rescued four - they now stand with you.* | **Animated.** The freeing (`.ai/cutscenes.md`, built 2026-11-02 from Eric's *"Include a cutscene where the blue robed wizard frees the four starting wizards"*): the four disciplines on their knees in his chain, the Archmage in the middle of them, his light coming up and breaking it; their own lights come back to them close behind the shackles, they come up into their own colours, stand and turn out, back to back with him - as the dark wizard's creatures close in on the five of them, down off the ridge to loom over their heads and in along the ground from either side (2026-11-08, Eric: *"show enemies closing in on the wizards after he breaks the chains and you can see the wizards"*). |
 | 7 | The road (`road`) | *The rest still wait for you.* | Seen from above and behind: the five of them - the Archmage and the four he freed, each in his own colours with his own light - small on a road that winds over the heath toward everything the dark wizard holds, the tower on the far horizon. The five's own panel folded in (2026-11-08, Eric: *"remove this, combine with the last panel"*, and of this one *"make the wizard smaller on the map"*); they walk it up and away above the line. Since 2026-11-07 (Eric: landmarks in place of the empty plain) the road passes the places the campaign visits, in campaign order, nearest first: the west wood's boughs, the Fields' hedged strips and barn, the Broken Circle's ring (eight stones and the walker's gap), the scarp over the Sunken Cave, the Swamp's pools and snags, the Ruins' colonnade and keep, the Waste's pale peaks, the Sands' dunes, and the Emberdeep's black bluffs that the road threads just under the tower. No lit window among them - the five's lights are the only warm lights on the road. Then the character select - the player choosing who walks it, any of the five. |
@@ -84,8 +84,10 @@ Nothing else is said: no title card, no narration, nothing an image is already s
   light read as the player, and the player is never taken. He stood behind the moot's fire and walked fifth
   in the chain; the four in the moot now stand square round the fire, and the chain closed up behind him.
 - **The player is the light.** The hiding has one warm light, and it is his; the break is where his light
-  gives the four theirs back, and the road carries the five lights on together. (The tide's town has lit
-  windows: the land's own light, about to go out.)
+  gives the four theirs back, and the road carries the five lights on together. (The tide's town burns: the
+  land's own light going up; after it the only warm light left is his. The fire ramp is emission in the flames,
+  the embers and the windows alight inside, and nowhere else; what it lands on - plaster, timber, cobbles, the
+  undersides of the jetties and of the smoke - takes the russet and red pigment rows.)
 
 **One tension, and how Eric settled it (2026-11-01).** `world-and-tone.md` tone rule 5 says *"He is
 never on screen until he is."* Eric asked for the prologue to introduce him, then ruled: *"The dark
@@ -137,22 +139,39 @@ silhouettes and the searching hound (`sniffing_hound`), the dark wizard, the bla
 the player from behind (`player_back`).
 
 **The animated panels.** Four panels animate, each in its own box of its mid layer (`ANIMS` holds each
-one's box, clock and atlas width): the four lifted (`THRONE_BOX`, below), the tide's rush and the town's
-people running (`TIDE_BOX`, 560x272 at 240,328 since the town moved into it, 2026-11-08 - the whole flood
-and the townsfolk, so its still mid layer is empty), the hiding's searchers, his stone and the hound beside it
+one's box, clock and atlas width): the four lifted (`THRONE_BOX`, below), the burning street (`TIDE_BOX`,
+384x408 at 288,176 since 2026-11-10 - the flames, the smoke out of the windows, the embers, the flood, the roofs'
+creatures, the one that drops and the people, so its still mid layer is empty; below), the hiding's searchers, his stone and the hound beside it
 (`MISSED_BOX`, 496x152 at 168,400, out to the PC's left edge so the hound walks in from it) and the break's
 chain, the four standing and the creatures closing in (`BREAK_BOX`, 624x200 at 168,384, as wide as a PC shows;
 `.ai/cutscenes.md` says what moves). Each is drawn at 8 frames a second over the panel's hold (the throne at 12) and written as
-`<name>-anim.png` (an atlas, four frames a row; the throne's eight) with `<name>-anim.json` (the
+`<name>-anim.png` (an atlas, four frames a row; the throne's eight, the tide's five) with `<name>-anim.json` (the
 box, the clock, and a timeline of one atlas frame per tick, so a held frame is stored once). Each frame
 is the WHOLE mid layer inside the box - so laid over the still mid layer it is the scene at that moment,
 and outside the box nothing moves. Every edge and size is a multiple of 8, so the dissolve's Bayer
 threshold, read from the atlas's own pixel, matches the mid layer's under it: the box dissolves with the
 panel, pixel for pixel, with no seam. While its panel is up the hiding is about 13 MB of texture, the break
-about 17, and the tide, which animates its whole flood, about 26 (354 KB on disk - flat colours compress well);
-two panels are in memory at once. The tide's bodies
-are rendered once per (kind, size, seed, light) and pasted along their lanes (`creature_fig`,
-`_TIDE_CACHE`), or the 45 frames would re-draw 1,600 creatures each.
+about 17, and the tide, which animates every fire in the street, about 28 (45 frames in a 1920x3672 atlas, five
+a row so no slot is wasted); two panels are in memory at once. The tide's bodies
+are rendered once per (kind, size, seed, facing, light) and pasted where they stand (`creature_fig`,
+`_TIDE_CACHE`), the flood's sizes snapped to steps of about a twelfth, or the 45 frames would draw thousands.
+
+**The burning street** (the tide since 2026-11-10; `tools/art/prologue.py`, "THE TOWN OVERRUN, FROM ITS STREET").
+It is drawn in metres through one camera, `_sp`: a one-point perspective down the street (horizon at row 500,
+the camera 0.55 m off the cobbles) plus the keystone of a camera tilted up (`TIDE_TILT`), so the walls lean in as
+they climb. Houses (`TIDE_HOUSES`, both sides, near to far: their storeys jettied out over the street, a gable or
+an eave, and how each burns - not every house does, the dark ones between are what the flames read against) go
+into a `_Scene` as materials, not colours, with a depth per pixel; the fire's light (`_Light`, summed from every
+burning window and roof and the square) picks each pixel's stop of its material's row at the end (`_resolve`).
+Emission is the flames alone (the fire ramp, in the animated box); what the fire lands on takes russet and red
+pigment. The depth is what hides a body coming up over the street's rise (`TIDE_CREST`) out of the burning square,
+or up behind an eave (`TIDE_ROOFERS`), until it clears it. The flames stay inside the box's inset (`_fire_fits`:
+a fire that would be cut by the box's edge is shortened, or the opening only glows) and are laid over the
+vignette, whose dither dotted them. The people (`TIDE_PEOPLE`, `_fleer`) are placed by where they end, run along
+the two sides of the street so the flood shows between them, and are kept inside the box at every depth. The one
+that drops (`TIDE_LANDING`, `TIDE_LAND`) lands at the art point `tide_land_art()` prints on every run, which
+`Prologue.cs`'s impact for the tide must match. The fore holds the two nearest houses again: they drift
+furthest, so the slow tilt up (`Beats`, "tide") opens them past the rest.
 
 **The throne's lifting** (`THRONE_BOX`, 264x232 at 296,240: the four from the ring into the sky, his raised
 arm and orb, the streams and his reach; its still mid layer is empty inside it, the break's pattern). Three
@@ -214,8 +233,9 @@ impact beat: the tide's burst, a few seconds on, is the one that is his.
 - **An impact beat** (`Beat.Impact`, a `PanelImpact`): at a time on the panel's own clock, speed lines
   thrown out of an art point (`SpeedLines`, one art pixel thick on the art grid), a shake of the stage
   through `ScreenShake` (so Reduce Screen Shake), and a dithered flash (`DitherFlash`), warm for the
-  Archmage's light, violet for the dark wizard's. Two panels have one: the tide's wave bursting over the
-  crest at 1.4 s (cold - the one impact that is his), and the chain breaking in the break, at 2.0 s.
+  Archmage's light, violet for the dark wizard's. Two panels have one: the tide's creature dropping off a
+  burning eave into the street at 2.0 s (cold - the one impact that is his; until 2026-11-10 the wave bursting
+  over the crest at 1.4 s), and the chain breaking in the break, at 2.0 s.
 - **Captions** are a `Label` in the display face (Cinzel), bone over an occlusion outline, near the
   foot of the screen: on a PC over frame rows ~560-600, on a phone ~690-790, both darkened ground. A
   line fades in after 0.9 s and is gone before the next dissolve starts, so it never sits over two
@@ -307,9 +327,10 @@ throne starts dissolving in at frame 234, so its moment `t` seconds in is frame 
 `--frames=300 --burst=8,34` (above) takes it at 1.1, 1.7, 2.2, 2.8, 3.4, 3.9, 4.5 and 5.1 s (the four in the
 ring; the first in his hoop; the first up and the second taken; the third taken; the third rising and the
 last taken; the last rising; all four held; at rest before the dissolve). The tide starts dissolving in at
-frame 816, so its moment `t` seconds in is frame `816 + 60t`: `--frames=912 --burst=5,42` takes the rush at
-1.6, 2.3, 3.0, 3.7 and 4.4 s (the wave over the crest and the first of the town running, the pour, the flood
-in the town's near half, the front rank in its streets, its people out on the slope). The hiding starts
+frame 816, so its moment `t` seconds in is frame `816 + 60t`: `--frames=912 --burst=5,14` takes it at 1.6,
+1.83, 2.07, 2.3 and 2.53 s (the people mid-street and the creatures up on the roofs, the one off the eave in
+the air, its landing under the impact's speed lines and flash, the shake dying, it rising among them);
+`--frames=912 --burst=5,42` follows the flood down the street to 4.4 s. The hiding starts
 dissolving in at frame 1110, so its moment `t` seconds in is frame `1110 + 60t`: `--frames=1170
 --burst=4,60` takes it at 1, 2, 3 and 4 s (the hound coming along the row, working the air at the far edge
 of his stone, turning, gone back). `--frames=138 --burst=6,300` takes the first six panels in one run, each
@@ -320,5 +341,8 @@ well inside its hold.
 - Only the throne, the tide, the hiding and the break animate. The others are still but for drift (no
   flicker on the fire, no blinking eyes, the five on the road walking only by the mid layer's drift); the
   animated box would carry any of them if it is wanted.
+- The burning street (2026-11-10) has been photographed in the game on a PC canvas only (`_UiShot`, the five
+  frames round the drop); the phone canvas was judged from the generator's crop, not on the phone, and Eric has
+  not yet seen it move.
 - No pad has been held on the skip prompt and no phone has played it; both are reasoned from
   `MenuNavigator` and `BaseButton` and tested with an injected key.

@@ -27,7 +27,7 @@ meets the scene's black ground invisibly. Nothing is ever stretched to fit.
 LAYERS. Each panel is back (opaque) + mid + fore (transparent), so Prologue.cs can drift them at
 different rates. The drift is a few art pixels over the whole panel; every layer is drawn out to
 the frame edge so a drift never uncovers anything. A panel may also have one animated box of its
-mid layer, <name>-anim.png and <name>-anim.json (write_anim; the four lifted one by one, the tide's
+mid layer, <name>-anim.png and <name>-anim.json (write_anim; the four lifted one by one, the burning street's
 rush, the hiding's searchers and the break's chain).
 """
 
@@ -1933,370 +1933,1143 @@ def p_throne():
     return layers
 
 
-# THE TIDE RUSHES OVER THE HORIZON (Eric, 2026-11-05: the army read as "silhouettes hovering above a
-# picture" - the whole crowd was one layer drifting across a still land, and nothing about it rushed).
-# The flood is the panel's animated box now, the hiding's machinery (write_anim): the slope starts
-# empty under the lit village; heads come up BEHIND the crest, clipped by the ridge line, so the hill
-# itself hides them; then the mass pours over and down the slope, every body on its own lane with its
-# feet on the ground, growing as it comes; and the front rank strides up big by the village as the
-# panel ends. The final frame is the old still - the flood arrived - held under the dissolve to the
-# procession. Prologue.cs drifts back and mid as one, so the crowd never slides on the ground it runs.
+# THE TOWN OVERRUN, FROM ITS STREET (Eric, 2026-11-10, of the panel as it was - a town at the foot of a hill seen
+# from far off, the flood pouring over the crest into it: "when the town is attacked in the opening sequence, i want
+# that scene to be different cinematically. the 'camera' should be from within the town, looking up at the houses
+# burning, people running, and monsters attacking."). So the camera is down IN the street now, a child's height
+# off the cobbles and tilted up: the houses on both sides tower over it, their walls leaning in as they climb (the
+# tilt, TIDE_TILT), their jettied storeys stepping out over the street, and they burn - fire out of the windows,
+# roofs ablaze against a sky of smoke lit red from under. Its people run down the street toward us, growing as
+# they come. Behind them his creatures pour over the rise at the street's end, out of the burning square, and
+# along the roofs; one drops off an eave into the street among them - the panel's impact beat (TIDE_LAND), cold
+# speed lines, a shake and his violet. Between the roofs at the street's end, small and far, the tower stands
+# with its eye burning (Eric, 2026-11-08, "the tower should be in the distant background with the glowing eye").
 #
-# A TOWN OVERRUN (Eric, 2026-11-08: "show a town being overrun by shadows, with the people running away. the tower
-# should be in the distant background with the glowing eye", and the panel moved after "He took every wizard who
-# might rival him." under its own line, "There was no one left to defend them."). The village at the hill's foot
-# is a town now, nearer and bigger, its windows lit; the flood no longer stops at its edge but pours into it,
-# over the houses of its right half, and out of its left half its people run - small figures with the town's light
-# on their backs, fleeing out of the picture ahead of the shadows. The tower stands far off on the horizon, its
-# eye burning. Everything sits above row 548, clear of the line on a PC, and the box runs from the PC's left
-# edge, where the townsfolk run, to its right one.
-TIDE_BOX = (240, 328, 800, 600)
-# The lowest feet in the flood, and the furthest right a body halts: the line's band below, the box's edge beyond.
-TIDE_FLOOR = 540.0
-TIDE_RIGHT = 790.0
+# HOW IT IS BUILT. The street is drawn in world metres through one camera (_sp: a one-point perspective plus the
+# keystone of a tilted camera), into materials rather than colours (_Scene: a material, a depth and a shading
+# bonus per pixel), and the fire's light (_Light, the burning windows and roofs) decides every colour at the end
+# (_resolve). The fire is the land's own light going up, so it is EMISSION only in the flames (the fire ramp, in
+# the animated box); what it lands on - plaster, timber, cobbles, the undersides of the smoke - takes pigment, the
+# russet and red rows (.ai/title-screen.md, "emissive ramps belong on the emitter"). The depth hides a body that
+# comes up behind the street's rise or behind an eave until it clears it, which is what makes the rise a horizon.
+# Everything that moves is the animated box (TIDE_BOX): flames, smoke out of the windows, embers, the flood, the
+# roof creatures, the one that drops and the people; the still layers hold the street. Back and mid drift as one,
+# so nothing slides on the street; the nearest two houses are the fore as well, and drift further, so the slow
+# tilt up (Prologue.cs, Beats) opens them past the rest - the camera looking up.
+TIDE_BOX = (288, 176, 672, 584)
 TIDE_FPS = 8
 # The panel's hold in Prologue.cs (Beats, "tide"); the frames cover it, the last held after.
 TIDE_SECONDS = 5.6
-TIDE_COLUMNS = 4
-# The rush's clock: the village alone for a breath, then the first heads behind the crest, then the
-# wave - the panel's impact beat (Prologue.cs) fires its cold speed lines and shake at TIDE_BURST,
-# while the wave is still rising over the ridge.
-TIDE_FIRST = 1.1
-TIDE_BURST = 1.4
-TIDE_RISE = 0.45           # seconds a body takes to come up over the crest
-TIDE_FLOW = 0.55           # the slope's fall line: a body walks this far left for every row down
-TIDE_SPEED = (22.0, 0.34)  # v = 22 + 0.34 * (y - 372) art px/s: far bodies slow, the near ones a rush
+TIDE_COLUMNS = 5      # 45 frames in nine full rows, nothing wasted (about 28 MB while the panel is up)
+# The one that drops off the eave lands at this, and the panel's impact beat (Prologue.cs) fires its cold speed
+# lines, shake and flash at TIDE_LAND_ART: the burning street for a breath first, then the flood over the rise, then
+# the drop.
+TIDE_LAND = 2.0
+TIDE_HZ = 500.0         # the horizon row: low, because the camera is low and looks up
+TIDE_VPX = 480.0        # the street's vanishing point
+TIDE_F = 520.0          # art px per metre at a metre
+TIDE_CAM = 0.55         # the camera's height over the cobbles, metres
+TIDE_TILT = -760.0      # the row the walls' verticals meet at, far above the frame: the camera tilted up
+TIDE_HALF = 3.6         # half the street's width, metres
+TIDE_JETTY = 0.38       # each storey over the ground steps out over the street this far
+TIDE_CREST = (27.0, 0.8)  # the street's rise (depth, height): past it the street falls away into the square
+TIDE_SQUARE = 34.0      # where the street's houses end
+TIDE_FAR = 52.0         # the square's far side, burning
+TIDE_SMOKE_Z = 1e8
+TIDE_SKY_Z = 1e9
+RU = M["russet"]
+FI = E["fire"]
 
 
-def _tide_bodies(crest, front_x):
-    """The flood, body by body: each one's final place is drawn from the old still's distribution, and
-    its lane walked back up the fall line to the crest it came over, so the end of the rush is the
-    picture the panel always ended on. The deepest halts spawn first - the first over the crest are the
-    furthest down the slope at the end - and the shallowest last, so the ridge keeps boiling until the
-    dissolve takes the panel."""
-    rng = random.Random(55)
-    v0, a = TIDE_SPEED
-    C = v0 / a
-    kinds = ["swarmer", "swarmer", "swarmer", "runner", "bruiser", "shielder", "caster", "knight", "hound"]
-    halts = []
-    for _ in range(1300):
-        y = 372 + rng.random() ** 1.1 * (TIDE_FLOOR - 372)
-        x = front_x(y) + rng.random() ** 0.8 * (TIDE_RIGHT - front_x(y))
-        if y < crest(x) + 4:
-            continue
-        halts.append((x, min(y, TIDE_FLOOR), False))
-    for _ in range(90):                                 # the broken front, a few strides out
-        y = 400 + rng.random() * (TIDE_FLOOR - 410)
-        halts.append((front_x(y) - rng.random() * 26, min(y, TIDE_FLOOR), True))
-    bodies = []
-    for (xh, yh, stray) in halts:
-        h_at = 7.0 + (yh - 372.0) * 0.09
-        xh = max(xh, TIDE_BOX[0] + 6.0 + h_at)          # whole bodies inside the box's left edge
-        x0 = xh
-        for _ in range(3):                              # the lane's crest: the fall line, inverted
-            x0 = xh + TIDE_FLOW * (yh - crest(x0))
-        y0 = crest(x0)
-        if yh <= y0 + 2:
-            continue
-        kind = pick(rng, kinds)
-        fast = 1.3 if (stray or kind in ("runner", "hound")) else 0.92 + rng.random() * 0.22
-        travel = math.log((yh - 372.0 + C) / max(1.0, y0 - 372.0 + C)) / (a * fast)
-        bodies.append({"kind": kind, "x0": x0, "y0": y0, "yh": yh, "fast": fast, "travel": travel,
-                       "seed": ri(rng, 0, 16), "jh": rng.random() * 3.0, "ph": rng.random() * 6.283,
-                       "stride": 5.0 + rng.random() * 3.5, "jt": (rng.random() - 0.5) * 0.24})
-    bodies.sort(key=lambda b: -b["yh"])
-    n = float(max(1, len(bodies) - 1))
-    for i, b in enumerate(bodies):
-        u = i / n
-        b["ts"] = max(TIDE_FIRST, TIDE_FIRST + 0.05 + (u ** 0.85) * (4.75 - TIDE_FIRST) + b.pop("jt"))
-    return bodies
+def _tk(y):
+    """The tilted camera's keystone at row y: 1 at the horizon, less above it, so walls lean in as they climb."""
+    return (y - TIDE_TILT) / (TIDE_HZ - TIDE_TILT)
 
 
-def _tide_pose(b, t):
-    """Where a body stands at panel time t - (x, yb, h, rise, v) - or None before its turn. While it
-    rises its feet are still on the far side of the hill; then the flow down the fall line, the halt at
-    its place in the old still, and a slow creep after, so the arrived crowd never freezes."""
-    tau = t - b["ts"]
-    if tau < 0.0:
-        return None
-    v0, a = TIDE_SPEED
-    C = v0 / a
-    rise = min(1.0, tau / TIDE_RISE)
-    v = 0.0
-    if rise < 1.0:
-        y = b["y0"]
-    else:
-        tt = tau - TIDE_RISE
-        if tt <= b["travel"]:
-            y = 372.0 + (b["y0"] - 372.0 + C) * math.exp(a * b["fast"] * tt) - C
-            v = (v0 + a * (y - 372.0)) * b["fast"]
+def _sp(X, Y, d):
+    """A street point (X across, Y up, d away, metres) on the frame."""
+    s = TIDE_F / d
+    y = TIDE_HZ + (TIDE_CAM - Y) * s
+    return (TIDE_VPX + X * s * _tk(y), y)
+
+
+def _ground(d):
+    """The street's height at depth d: up to its rise, and falling away into the square past it."""
+    cd, ch = TIDE_CREST
+    if d <= cd:
+        u = d / cd
+        return ch * u * u
+    return ch - (d - cd) * 0.16
+
+
+def _plane_z(X):
+    """Depth across a wall standing at X, from where a pixel of it falls on the frame."""
+    def z(x, y):
+        dx = x - TIDE_VPX
+        if dx * X <= 0.5:
+            return 900.0
+        return X * TIDE_F * _tk(y) / dx
+    return z
+
+
+# The materials the street is drawn in, and the rows they climb as the fire's light on them rises (darkest first).
+T_SKY, T_SMOKE, T_PLASTER, T_TIMBER, T_SOFFIT, T_ROOF, T_WINDOW, T_COBBLE, T_GAP, T_LAMP, T_HEARTH, T_FAR, \
+    T_END = range(1, 14)
+TIDE_RAMPS = {
+    T_SKY: [OCC, S[4], V[4], V[3], R[3], R[2], R[1], R[0]],
+    T_SMOKE: [OCC, S[4], S[3], V[4], R[3], R[2], R[1]],
+    T_PLASTER: [S[4], S[3], S[2], RU[4], RU[3], RU[2], RU[1], RU[0]],
+    T_END: [OCC, S[4], S[3], RU[4], RU[3], RU[2]],
+    T_TIMBER: [OCC, OCC, S[4], RU[4], RU[3], RU[2]],
+    T_SOFFIT: [OCC, S[4], RU[4], RU[3], RU[2], RU[1]],
+    T_ROOF: [OCC, S[4], S[3], RU[4], RU[3]],
+    T_WINDOW: [OCC, OCC, S[4], RU[4]],
+    T_COBBLE: [S[4], S[3], S[2], RU[4], RU[3], RU[2], RU[1]],
+    T_GAP: [OCC, OCC, S[4], RU[4], RU[3]],
+    T_FAR: [OCC, S[4], R[3], R[2], RU[3], RU[2]],
+    T_LAMP: [G[4], G[3], G[2]],
+    T_HEARTH: [FI[3], FI[3], FI[2], FI[1]],
+}
+# Stops of light every material has before the fire adds any (the night's own), and how much of the fire's light
+# it takes: smoke swallows it, the undersides of the jetties over the burning street drink it in.
+TIDE_BASE = {T_SKY: 0.0, T_SMOKE: 0.2, T_PLASTER: 0.9, T_END: 0.5, T_TIMBER: 0.5, T_SOFFIT: 0.4, T_ROOF: 0.5,
+             T_WINDOW: 0.2, T_COBBLE: 0.6, T_GAP: 0.3, T_FAR: 0.4, T_LAMP: 0.6, T_HEARTH: 0.4}
+TIDE_GAIN = {T_SKY: 0.6, T_SMOKE: 0.42, T_PLASTER: 1.0, T_END: 0.7, T_TIMBER: 0.55, T_SOFFIT: 1.1, T_ROOF: 0.45,
+             T_WINDOW: 0.3, T_COBBLE: 0.75, T_GAP: 0.45, T_FAR: 0.8, T_LAMP: 0.2, T_HEARTH: 0.5}
+
+
+class _Scene(object):
+    """The street as materials: a material id, a depth in metres and a shading bonus (sixteenths of a stop) per
+    pixel, depth-tested, so draws can come in any order and what is nearer wins."""
+
+    def __init__(self):
+        self.mat = Image.new("L", (FW, FH), 0)
+        self.mp = self.mat.load()
+        self.bon = Image.new("L", (FW, FH), 128)
+        self.bp = self.bon.load()
+        self.zb = [TIDE_SKY_Z * 2] * (FW * FH)
+
+    def put(self, x, y, m, z, b=0):
+        x = int(x)
+        y = int(y)
+        if 0 <= x < FW and 0 <= y < FH:
+            i = y * FW + x
+            if z <= self.zb[i]:
+                self.zb[i] = z
+                self.mp[x, y] = m
+                self.bp[x, y] = max(0, min(255, 128 + int(b)))
+
+    def poly(self, pts, m, z, b=0):
+        """Scanline fill: material m at depth z (metres, or z(x, y)), shading b (or b(x, y))."""
+        ys = [p[1] for p in pts]
+        n = len(pts)
+        zf = z if callable(z) else None
+        bf = b if callable(b) else None
+        for y in range(max(0, int(min(ys))), min(FH, int(max(ys)) + 1)):
+            xs = []
+            for i in range(n):
+                ax, ay = pts[i]
+                bx, by = pts[(i + 1) % n]
+                if ay == by:
+                    continue
+                if min(ay, by) <= y < max(ay, by):
+                    xs.append(ax + (y - ay) * (bx - ax) / float(by - ay))
+            xs.sort()
+            for i in range(0, len(xs) - 1, 2):
+                for x in range(max(0, int(math.floor(xs[i]))), min(FW - 1, int(math.ceil(xs[i + 1]))) + 1):
+                    self.put(x, y, m, zf(x, y) if zf else z, bf(x, y) if bf else b)
+
+    def line(self, x0, y0, x1, y1, m, z, b=0):
+        n = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
+        for k in range(n + 1):
+            t = k / float(n)
+            x = x0 + (x1 - x0) * t
+            y = y0 + (y1 - y0) * t
+            self.put(x, y, m, z(x, y) if callable(z) else z, b)
+
+    def disc(self, cx, cy, rx, ry, m, z, b=0):
+        for y in range(int(cy - ry), int(cy + ry) + 1):
+            for x in range(int(cx - rx), int(cx + rx) + 1):
+                nx = (x - cx) / float(rx)
+                ny = (y - cy) / float(ry)
+                if nx * nx + ny * ny <= 1.0:
+                    self.put(x, y, m, z, b(x, y) if callable(b) else b)
+
+    def z_at(self, x, y):
+        if 0 <= x < FW and 0 <= y < FH:
+            return self.zb[int(y) * FW + int(x)]
+        return TIDE_SKY_Z
+
+
+class _Light(object):
+    """The fire's light on the street, in stops, summed from every burning window and roof on a grid a quarter
+    the frame's size and read back smoothly (bilinear) at full size."""
+
+    STEP = 4
+
+    def __init__(self):
+        self.gw = FW // self.STEP + 2
+        self.gh = FH // self.STEP + 2
+        self.g = [[0.0] * self.gw for _ in range(self.gh)]
+        self.px = None
+
+    def add(self, x, y, rx, ry, strength):
+        st = float(self.STEP)
+        for gy in range(max(0, int((y - ry) / st)), min(self.gh, int((y + ry) / st) + 2)):
+            row = self.g[gy]
+            dy = (gy * st - y) / ry
+            for gx in range(max(0, int((x - rx) / st)), min(self.gw, int((x + rx) / st) + 2)):
+                dx = (gx * st - x) / rx
+                q = 1.0 - (dx * dx + dy * dy)
+                if q > 0.0:
+                    row[gx] += strength * q * q
+
+    def done(self):
+        im = Image.new("F", (self.gw, self.gh), 0.0)
+        p = im.load()
+        for gy in range(self.gh):
+            for gx in range(self.gw):
+                p[gx, gy] = self.g[gy][gx]
+        self.img = im.resize((self.gw * self.STEP, self.gh * self.STEP), Image.BILINEAR)
+        self.px = self.img.load()
+
+    def at(self, x, y):
+        return self.px[int(x), int(y)]
+
+
+def _resolve(scene, light, c, box=None, keep=None):
+    """Every material pixel of the scene onto c in its row, by the fire's light on it plus its own bonus and base,
+    dithered between stops. keep(z): only pixels at depths it accepts."""
+    x0, y0, x1, y1 = box or (0, 0, FW, FH)
+    mp, bp, zb, lp = scene.mp, scene.bp, scene.zb, light.px
+    ramps = dict((m, [rgb(k) for k in r]) for (m, r) in TIDE_RAMPS.items())
+    for y in range(y0, y1):
+        row = TH[y % 8]
+        for x in range(x0, x1):
+            m = mp[x, y]
+            if not m:
+                continue
+            if keep is not None and not keep(zb[y * FW + x]):
+                continue
+            ramp = ramps[m]
+            t = lp[x, y] * TIDE_GAIN[m] + (bp[x, y] - 128) / 16.0 + TIDE_BASE[m]
+            n = len(ramp)
+            if t <= 0.0:
+                c.px[x, y] = ramp[0]
+                continue
+            if t >= n - 1:
+                c.px[x, y] = ramp[-1]
+                continue
+            i = int(t)
+            c.px[x, y] = ramp[i + 1] if (t - i) > row[x % 8] else ramp[i]
+
+
+# THE HOUSES. Each side, near to far: (d0, d1, storeys, top, burn) - from d0 to d1 metres down the street, its
+# storeys (each over the ground jettied out over the street), a gable to the street or an eave along it, and how it
+# burns: 0 lit only by the fires across the way, 1 a window or two alight downstairs, 2 its windows and its roof, 3
+# alight upstairs, over our heads. The two nearest tower over the camera on both sides and are not yet alight; the
+# burning starts a door down, where the fire stays inside the animated box. Not every house burns: the dark ones
+# between are what the flames read against. Lower toward the square, so the sky opens between the roofs at the end of
+# the street and the tower can stand in it.
+TIDE_HOUSES = {
+    -1: [(2.4, 8.4, 4, "eave", 0), (8.4, 12.8, 3, "gable", 3), (12.8, 17.4, 3, "eave", 1), (17.4, 21.6, 2, "gable", 2),
+         (21.6, 26.4, 3, "gable", 0), (26.4, 30.4, 2, "eave", 1), (30.4, 34.0, 2, "gable", 0)],
+    1: [(2.4, 7.2, 4, "gable", 0), (7.2, 11.8, 3, "eave", 3), (11.8, 16.2, 2, "eave", 2), (16.2, 21.4, 3, "gable", 0),
+        (21.4, 25.4, 2, "eave", 2), (25.4, 30.0, 2, "gable", 1), (30.0, 34.0, 2, "eave", 0)],
+}
+# How high a fire may reach above its root, at most: kept inside the animated box (its top, inset), or a tall one
+# under a high roof would be cut flat by the box's edge.
+TIDE_FIRE_TOP = TIDE_BOX[1] + 16
+
+
+def _fire_fits(x, y, h, w):
+    """A fire rooted at (x, y): its tallest lick, cut to what the animated box holds above it, or 0 when it would not
+    keep half its height or sits too near the box's sides - then the opening only glows."""
+    bx0, by0, bx1, by1 = TIDE_BOX
+    if x - w < bx0 + 12 or x + w > bx1 - 12 or y > by1 - 12:
+        return 0.0
+    room = y - TIDE_FIRE_TOP
+    return h if room >= h else (room if room >= h * 0.5 else 0.0)
+TIDE_STOREY0 = 3.2
+TIDE_STOREY = 2.8
+
+
+def _storey_y(k):
+    return 0.0 if k <= 0 else TIDE_STOREY0 + TIDE_STOREY * (k - 1)
+
+
+def _house_geo(side, h):
+    """A house's numbers: its ground, its storeys' wall planes (X) and floors (Y), its top, and its gable."""
+    d0, d1, n, top, burn = h
+    base = _ground((d0 + d1) * 0.5)
+    planes = [side * (TIDE_HALF - TIDE_JETTY * k) for k in range(n)]
+    floors = [base + _storey_y(k) for k in range(n + 1)]
+    gable = (d1 - d0) * 0.62 if top == "gable" else 0.0
+    return dict(d0=d0, d1=d1, n=n, top=top, burn=burn, base=base, planes=planes, floors=floors, gable=gable,
+                dm=(d0 + d1) * 0.5)
+
+
+def _windows(g, rng):
+    """Each storey's openings, in (d from, d to, Y from, Y to, kind): a door and a window on the ground, one or two
+    windows above."""
+    out = []
+    d0, d1 = g["d0"], g["d1"]
+    for k in range(g["n"]):
+        yb = g["floors"][k]
+        span = d1 - d0
+        if k == 0:
+            dd = d0 + span * (0.22 + rng.random() * 0.1)
+            out.append((k, dd, dd + 1.1, yb, yb + 2.3, "door"))
+            dw = d0 + span * (0.62 + rng.random() * 0.1)
+            out.append((k, dw, dw + 1.0, yb + 1.0, yb + 2.3, "window"))
         else:
-            y = min(b["yh"] + 3.0, b["yh"] + (tt - b["travel"]) * 2.2)
-            v = 2.2
-        y = min(y, TIDE_FLOOR)
-    h = 7.0 + max(0.0, y - 372.0) * 0.09 + b["jh"]
-    x = b["x0"] - TIDE_FLOW * (y - b["y0"]) + math.sin(t * 0.9 + b["ph"]) * 1.4
-    yb = y + (1.0 - rise) * h
-    if rise >= 1.0 and v > 3.0:
-        yb += round(math.sin(t * b["stride"] + b["ph"]) * min(1.4, h * 0.05))
-    return (x, yb, h, rise, v)
+            m = 2 if span > 4.4 else 1
+            for j in range(m):
+                c0 = d0 + span * ((j + 0.5) / m) - 0.5 + (rng.random() - 0.5) * 0.4
+                out.append((k, c0, c0 + 1.0, yb + 0.8, yb + 2.1, "window"))
+    return out
 
+
+def _draw_house(sc, side, g, rng, fires, lights, lamps=True):
+    """One house into the scene (side -1 left, 1 right): its end wall and roof behind its front, the front storey by
+    storey with its timbers, the undersides of its jetties, its openings, its top. Burning openings go into fires
+    (the animated box draws their flames) and lights; returns the eave or gable points a creature may stand on."""
+    d0, d1, n = g["d0"], g["d1"], g["n"]
+    X0, top_plane = g["planes"][0], g["planes"][-1]
+    H = g["floors"][n]
+    base = g["base"]
+    out_x = side * (TIDE_HALF + 9.0)
+    # The end wall facing us and the roof over it, out to the side: what shows above a lower nearer neighbour.
+    if g["top"] == "gable":
+        dm, apex = g["dm"], H + g["gable"]
+        sc.poly([_sp(top_plane, H, d0), _sp(top_plane, apex, dm), _sp(out_x, apex, dm), _sp(out_x, H, d0)],
+                T_ROOF, (d0 + dm) * 0.5, lambda x, y: ((x + y * 2) % 7 == 0) * -8)
+        sc.poly([_sp(X0, base, d0), _sp(top_plane, H, d0), _sp(out_x, H, d0), _sp(out_x, base, d0)], T_END, d0 + 0.05)
+    else:
+        ridge = H + 3.0
+        sc.poly([_sp(X0, base, d0), _sp(top_plane, H, d0), _sp(side * (TIDE_HALF + 4.0), ridge, d0),
+                 _sp(out_x, H, d0), _sp(out_x, base, d0)], T_END, d0 + 0.05)
+        a, b2 = _sp(top_plane, H, d0), _sp(side * (TIDE_HALF + 4.0), ridge, d0)
+        sc.line(a[0], a[1], b2[0], b2[1], T_ROOF, d0, 4)
+    # The front, storey by storey: plaster, then the timbers on it.
+    for k in range(n):
+        X, yb, yt = g["planes"][k], g["floors"][k], g["floors"][k + 1]
+        z = _plane_z(X)
+        sc.poly([_sp(X, yb, d0), _sp(X, yt, d0), _sp(X, yt, d1), _sp(X, yb, d1)], T_PLASTER, z,
+                lambda x, y: (-6 if (x * 7 + y * 3) % 23 == 0 else 0))
+        zt = lambda x, y, z=z: z(x, y) - 0.02
+        for (Y,) in [(yb + 0.05,), (yt - 0.12,), (yb + (yt - yb) * 0.42,)]:
+            a, b2 = _sp(X, Y, d0), _sp(X, Y, d1)
+            sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, zt)
+            a, b2 = _sp(X, Y - 0.08, d0), _sp(X, Y - 0.08, d1)
+            sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, zt)
+        posts = max(2, int((d1 - d0) / 1.5) + 1)
+        for j in range(posts + 1):
+            dd = d0 + (d1 - d0) * j / float(posts)
+            for w in (0.0, 0.12):
+                a, b2 = _sp(X, yb, min(d1, dd + w)), _sp(X, yt, min(d1, dd + w))
+                sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, zt)
+            if k and j < posts and (j + k) % 2 == 0:
+                e = d0 + (d1 - d0) * (j + 1) / float(posts)
+                a, b2 = _sp(X, yb + 0.1, dd), _sp(X, yb + (yt - yb) * 0.42, e)
+                sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, zt)
+        # The jetty's underside: the floor of this storey seen from below, between its wall and the one under it.
+        if k:
+            Xl = g["planes"][k - 1]
+            zs = _plane_z((X + Xl) * 0.5)
+            sc.poly([_sp(Xl, yb, d0), _sp(X, yb, d0), _sp(X, yb, d1), _sp(Xl, yb, d1)], T_SOFFIT, zs,
+                    lambda x, y: 8 if (x + y) % 5 == 0 else 0)
+    # The top: a gable to the street or the eave along it, its edges in timber.
+    zt = _plane_z(top_plane)
+    perches = []
+    if g["top"] == "gable":
+        dm, apex = g["dm"], H + g["gable"]
+        pts = [_sp(top_plane, H, d0), _sp(top_plane, apex, dm), _sp(top_plane, H, d1)]
+        sc.poly(pts, T_PLASTER, zt, -4)
+        for (a, b2) in [(pts[0], pts[1]), (pts[1], pts[2])]:
+            for w in (0, 1, 2):
+                sc.line(a[0] + side * w, a[1], b2[0] + side * w, b2[1], T_ROOF, lambda x, y: zt(x, y) - 0.03)
+        a, b2 = _sp(top_plane, H, d0), _sp(top_plane, H, d1)
+        sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, lambda x, y: zt(x, y) - 0.02)
+        a, b2 = _sp(top_plane, H, dm), _sp(top_plane, apex - 0.3, dm)
+        sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, lambda x, y: zt(x, y) - 0.02)
+        # On the ridge a step back from the gable's peak (the ridge runs out from it, level, away from the street):
+        # the near slope of the roof hides a body coming up behind it, as the gable alone, seen this edge-on, would not.
+        perches.append((top_plane + side * 1.1, apex, dm, "apex"))
+        roofline = [(top_plane, H + g["gable"] * (1 - abs(2 * (dd - d0) / (d1 - d0) - 1)), dd)
+                    for dd in [d0 + (d1 - d0) * (j + 0.5) / 6.0 for j in range(6)]]
+    else:
+        # the eave: its fascia, and the underside of its overhang lit from the street
+        Xo = top_plane - side * 0.55
+        sc.poly([_sp(top_plane, H, d0), _sp(Xo, H, d0), _sp(Xo, H, d1), _sp(top_plane, H, d1)], T_SOFFIT,
+                _plane_z((top_plane + Xo) * 0.5), 10)
+        sc.poly([_sp(Xo, H, d0), _sp(Xo, H + 0.4, d0), _sp(Xo, H + 0.4, d1), _sp(Xo, H, d1)], T_ROOF, _plane_z(Xo))
+        for j in range(3):
+            dd = d0 + (d1 - d0) * (0.25 + 0.25 * j)
+            perches.append((Xo, H + 0.4, dd, "eave"))
+        roofline = [(Xo, H + 0.4, d0 + (d1 - d0) * (j + 0.5) / 6.0) for j in range(6)]
+        # a chimney stack on the wall's head
+        if rng.random() < 0.6:
+            dc = d0 + (d1 - d0) * (0.2 + rng.random() * 0.5)
+            zc = _plane_z(Xo)
+            sc.poly([_sp(Xo, H, dc), _sp(Xo, H + 2.0, dc), _sp(Xo, H + 2.0, dc + 0.9), _sp(Xo, H, dc + 0.9)],
+                    T_END, lambda x, y: zc(x, y) - 0.05)
+            sc.poly([_sp(Xo, H + 2.0, dc - 0.1), _sp(Xo, H + 2.3, dc - 0.1), _sp(Xo, H + 2.3, dc + 1.0),
+                     _sp(Xo, H + 2.0, dc + 1.0)], T_ROOF, lambda x, y: zc(x, y) - 0.06)
+    # The openings: dark, lamp-lit (the town's own light, not yet out) or alight inside.
+    opens = _windows(g, rng)
+    burning = []
+    if g["burn"] == 1:
+        burning = [o for o in opens if o[0] <= 1 and rng.random() < 0.5]
+        if not burning:
+            burning = [opens[1]]
+    elif g["burn"] == 3:
+        # alight upstairs: the fire has climbed, over our heads
+        burning = [o for o in opens if o[0] >= 1 and rng.random() < 0.7]
+    elif g["burn"] == 2:
+        burning = [o for o in opens if rng.random() < 0.6]
+    # Lamps only far down the street: near, at this angle, a lit window was a flat yellow sliver.
+    lamps = lamps and d0 >= 16.0
+    for o in opens:
+        k, a0, a1, y0, y1, kind = o
+        X = g["planes"][k]
+        z = _plane_z(X)
+        zo = lambda x, y, z=z: z(x, y) - 0.04
+        lamp = rng.random() < 0.18
+        fh = 0.0
+        if o in burning:
+            tx, ty = _sp(X, y1, (a0 + a1) * 0.5)
+            s = TIDE_F / ((a0 + a1) * 0.5)
+            fh = _fire_fits(tx, ty, s * (1.0 + rng.random() * 0.7), max(3.0, s * 0.5))
+        # Alight inside only where its flames can be drawn: an opening at the box's edge glowing with no fire coming
+        # out of it read as a lit panel.
+        fire = fh > 0.0
+        if fire:
+            mat = T_HEARTH
+        elif kind == "window" and lamps and lamp:
+            mat = T_LAMP
+        else:
+            mat = T_WINDOW
+        sc.poly([_sp(X, y0, a0), _sp(X, y1, a0), _sp(X, y1, a1), _sp(X, y0, a1)], mat, zo)
+        # the frame round it: a lintel and a sill
+        for (yy,) in [(y0,), (y1,)]:
+            a, b2 = _sp(X, yy, a0 - 0.1), _sp(X, yy, a1 + 0.1)
+            sc.line(a[0], a[1], b2[0], b2[1], T_TIMBER, lambda x, y, z=z: z(x, y) - 0.05)
+        if fire:
+            # the flames come out of its head and climb; the light it throws on the street and the walls
+            tx, ty = _sp(X, y1, (a0 + a1) * 0.5)
+            ox, _oy = _sp(X - side * 0.9, y1, (a0 + a1) * 0.5)
+            s = TIDE_F / ((a0 + a1) * 0.5)
+            fires.append(dict(x=tx, y=ty, out=ox - tx, h=fh, w=max(3.0, s * 0.5), kind="window",
+                              seed=ri(rng, 0, 1 << 20), bottom=_sp(X, y0, (a0 + a1) * 0.5)[1]))
+            cx, cy = _sp(X - side * 1.2, y1, (a0 + a1) * 0.5)
+            lights.append((cx, cy, s * 2.8, s * 2.6, 2.4))
+    if g["burn"] == 2:
+        # The roof ablaze: a few great crowns of fire along it, not a curtain - each its own height, gaps between.
+        s = TIDE_F / g["dm"]
+        for j, (Xr, Yr, dr) in enumerate(roofline):
+            if j % 2 and rng.random() < 0.6:
+                continue
+            x, y = _sp(Xr, Yr, dr)
+            fh = _fire_fits(x, y, s * (1.4 + rng.random() * 2.2), s * 0.8)
+            if fh:
+                fires.append(dict(x=x, y=y, out=0.0, h=fh, w=s * (0.7 + rng.random() * 0.5), kind="roof",
+                                  seed=ri(rng, 0, 1 << 20), bottom=y))
+        x, y = _sp(top_plane, H + g["gable"] * 0.5, g["dm"])
+        lights.append((x, y, s * 4.6, s * 4.0, 2.4))
+    return perches
+
+
+def _street(sc, rng):
+    """The cobbles, from under the camera to the rise: stone by stone where they are big enough to be stones, a
+    grain past that, with the gutter down the middle."""
+    # Depth of the street at each row up to its rise.
+    rows = {}
+    d = 0.6
+    while d <= TIDE_CREST[0]:
+        y = int(_sp(0.0, _ground(d), d)[1])
+        if y not in rows:
+            rows[y] = d
+        d += 0.005
+    ys = sorted(rows)
+    crest_y = ys[0]
+    last = rows[ys[-1]]
+    for y in range(crest_y, FH):
+        dz = rows.get(y)
+        if dz is None:
+            dz = last if y > ys[-1] else min((rows[k] for k in ys if k >= y), key=lambda v: v)
+        last = dz
+        for x in range(FW):
+            sc.put(x, y, T_GAP, dz, ((x * 13 + y * 7) % 11 == 0) * 10)
+    # The stones: rows across the street, each stone its own size and its corners worn round, flattened by the
+    # angle; a few missing, a few sunk.
+    d = 0.7
+    row = 0
+    while d < 15.0:
+        ln = (0.22 + d * 0.004) * (0.85 + rng.random() * 0.3)
+        X = -TIDE_HALF - 1.0 - rng.random() * 0.3
+        while X < TIDE_HALF + 1.0:
+            wd = 0.22 + rng.random() * 0.16
+            if rng.random() < 0.05:
+                X += wd
+                continue
+            gx = 0.025 + d * 0.0015
+            cn = min(wd, ln) * (0.18 + rng.random() * 0.22)
+            a0, a1 = X + gx, X + wd - gx
+            e0, e1 = d + gx, d + ln - gx
+            loc = [(a0 + cn, e0), (a1 - cn, e0), (a1, e0 + cn), (a1, e1 - cn), (a1 - cn, e1), (a0 + cn, e1),
+                   (a0, e1 - cn), (a0, e0 + cn)]
+            # every corner knocked about a little: worn setts, not tiles
+            jw, jl = wd * 0.17, ln * 0.17
+            loc = [(a + (rng.random() - 0.5) * jw * 2, e + (rng.random() - 0.5) * jl * 2) for (a, e) in loc]
+            pts = [_sp(a, _ground(e), e) for (a, e) in loc]
+            lift = int((rng.random() - 0.5) * 12) + (5 if abs(X + wd * 0.5) < 0.35 else 0)
+            sc.poly(pts, T_COBBLE, d, lift)
+            # the stone's far edge caught by the fire up the street
+            a, b2 = pts[5], pts[4]
+            if abs(b2[0] - a[0]) > 4:
+                sc.line(a[0], a[1], b2[0], b2[1], T_COBBLE, d - 0.001, lift + 14)
+            X += wd
+        d += ln
+        row += 1
+    # past the stones: a grain of them
+    for y in range(crest_y, int(_sp(0.0, _ground(15.0), 15.0)[1]) + 1):
+        for x in range(FW):
+            hsh = ((x * 73856093) ^ (y * 19349663) ^ (x * y * 83492791)) & 0xFFFF
+            if hsh % 3 == 0:
+                sc.put(x, y, T_COBBLE, rows.get(y, 20.0), (hsh >> 4) % 9 - 2)
+    return crest_y
+
+
+def _far_side(sc, fires, lights, rng):
+    """The square's far side, burning: house fronts facing us across it, their bases under the street's rise."""
+    x = -15.0
+    while x < 15.0:
+        w = 3.6 + rng.random() * 2.6
+        H = 5.0 + rng.random() * 4.0
+        gb = 2.0 + rng.random() * 1.6 if rng.random() < 0.6 else 0.0
+        g0 = _ground(TIDE_FAR)
+        pts = [_sp(x, g0, TIDE_FAR), _sp(x, g0 + H, TIDE_FAR)]
+        if gb:
+            pts.append(_sp(x + w * 0.5, g0 + H + gb, TIDE_FAR))
+        pts += [_sp(x + w, g0 + H, TIDE_FAR), _sp(x + w, g0, TIDE_FAR)]
+        sc.poly(pts, T_FAR, TIDE_FAR + rng.random())
+        for j in range(int(w / 1.6)):
+            wx = x + 0.6 + j * 1.6
+            for (y0, y1) in [(g0 + 3.6, g0 + 4.8), (g0 + 6.4, g0 + 7.4)]:
+                if y1 < g0 + H - 0.3:
+                    lit = rng.random() < 0.5
+                    sc.poly([_sp(wx, y0, TIDE_FAR), _sp(wx, y1, TIDE_FAR), _sp(wx + 0.7, y1, TIDE_FAR),
+                             _sp(wx + 0.7, y0, TIDE_FAR)], T_HEARTH if lit else T_WINDOW, TIDE_FAR - 0.5)
+        top = _sp(x + w * 0.5, g0 + H + gb, TIDE_FAR)
+        s = TIDE_F / TIDE_FAR
+        # The square burns hardest: behind the rise the flood comes over, so its bodies come over it black against
+        # fire.
+        for j in range(3):
+            u = 0.17 + 0.33 * j + (rng.random() - 0.5) * 0.14
+            fx, fy = _sp(x + w * u, g0 + H + (gb * (1 - abs(u - 0.5) * 2)), TIDE_FAR)
+            fh = _fire_fits(fx, fy, s * (2.4 + rng.random() * 3.2), s * 1.2)
+            if fh and rng.random() < 0.9:
+                fires.append(dict(x=fx, y=fy, out=0.0, h=fh, w=s * (1.0 + rng.random() * 0.6), kind="far",
+                                  seed=ri(rng, 0, 1 << 20), bottom=fy))
+        lights.append((top[0], top[1] + 10, 70, 46, 2.2))
+        x += w + 0.3
+
+
+def _smoke(sc, x0, y0, r0, n, lean, seed, z=TIDE_SMOKE_Z):
+    """A column of smoke off a fire: billows rising, growing and leaning down the wind, each lit from under (by the
+    fire it rose from, through the light) and dark on top, drawn upward so each one's lit belly lies over the dark
+    crown of the one below."""
+    rng = random.Random(seed)
+    x, y, r = x0, y0, r0
+    for k in range(n):
+        rr = r * (0.8 + rng.random() * 0.4)
+        cy = y
+
+        def bon(px_, py_, cy=cy, rr=rr):
+            return int(((py_ - cy) / rr) * 14) - 6
+        sc.disc(x + (rng.random() - 0.5) * r * 0.6, cy, rr, rr * 0.82, T_SMOKE, z - k * 10, bon)
+        y -= r * (0.7 + rng.random() * 0.25)
+        x += lean * r * (0.6 + rng.random() * 0.5)
+        r *= 1.09 + rng.random() * 0.06
+
+
+# HIS CREATURES ON THE ROOFS: where each comes up from behind an eave or a gable and what it does there. (side, the
+# house's index on that side, which perch of its top, kind, seconds it starts to rise, and what it does: "watch",
+# "crawl" along the eave toward us, or "leap" - the one that drops into the street at TIDE_LAND). They come up behind
+# the roof - the eave hides them until they clear it - just before the first heads over the rise, and stand among
+# the roofs' flames, black against them; another comes up on the eave the first one leapt from.
+TIDE_ROOFERS = [(1, 4, 1, "bruiser", 0.95, "leap"), (1, 5, 0, "caster", 1.1, "watch"),
+                (-1, 4, 0, "runner", 1.3, "watch"), (-1, 3, 0, "swarmer", 1.6, "watch"),
+                (-1, 5, 2, "hound", 2.3, "crawl"), (1, 4, 0, "runner", 2.4, "watch"),
+                (1, 3, 0, "swarmer", 2.7, "watch"), (1, 6, 2, "runner", 3.2, "crawl")]
+TIDE_RISE_S = 0.4      # seconds a body takes to come up behind a roof
+TIDE_CROUCH = 1.36     # the leaper on its haunches at the eave's edge, from this to its leap
+TIDE_LEAP = TIDE_LAND - 0.42
+# Each kind's height on the street, in its figure's units of a metre (a body stands about 20 of them).
+TIDE_TALL = {"swarmer": 1.7, "runner": 1.75, "bruiser": 1.95, "shielder": 1.85, "caster": 1.75, "knight": 1.85,
+             "hound": 1.6}
 
 _TIDE_CACHE = {}
 
 
-def _tide_paste(c, b, x, yb, h, rise, crest, light):
-    """One body of the flood onto the frame. Rendered once per (kind, size, seed, light) and pasted
-    everywhere that body walks (creature_fig); a body still coming up keeps only what shows above the
-    ridge line - the hill occludes the rest, which is what makes the crest a horizon."""
+def _tide_fig(kind, h, seed, facing, light, rim=None, snap=False):
+    """One of his, drawn once per (kind, size, seed, facing, light) and pasted wherever it stands (creature_fig).
+    snap: the flood's bodies grow every frame they come on, so their sizes are taken in steps of about a twelfth -
+    a step the eye does not see at 8 frames a second - or the 45 frames would draw thousands of them."""
     hi = max(6, int(round(h)))
-    dx, dy = light[0] - x, light[1] - (yb - h * 0.6)
-    nrm = math.hypot(dx, dy) or 1.0
-    q = (0 if abs(dx) < nrm * 0.33 else (1 if dx > 0 else -1),
-         0 if abs(dy) < nrm * 0.33 else (1 if dy > 0 else -1))
-    key = (b["kind"], hi, b["seed"], q)
+    if snap and hi > 14:
+        q_ = max(1, hi // 12)
+        hi = int(round(hi / float(q_))) * q_
+    nrm = math.hypot(light[0], light[1]) or 1.0
+    q = (0 if abs(light[0]) < nrm * 0.33 else (1 if light[0] > 0 else -1),
+         0 if abs(light[1]) < nrm * 0.33 else (1 if light[1] > 0 else -1))
+    key = (kind, hi, seed % 5, facing, q, rim)
     F = _TIDE_CACHE.get(key)
     if F is None:
-        F = _TIDE_CACHE[key] = creature_fig(b["kind"], hi, -1, [OCC, S[4]], None, True, b["seed"], q)
-    ox = int(round(x)) - F.ox
-    oy = int(round(yb)) - F.oy
-    if rise >= 1.0:
-        if hi >= 12:
-            c.hline(x - hi * 0.16, x + hi * 0.16, yb + 1, OCC)
-        over(c, F.s, ox, oy)
-        return
-    px = F.s.px
-    ridge = [int(crest(ox + xx)) - 1 for xx in range(F.s.w)]
-    for yy in range(F.s.h):
+        F = _TIDE_CACHE[key] = creature_fig(kind, hi, facing, [OCC, S[4]], rim, True, seed % 5, q)
+    return F
+
+
+def _paste_clipped(c, img, ox, oy, sc, z):
+    """A figure's image onto the frame where nothing in the street stands nearer than z: what makes the rise and the
+    eaves hide a body until it clears them."""
+    px = img.load()
+    cp = c.px
+    zb = sc.zb
+    w, h = img.size
+    for yy in range(h):
         fy = oy + yy
-        if fy < 0 or fy >= c.h:
+        if fy < 0 or fy >= FH:
             continue
-        for xx in range(F.s.w):
+        base = fy * FW
+        for xx in range(w):
+            p = px[xx, yy]
+            if not p[3]:
+                continue
             fx = ox + xx
-            if 0 <= fx < c.w and fy <= ridge[xx]:
-                p = px[xx, yy]
-                if p[3]:
-                    c.px[fx, fy] = p
+            if 0 <= fx < FW and zb[base + fx] > z:
+                cp[fx, fy] = p
 
 
-def _tide_dust(c, fr, x, yb, h, v):
-    """Kicked ground behind a rushing body - a few pale pixels, gone next frame - and a short streak
-    off the fastest: the rush said on the ground as well as by the stride."""
-    if v < 34.0 or h < 12.0:
-        return
-    for _ in range(2 if v < 70.0 else 3):
-        c.set(x + 3 + fr.random() * (3.0 + h * 0.2), yb - fr.random() * 2.5,
-              S[4] if fr.random() < 0.75 else V[4])
-    if v > 70.0 and h >= 16.0:
-        c.hline(x + 4, x + 8 + fr.random() * 4.0, yb - h * 0.45, S[4])
+def _tongue(c, x, yb, w, h, t, ph, lean=0.0):
+    """One tongue of fire standing on (x, yb), w wide at its root and h tall, licking with t: four nested bands of
+    the fire ramp, the edge outermost and a thin white-hot core at its root (.ai/art-direction.md, "Elements are
+    emissive")."""
+    for (wf, hf, col) in [(1.0, 1.0, FI[3]), (0.72, 0.8, FI[2]), (0.46, 0.52, FI[1]), (0.2, 0.26, FI[0])]:
+        hh = h * hf
+        if hh < 1.5 or w * wf < 1.0:
+            c.set(x, yb - 1, col)
+            continue
+        m = max(3, int(hh / 3.0))
+        left, right = [], []
+        for i in range(m + 1):
+            uu = i / float(m)
+            u = uu * hf
+            prof = (1.0 - uu) ** 0.65 * (0.8 + 0.35 * math.sin(uu * 3.1416))
+            r = max(0.5, w * 0.5 * wf * prof)
+            sway = math.sin(u * 4.2 - t * 9.0 + ph) * w * 0.32 * u + lean * u
+            cx, cy = x + sway, yb - h * u
+            left.append((cx - r, cy))
+            right.append((cx + r, cy))
+        # a ragged root, where it comes out of the window or the roof
+        c.poly(left + right[::-1] + [(x + w * 0.5 * wf, yb + 1), (x - w * 0.5 * wf, yb + 1)], col)
 
 
-# The front rank, in the town's streets: the seven big enough to name - and they ARRIVE, striding out of the mass
-# over the last seconds, growing as they come.
-TIDE_RANK = [("hound", 0, 30), ("runner", 14, 44), ("swarmer", 34, 40), ("bruiser", 6, 58),
-             ("caster", 40, 54), ("knight", 22, 62), ("shielder", 48, 50)]
+def _flames(c, f, t, fr, box):
+    """A fire's tongues at time t: a window's lick out of its head and up the wall, a roof's row along the roof, the
+    far side's crowns - their heights breathing on their own clocks, a little jitter each frame, and never past the
+    animated box (inset), whose edge would cut them."""
+    rng = random.Random(f["seed"])
+    bx0, by0, bx1, by1 = box
+    n = 2
+    for i in range(n):
+        ph = rng.random() * 6.283
+        om = 5.0 + rng.random() * 4.0
+        u = (i + 0.5) / n
+        x = f["x"] + f["out"] * (0.25 + 0.75 * u) + (rng.random() - 0.5) * f["w"] * 0.6
+        y = f["y"] + (rng.random() - 0.3) * 2.0
+        # the second tongue of a pair the smaller, so a fire is a crown and its lick, not two equal posts
+        tall = 1.0 if i == 0 else 0.55 + rng.random() * 0.25
+        h = f["h"] * tall * (0.6 + 0.4 * abs(math.sin(t * om * 0.5 + ph))) * (0.9 + 0.1 * fr.random())
+        w = f["w"] * (0.7 + rng.random() * 0.5) * (1.0 if i == 0 else 0.8)
+        h = min(h, f["h"], y - (by0 + 10))
+        if h < 2 or x - w < bx0 + 8 or x + w > bx1 - 8:
+            continue
+        _tongue(c, x, y, w, h, t, ph, lean=f["out"] * 0.25)
 
 
-def _townsfolk(c, x, yb, h, stride, kind):
-    """One of the town's people running from it, facing left: a dark figure leaning into the run, in one of
-    two strides (legs apart, or passing), the town's light behind it caught along its back. kind: "walker"
-    (bare-headed), "cloak" (a cloak flying behind), "bundle" (a pack on the back) or "child" (drawn as is, small)."""
+def _fleer(c, x, yb, h, kind, stride, facing, rim):
+    """One of the town's people running from it, toward us and to one side: a dark figure leaning into the run, in
+    one of two strides (legs apart, or passing), the fire behind caught along the back and the crown of the head,
+    one pixel. kind: "man", "woman" (skirt, hair flying), "cloak", "pack", "arms" (hands up), "carry" (a child in
+    the arms), "lead" (an arm back to the child it pulls along), "child", "led" (a child's hand up to the one who
+    leads it). Never a hood, a point or an eye: those are his."""
+    child = kind in ("child", "led")
     u = h / 20.0
-    s = Cv(int(h * 1.4) + 8, int(h * 1.2) + 8)
-    ox, oy = int(h * 0.6) + 4, int(h * 1.1) + 3
+    W, Hh = int(h * 1.6) + 12, int(h * 1.35) + 12
+    s = Cv(W, Hh)
+    ox, oy = W // 2, int(h * 1.12) + 6
+    f = facing
+    bob = 0.5 if stride else -0.3
 
-    def limb(a, b, wd):
-        for d in range(int(round(wd))):
-            s.line(a[0] + d, a[1], b[0] + d, b[1], OCC)
-    hip = (ox + 0.6 * u, oy - 9.0 * u)
-    neck = (ox - 2.4 * u, oy - 15.6 * u)
-    # The body a solid, leaning wedge, shoulders wider than the hips, and a head big enough to read as one.
-    s.poly([(neck[0] - 2.2 * u, neck[1]), (neck[0] + 2.2 * u, neck[1] + 0.4 * u),
-            (hip[0] + 1.8 * u, hip[1] + 0.6 * u), (hip[0] - 1.8 * u, hip[1] + 0.2 * u)], OCC)
-    s.disc(neck[0] - 1.0 * u, neck[1] - 2.4 * u, 2.3 * u, 2.4 * u, OCC)
+    def P(a, b):
+        return (ox + f * a * u, oy + (b + bob) * u)
+
+    def limb(pts, radii):
+        for k in range(len(pts) - 1):
+            x0, y0 = P(*pts[k])
+            x1, y1 = P(*pts[k + 1])
+            sk._stroke(s, x0, y0, x1, y1, max(0.6, radii[k] * u), max(0.6, radii[k + 1] * u), OCC)
+    hip = (0.3, -9.6)
+    neck = (1.7, -15.9)
+    sh = (1.5, -15.2)
+    # legs: apart, or one under him and the other coming through
     if stride:
-        legs = [((ox - 5.0 * u), oy), ((ox + 5.4 * u), oy - 2.4 * u)]
-        arms = [(neck[0] - 4.6 * u, neck[1] + 4.6 * u), (neck[0] + 4.0 * u, neck[1] + 4.6 * u)]
+        legs = [[hip, (2.8, -5.4), (4.6, -0.7)], [hip, (-1.3, -4.9), (-4.0, -2.4)]]
+        feet = [((4.6, -0.7), 1), ((-4.0, -2.4), -1)]
     else:
-        legs = [(ox + 0.2 * u, oy), (ox + 2.8 * u, oy - 4.8 * u)]
-        arms = [(neck[0] - 1.8 * u, neck[1] + 5.8 * u), (neck[0] + 1.4 * u, neck[1] + 5.4 * u)]
-    for (fx, fy) in legs:
-        knee = ((hip[0] + fx) * 0.5 + (1.4 * u if fx > hip[0] else -0.4 * u), (hip[1] + fy) * 0.5)
-        limb(hip, knee, max(2, 1.8 * u))
-        limb(knee, (fx, fy), max(2, 1.6 * u))
-    for (ax, ay) in arms:
-        limb((neck[0], neck[1] + 1.0 * u), (ax, ay), max(1, 1.3 * u))
-    if kind == "cloak":
-        s.poly([(neck[0] + 0.6 * u, neck[1]), (neck[0] + 2.6 * u, neck[1] + 0.4 * u),
-                (hip[0] + 8.0 * u, hip[1] + 3.0 * u), (hip[0] + 2.0 * u, hip[1] + 2.0 * u)], OCC)
-    elif kind == "bundle":
-        s.disc(neck[0] + 2.8 * u, neck[1] + 3.2 * u, 3.0 * u, 2.8 * u, OCC)
-    elif kind == "walker":
-        # a skirt or a long coat to the knee
-        s.poly([(hip[0] - 2.0 * u, hip[1]), (hip[0] + 2.2 * u, hip[1]), (hip[0] + 3.6 * u, hip[1] + 5.0 * u),
-                (hip[0] - 3.4 * u, hip[1] + 5.0 * u)], OCC)
-    # The town behind them: its light on their backs, one pixel, and nowhere else.
-    edge_light(s, G[3], (1, 0))
+        legs = [[hip, (1.0, -5.0), (0.3, -0.4)], [hip, (2.0, -6.2), (-0.6, -3.6)]]
+        feet = [((0.3, -0.4), 1), ((-0.6, -3.6), -1)]
+    if kind not in ("woman",):
+        for lg in legs:
+            limb(lg, [1.3, 1.0, 0.75] if not child else [1.2, 1.0, 0.8])
+        for ((a, b), d_) in feet:
+            limb([(a - 0.3, b + 0.2), (a + 1.2, b + 0.5)], [0.6, 0.45])
+    else:
+        for ((a, b), d_) in feet:
+            limb([(a - 0.6, b - 0.8), (a, b), (a + 1.0, b + 0.4)], [0.6, 0.55, 0.45])
+        flap = 1.2 if stride else 0.4
+        s.poly([P(1.8, -10.8), P(-1.2, -10.4), P(-3.6 - flap, -2.6), P(-2.0 - flap, -1.6), P(0.2, -2.4),
+                P(2.0, -1.6), P(3.8, -2.2)], OCC)
+    # the body, leaning into the run, and its head
+    limb([hip, (1.0, -12.6), neck], [2.0, 2.2, 1.8])
+    hr = 2.5 if child else 1.85
+    hx, hy = (2.1, -17.6) if child else (2.4, -18.0)
+    x_, y_ = P(hx, hy)
+    s.disc(x_, y_, hr * u, hr * 1.05 * u, OCC)
+    # arms
+    if kind == "arms":
+        arms = [[sh, (3.4, -17.8), (4.4, -20.8)], [sh, (0.4, -18.4), (-0.2, -21.2)]]
+    elif kind == "carry":
+        arms = [[sh, (3.0, -12.8), (4.4, -14.6)], [sh, (2.2, -12.4), (3.8, -13.0)]]
+    elif kind == "lead":
+        arms = [[sh, (3.4, -12.6), (4.8, -13.8)], [sh, (-1.4, -12.2), (-4.4, -10.6)]]
+    elif kind == "led":
+        arms = [[sh, (3.0, -14.2), (4.8, -15.8)], [sh, (0.0, -12.6), (-1.0, -10.6)]]
+    elif stride:
+        arms = [[sh, (3.4, -12.4), (5.0, -13.8)], [sh, (-0.6, -12.6), (-1.6, -10.2)]]
+    else:
+        arms = [[sh, (2.6, -12.2), (3.8, -10.8)], [sh, (0.6, -12.2), (1.4, -10.0)]]
+    for a in arms:
+        limb(a, [0.8, 0.7, 0.55])
+    if kind == "woman":
+        # her hair loose and flying back
+        s.poly([P(hx - 0.4, hy - 1.6), P(hx - 3.6, hy - 0.6), P(hx - 5.2, hy + 1.6 + (0.8 if stride else 0)),
+                P(hx - 3.2, hy + 1.2), P(hx - 1.2, hy + 1.8)], OCC)
+    elif kind == "cloak":
+        flap = 1.0 if stride else 0.0
+        s.poly([P(1.6, -16.4), P(-0.6, -15.8), P(-5.6, -12.2 - flap), P(-7.6, -8.8 - flap), P(-5.4, -9.6),
+                P(-6.2, -6.8), P(-3.4, -8.6), P(-0.8, -11.2)], OCC)
+    elif kind == "pack":
+        x_, y_ = P(-1.3, -13.4)
+        s.disc(x_, y_, 2.6 * u, 2.3 * u, OCC)
+        x_, y_ = P(-0.6, -16.0)
+        s.disc(x_, y_, 1.2 * u, 0.9 * u, OCC)
+    elif kind == "carry":
+        # the child held to the chest: its head over the arm, its legs hanging
+        x_, y_ = P(4.0, -16.8)
+        s.disc(x_, y_, 1.5 * u, 1.55 * u, OCC)
+        limb([(3.6, -15.2), (4.0, -12.4)], [1.4, 1.2])
+        limb([(3.8, -12.4), (4.8, -10.2)], [0.6, 0.5])
+    elif kind == "man":
+        # a flat cap: a brim forward, nothing that points up
+        x_, y_ = P(hx + 0.2, hy - 1.2)
+        s.disc(x_, y_, 2.0 * u, 0.8 * u, OCC)
+        limb([(hx + 0.6, hy - 1.0), (hx + 2.6, hy - 0.6)], [0.5, 0.35])
+    # The fire behind them: one pixel along the back and the crown, nowhere else.
+    rim_light(s, rim, (-f * 0.55, -0.85), cut=0.25)
     over(c, s, int(round(x)) - ox, int(round(yb)) - oy)
 
 
-def p_tide():
-    """4. "There was no one left to defend them." His shadows over the land. A town at the foot of a hill,
-    still lit; over the crest behind it, from the tower on the horizon with its eye burning, a tide of the
-    things he raised bursts and comes down the slope and into it (animated: TIDE_BOX), over the houses of its
-    near half, while its people run from the other. Up close they are the chapters' kinds - cowl, horns, spear,
-    shield, the caster's loose orb - and every one of them wears his mark in its eyes. Massed, they are a dark
-    flood with a thousand of those eyes in it."""
-    back, mid, fore = frame(True), frame(), frame()
-    sky(back, 0, 400, [OCC, S[4], V[4], V[3], V[2], V[2]])
-    stars(back, (0, 0, FW, 300), 300, 8, colors=[K[1], K[2], V[0]])
-    tx, ty = 636, 356
-    hills(back, ridge_fn(352, 7, 31, 0.8), [V[3], V[4], S[4]], 24, lit=V[2])
-    tower(back, tx, ty, 72, seed=3, lit=False)
-    # His eye over the tower (Eric: "the tower should be in the distant background with the glowing eye"): the
-    # black sun at its crown, larger than the tower's own and burning, rays and all.
-    black_sun(back, tx - 72 * 0.11 * 0.15, ty - 72 * 1.08, 6.5, rays=16, seed=12)
+# THE TOWN'S PEOPLE, every one already running toward us down the street when the panel opens: (kind, height in
+# metres, depth and across where each is when the panel ends, speed m/s, drift across m/s, stride phase) - placed by
+# where they finish, and run back up the street to where they start, none of them past the rise. They keep to the
+# two sides of the street - along the walls, as people fleeing do - so the middle stays open down to the rise and
+# the flood can be seen coming behind them. Pairs share a lane: one leads, one is led. The nearest end a long
+# stride short of the camera, big at the frame's foot.
+TIDE_PEOPLE = [
+    ("cloak", 1.74, 6.8, -2.1, 2.3, -0.08, 0.35), ("carry", 1.70, 9.0, -2.6, 2.0, -0.06, 0.25),
+    ("lead", 1.68, 11.5, -1.9, 2.2, -0.05, 0.1), ("led", 1.12, 11.6, -1.25, 2.2, -0.05, 0.6),
+    ("woman", 1.60, 14.0, -2.7, 2.3, 0.0, 0.8), ("man", 1.76, 16.0, -1.6, 1.9, -0.04, 0.15),
+    ("arms", 1.72, 7.4, 2.2, 2.2, 0.10, 0.0), ("woman", 1.62, 9.8, 2.7, 2.1, 0.06, 0.5),
+    ("pack", 1.70, 12.4, 1.8, 2.2, 0.08, 0.45), ("child", 1.10, 12.9, 2.5, 2.2, 0.06, 0.9),
+    ("man", 1.75, 15.2, 2.8, 2.0, 0.0, 0.75), ("arms", 1.66, 17.0, 1.7, 1.75, 0.02, 0.55),
+    ("woman", 1.64, 8.2, -0.9, 1.7, -0.12, 0.65),
+]
+# Where the one off the eave lands (across, depth), and how far its fall puts the people near it to one side.
+TIDE_LANDING = (0.6, 14.5)
+TIDE_FLINCH = 1.7
 
-    def crest(x):
-        return 456 - (x - 160) * 0.12 + math.sin(x * 0.03) * 4 + math.sin(x * 0.011 + 1) * 8
 
-    hills(back, crest, [V[2], V[3], V[3], V[4], S[4]], 150, lit=V[1])
-    heath(back, 380, 600, 1600, 7, [(V[4], V[3]), (S[4], V[3])],
-          keep_out=lambda x, y: y < crest(x) + 3)
-    back.vramp(560, FH - 1, [S[4], S[4], OCC, OCC], x0=0)
-    heath(back, 560, 840, 1400, 9, [(OCC, S[4]), (OCC, V[4])], scale=1.4)
-    # THE TIDE: everything right of a leading edge that runs from the crest down into the town - at the
-    # end. Until then it RUSHES: the frames below, over an empty slope (the mid layer holds nothing inside
-    # the box; the searching machinery is the hiding's, write_anim).
-    def front_x(y):
-        return 540 - (y - 380) * 0.75 + math.sin(y * 0.05) * 8
+def tide_land_art():
+    """The art pixel the panel's impact beat throws its speed lines from (Prologue.cs, Beats, "tide"): the middle of
+    the one that drops, as it lands. Printed by every run that draws the tide, to keep the two in step."""
+    lx, ld = TIDE_LANDING
+    x, y = _sp(lx, _ground(ld), ld)
+    return (int(round(x)), int(round(y - TIDE_TALL["bruiser"] * TIDE_F / ld * 0.4)))
 
-    rng = random.Random(55)
-    # THE TOWN at the hill's foot, a street's depth of houses and a hall with a spire: their windows lit where
-    # the flood has not yet reached, dark where it has (the flood is drawn over those). Its light on the ground
-    # between them, and on the backs of the people running from it.
-    back.radial(410, 488, 150, 40, [G[4], G[4], None])
-    houses = []
-    for k in range(22):
-        hx = 322 + rng.random() * 236
-        hy = 452 + rng.random() * 60
-        houses.append((hy, hx, rng.random(), rng.random(), rng.random()))
-    houses.append((482.0, 392.0, -1.0, 0.5, 0.5))      # the hall
-    houses.sort()
-    for (hy, hx, r1, r2, r3) in houses:
-        near = (hy - 452) / 60.0
-        hall = r1 < 0
-        wd = (26 if hall else 14 + near * 12 + r1 * 6)
-        ht = (18 if hall else 8 + near * 7 + r2 * 3)
-        roof = (10 if hall else 6 + near * 4)
-        back.rect(hx - wd / 2, hy - ht, hx + wd / 2, hy, S[3])
-        back.rect(hx + wd * 0.1, hy - ht, hx + wd / 2, hy, S[4])
-        back.poly([(hx - wd / 2 - 2, hy - ht), (hx + wd / 2 + 2, hy - ht), (hx + 1, hy - ht - roof)], OCC)
-        back.line(hx - wd / 2 - 2, hy - ht, hx + 1, hy - ht - roof, V[4])
-        back.hline(hx - wd / 2, hx + wd / 2, hy + 1, OCC)
-        if hall:                                       # its spire
-            back.poly([(hx - 3, hy - ht - roof + 2), (hx + 4, hy - ht - roof + 2), (hx + 1, hy - ht - roof - 22)], OCC)
-            back.line(hx - 3, hy - ht - roof + 2, hx + 1, hy - ht - roof - 22, V[4])
-        if hx < front_x(hy) - 8:
-            for wn in range(1 if not hall else 3):
-                wx = hx - wd * 0.3 + wn * 7 + r3 * 2
-                wy = hy - ht * 0.5
-                back.radial(wx, wy, 7, 5, [G[3], G[4], None])
-                back.rect(wx, wy - 1, wx + 1, wy + 1, G[1])
-                back.set(wx + 1, wy, G[2])
-    for _ in range(18):                                 # trees among the houses
-        x = 310 + rng.random() * 250
-        y = 458 + rng.random() * 58
-        sk._clump(back, x, y, 6, 5, 22, rng, OCC, S[4])
 
-    # THE TOWN'S PEOPLE, running: out of its streets on the side the flood has not reached, away from it to
-    # the left and down the slope toward us, growing as they come - inside the square both screens show, so a
-    # phone sees them run too. One after another, never faster than they could be followed, and never into the
-    # line's band below row 548.
-    rf = random.Random(61)
-    folk = []
-    for i in range(16):
-        t0 = 0.3 + i * 0.27 + rf.random() * 0.15
-        y0 = 466 + rf.random() * 44
-        x0 = front_x(y0) - 8 - rf.random() * 46
-        kind = pick(rf, ["walker", "cloak", "bundle", "walker", "child"])
-        # Each runs to where he is when the panel ends, spread across the edge of the town's light (on a phone's
-        # canvas too, which ends at column 300), and never faster than 30 art px a second.
-        x_end = 300 + rf.random() * 110
-        vx = min(30.0, max(10.0, (x0 - x_end) / (TIDE_SECONDS - t0)))
-        vy = 7 + rf.random() * 6
-        folk.append((t0, x0, y0, vx, vy, kind, rf.random()))
+def _person_at(p, t):
+    """Where one of the town's people is at panel time t: (across, depth). After the landing anyone behind it in its
+    lane swerves wide of it - and so does anyone beside it, who flinches away."""
+    kind, hm, d_end, x_end, v, vx, ph = p
+    d = d_end + v * (TIDE_SECONDS - t)
+    X = x_end - vx * (TIDE_SECONDS - t)
+    lx, ld = TIDE_LANDING
+    if t > TIDE_LAND:
+        d_at = d_end + v * (TIDE_SECONDS - TIDE_LAND)
+        x_at = x_end - vx * (TIDE_SECONDS - TIDE_LAND)
+        if d_at > ld - 1.5 and abs(x_at - lx) < TIDE_FLINCH:
+            u = min(1.0, (t - TIDE_LAND) / 0.6)
+            u = u * u * (3 - 2 * u)
+            side = -1.0 if x_at < lx else 1.0
+            X += side * (TIDE_FLINCH - abs(x_at - lx)) * u
+    # never wider than the animated box holds at this depth, body and stride and all
+    s = TIDE_F / d
+    room = (TIDE_BOX[2] - TIDE_BOX[0]) * 0.5 - 14.0
+    lim = min(3.0, room / s - 0.45 * hm)
+    return max(-lim, min(lim, X)), d
 
-    bodies = _tide_bodies(crest, front_x)
-    light = (tx, ty - 78)
 
-    def rank_pose(i, dy, hgt, t):
-        """The front rank's stride in: eased from up the slope, settling where the still had it, a
-        slow creep after - and rimmed in stone hi (.ai/side-events.md), as the still rimmed it:
-        against the dark mass behind them the full soft rim drew an outline round each."""
-        yf = 476 + dy * 0.75
-        xf = front_x(yf) + 8 + i * 30
-        t0 = 2.9 + i * 0.14
-        if t < t0:
-            return None
-        u = min(1.0, (t - t0) / 2.0)
-        s_ = u * u * (3 - 2 * u)
-        reach = 88.0
-        y = yf - reach * (1.0 - s_) + max(0.0, t - t0 - 2.0) * 2.0
-        y = min(y, yf + 4.0)
-        x = xf + TIDE_FLOW * (yf - y)
-        h = hgt * min(1.0, 0.55 + 0.45 * (y - (yf - reach)) / reach)
-        v = 0.0 if u >= 1.0 else reach * 1.5 / 2.0
-        return (x, y, h, v)
+def _tide_people():
+    return TIDE_PEOPLE
 
-    def tide_frame(t, k):
-        c = Cv(FW, FH)
-        fr = random.Random(9000 + k)
-        draws = []
-        for b in bodies:
-            pose = _tide_pose(b, t)
-            if pose is not None:
-                draws.append((pose[1], 0, b, pose))
-        for i, (kind, dy, hgt) in enumerate(TIDE_RANK):
-            rp = rank_pose(i, dy, hgt, t)
-            if rp is not None:
-                draws.append((rp[1], 1, i, rp))
-        draws.sort(key=lambda d: (d[0], d[1]))
-        for (_, big, who, pose) in draws:
-            if big:
-                x, yb, h, v = pose
-                bob = round(math.sin(t * 6.0 + who * 1.7) * 1.0) if v > 3.0 else 0
-                kind = TIDE_RANK[who][0]
-                c.hline(x - h * 0.18, x + h * 0.18, yb + 1, OCC)
-                creature(c, kind, x, yb + bob, int(round(h)), facing=-1, body=[OCC, S[4]],
-                         rim=V[2], seed=80 + who, light=light)
-                _tide_dust(c, fr, x, yb, h, v * 1.6)
-            else:
-                x, yb, h, rise, v = pose
-                _tide_paste(c, who, x, yb, h, rise, crest, light)
-                if rise >= 1.0:
-                    _tide_dust(c, fr, x, yb, h, v)
-        # The townsfolk on their own canvas, laid down after the vignette: it dotted their one-pixel rims away.
-        people = Cv(FW, FH)
-        for (t0, x0, y0, vx, vy, kind, ph) in sorted(folk, key=lambda f: f[2]):
-            if t < t0:
+
+def _tide_flood():
+    """The flood, body by body: (kind, across, the second it comes over the rise, depth it starts from in the square,
+    depth it is closing on, speed m/s, seed). Each starts hidden in the square past the rise, comes up over it head
+    first, and runs down the street toward us at a rush that slows as the mass bunches up behind the front; the
+    first over go furthest."""
+    rng = random.Random(77)
+    kinds = ["swarmer", "swarmer", "swarmer", "runner", "bruiser", "shielder", "caster", "knight", "hound"]
+    out = []
+    N = 170
+    for i in range(N):
+        u = i / float(N - 1)
+        X = (rng.random() * 2.0 - 1.0) * 3.1
+        ts = 1.1 + 3.9 * u ** 0.95 + (rng.random() - 0.5) * 0.2
+        d_start = 37.0 + rng.random() * 5.0
+        d_halt = 18.5 + 14.0 * u ** 0.75 + rng.random() * 2.5
+        v = 6.0 + rng.random() * 2.5
+        out.append((pick(rng, kinds), X, ts, d_start, d_halt, v, ri(rng, 0, 1 << 16)))
+    return out
+
+
+def _flood_d(b, t):
+    kind, X, ts, d_start, d_halt, v, seed = b
+    if t < ts:
+        return None
+    tau = (d_start - d_halt) / v
+    return d_halt + (d_start - d_halt) * math.exp(-(t - ts) / tau)
+
+
+def _squash(F, ky, kx=1.0):
+    """A figure's scratch canvas squashed (landing) or stretched, feet kept on the ground: nearest neighbour, so every
+    pixel is still one of its own."""
+    w, h = F.s.w, F.s.h
+    nw, nh = max(1, int(round(w * kx))), max(1, int(round(h * ky)))
+    img = F.s.img.resize((nw, nh), Image.NEAREST)
+    return img, int(round(F.ox * kx)), int(round(F.oy * ky))
+
+
+def _roofer_at(r, perches, t):
+    """Where a roof creature is at time t: (x, feet, height px, rise 0-1, depth, facing, squash) or None before it
+    comes up. A leaper's flight and fall are its own (_leaper_at)."""
+    side, hi, pi, kind, t0, act = r
+    if t < t0:
+        return None
+    g, ps = perches[side][hi]
+    X, Y, d, _kind = ps[min(pi, len(ps) - 1)]
+    if act == "crawl":
+        d = max(g["d0"] + 0.4, d - max(0.0, t - t0 - TIDE_RISE_S) * 1.1)
+    s = TIDE_F / d
+    x, y = _sp(X, Y, d)
+    h = TIDE_TALL[kind] * s
+    rise = min(1.0, (t - t0) / TIDE_RISE_S)
+    rise = rise * rise * (3 - 2 * rise)
+    squash = 1.0
+    if act == "leap" and t >= TIDE_CROUCH:
+        squash = 0.86
+    return (x, y + (1.0 - rise) * h, h, rise, d, -side, squash)
+
+
+def _leaper_at(r, perches, t):
+    """The one that drops: off the eave at TIDE_LEAP, a short hop up and the fall into the street at TIDE_LANDING,
+    landing at TIDE_LAND on its haunches; it rises and comes on toward us, slow and heavy. (x, feet, height, depth,
+    facing, squash) or None while it is still on the roof."""
+    side, hi, pi, kind, t0, act = r
+    if t < TIDE_LEAP:
+        return None
+    g, ps = perches[side][hi]
+    X0, Y0, d0, _k = ps[min(pi, len(ps) - 1)]
+    lx, ld = TIDE_LANDING
+    if t < TIDE_LAND:
+        u = (t - TIDE_LEAP) / (TIDE_LAND - TIDE_LEAP)
+        X = X0 + (lx - X0) * u
+        d = d0 + (ld - d0) * (1 - (1 - u) ** 1.6)
+        Y = Y0 + (_ground(ld) - Y0) * u * u + 1.4 * math.sin(math.pi * u) * (1 - u)
+        squash = 1.08
+    else:
+        a = t - TIDE_LAND
+        X = lx - min(0.25, a * 0.08)
+        d = ld - max(0.0, a - 0.5) * 0.62
+        Y = _ground(d)
+        squash = 0.78 if a < 0.125 else (0.9 if a < 0.375 else 1.0)
+    s = TIDE_F / d
+    x, y = _sp(X, Y, d)
+    if t >= TIDE_LAND + 0.5:
+        y += round(math.sin(t * 7.0) * 1.2)
+    return (x, y, TIDE_TALL[kind] * s, d, -side, squash)
+
+
+def _ember_set(fires):
+    """Sparks off the fires, each on its own clock: (fire, phase, life, rise px/s, drift px/s, sway)."""
+    rng = random.Random(31)
+    pool = [f for f in fires if f["kind"] in ("roof", "window")] or fires
+    out = []
+    for _ in range(170):
+        f = pick(rng, pool)
+        out.append((f, rng.random() * 2.0, 1.1 + rng.random() * 0.9, 18.0 + rng.random() * 26.0,
+                    4.0 + rng.random() * 9.0, rng.random() * 6.283))
+    return out
+
+
+def _tide_frame(t, k, ctx):
+    """The animated box at panel time t: the whole frame's moving part, everything that is not the still street.
+    Returns (c, front): c under the vignette (the fires, the smoke out of the windows, the embers, his creatures),
+    front laid over it after (the town's people, whose one-pixel rims the vignette's dither would eat)."""
+    sc, fires, perches = ctx["sc"], ctx["fires"], ctx["perches"]
+    box = TIDE_BOX
+    bx0, by0, bx1, by1 = box
+    inset = (bx0 + 6, by0 + 6, bx1 - 6, by1 - 6)
+    c = Cv(FW, FH)
+    fr = random.Random(9000 + k)
+    eye = ctx["eye"]
+
+    def inside(x, y):
+        return inset[0] <= x < inset[2] and inset[1] <= y < inset[3]
+    # The fire and what it gives off go on their own canvas, kept out of the vignette: its dither laid a lattice of
+    # dark dots over every flame (a light is not darkened by the frame's edge; it stays inside the box's inset).
+    glow = Cv(FW, FH)
+    creatures = c
+    c = glow
+    # Smoke pouring out of the burning windows, rising up the wall and thinning out by Bayer steps, under the flames.
+    for f in fires:
+        if f["kind"] != "window":
+            continue
+        prng = random.Random(f["seed"] + 5)
+        for j in range(3):
+            per = 1.5
+            a = (t + j * per / 3.0 + prng.random() * 0.3) % per
+            life = a / per
+            px_ = f["x"] + f["out"] * 0.7 + a * 7.0 + math.sin(a * 2.0 + j) * 2.0
+            py_ = f["y"] - f["h"] * 0.55 - a * 26.0
+            r = (2.0 + a * 6.0) * min(1.6, f["w"] / 6.0 + 0.6)
+            dens = 0.85 * (1.0 - life)
+            for yy in range(int(py_ - r), int(py_ + r) + 1):
+                for xx in range(int(px_ - r), int(px_ + r) + 1):
+                    nx, ny = (xx - px_) / r, (yy - py_) / (r * 0.85)
+                    if nx * nx + ny * ny <= 1.0 and inside(xx, yy) and dith(xx, yy, dens):
+                        c.set(xx, yy, R[2] if ny > 0.35 else (V[4] if ny > -0.2 else S[4]))
+    # The fires.
+    for f in fires:
+        _flames(c, f, t, fr, inset)
+    # Embers, flying up off the fires and down the wind.
+    for (f, ph, life, rise, drift, sw) in ctx["embers"]:
+        a = (t + ph) % 2.0
+        if a > life:
+            continue
+        x = f["x"] + drift * a + math.sin(a * 3.0 + sw) * 3.0
+        y = f["y"] - f["h"] * 0.5 - rise * a
+        if inside(x, y):
+            c.set(x, y, FI[1] if a < life * 0.35 else (FI[2] if a < life * 0.75 else FI[3]))
+    c = creatures
+    # His creatures, far to near: the flood over the rise and down the street, hidden by the rise until they clear
+    # it (the street's depth); the ones on the roofs, hidden by their eaves until they come up over them; the one
+    # that drops.
+    draws = []
+    for b in ctx["flood"]:
+        d = _flood_d(b, t)
+        if d is None:
+            continue
+        draws.append((d, "flood", b))
+    for r in TIDE_ROOFERS:
+        if r[5] == "leap":
+            lp = _leaper_at(r, perches, t)
+            if lp is not None:
+                draws.append((lp[3], "leaper", (r, lp)))
                 continue
-            x = max(268.0, x0 - vx * (t - t0))
-            yb = min(546.0, y0 + vy * (t - t0))
-            h = (0.72 if kind == "child" else 1.0) * (17.0 + (yb - 466) * 0.12)
-            _townsfolk(people, x, yb, h, int(t * TIDE_FPS + ph * 2) % 2 == 0, kind)
-        return c, people
+        rp = _roofer_at(r, perches, t)
+        if rp is not None:
+            draws.append((rp[4], "roof", (r, rp)))
+    draws.sort(key=lambda q: -q[0])
+    for (d, what, b) in draws:
+        if what == "flood":
+            kind, X, ts, d_start, d_halt, v, seed = b
+            s = TIDE_F / d
+            x, y = _sp(X, _ground(d), d)
+            h = TIDE_TALL[kind] * s
+            fast = d > d_halt + 1.5
+            if fast:
+                y += round(math.sin(t * 9.0 + seed) * min(1.4, h * 0.04))
+            facing = 1 if X > 0.15 else (-1 if X < -0.15 else (1 if seed % 2 else -1))
+            light = (eye[0] - x, eye[1] - (y - h * 0.6))
+            F = _tide_fig(kind, h, seed, facing, light, V[2] if h >= 26 else None, snap=True)
+            ox, oy = int(round(x)) - F.ox, int(round(y)) - F.oy
+            if d > TIDE_CREST[0] - 2.0:
+                _paste_clipped(c, F.s.img, ox, oy, sc, d)
+            else:
+                if h >= 12:
+                    c.hline(x - h * 0.16, x + h * 0.16, y + 1, OCC)
+                over(c, F.s, ox, oy)
+        elif what == "roof":
+            r, (x, y, h, rise, d, facing, squash) = b
+            light = (eye[0] - x, eye[1] - (y - h * 0.6))
+            F = _tide_fig(r[3], h, 300 + TIDE_ROOFERS.index(r), facing, light, V[2])
+            if squash != 1.0:
+                img, ox, oy = _squash(F, squash, 1.06)
+            else:
+                img, ox, oy = F.s.img, F.ox, F.oy
+            _paste_clipped(c, img, int(round(x)) - ox, int(round(y)) - oy, sc, d + 0.5)
+            if r[3] == "caster" and rise >= 1.0:
+                # its loose orb, burning his arcane over the roof: the caster's attack, coming
+                ox_, oy_ = x + facing * 0.30 * h, y - 1.18 * h + math.sin(t * 5.0) * 1.2
+                c.disc(ox_, oy_, max(1.5, h * 0.09), max(1.5, h * 0.09), AR[2])
+                c.disc(ox_, oy_, max(0.8, h * 0.045), max(0.8, h * 0.045), AR[1])
+        else:
+            r, (x, y, h, d, facing, squash) = b
+            light = (eye[0] - x, eye[1] - (y - h * 0.6))
+            F = _tide_fig(r[3], h, 300 + TIDE_ROOFERS.index(r), facing, light, V[2])
+            if squash != 1.0:
+                img, ox, oy = _squash(F, squash, 2.0 - squash)
+            else:
+                img, ox, oy = F.s.img, F.ox, F.oy
+            if t >= TIDE_LAND:
+                c.hline(x - h * 0.2, x + h * 0.2, y + 1, OCC)
+            c.img.paste(img, (int(round(x)) - ox, int(round(y)) - oy), img)
+            c.px = c.img.load()
+            # the street it lands on thrown up round its feet, a ring of grit spreading and gone
+            a = t - TIDE_LAND
+            if 0.0 <= a < 0.5:
+                drng = random.Random(77 + k)
+                rad = h * (0.35 + a * 1.4)
+                for _q in range(int(70 * (1.0 - a * 1.6))):
+                    ang = drng.random() * 6.283
+                    rr = rad * (0.7 + drng.random() * 0.4)
+                    gx_, gy_ = x + math.cos(ang) * rr, y - abs(math.sin(ang)) * rr * 0.34 - drng.random() * h * 0.2
+                    if inside(gx_, gy_):
+                        c.set(gx_, gy_, RU[2] if drng.random() < 0.55 else (S[1] if drng.random() < 0.5 else RU[3]))
+    # The town's people, far to near, after the vignette.
+    front = Cv(FW, FH)
+    ppl = []
+    for p in ctx["people"]:
+        X, d = _person_at(p, t)
+        ppl.append((d, X, p))
+    ppl.sort(key=lambda q: -q[0])
+    for (d, X, p) in ppl:
+        kind, hm, d_end, x_end, v, vx, ph = p
+        s = TIDE_F / d
+        x, y = _sp(X, _ground(d), d)
+        h = hm * s
+        vx_screen = X * TIDE_F * v / (d * d) + vx * s
+        facing = 1 if vx_screen > 0 else -1
+        stride = int(t * TIDE_FPS + ph * 2) % 2 == 0
+        front.hline(x - h * 0.16, x + h * 0.16, y + 1, OCC)
+        _fleer(front, x, y, h, kind, stride, facing, RU[1])
+    return glow, c, front
 
+
+def p_tide():
+    """4. "There was no one left to defend them." The town overrun, from inside it (Eric, 2026-11-10): low in its
+    street and looking up, the houses towering on both sides and burning against a sky of smoke, its people running
+    down the street toward us, and behind them his creatures pouring over the rise from the burning square and along
+    the roofs; one drops off an eave into the street among them. Small at the street's end, between the roofs, the
+    tower with its eye burning. Up close his creatures are the chapters' kinds - cowl, horns, spear, shield, the
+    caster's loose orb - and every one of them wears his mark in its eyes."""
+    back, mid, fore = frame(True), frame(), frame()
+    rng = random.Random(55)
+    sc = _Scene()
+    light = _Light()
+    fires = []
+    lights = []
+    # THE SKY: night at the top, his violet lower down, red over the burning square; smoke over most of it.
+    for y in range(FH):
+        b = int(min(2.6, max(0.0, (y - 40) / 170.0)) * 16)
+        for x in range(FW):
+            sc.put(x, y, T_SKY, TIDE_SKY_Z, b)
+    # THE SQUARE'S FAR SIDE, burning, and over it the tower with its eye (drawn on the back after the resolve).
+    _far_side(sc, fires, lights, rng)
+    lights.append((TIDE_VPX, 446, 150, 70, 2.6))
+    crest_y = _street(sc, rng)
+    # THE HOUSES, both sides.
+    perches = {-1: [], 1: []}
+    near = []
+    for side in (-1, 1):
+        for i, h in enumerate(TIDE_HOUSES[side]):
+            g = _house_geo(side, h)
+            hr = random.Random(400 + side * 40 + i)
+            p = _draw_house(sc, side, g, hr, fires, lights)
+            perches[side].append((g, p))
+            if i == 0:
+                near.append((side, g))
+    # The street lit by the fires along it, more on the side the walls burn.
+    for (cx, cy, rx, ry, st) in list(lights):
+        light.add(cx, cy, rx, ry, st)
+    for d in (9.0, 13.0, 18.0, 24.0):
+        x, y = _sp(0.0, _ground(d), d)
+        light.add(x, y, 3.4 * TIDE_F / d, 1.4 * TIDE_F / d, 1.0)
+    # the square's fire on its far side and over the rise, the bright ground the flood comes over
+    light.add(TIDE_VPX, crest_y - 18, 120, 34, 2.4)
+    # and the street's fires down the inner edges of the two nearest walls, which would otherwise be flat black
+    for xs in (-1, 1):
+        light.add(TIDE_VPX + xs * 175, 430, 120, 190, 1.3)
+    light.done()
+    # THE SMOKE: a column off every burning roof and off the square, leaning down the wind to our right, and a pall
+    # of it overhead. Behind every house (its depth), lit from under by the light.
+    srng = random.Random(91)
+    for f in fires:
+        if f["kind"] in ("roof", "far") and srng.random() < 0.45:
+            _smoke(sc, f["x"], f["y"] - f["h"] * 0.9, 6.0 + f["h"] * 0.12, 9, 0.45, ri(srng, 0, 9999))
+    for k in range(26):
+        _smoke(sc, srng.random() * FW, 60 + srng.random() * 150, 16 + srng.random() * 14, 4, 0.6, 600 + k,
+               z=TIDE_SMOKE_Z + 50)
+    _resolve(sc, light, back)
+    # His tower at the end of the street, between the roofs, its eye burning - over the sky and smoke, under the
+    # square's far side and everything nearer (redrawn through the depth below).
+    tx, tbase = 491, 452
+    eye = (tx - 74 * 0.11 * 0.15, tbase - 74 * 1.08)
+    tower(back, tx, tbase, 74, seed=3, lit=False)
+    black_sun(back, eye[0], eye[1], 6.0, rays=16, seed=12)
+    _resolve(sc, light, back, keep=lambda z: z < TIDE_SMOKE_Z - 1e6)
+    # THE NEAREST TWO HOUSES on the fore as well: nearest the camera, they drift furthest (the tilt up).
+    nsc = _Scene()
+    for (side, g) in near:
+        _draw_house(nsc, side, g, random.Random(400 + side * 40), [], [])
+    _resolve(nsc, light, fore)
+    # THE ANIMATED BOX: every frame the whole moving part of the street, under the panel's own vignette so it meets
+    # the still layers at the box's edge without a seam, and the town's people over it.
+    ctx = dict(sc=sc, fires=fires, perches=perches, eye=eye, flood=_tide_flood(), people=_tide_people(),
+               embers=_ember_set(fires))
     t_of = frame_t(0.75)
-    bx0, by0, bx1, by1 = TIDE_BOX
     frames = []
     for k in range(int(math.ceil(TIDE_SECONDS * TIDE_FPS))):
         t = (k + 0.5) / TIDE_FPS
-        c, people = tide_frame(t, k)
+        glow, c, front = _tide_frame(t, k, ctx)
         darken(c, t_of, [S[4], OCC], box=TIDE_BOX)
-        over(c, people)
-        frames.append(c.img.crop((bx0, by0, bx1, by1)))
-    heath(fore, 640, 840, 500, 23, [(OCC, OCC), (OCC, S[4])], scale=1.8)
+        over(glow, c)
+        over(glow, front)
+        frames.append(glow.img.crop(TIDE_BOX))
     layers = dict(back=back, mid=mid, fore=fore)
     finish(layers, 0.75)
     layers["anim"] = frames
@@ -3324,6 +4097,9 @@ def main(argv):
         if frames:
             n = write_anim(name, frames)
             print("%-7s %d ticks, %d frames in %s-anim.png" % (name, len(frames), n, name))
+        if name == "tide":
+            print("tide    the drop lands at art %s, %.1f s: Prologue.cs's impact for the tide must match"
+                  % (tide_land_art(), TIDE_LAND))
         if do_preview:
             preview(name, layers, frames[-1] if frames else None)
             if frames and name in PREVIEW_AT:
