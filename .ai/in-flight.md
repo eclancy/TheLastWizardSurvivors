@@ -36,6 +36,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
 | 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | S-M |
 | 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | S |
+| 81 | Buckler Boss's "while a shield holds" is unclear, and it is dead without a shield source | item text + rule | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1265,6 +1266,15 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     every dodge round a tree or turn away from him shows as a flip. Fix: face a smoothed heading (low-pass it for the
     drawing only, never for the movement), hold a wall for at least about half a second before changing it, and give
     the flip the same hold and a wider dead band. Item 79's steady heading for the yard will calm it as well.
+81. **Buckler Boss: "while a shield holds" means nothing to a player** (Eric, 2026-11-09: *"Buckler boss - while a
+    shield holds? What does that mean?"*). The relic (`protective_ward`, `ChestItemCatalog.cs` 597, 695; a piece of the
+    Thorned Buckler set) adds 15% defense - damage reduction - while the wizard has any shield points (`Player.cs`
+    2346, `TakeDamage` step 5). Shield points come from only four places: Aegis Ward, the Vial of Vitality (healing at
+    full health becomes shield), the Reliquary set (a 6-point shield per chest) and one of the Court's rooms. Without
+    one of them it does nothing, and chests offer it regardless (`GetChestUnavailableItems` has no rule for it). To do:
+    say it in player words - e.g. *"Take 15% less damage while you have a shield (from Aegis Ward or the Vial of
+    Vitality)."* - and either offer it only once a shield source is held, or give it a small shield of its own so it is
+    never dead. Check the card's length on the phone.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
