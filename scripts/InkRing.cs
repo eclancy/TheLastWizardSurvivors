@@ -5,7 +5,9 @@ namespace TheOneHeMissed.scripts;
 
 // INK RING (Water + Darkness), built 2026-11-09. Eric approved it from .ai/character-fit.md's queue: a thin line of ink
 // trails the walker; crossing it closes the loop and strikes everything inside, then slows it a moment; a short recharge
-// between rings; the ink fades fast at level 1 (small rings) and lasts longer as it levels. Nobody's opener.
+// between rings; the ink fades fast at level 1 (small rings) and lasts longer as it levels. Ma Liang's opener since
+// 2026-11-10 (Eric: "would it make sense for ink ring to be his starting spell instead?" - "Yes, add it"), earned by
+// everyone else only as him (the Cormorant feat, in-flight 84); his Apotheosis, The Painted Door, is its final form.
 //
 // IT FIRES WHEN A LOOP CLOSES, which no spell did before: no timer puts anything into the world. The cooldown is the
 // RECHARGE between rings, and it lives in Player's one spellFireTimers loop like every other spell's (Player.InkRing.cs):
@@ -27,7 +29,7 @@ namespace TheOneHeMissed.scripts;
 // the rings, the floods, the splats and the prison walls are fixed pools, and a stung body is remembered by reference.
 //
 // SPELLS START SMALL (Eric, 2026-11-02): at level 1 the ink lasts BaseInkSeconds, so only a small ring closes before its
-// start has dried away (about 70 units across at the wizard's walk); each ZoneDuration line adds to it, so the rings grow
+// start has dried away (about 175 units across at the wizard's walk); each ZoneDuration line adds to it, so the rings grow
 // with the spell (SpellData_InkRing.tres). Long Stroke and the wizard's own Duration lengthen it again.
 //
 // THE DRAWING IS INK, the one sanctioned departure from Bonelight (.ai/art-direction.md section 3a). No colour is picked
@@ -50,6 +52,8 @@ namespace TheOneHeMissed.scripts;
 //                 what it caught cannot get out and the wizard walks through it. A boss is never penned (the crowd-
 //                 control rule, Enemy.CapsCrowdControl): each prison wall takes a collision exception for every boss.
 //   Second Stroke (level 8) - SecondStrokeDelay after it closes, the ring re-wets, floods again and strikes again.
+//   The Painted Door (milestone 9, Ma Liang's Apotheosis, displace) - a closed ring paints a door inside it, and what
+//                 it holds steps out of a second door far across the field (InkRing.PaintedDoor.cs).
 public partial class InkRing : Node2D
 {
 	public const string SpellId = "ink_ring";
@@ -64,8 +68,16 @@ public partial class InkRing : Node2D
 	public const string TexturePath = "res://assets/bonelight/effects/ink-ring.png";
 
 	// --- the line ------------------------------------------------------------------------------------
-	/// <summary>Seconds the ink lasts at level 1, before the levels' ZoneDuration lines and the wizard's own Duration.</summary>
-	public const float BaseInkSeconds = 2f;
+	/// <summary>
+	/// Seconds the ink lasts at level 1, before the levels' ZoneDuration lines and the wizard's own Duration. 2.5 since
+	/// 2026-11-10, when Ink Ring became Ma Liang's opener (in-flight 94): at 2.0 a loop had to be walked in under 2 s, the
+	/// smallest a bot can walk round (_BalanceHarness --character=22 --immortal --circle=60 --xp-first=100000, Ink Ring
+	/// alone) took 1.7-2.1 s, and once the crowd closed in and his laps slowed past the ink's life no ring closed again -
+	/// 9-11 rings and then none, 6-9 kills and 450-464 damage taken in the first minute on three seeds. At 2.5 the rings
+	/// kept closing: 50-54 kills and 141-220 taken in the first minute, 124-129 kills and 563-607 in the second, against
+	/// the crow Familiar he opened on before at 67 and 25, then 103 and 614. The validator's "starts small" ceiling.
+	/// </summary>
+	public const float BaseInkSeconds = 2.5f;
 	/// <summary>World units between two points of the line.</summary>
 	public const float SampleSpacing = 12f;
 	/// <summary>The least area a loop must hold to close: a step back and forth over the line closes nothing.</summary>
@@ -203,7 +215,7 @@ public partial class InkRing : Node2D
 	private float clock;
 	private float refreshedAt = float.NegativeInfinity;
 	private int refreshedLevel = -1;
-	private string refreshedLevel4, refreshedLevel8;
+	private string refreshedLevel4, refreshedLevel8, refreshedForm;
 	private float wetClock, poolClock;
 	private int nextRing, nextSplat, nextSplash, stungNext;
 	private uint seedClock;
@@ -239,7 +251,8 @@ public partial class InkRing : Node2D
 	public bool RefreshDue(SpellData spell) =>
 		spell != SpellData || spell.CurrentLevel != refreshedLevel || clock - refreshedAt >= RefreshSeconds
 		|| !ReferenceEquals(spell.SelectedLevel4EvolutionId, refreshedLevel4)
-		|| !ReferenceEquals(spell.SelectedLevel8EvolutionId, refreshedLevel8);
+		|| !ReferenceEquals(spell.SelectedLevel8EvolutionId, refreshedLevel8)
+		|| !ReferenceEquals(spell.SelectedApotheosisId, refreshedForm);
 
 	/// <summary>The ring's numbers: its strike, the ink's life and the milestones. Rings already closed keep their own.</summary>
 	public void Refresh(SpellData spell, float damageMultiplier, float playerDuration)
@@ -254,11 +267,13 @@ public partial class InkRing : Node2D
 		poolForm = spell.HasEvolution(InkwellId);
 		prisonForm = spell.HasEvolution(InkPrisonId);
 		secondForm = spell.HasEvolution(SecondStrokeId);
+		SetPaintedDoor(spell);
 		inkLife = InkSecondsAt(spell, level) * (longStroke ? LongStrokeShare : 1f) * MathF.Max(0.25f, playerDuration);
 		refreshedAt = clock;
 		refreshedLevel = spell.CurrentLevel;
 		refreshedLevel4 = spell.SelectedLevel4EvolutionId;
 		refreshedLevel8 = spell.SelectedLevel8EvolutionId;
+		refreshedForm = spell.SelectedApotheosisId;
 	}
 
 	/// <summary>How long the ink of this spell lasts at <paramref name="level"/>, before Long Stroke and the wizard's own Duration.</summary>
@@ -300,6 +315,7 @@ public partial class InkRing : Node2D
 		if (alive && SpellData != null && PlayerRef.InkRingMayCast(SpellData))
 			Lay(PlayerRef.FootPosition);
 		TickRings();
+		TickDoors(dt);
 
 		bool wetTick = false, poolTick = false;
 		if (wetForm && path.Count > 0)
@@ -413,6 +429,10 @@ public partial class InkRing : Node2D
 		};
 		ring.HoldUntil = MathF.Max(ring.PoolUntil, ring.PrisonUntil);
 		LayFlood(slot);
+		// The Painted Door: a door a ring, inside it (InkRing.PaintedDoor.cs). A slot taken over drops the old ring's door.
+		doors[slot] = default;
+		if (doorForm)
+			PaintDoor(slot);
 		StatRings++;
 		StatLargestArea = MathF.Max(StatLargestArea, area);
 		Strike(slot);
@@ -518,7 +538,8 @@ public partial class InkRing : Node2D
 				LowerPrison(s);
 			float lineEnd = ring.LineAt + RingLineAges[^1] + MathF.Max(0f, ring.HoldUntil - ring.LineAt - RingLineAges[2]);
 			float floodEnd = ring.FloodAt + FloodInSeconds + FloodAges[^1] + MathF.Max(0f, ring.HoldUntil - ring.FloodAt - FloodAges[2]);
-			if (clock >= lineEnd && clock >= floodEnd && float.IsPositiveInfinity(ring.SecondAt) && !ring.Prisoned)
+			if (clock >= lineEnd && clock >= floodEnd && float.IsPositiveInfinity(ring.SecondAt) && !ring.Prisoned
+				&& !DoorHolds(s))
 				ring.Live = false;
 		}
 	}

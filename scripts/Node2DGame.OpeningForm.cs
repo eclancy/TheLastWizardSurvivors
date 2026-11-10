@@ -4,9 +4,9 @@ using TheOneHeMissed.scripts;
 // THE RUN'S FIRST SCREEN, for a wizard who chooses the form of the spell he opens on (CharacterData.ChoosesStartingForm;
 // Player.MaLiang.cs).
 //
-// UNUSED SINCE 2026-11-09: it was built for Ma Liang, and he now opens on the Familiar as the crow every run (Eric: "he
-// automatically starts with a crow familiar", .ai/character-fit.md section 5, row 21), so no wizard sets the flag and
-// this page never opens. It is kept working rather than removed; the history below is why it was built.
+// UNUSED SINCE 2026-11-09: it was built for Ma Liang, who then opened on the Familiar as the crow every run (Eric: "he
+// automatically starts with a crow familiar", .ai/character-fit.md section 5, row 21) and opens on Ink Ring, which has no
+// forms, since 2026-11-10 (in-flight 94), so no wizard sets the flag and this page never opens. It is kept working rather than removed; the history below is why it was built.
 //
 // A spell with forms is chosen in a form on a page of its own, on the level-up screen, in the run
 // (.ai/decisions/2026-10-28-spell-variants.md), and a starting spell used to get its first form without a word. Ma Liang

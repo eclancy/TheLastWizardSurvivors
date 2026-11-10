@@ -7579,10 +7579,12 @@ public static partial class RegressionChecks
 	// default spell to only be unlockable once that wizard is unlocked" - "those achievements should require being
 	// completed with that wizard"). Read from the roster, so a new wizard's opener is held to it by itself. Not held: a
 	// starter's (every save has it), a Conjunction (made in a run, not unlocked: Sagittarius, The Taking), a spell no one
-	// else is ever dealt (ExclusiveTo: Merlin's Orb of Ages), and Eric's three exceptions - the Familiar (Laelaps needs
-	// it), Thorn Vine (the Forest's boss) and Spiritual Weapon (the Ruins' boss). For every other opener: the deed that
-	// pays it requires that wizard, and it counts only played as him, once free.
-	private static readonly string[] OpenerExceptions = { "familiar", "thorn_vine", "spiritual_weapon" };
+	// else is ever dealt (ExclusiveTo: Merlin's Orb of Ages), and Eric's two exceptions - Thorn Vine (the Forest's boss)
+	// and Spiritual Weapon (the Ruins' boss). For every other opener: the deed that pays it requires that wizard, and it
+	// counts only played as him, once free. The Familiar was a third exception (Laelaps needs it) while Ma Liang opened on
+	// it; he opens on Ink Ring since in-flight 94 (2026-11-10), whose Cormorant is done as him, and the Familiar left the
+	// list for good - it comes only from the Pinfold.
+	private static readonly string[] OpenerExceptions = { "thorn_vine", "spiritual_weapon" };
 
 	private static void ValidateWizardOpeners(List<string> warnings)
 	{
@@ -7658,8 +7660,8 @@ public static partial class RegressionChecks
 			&& GlobalStatsManager.IsSpellUnlockedForLevelUp(save, deed.SpellUnlockId);
 	}
 
-	// A run that does everything an opener Feat or boss deed could ask, as someone: every element held deep, chests and
-	// levels to spare, and the deed's chapter's boss beaten.
+	// A run that does everything an opener Feat or boss deed could ask, as someone: every element held deep, chests, ink
+	// kills and levels to spare, and the deed's chapter's boss beaten.
 	private static RunResult EverythingRun(AchievementDefinition deed, string characterId)
 	{
 		var run = new RunResult
@@ -7668,6 +7670,8 @@ public static partial class RegressionChecks
 			Outcome = RunOutcome.Victory,
 			FinalPlayerLevel = 60,
 			ChestsOpened = 99,
+			// Cormorant's ink kills (Ma Liang's opener since in-flight 94), far past its count.
+			InkKills = 9999,
 			PeakDistinctElements = 12,
 			StageId = deed.StageId,
 		};

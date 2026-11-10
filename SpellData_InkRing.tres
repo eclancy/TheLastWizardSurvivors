@@ -6,19 +6,21 @@
 
 ; Ink Ring (scripts/InkRing.cs), 2026-11-09: Ma Liang's brush, walked. A thin line of ink trails the wizard; when his
 ; path crosses its own line the loop closes and everything inside is struck, then slowed for a moment. Water + Darkness,
-; the two halves of the ink. Nobody's opener; everyone earns it with the Cormorant feat (Water and Darkness kills in one
-; run). TargetingMode 8 is Drawn - his walk draws the area it strikes - and DamageShape 3 a burst over an area.
+; the two halves of the ink. Ma Liang's opener since 2026-11-10 (in-flight 94), and the spell his Apotheosis, The
+; Painted Door, ends; everyone else has it once he has done the Cormorant feat as himself (Water and Darkness kills in
+; one run, in-flight 84). TargetingMode 8 is Drawn - his walk draws the area it strikes - and DamageShape 3 a burst over an area.
 ;
 ; NO TIMER PUTS ANYTHING INTO THE WORLD. BaseCooldown is the RECHARGE between rings: while it is ripe the fire loop arms
 ; the node, and a ring closes the moment his path crosses its line (Player.InkRing.cs). BaseDamage is ONE STRIKE of a
-; ring on each body inside it. The ink's life is InkRing.BaseInkSeconds (2 s) plus the ZoneDuration lines here (Effect
-; 13); the card says it as "Ink duration +20%", never in seconds. The slow (40% for 1.2 s) is the node's own.
+; ring on each body inside it. The ink's life is InkRing.BaseInkSeconds (2.5 s) plus the ZoneDuration lines here (Effect
+; 13); the card says it as a share ("Ink duration +16%"), never in seconds. The slow (40% for 1.2 s) is the node's own.
 ;
-; FIRST GUESSES, untuned. Spells start small (Eric, 2026-11-02): at level 1 the ink lasts 2 s, so at the wizard's walk
-; only a ring about 140 units across can close before its start has dried; 3.6 s at level 8, about 250. Written out in
+; FIRST GUESSES, untuned but for the ink's start. Spells start small (Eric, 2026-11-02): at level 1 the ink lasts 2.5 s
+; (2 s until it became Ma Liang's opener, 2026-11-10: InkRing.BaseInkSeconds says why), so at the wizard's walk only a
+; ring about 175 units across can close before its start has dried; 4.1 s at level 8, about 290. Written out in
 ; full so Player.EnsureRelevantLevelUps generates nothing of its own (ScalingTagsMask 8195: Damage, Cooldown, Duration):
 ; every level adds damage, even levels shorten the recharge by 0.1 s, odd ones and the last lengthen the ink by 0.4 s.
-; Level 8: 30 a strike, a ring every 1.6 s at most, ink lasting 3.6 s.
+; Level 8: 30 a strike, a ring every 1.6 s at most, ink lasting 4.1 s.
 
 [sub_resource type="Resource" id="Resource_inkring_lvl2"]
 script = ExtResource("2")

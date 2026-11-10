@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://glmxwo4qmdgw"
-path="res://.godot/imported/familiar_crow_painted_door.png-e0d604f1c164c835896cae457da6b453.ctex"
+uid="uid://cv5wp6gdpjlvo"
+path="res://.godot/imported/ink_ring_painted_door.png-3e8aa49f2ff0773d15ef6dff8d50cf2f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bonelight/ui/evolutions/familiar_crow_painted_door.png"
-dest_files=["res://.godot/imported/familiar_crow_painted_door.png-e0d604f1c164c835896cae457da6b453.ctex"]
+source_file="res://assets/bonelight/ui/evolutions/ink_ring_painted_door.png"
+dest_files=["res://.godot/imported/ink_ring_painted_door.png-3e8aa49f2ff0773d15ef6dff8d50cf2f.ctex"]
 
 [params]
 

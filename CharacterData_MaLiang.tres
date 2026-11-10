@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="CharacterData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/CharacterData.cs" id="1"]
-[ext_resource type="Resource" path="res://SpellData_Familiar.tres" id="2"]
+[ext_resource type="Resource" path="res://SpellData_InkRing.tres" id="2"]
 [ext_resource type="Texture2D" path="res://assets/bonelight/characters/maliang-1.png" id="3"]
 [ext_resource type="SpriteFrames" path="res://scenes/resources/MaliangFrames.tres" id="4"]
 
@@ -9,11 +9,11 @@
 ; Gallery's end wall, dot to dot (.ai/chapter-wizards.md 4.8). The boy of the Chinese tale whose brush made real
 ; whatever he painted, kept here to paint the dark wizard's portraits. His passive is Paint What Is Needed, the one
 ; axis no other wizard owns: once a run, below a quarter of his health, a flask is painted at his feet. He opens on
-; the Familiar (Arcane) as the crow, every run - the form his final form, The Painted Door, belongs to
-; (CharacterData.StartingFormId, from ApotheosisCatalog), as Nimue opens on the Sword. He chose dog, crow or cat on
-; his run's first screen until 2026-11-09 (Eric: "lets just not let him choose a different familiar than the crow
-; then - he automatically starts with a crow familiar", .ai/character-fit.md section 5, row 21). His crow is painted
-; in ink (Familiar.PaintsInInk). Arcane is shared with the Archmage and the Sibyl on other spells (R1).
+; Ink Ring (Water + Darkness) since 2026-11-10 (Eric: "would it make sense for ink ring to be his starting spell
+; instead?" - "Yes, add it"; .ai/character-fit.md row 21): his brush, walked - a line that becomes real is his legend.
+; His final form, The Painted Door, moved onto it from the crow Familiar he opened on before (as the crow every run from
+; 2026-11-09; dog, crow or cat before that). Everyone else earns Ink Ring only as him (the Cormorant feat, in-flight
+; 84). Whenever he takes the Familiar, his crow is still painted in ink (Familiar.PaintsInInk).
 [resource]
 script = ExtResource("1")
 Id = "ma_liang"

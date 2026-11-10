@@ -74,8 +74,8 @@ public partial class FrameProfiler : Node
 		// Spiritual Weapon: the weapons' _Process - every swing and blow, Excalibur's line and its bolt sweep
 		// included - and the air's draw, where the lines are painted (scripts/SpiritualWeapon.cs).
 		SpiritWeapon,
-		// The Familiar: every creature's step, its effects and The Painted Door's doors (scripts/Familiar.cs,
-		// Familiar.PaintedDoor.cs), process and the doors' draw. Its strikes' damage is in it too.
+		// The Familiar: every creature's step and its effects (scripts/Familiar.cs), process and draw. Its strikes' damage
+		// is in it too. (The Painted Door's doors moved to Ink Ring on 2026-11-10, InkRing.PaintedDoor.cs.)
 		Familiar,
 		Harness,
 		Count,

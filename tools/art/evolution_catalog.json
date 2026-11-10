@@ -85,7 +85,7 @@
       "milestone": 4,
       "id": "aegis_ward_fortified",
       "name": "Reforged",
-      "description": "Each time the ward returns, iron shards fly in to you, cutting what they pass. \u002B20% shield, 12% slower recharge.",
+      "description": "As the ward is rebuilt, iron shards fly in and cut the enemies they pass. \u002B20% shield, 12% slower recharge.",
       "synergy": "Metal / Recharge",
       "visual_tag": "Reforged",
       "gains": {
@@ -9311,21 +9311,22 @@
       "verb": "sever"
     },
     {
-      "spell": "familiar",
-      "variant": "familiar_crow",
-      "spell_name": "Crow Familiar",
-      "spell_icon": "res://assets/bonelight/ui/spells/familiar-crow-arcane.png",
+      "spell": "ink_ring",
+      "variant": "",
+      "spell_name": "Ink Ring",
+      "spell_icon": "res://assets/bonelight/ui/spells/ink-ring-dark.png",
       "spell_elements": {
-        "Arcane": 1
+        "Darkness": 1,
+        "Water": 1
       },
       "milestone": 9,
-      "id": "familiar_crow_painted_door",
+      "id": "ink_ring_painted_door",
       "name": "The Painted Door",
-      "description": "Where the crow strikes it paints a door, and whatever stands on it steps out of a second door far across the field.",
+      "description": "Closing a ring paints a door inside it, and whatever the ring holds steps out of a second door far across the field.",
       "synergy": "Apotheosis",
       "visual_tag": "Apotheosis",
       "gains": {
-        "Arcane": 1
+        "Water": 1
       },
       "replaces": "",
       "effect": "None",
@@ -9345,7 +9346,7 @@
       "slow": 0,
       "poison": 0,
       "range": 0,
-      "tint": "e8bfff",
+      "tint": "a8d6ff",
       "character": "ma_liang",
       "verb": "displace"
     },

@@ -1648,10 +1648,10 @@ public partial class _BalanceHarness : Node
 		if (ElementalPulse.StatStonesThrown > 0)
 			GD.Print($"HARNESS TEETH m={row.Minute} stones={ElementalPulse.StatStonesThrown} turned={ElementalPulse.StatBodiesTurned} "
 				+ $"elites_struck={ElementalPulse.StatStonesStruckElites} blows={Enemy.TurnedBlows} kills={Enemy.TurnedKills} now={Enemy.TurnedCount}");
-		// The Painted Door (Ma Liang): doors the crow painted, bodies taken through them, and the strong ones a door would
-		// not take (elites, minibosses, bosses - counted each time one stood on an open door).
-		if (Familiar.DoorsPainted > 0)
-			GD.Print($"HARNESS PAINTED DOOR m={row.Minute} doors={Familiar.DoorsPainted} displaced={Familiar.BodiesDisplaced} strong_ignored={Familiar.StrongIgnored}");
+		// The Painted Door (Ma Liang's, on Ink Ring since 2026-11-10): doors the closed rings painted, bodies taken through
+		// them, and the strong ones a door would not take (elites, minibosses, bosses - counted once a door each).
+		if (InkRing.StatDoors > 0)
+			GD.Print($"HARNESS PAINTED DOOR m={row.Minute} doors={InkRing.StatDoors} displaced={InkRing.StatDisplaced} strong_ignored={InkRing.StatStrongIgnored}");
 		// Paint What Is Needed (his passive): when it painted its flask, once it has.
 		if (player.FlaskPaintedAtSeconds >= 0f)
 			GD.Print($"HARNESS PAINTED FLASK m={row.Minute} at={player.FlaskPaintedAtSeconds:0.0}s");
@@ -2690,7 +2690,7 @@ public partial class _BalanceHarness : Node
 	}
 
 	// The form a card that opens a page of forms is taken in: --variant's, else - seeking an Apotheosis that belongs to one
-	// form (Ma Liang's, on the Familiar's crow) - that form, else the first.
+	// form (Nimue's, on the Sword) - that form, else the first.
 	private string FormFor(LevelUpOption card)
 	{
 		if (!string.IsNullOrEmpty(Variant) || card == null)

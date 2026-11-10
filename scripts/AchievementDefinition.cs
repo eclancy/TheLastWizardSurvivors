@@ -579,16 +579,12 @@ public static partial class AchievementDefinitions
 		},
 		// INK RING'S FEAT (2026-11-09): the cormorant is the black diving bird the river fishermen of Ma Liang's China work
 		// with - ink-black, and at home in the water - and a bird beside Magpie and Storm Petrel. Earned by fighting with
-		// the two halves of his ink: kills numbered in Water's ink or Darkness's in a single run. Measured off the best run
-		// kept in the lifetime stats (LifetimeStats.BestInkKillsInRun), as Storm Petrel is.
-		new()
-		{
-			Id = "cormorant", DisplayName = "Cormorant",
-			Description = $"Defeat {CormorantInkKills} enemies with Water or Darkness in a single run.",
-			RewardText = "Unlocks Ink Ring", SpellUnlockId = InkRing.SpellId,
-			Category = AchievementCategory.Challenge,
-			Measure = c => c.Lifetime.BestInkKillsInRun, Target = CormorantInkKills,
-		},
+		// the two halves of his ink: kills numbered in Water's ink or Darkness's in a single run. Since 2026-11-10 Ink Ring
+		// is Ma Liang's opener (in-flight 94), so under in-flight 84 it is done AS him, once he is free, and measured off the
+		// run itself as Magpie is; the menu shows no bar and the pause screen this run's count. LifetimeStats keeps
+		// BestInkKillsInRun, which nothing reads now, so no save changes shape.
+		OpenerFeat("cormorant", "Cormorant", "ma_liang", $"As Ma Liang, defeat {CormorantInkKills} enemies with Water or Darkness in a single run.",
+			InkRing.SpellId, "Ink Ring", AchievementCategory.Challenge, c => c.Run.InkKills, CormorantInkKills),
 		// WINDFALL'S FEAT (2026-11-09): the fieldfare is the winter thrush that comes down on an orchard for its windfalls,
 		// the apples lying in the grass - a bird beside Magpie, Storm Petrel and Cormorant. Earned by fighting with the
 		// orchard's two halves: kills numbered in Grass's ink or Metal's in a single run. Measured off the best run kept in
@@ -1091,7 +1087,9 @@ public static partial class AchievementDefinitions
 	// paid by a deed of its own (IsWizardOpener), done only in a run played as its wizard once he is free. Where the
 	// opener came from a chapter's boss, side event or secret, that deed keeps whatever else it pays and asks no wizard -
 	// it is the road's and the record's - and the opener's deed is done beside it (AsWizardOf). The exceptions are
-	// Eric's: the Familiar (Laelaps needs it), Thorn Vine (the Forest's boss) and Spiritual Weapon (the Ruins' boss).
+	// Eric's: Thorn Vine (the Forest's boss) and Spiritual Weapon (the Ruins' boss). The Familiar was the third (Laelaps
+	// needs it) until Ma Liang moved to Ink Ring (in-flight 94, 2026-11-10); nobody opens on it now, and it comes only
+	// from the Pinfold.
 	// RegressionChecks.ValidateWizardOpeners holds every other wizard's opener to a deed that requires him.
 
 	/// <summary>What an opener deed's row says while its wizard is shown but not free. It never names him.</summary>

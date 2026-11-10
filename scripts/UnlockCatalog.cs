@@ -224,9 +224,10 @@ public static class UnlockCatalog
 		// St Elmo's fire, aimed at nothing (scripts/Corposant.cs): earned by fighting with Lightning, the Storm Petrel feat.
 		FromAchievement("corposant", "storm_petrel",
 			$"Defeat {AchievementDefinitions.StormPetrelLightningKills} enemies with Lightning in a single run."),
-		// Ma Liang's brush, walked (scripts/InkRing.cs): earned by fighting with Water and Darkness, the Cormorant feat.
+		// Ma Liang's brush, walked (scripts/InkRing.cs): earned by fighting with Water and Darkness, the Cormorant feat. His
+		// opener since 2026-11-10 (in-flight 94), so since then shared only by doing it as him, once freed (in-flight 84).
 		FromAchievement("ink_ring", "cormorant",
-			$"Defeat {AchievementDefinitions.CormorantInkKills} enemies with Water or Darkness in a single run."),
+			$"Defeat {AchievementDefinitions.CormorantInkKills} enemies with Water or Darkness in a single run - as its own wizard, once freed."),
 		// The iron-fruited orchard (scripts/Windfall.cs): earned by fighting with Grass and Metal, the Fieldfare feat.
 		FromAchievement("windfall", "fieldfare",
 			$"Defeat {AchievementDefinitions.FieldfareGrassMetalKills} enemies with Grass or Metal in a single run."),

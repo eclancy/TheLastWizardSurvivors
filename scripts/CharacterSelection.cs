@@ -398,8 +398,8 @@ public partial class CharacterSelection : Control
 	// The form's name in the ember register. For a wizard whose final form belongs to one form of a spell he CHOOSES each
 	// run (Player.ChoosesOpeningForm), the line under it says which, and that the other forms have none - taken in
 	// another, he would never meet it, and the card is the only place that can say so. Nobody chooses since 2026-11-09:
-	// Ma Liang, for whom it was written ("As the crow; the dog and the cat have none"), opens on the crow, and his card's
-	// spell line says so ("Familiar - Crow", StartingSpellName); a wizard fixed to his form (Nimue too) needs no line.
+	// Ma Liang, for whom it was written ("As the crow; the dog and the cat have none"), opens on Ink Ring since 2026-11-10,
+	// which has no forms; a wizard fixed to his form (Nimue's "Spiritual Weapon - Sword", StartingSpellName) needs no line.
 	private static Control BuildApotheosisValue(CharacterData character, ApotheosisDefinition apotheosis)
 	{
 		Label name = CodexRows.MakeText($"\u2736 {apotheosis.Form.DisplayName}", ResponsiveLayout.TextRole.Body, CardFamilyArt.ApotheosisTitle);

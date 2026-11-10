@@ -28,7 +28,7 @@ public partial class LevelUpMenu
 	public bool ShowingVariantPage => pendingVariantOption != null;
 
 	// The run's first screen for a wizard who chooses the form of the spell he opens on (Node2DGame.OpeningForm.cs; none
-	// does since Ma Liang opens on the crow, 2026-11-09): the page with no hand behind it, so no Back.
+	// does since Ma Liang opened on the crow, 2026-11-09, and he opens on Ink Ring since 2026-11-10): the page with no hand behind it, so no Back.
 	private bool openingFormsOnly;
 
 	/// <summary>
