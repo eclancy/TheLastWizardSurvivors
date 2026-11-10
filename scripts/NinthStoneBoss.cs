@@ -157,7 +157,7 @@ public partial class NinthStoneBoss : BossEnemy
 		Node arena = GetParent();
 		if (target == null || !IsInstanceValid(target) || arena == null || !IsInstanceValid(arena))
 			return;
-		TelegraphedGroundHit.Place(arena, target.GlobalPosition, StrayStoneTellSeconds, StoneHitRadius, ScaleOutgoingDamage(StoneDamage), StoneFallColor);
+		TelegraphedGroundHit.Place(arena, target.GlobalPosition, StrayStoneTellSeconds, StoneHitRadius, ScaleOutgoingDamage(StoneDamage), StoneFallColor, owner: this);
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -202,8 +202,8 @@ public partial class NinthStoneBoss : BossEnemy
 
 		int stoneDamage = ScaleOutgoingDamage(StoneDamage);
 		foreach (Vector2 stone in StonePositions(close))
-			TelegraphedGroundHit.Place(arena, stone, RingTellSeconds, StoneHitRadius, stoneDamage, StoneFallColor);
-		TelegraphedGroundHit.Place(arena, close.Centre, MiddleTellSeconds, MiddleRadius, ScaleOutgoingDamage(MiddleDamage), MiddleColor);
+			TelegraphedGroundHit.Place(arena, stone, RingTellSeconds, StoneHitRadius, stoneDamage, StoneFallColor, owner: this);
+		TelegraphedGroundHit.Place(arena, close.Centre, MiddleTellSeconds, MiddleRadius, ScaleOutgoingDamage(MiddleDamage), MiddleColor, owner: this);
 	}
 
 	private void TickCloses(float delta)

@@ -2362,6 +2362,13 @@ public partial class Enemy : CharacterBody2D
 		// animation that never advances never finishes, so a corpse killed frozen would never free.
 		StatusEffectLayer.Current?.Untrack(this);
 		RefreshStatusLook();
+		// Its attack's warning goes on this frame too (in-flight 95, Eric 2026-11-10: "as soon as an enemy dies, the
+		// attack circles it produced should disappear"). The wind-up is cancelled, so it can never land, and the floor
+		// and the icon it was painted on are hidden: with physics off nothing redraws them, so a ring, cone or line
+		// drawn on the killing frame stayed on the corpse through its whole death strip. A warning placed AWAY from the
+		// body (TelegraphedGroundHit) watches its owner and goes by itself.
+		CancelWindUp();
+		SetTellsVisible(false);
 		// Killed in the air (ApplyLaunch): the corpse finishes its arc and dies when it lands,
 		// rather than playing its death hung in the air or snapped to the ground. Everything
 		// gameplay has already happened above, on this frame - only the fall, the death sound

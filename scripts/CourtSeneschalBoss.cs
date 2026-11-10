@@ -630,7 +630,7 @@ public partial class CourtSeneschalBoss : BossEnemy
 		if (layout.RoomAt(at) != room)
 			at = target.GlobalPosition;
 		TelegraphedGroundHit.Place(GetParent(), at, ChandelierTellSeconds, ChandelierRadius,
-			ScaleOutgoingDamage(ChandelierDamage), ChandelierColor);
+			ScaleOutgoingDamage(ChandelierDamage), ChandelierColor, owner: this);
 	}
 
 	// --- The flight ----------------------------------------------------------------------------------

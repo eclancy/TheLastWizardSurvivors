@@ -818,16 +818,17 @@ public partial class ThornVine : Node2D
 		if (!IsInstanceValid(enemy) || enemy.IsDying)
 			return;
 		enemy.ApplyPoison(poisonTick, poisonSeconds);
-		// THROWN ASIDE (Eric, 2026-11-09, .ai/character-fit.md section 5, Baba Yaga): the lash carries what it cuts
-		// along the way it is sweeping - the tangent of the arc at the body, so Snapback's return stroke throws back the
-		// other way. A light shove, VineShoveSpeed, through ApplyKnockback so Baba Yaga's Bone Fence (+20% to every shove
-		// her spells give) works from her first cast; it did nothing for her until a card or another spell shoved.
-		// Not under Entangle, which roots what it cuts where it was cut.
+		// THROWN ASIDE (Eric, 2026-11-09, .ai/character-fit.md section 5, Baba Yaga): the lash throws what it cuts away
+		// from HIM - the line from the wizard to the body (in-flight 100, Eric 2026-11-10: "thorn vine should always knock
+		// the enemies away from the player"). It went along the stroke, the arc's tangent, until then, which on one side of
+		// every swing threw them at him. A light shove, VineShoveSpeed, through ApplyKnockback so Baba Yaga's Bone Fence
+		// (+20% to every shove her spells give) works from her first cast; it did nothing for her until a card or another
+		// spell shoved. Not under Entangle, which roots what it cuts where it was cut.
 		if (!entangle)
 		{
-			Vector2 offset = enemy.GlobalPosition - GlobalPosition;
-			Vector2 along = offset.LengthSquared() > 1f ? offset.Normalized().Rotated(side * Mathf.Pi * 0.5f) : Vector2.Right;
-			enemy.ApplyKnockback(along * VineShoveSpeed);
+			Vector2 away = enemy.GlobalPosition - PlayerRef.GlobalPosition;
+			away = away.LengthSquared() > 1f ? away.Normalized() : Vector2.Right;
+			enemy.ApplyKnockback(away * VineShoveSpeed);
 		}
 		// Barbed Lash: a thorn breaks off in the wound, and tears it as the enemy walks on.
 		if (barbed && GetParent() is Node2D arena)

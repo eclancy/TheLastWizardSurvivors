@@ -34,22 +34,30 @@ public partial class TelegraphedGroundHit : Node2D
 	// flash GroundSlamAttack draws to finish - freeing on the resolve frame would show no impact.
 	private float teardownRemaining = -1f;
 	private const float TeardownSeconds = 0.34f;
+	// Whose attack this is (Place's owner), by instance id; hasOwner false for the world's own hazards.
+	private ulong ownerId;
+	private bool hasOwner;
 
 	/// <summary>
 	/// Places a hit at <paramref name="where"/> and adds it to <paramref name="arena"/>.
 	/// </summary>
 	/// <remarks>
-	/// Parented to the arena rather than to the caster, for the same reason the summoner parents
-	/// its minions out: a boss that dies mid-bombardment must not delete warnings the player is
-	/// already reading and dodging.
+	/// Parented to the arena rather than to the caster, so the warning stays where it was put while the
+	/// caster moves on. It does not outlive an <paramref name="owner"/>, though: the moment that body
+	/// starts dying (or is freed) the warning goes and lands nothing (in-flight 95, Eric 2026-11-10: "as
+	/// soon as an enemy dies, the attack circles it produced should disappear"). It used to be the other
+	/// way - a boss that died mid-bombardment left every warning to land, so the fight hit him after it
+	/// was won. The world's own hazards (the Bridge's murder holes and volleys) have no owner and keep
+	/// landing.
 	/// </remarks>
+	/// <param name="owner">The enemy whose attack this is; null for a hazard of the world itself.</param>
 	/// <param name="glyph">The icon in its middle, when the shape's own would say the wrong thing: a Line
 	/// shows Leap (a charge coming), which is wrong for a file of crossbow bolts (Shot). Null is the shape's.</param>
 	/// <param name="halfAngleDegrees">A Cone's half-angle; the shape's default (32) when not given.</param>
 	/// <param name="halfWidth">A Line's half-width; the shape's default (26) when not given.</param>
 	public static TelegraphedGroundHit Place(Node arena, Vector2 where, float windUpSeconds, float radius,
 		int damage, Color warningColor, TelegraphShape telegraphShape = TelegraphShape.Ring, Vector2 facing = default,
-		TelegraphGlyph? glyph = null, float halfAngleDegrees = 0f, float halfWidth = 0f)
+		TelegraphGlyph? glyph = null, float halfAngleDegrees = 0f, float halfWidth = 0f, Enemy owner = null)
 	{
 		if (arena == null || !IsInstanceValid(arena))
 			return null;
@@ -67,6 +75,13 @@ public partial class TelegraphedGroundHit : Node2D
 			hit.shape.HalfAngleDegrees = halfAngleDegrees;
 		if (halfWidth > 0f)
 			hit.shape.HalfWidth = halfWidth;
+		// Held as an id, not a reference (see ResolveAgainstPlayer): the warning outlives a freed owner by
+		// design, and a managed wrapper round a freed node is what has crashed this project's finalizer.
+		if (owner != null && IsInstanceValid(owner))
+		{
+			hit.ownerId = owner.GetInstanceId();
+			hit.hasOwner = true;
+		}
 		// Primed, so the warning appears on the first frame. Without it the telegraph would sit out a
 		// full cooldown drawing nothing, and the hit would land at twice the advertised wind-up.
 		hit.shape.Prime();
@@ -86,6 +101,14 @@ public partial class TelegraphedGroundHit : Node2D
 
 	public override void _PhysicsProcess(double delta)
 	{
+		// Its maker has fallen: the warning goes now, drawn no more and landing nothing.
+		if (hasOwner && OwnerFallen())
+		{
+			hasOwner = false;
+			Visible = false;
+			QueueFree();
+			return;
+		}
 		QueueRedraw();
 		// Read before the shape ticks, as Enemy reads its own: the icon trails the clock by a step and
 		// never touches it.
@@ -123,6 +146,9 @@ public partial class TelegraphedGroundHit : Node2D
 				shape.ResolveAgainst(this, target);
 		}
 	}
+
+	private bool OwnerFallen() =>
+		!IsInstanceIdValid(ownerId) || InstanceFromId(ownerId) is not Enemy owner || owner.IsDying;
 
 	public override void _Draw() => shape?.Draw(this);
 

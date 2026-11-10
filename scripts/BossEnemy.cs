@@ -264,7 +264,7 @@ public partial class BossEnemy : Enemy
 		for (int i = 0; i < count; i++)
 		{
 			Vector2 at = from + along * reach * (i + 1) / count;
-			TelegraphedGroundHit.Place(arena, at, RootTellSeconds + RootStaggerSeconds * i, RootRadius, damage, bark);
+			TelegraphedGroundHit.Place(arena, at, RootTellSeconds + RootStaggerSeconds * i, RootRadius, damage, bark, owner: this);
 		}
 		PlayAttackAnimation();
 	}

@@ -286,14 +286,14 @@ public partial class UnstrungHunterBoss : BossEnemy
 		if (arena == null || !IsInstanceValid(arena))
 			return;
 		int damage = ScaleOutgoingDamage(StarDamage);
-		TelegraphedGroundHit.Place(arena, where, StarTellSeconds, StarRadius, damage, StarColor);
+		TelegraphedGroundHit.Place(arena, where, StarTellSeconds, StarRadius, damage, StarColor, owner: this);
 		float offset = rng.RandfRange(0f, Mathf.Tau);
 		int others = Math.Max(0, StarsPerFall - 1);
 		for (int i = 0; i < others; i++)
 		{
 			float a = offset + i * Mathf.Tau / Math.Max(1, others);
 			Vector2 at = where + Vector2.FromAngle(a) * StarSpread;
-			TelegraphedGroundHit.Place(arena, at, StarTellSeconds + 0.12f * (i + 1), StarRadius, damage, StarColor);
+			TelegraphedGroundHit.Place(arena, at, StarTellSeconds + 0.12f * (i + 1), StarRadius, damage, StarColor, owner: this);
 		}
 	}
 

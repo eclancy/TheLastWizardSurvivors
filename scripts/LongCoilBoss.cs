@@ -96,7 +96,7 @@ public partial class LongCoilBoss : BossEnemy
 		for (int i = 0; i < count; i++)
 		{
 			Vector2 at = GlobalPosition + along * reach * (i + 1) / count;
-			TelegraphedGroundHit.Place(arena, at, SprayTellSeconds + SprayStaggerSeconds * i, SprayRadius, damage, SandColor);
+			TelegraphedGroundHit.Place(arena, at, SprayTellSeconds + SprayStaggerSeconds * i, SprayRadius, damage, SandColor, owner: this);
 		}
 	}
 
@@ -171,7 +171,7 @@ public partial class LongCoilBoss : BossEnemy
 		// says where, and this says exactly where and when.
 		TelegraphedGroundHit.Place(GetParent(), destination,
 			Mathf.Max(0.2f, Mathf.Min(ResurfaceTellSeconds, DiveTravelSeconds - 0.1f)),
-			ResurfaceRadius, ScaleOutgoingDamage(ResurfaceDamage), SandColor);
+			ResurfaceRadius, ScaleOutgoingDamage(ResurfaceDamage), SandColor, owner: this);
 	}
 
 	// Where it comes up: ResurfaceDistance from the player at the rolled bearing - or, where the ground has

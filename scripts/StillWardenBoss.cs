@@ -117,7 +117,7 @@ public partial class StillWardenBoss : BossEnemy
 		for (int i = 0; i < count; i++)
 		{
 			Vector2 at = GlobalPosition + Vector2.FromAngle(turn + Mathf.Tau * i / count) * WhiteoutRadius;
-			TelegraphedGroundHit.Place(arena, at, WhiteoutTellSeconds, IceShardRadius, ScaleOutgoingDamage(IceShardDamage), RimeColor);
+			TelegraphedGroundHit.Place(arena, at, WhiteoutTellSeconds, IceShardRadius, ScaleOutgoingDamage(IceShardDamage), RimeColor, owner: this);
 		}
 	}
 
@@ -156,7 +156,7 @@ public partial class StillWardenBoss : BossEnemy
 			float angle = GD.Randf() * Mathf.Tau;
 			float distance = Mathf.Sqrt(GD.Randf()) * IceScatterRadius;
 			Vector2 where = target.GlobalPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance;
-			TelegraphedGroundHit.Place(arena, where, IceTellSeconds, IceShardRadius, ScaleOutgoingDamage(IceShardDamage), RimeColor);
+			TelegraphedGroundHit.Place(arena, where, IceTellSeconds, IceShardRadius, ScaleOutgoingDamage(IceShardDamage), RimeColor, owner: this);
 		}
 	}
 

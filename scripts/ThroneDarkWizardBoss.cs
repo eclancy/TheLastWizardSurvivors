@@ -374,7 +374,7 @@ public partial class ThroneDarkWizardBoss : BossEnemy
 		Vector2 side = new(-along.Y, along.X);
 		Vector2 start = through + side * offset - along * LineLength * 0.5f;
 		TelegraphedGroundHit.Place(arena, start, tell, LineLength, damage, colour, TelegraphShape.Line, along,
-			TelegraphGlyph.Slam, halfWidth: LineHalfWidth);
+			TelegraphGlyph.Slam, halfWidth: LineHalfWidth, owner: this);
 	}
 
 	// ALL HE TOOK: one warden's tell every EchoIntervalSeconds, round the player, in the order they fell.
@@ -430,20 +430,20 @@ public partial class ThroneDarkWizardBoss : BossEnemy
 			case "fields_hayward":
 				// His shove: a wide wedge from beside the player, across him.
 				TelegraphedGroundHit.Place(arena, at - side * 150f, tell, 340f, damage, colour, TelegraphShape.Cone, side,
-					halfAngleDegrees: 50f);
+					halfAngleDegrees: 50f, owner: this);
 				break;
 			case "castle_warden":
 				// The Gaoler's lane: a charge's width, from far off, through where the player stands.
 				TelegraphedGroundHit.Place(arena, at - side * 520f, tell, 1040f, damage, colour, TelegraphShape.Line, side,
-					halfWidth: 34f);
+					halfWidth: 34f, owner: this);
 				break;
 			case "swamp_mother":
 				// Her pools: a ring of them round the player and one under him, opening in turn.
-				TelegraphedGroundHit.Place(arena, at, tell, 64f, damage, colour);
+				TelegraphedGroundHit.Place(arena, at, tell, 64f, damage, colour, owner: this);
 				for (int i = 0; i < 6; i++)
 				{
 					Vector2 p = at + side.Rotated(Mathf.Tau * i / 6f) * 150f;
-					TelegraphedGroundHit.Place(arena, p, tell + 0.12f * (i + 1), 60f, damage, colour);
+					TelegraphedGroundHit.Place(arena, p, tell + 0.12f * (i + 1), 60f, damage, colour, owner: this);
 				}
 				break;
 			case "ruins_sentinel":
@@ -452,23 +452,23 @@ public partial class ThroneDarkWizardBoss : BossEnemy
 				{
 					Vector2 from = at - side * 260f;
 					TelegraphedGroundHit.Place(arena, from, tell + 0.3f * (i + 1), 520f, damage, colour, TelegraphShape.Cone,
-						side.Rotated(Mathf.DegToRad(28f * i)), halfAngleDegrees: 14f);
+						side.Rotated(Mathf.DegToRad(28f * i)), halfAngleDegrees: 14f, owner: this);
 				}
 				break;
 			case "frost_warden":
 				// The Still Warden's ceiling: ice falling round the player, one shard on him.
-				TelegraphedGroundHit.Place(arena, at, tell, 46f, damage, colour);
+				TelegraphedGroundHit.Place(arena, at, tell, 46f, damage, colour, owner: this);
 				for (int i = 0; i < 9; i++)
 				{
 					Vector2 p = at + Vector2.Right.Rotated(rng.RandfRange(0f, Mathf.Tau)) * rng.RandfRange(70f, 230f);
-					TelegraphedGroundHit.Place(arena, p, tell + 0.08f * (i + 1), 46f, damage, colour);
+					TelegraphedGroundHit.Place(arena, p, tell + 0.08f * (i + 1), 46f, damage, colour, owner: this);
 				}
 				break;
 			case "sands_coil":
 				// The Long Coil: it surfaces under the player and throws its sand out along a line.
-				TelegraphedGroundHit.Place(arena, at, tell, 96f, damage, colour);
+				TelegraphedGroundHit.Place(arena, at, tell, 96f, damage, colour, owner: this);
 				for (int i = 1; i <= 4; i++)
-					TelegraphedGroundHit.Place(arena, at + side * (96f + 70f * i), tell + 0.14f * i, 54f, damage, colour);
+					TelegraphedGroundHit.Place(arena, at + side * (96f + 70f * i), tell + 0.14f * i, 54f, damage, colour, owner: this);
 				break;
 		}
 	}

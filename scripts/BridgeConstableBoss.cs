@@ -294,7 +294,7 @@ public partial class BridgeConstableBoss : BossEnemy
 		volleyLeft = GatePourTellSeconds + 0.5f;
 		Node arena = GetParent();
 		if (arena != null && IsInstanceValid(arena))
-			TelegraphedGroundHit.Place(arena, gateFoot, GatePourTellSeconds, DropZoneRadius, ScaleOutgoingDamage(GatePourDamage), PitchColor);
+			TelegraphedGroundHit.Place(arena, gateFoot, GatePourTellSeconds, DropZoneRadius, ScaleOutgoingDamage(GatePourDamage), PitchColor, owner: this);
 		Note("holds the wall; the gate pours");
 	}
 
@@ -375,7 +375,7 @@ public partial class BridgeConstableBoss : BossEnemy
 			// The reticle (Shot), not the Line's own Leap: these are bolts loosed down the lane, not his charge,
 			// whose lane shows Leap and is warm iron where these are his cold fire.
 			TelegraphedGroundHit.Place(arena, start, BoltTellSeconds + 0.08f * k, back + BoltLaneOvershoot, damage,
-				BoltColor, TelegraphShape.Line, down, TelegraphGlyph.Shot);
+				BoltColor, TelegraphShape.Line, down, TelegraphGlyph.Shot, owner: this);
 		}
 	}
 
@@ -397,7 +397,7 @@ public partial class BridgeConstableBoss : BossEnemy
 				: at + ahead * Mathf.Min(d, 150f + 110f * k) + across * rng.RandfRange(-90f, 90f);
 			if (k > 0 && !OnDeck(spot, 30f))
 				continue;
-			TelegraphedGroundHit.Place(arena, spot, PitchTellSeconds + 0.15f * k, PitchRadius, damage, PitchColor);
+			TelegraphedGroundHit.Place(arena, spot, PitchTellSeconds + 0.15f * k, PitchRadius, damage, PitchColor, owner: this);
 		}
 	}
 

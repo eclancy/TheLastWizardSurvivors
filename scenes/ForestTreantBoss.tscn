@@ -23,9 +23,14 @@ BossId = "forest_treant"
 BossDisplayName = "Elderbark, the Treant"
 ; Eric, 2026-11-06: "Elderbarks attacks should have more range and hit harder." The class defaults
 ; (150/4 slam, 54/3 roots) stay the other bosses' baseline; only his scene takes the heavier hand.
-SlamRadius = 210.0
+; Eric, 2026-11-10 (in-flight 99): "Elderbark's attacks can be much bigger in area." The slam 210 -> 280
+; (1.8x the ground) and its tell 0.85 -> 1.3 s, so a player at his bark (34 px) still walks out of it at
+; 220 px/s with more to spare than before; the roots 66 -> 120 (3.3x the ground, the most grown, as asked).
+; A root's own tell (0.9 s, and later ones later) already outlasts the 0.55 s a 120 sidestep takes.
+SlamTelegraphSeconds = 1.3
+SlamRadius = 280.0
 SlamDamage = 6
-RootRadius = 66.0
+RootRadius = 120.0
 RootDamage = 4
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
