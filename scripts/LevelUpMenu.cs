@@ -2405,6 +2405,9 @@ public partial class LevelUpMenu : CanvasLayer
 			heading.ItemRectChanged += AlignAscensionButton;
 		if (GetNodeOrNull<Control>("Panel/VBoxContainer") is Control column)
 			column.ItemRectChanged += AlignAscensionButton;
+		// And the button's own size: it is centred by its real height, which is only known once its
+		// skin and font have been laid out.
+		ascensionButton.Resized += AlignAscensionButton;
 	}
 
 	private AscensionReadyGlow ascensionGlow;
@@ -2468,10 +2471,15 @@ public partial class LevelUpMenu : CanvasLayer
 		if (!heading.IsVisibleInTree())
 			return;
 
-		float top = heading.GlobalPosition.Y - panel.GlobalPosition.Y
-			+ (heading.Size.Y - ResponsiveLayout.MinTouchTarget) * 0.5f;
+		// Centred by the button's REAL height (in-flight 92, first raised as 55). It centred a
+		// MinTouchTarget box, but the skin's frame margins (14 a side) and the Label font make the
+		// button taller than its minimum - 56 on a PC, more on a phone - and a Control never shrinks
+		// below that, so the extra all hung below the band: the button sat 4 px low on a PC and more
+		// on a phone, its foot over the band's gold rule.
+		float height = MathF.Max(ascensionButton.Size.Y, ascensionButton.GetCombinedMinimumSize().Y);
+		float top = heading.GlobalPosition.Y - panel.GlobalPosition.Y + (heading.Size.Y - height) * 0.5f;
 		ascensionButton.OffsetTop = top;
-		ascensionButton.OffsetBottom = top + ResponsiveLayout.MinTouchTarget;
+		ascensionButton.OffsetBottom = top + height;
 	}
 
 	/// <summary>

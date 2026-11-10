@@ -643,7 +643,11 @@ phone it was drawing the heading at 16px), sets the Display role and gives the l
 stone-deep band with a gold rule at its foot. Heading ink on the band is 17.3:1; on the old
 floor's bright stone lips it was 1.25:1. On a phone the heading says only "Level Up!",
 left-aligned, because the Ascensions button owns the right of that row; `AlignAscensionButton`
-keeps the button centred on the band wherever layout puts it.
+keeps the button centred on the band wherever layout puts it - **by the button's real height**, not
+`MinTouchTarget` (2026-11-10, in-flight 92, first raised as 55): the skin's 14-a-side frame margins and
+the Label font make the button 56 tall on a PC and taller on a phone, and centring a 48 box left the
+extra hanging below the band, the button's foot over the gold rule. It also re-centres when the button
+itself is resized (`Resized`), since its height is only known once its skin and font are laid out.
 
 **The floor is matte.** `tools/art/levelup_frames.py:plate` lays the same running-bond cobbles in
 two adjacent dark `stone` tones with a one-step lip on top only - no bone-white lips, no glints, no
