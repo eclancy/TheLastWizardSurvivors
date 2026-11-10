@@ -272,7 +272,8 @@ buttons take taps and clicks only and attach no `MenuNavigator`, on purpose: on 
 A tap on the strip does not count as the title's "press any button".
 
 To look at it on a desktop: `--update-banner=9.9.9` shows it with that version, no network, in
-any build; `--update-banner=9.9.9:2` makes that release story epoch 2, which adds the warning. With `_UiShot`: `"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn --
+any build; `--update-banner=9.9.9:99` makes that release a later story epoch than the build's, which adds the
+warning (any number at or below `SaveData.CurrentProgressEpoch` adds nothing). With `_UiShot`: `"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn --
 --portrait --safe-area --scene=res://scenes/TitleScreen.tscn --update-banner=0.9.9 --shot=banner`
 (add `--open-menu` for the menu over it). `THEONEHEMISSED_UPDATE_URL` points the real check at a
 test server, as on Windows.
@@ -403,11 +404,13 @@ makes the restarted copy's `user://logs/godot.log` readable while it runs.
 
 ## Releasing a story reset
 
-**The next release is one** (Eric, 2026-11-02: "The next release will reset game progress for
-everyone"): raise the epoch to 2 in the release commit itself, so no branch run restarts the
-developer's save before then. It carries the slow start (`.ai/slow-start.md`). Copies of 0.10.0
-predate the epoch, so their updater fetches it without the warning; the new build still keeps their
-old save beside the new one on first launch.
+**The resets so far.** Each was raised in a commit of its own just before `release.sh` ran, never on a
+branch, so no branch run restarted the developer's save before the release did.
+
+| epoch | release | why |
+|---|---|---|
+| 2 | 0.12.0 (2026-11-03) | Eric, 2026-11-02: "The next release will reset game progress for everyone" - the rename, the Archmage, the slow start (`.ai/slow-start.md`), the whole road. Copies of 0.10.0 predated the epoch, so their updater fetched it without the warning. |
+| 3 | 0.22.0 (2026-11-09) | Eric, 2026-11-09: "This release should reset the game for players" - the far shore, endless, the Conjunction ladder, the character-fit walk-through and four new spells, and the Sketchbook and Test Wizard removed. Every copy since 0.11 asks first. |
 
 Decided 2026-11-02 (`.ai/decisions/2026-11-02-story-resets.md`): a release that changes the story
 restarts every player's progress, and they are warned before they download it. The game is in
@@ -455,10 +458,11 @@ beside the buttons when it has risen since the previous release.
 **Looking at it without a release** (no network, nothing downloaded, writes off):
 
 ```sh
-# the Windows question - Update and Not now; drop ":2" for an ordinary update, which asks nothing
-"$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --scene=res://scenes/TitleScreen.tscn --update-screen=0.11.0:2 --frames=90 --shot=question
+# the Windows question - Update and Not now; drop ":99" for an ordinary update, which asks nothing
+# (the epoch must be above the build's own, SaveData.CurrentProgressEpoch, or nothing is asked)
+"$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --scene=res://scenes/TitleScreen.tscn --update-screen=9.9.9:99 --frames=90 --shot=question
 # the Android strip with the warning
-"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn -- --portrait --safe-area --scene=res://scenes/TitleScreen.tscn --update-banner=0.11.0:2 --shot=strip
+"$GODOT_BIN" --path . --resolution 540x1212 scenes/_UiShot.tscn -- --portrait --safe-area --scene=res://scenes/TitleScreen.tscn --update-banner=9.9.9:99 --shot=strip
 # the title's notice, over an in-memory reset of the save
 "$GODOT_BIN" --path . --resolution 1280x720 scenes/_UiShot.tscn -- --story-reset --scene=res://scenes/TitleScreen.tscn --frames=150 --shot=notice
 ```

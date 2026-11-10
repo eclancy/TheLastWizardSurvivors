@@ -43,8 +43,8 @@ public partial class UpdateBanner : CanvasLayer
 	private const int BannerLayer = 6;
 
 	/// <summary>Forces the strip on outside an Android export, showing this version as the new
-	/// one without touching the network: <c>--update-banner=9.9.9</c>, or <c>--update-banner=9.9.9:2</c>
-	/// for a release built at story epoch 2, which adds the story-reset warning. For photographing the
+	/// one without touching the network: <c>--update-banner=9.9.9</c>, or <c>--update-banner=9.9.9:99</c>
+	/// for a release built at an epoch above this build's, which adds the story-reset warning. For photographing the
 	/// strip with _UiShot on a desktop; see .ai/releasing.md.</summary>
 	private const string TestArgPrefix = "--update-banner=";
 

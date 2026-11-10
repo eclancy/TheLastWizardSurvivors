@@ -1,7 +1,7 @@
 # ADR: Story resets - a release that changes the story restarts everyone's progress, and says so first
 
-**Date:** 2026-11-02 · **Status:** accepted, built (`wip/progress-reset`); the epoch ships at 1, so no
-release has reset anyone yet
+**Date:** 2026-11-02 · **Status:** accepted, built (`wip/progress-reset`). Used twice: epoch 2 in 0.12.0,
+epoch 3 in 0.22.0 (the table in `.ai/releasing.md`, "Releasing a story reset")
 
 ## The request
 

@@ -102,7 +102,8 @@ public partial class UpdateScreen : Control
 	/// <summary>
 	/// Plays the whole check against a made-up release instead of the network, in any build:
 	/// <c>--update-screen=9.9.9</c> (no epoch: behaves as an ordinary update) or
-	/// <c>--update-screen=9.9.9:2</c> (built at epoch 2, so the question is asked). Nothing is ever
+	/// <c>--update-screen=9.9.9:99</c> (built at an epoch above this build's, so the question is asked; any
+	/// number at or below <see cref="SaveData.CurrentProgressEpoch"/> asks nothing). Nothing is ever
 	/// downloaded; Update just carries on to the title. For photographing the question with _UiShot -
 	/// see .ai/releasing.md, "Releasing a story reset". Android's strip has --update-banner.
 	/// </summary>
@@ -118,7 +119,7 @@ public partial class UpdateScreen : Control
 		return null;
 	}
 
-	/// <summary>A test argument's version.json: "9.9.9" or "9.9.9:2" (version, then story epoch).</summary>
+	/// <summary>A test argument's version.json: "9.9.9" or "9.9.9:99" (version, then story epoch).</summary>
 	public static string TestReleaseJson(string arg)
 	{
 		string[] parts = arg.Split(':');

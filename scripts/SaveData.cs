@@ -310,7 +310,7 @@ public class SaveData
 	/// This is the one place a save is allowed to lose what it earned, and only on purpose. Every other
 	/// change that narrows what a save grants still needs a schema step in <see cref="Migrate"/>.
 	/// </remarks>
-	public const int CurrentProgressEpoch = 2;
+	public const int CurrentProgressEpoch = 3;
 
 	/// <summary>
 	/// The epoch of a save with no "ProgressEpoch" key - one written before epochs existed, whose story is
