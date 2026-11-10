@@ -1163,7 +1163,9 @@ public static partial class AchievementDefinitions
 	}
 
 	// The chapter's half of the openers: a boss, three side events and three secrets, each as its wizard. The secrets'
-	// asks name the chapter and never the secret (decision 7: a hidden thing is never named before it is seen).
+	// asks NAME the secret, in its catalog name, as well as the chapter (in-flight 84, Eric 2026-11-10: "Find the Buried
+	// Runes as Morgan"): an exception to decision 7 (a hidden thing is never named before it is seen), since these deeds
+	// stay sealed until their wizard is freed and are about a secret the road has already taught exists.
 	private static IEnumerable<AchievementDefinition> WizardOpenerRoadDeeds()
 	{
 		// Tituba's Riptide: it was the Sunken Cave boss's prize; that deed now pays nothing else and stays the road's.
@@ -1179,19 +1181,26 @@ public static partial class AchievementDefinitions
 			"As Wayland the Smith, catch the caravan master on the Scorched Sands road.", "iron_palisade", "Iron Palisade",
 			asWizardOf: EventDeedId("caravan_master"));
 		yield return OpenerRoad("fays_frost", "The Fay's Frost", "morgan", StageOfSecret(SecretCatalog.BuriedRunesId),
-			"As Morgan le Fay, find the spell hidden in the Frozen Waste.", "sleet_runes", "Sleet Runes",
+			$"As Morgan le Fay, find {SecretNamed(SecretCatalog.BuriedRunesId)} in the Frozen Waste.", "sleet_runes", "Sleet Runes",
 			asWizardOf: SecretDeedId(SecretCatalog.BuriedRunesId));
 		yield return OpenerRoad("seers_star", "The Seer's Star", "nostradamus", StageOfSecret(SecretCatalog.FallenStarId),
-			"As Nostradamus, find the spell hidden in the Broken Circle.", "starfall", "Starfall",
+			$"As Nostradamus, find {SecretNamed(SecretCatalog.FallenStarId)} in the Broken Circle.", "starfall", "Starfall",
 			asWizardOf: SecretDeedId(SecretCatalog.FallenStarId));
 		yield return OpenerRoad("onmyojis_ward", "The Onmyoji's Ward", "seimei", StageOfSecret(SecretCatalog.BrokenWardId),
-			"As Abe no Seimei, find the spell hidden in the Mystic Ruins.", "kindled_ward", "Kindled Ward",
+			$"As Abe no Seimei, find {SecretNamed(SecretCatalog.BrokenWardId)} in the Mystic Ruins.", "kindled_ward", "Kindled Ward",
 			asWizardOf: SecretDeedId(SecretCatalog.BrokenWardId));
 	}
 
 	private static string StageOfSite(string siteId) => global::SideEventDirector.ChapterOfSite(siteId)?.Id ?? string.Empty;
 
 	private static string StageOfSecret(string secretId) => SecretCatalog.Get(secretId)?.StageId ?? string.Empty;
+
+	// A secret's catalog name mid-sentence: "The Buried Runes" reads "the Buried Runes" after "find".
+	private static string SecretNamed(string secretId)
+	{
+		string name = SecretCatalog.Get(secretId)?.DisplayName ?? secretId;
+		return name.StartsWith("The ", StringComparison.Ordinal) ? "the " + name.Substring(4) : name;
+	}
 
 	// The chapter clears are written in the order the chapters were made, and the deeds page lists
 	// them as written. Moving them into campaign order here - in the slots they already hold, so no
