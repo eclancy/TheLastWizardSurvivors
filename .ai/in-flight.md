@@ -21,7 +21,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 63 | A historical gallery: each unlocked character's real history | new screen, needs design | M-L |
 | 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
 | 65 | Download files renamed in the next release (decided); the program's own rename later | release tooling + updater | S, then M |
-| 66 | First Blood pays Lancet (decided); Canticle gets a harmony Feat; review every reward | achievements | S-M |
+| 66 | Reward review done: five fixes decided (Veteran/Ninth Stone swap, Fireball to the Emberdeep, a Quarry boon for The Coursing, Pheasant asks 4 Light, Smith's Toll at the Cold Forge) | achievements | S-M |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | done |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | done |
 | 69 | Remove the Twinstar Sigil from the shop (decided); that release resets progress (epoch 5) | shop | done |
@@ -1151,6 +1151,24 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     no spell: retire it or give it another. A spell a save already owns is never taken back.
     **Decided (Eric, 2026-11-09): *"I like first blood unlocking lancet"*.** Canticle is the Sibyl's opener, so under
     item 84 it waits for her anyway; its new deed (the harmony Feat) and Shrike's fate are still open.
+    **Reward review, 2026-11-10** (91 paying deeds read; 83 fit; report in the integrator's scratchpad,
+    `reward-review.md`). Eric decided all five fixes, one at a time:
+    1. **Swap Veteran and Out of the Ring (the Ninth Stone):** Veteran pays Shadegrease, the Ninth Stone pays Meteor
+       Swarm. (Veteran finished in the same run as Forest Cleared and Survivor, three spells at once; the Circle, the
+       first wall, paid a +6% boon.) And make Veteran's "without falling" true: a win saved by an extra life does
+       not count.
+    2. **Fireball to the Emberdeep's boss deed; the Emberdeep's 300 Arcane Energy to the Sunken Cave's boss** (which
+       paid 100, the smallest boss reward). Unwound (the Sands) keeps Sunsteel Filament only. The final gate counts
+       wizards now (`.ai/achievements-and-secrets.md` 2.5), so a later chapter may pay a spell.
+    3. **The Coursing pays a new hunting boon, not 50 Arcane Energy** (Eric: *"should be something special, not
+       just energy"*; he chose a boon over a Teumessian Fox familiar or a starlit hound look). Proposed: **the
+       Quarry** - the nearest wounded enemy is marked and takes extra damage; numbers set when built, against the
+       other boons.
+    4. **Pheasant (Medea's opener deed) asks for 4 Light held at once**, not level 20 - Solar Flare's own element.
+    5. **The Smith's Toll (Wayland's opener deed) moves to the Cold Forge** (the forge that made the shackles), off
+       the caravan master; finding the forge again as Wayland must still complete it.
+    Also from the review: the six element-Adept locked hints in `UnlockCatalog.cs` still say "End a run with 4",
+    but the deeds count the most held at any point in a run - reword them.
 84. **A wizard's opener is unlockable only once that wizard is** (Eric, 2026-11-09: *"I also want spells that are
     another wizard's default spell to only be unlockable once that wizard is unlocked"* - *"Except for familiar - since
     you need that to unlock Laelaps"*). The openers and how each is earned today (`CharacterData_*.tres`
