@@ -21,7 +21,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 63 | A historical gallery: each unlocked character's real history | new screen, needs design | M-L |
 | 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
 | 65 | The executable and download files still named "TheOneHeMissed" | release tooling + updater | M |
-| 66 | Canticle should not come from First Blood; review every achievement's reward | achievements | S-M |
+| 66 | Canticle should not come from First Blood (proposal: First Blood pays Lancet); review every reward | achievements | S-M |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
 | 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
@@ -36,7 +36,9 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
 | 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | S-M |
 | 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | S |
-| 81 | Buckler Boss's "while a shield holds" is unclear, and it is dead without a shield source | item text + rule | S |
+| 81 | Rework Buckler Boss to do something that makes sense (e.g. its own small shield) | item rework | S |
+| 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
+| 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1110,6 +1112,12 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     something that suits a first kill. Moving a spell between deeds narrows nothing a save holds, but check
     `SaveData.Migrate` step 19 (`MigrateToAchievementUnlocks`) and the validator's `ValidateAchievementMigration`,
     which reconcile done deeds with owned spells. Save schema is 28 on main.
+    **Asked 2026-11-09 ("Did we pick a better first spell to unlock with first blood achievement?") - not yet.**
+    Proposal for Eric: **First Blood pays Lancet** - a lancet is the tool that draws first blood, and a needle at the
+    most wounded enemy reads at once, which a first unlock should (`.ai/slow-start.md`: the first deed teaches how
+    spells are earned). **Canticle moves to a new harmony Feat** - e.g. carry spells of four different elements at once
+    (the chord it sings is gathered from its casters' elements). That leaves Shrike (500 poisoned enemies killed) with
+    no spell: retire it or give it another. A spell a save already owns is never taken back.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
@@ -1275,6 +1283,30 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     say it in player words - e.g. *"Take 15% less damage while you have a shield (from Aegis Ward or the Vial of
     Vitality)."* - and either offer it only once a shield source is held, or give it a small shield of its own so it is
     never dead. Check the card's length on the phone.
+    **Eric, 2026-11-09: *"Let's rebalance Buckler Boss so it does something that makes more sense"*** - a rework, not
+    just a reword. A buckler's boss is the metal dome at its centre, used to punch and to turn blows aside. Candidates:
+    (a) **its own small shield** - a few points, raised again every so often - so it is a shield source by itself and
+    feeds its set (the Thorned Buckler) and Aegis Ward builds alike; (b) **turns bolts aside** - an enemy bolt that
+    reaches him is knocked away every few seconds (close to Medea's Salve and Aegis Ward's Reflective Plating, so
+    check those); (c) **a punch** - enemies that touch him are shoved back hard (the set's Iron Fang already cuts
+    them). (a) is the plainest and never dead; Basalt Carapace's "ignores one hit every 10 s" is the one to keep it
+    clear of. Size it against the healing budget's shield lines (`.ai/difficulty-curve.md` 5).
+82. **The hut kneels only in the middle of the bone yard** (Eric, 2026-11-09: *"Baba Yaga's hut should only kneel
+    down once it's in the center of the bone yard"*). Today it is cornered, stops and kneels as soon as it is inside
+    `CorneredRadius` - 96 of the yard's 130 px (`WalkingHutEvent.cs` 53, 561) - which is just past the gap. Make it
+    walk on to the middle (a few tens of px) before the kneel; with item 79's heading for the yard it walks there
+    itself. `RegressionChecks.WalkingHut` checks `CorneredRadius` against the yard; keep its herding chase passing.
+83. **Every unlocked character appears on screen for a moment** (Eric, 2026-11-09: *"When we unlock a character, they
+    should appear on the screen for a moment, like Baba Yaga coming out of her hut"*). Eleven sites already have a
+    step-out beat for the wizard they free (the hut, the barge, the gibbet, the seer's voice, the tomb beacons, the
+    tithe scale, the dotted door, the five-pointed seal, the great anvil, the nine mouths, the Court's Seneschal - grep
+    `StepOut`). The ones freed any other way get no moment in the run, only the freeing reel afterwards
+    (`Freeings`, `.ai/cutscenes.md`): John Dee (an achievement), Laelaps (the Pinfold secret), the Dark Wizard (Taker
+    Taken), Nimue (the Throne's fall), Artemis and the gods (their rekindling) - and any other achievement unlock. To
+    do: one shared appearance beat - the wizard's own sprite stepping out into a column of light beside the player
+    with their name, a couple of seconds, then gone - played at the moment the deed is done, never while a boss
+    arrives or a menu is up (`Announcements` holds the screen's turn). Check the eleven existing beats read the same
+    way, and that none plays twice with the post-run reel. Follow `.ai/cutscenes.md`'s pacing (pause before and after).
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
