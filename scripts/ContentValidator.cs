@@ -173,9 +173,17 @@ public static class ContentValidator
 		var spellsById = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		var iconsByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+		// Through the lifetime cache, never a bare ResourceLoader.Load per path: this loop was the one walk left that
+		// took a fresh wrapper for every spell and dropped it, which is the gchandle.is_released() race LoadAllSpells
+		// exists for (above). It killed the validator before its first mark, more often than not, from 2026-11-10 -
+		// nothing about the spells changed; the garbage collector's timing did.
+		var held = new Dictionary<string, SpellData>(StringComparer.OrdinalIgnoreCase);
+		foreach (SpellData loaded in LoadAllSpells())
+			held[loaded.ResourcePath] = loaded;
+
 		foreach (string path in SpellResourcePaths)
 		{
-			SpellData spell = ResourceLoader.Load<SpellData>(path);
+			held.TryGetValue(path, out SpellData spell);
 			if (spell == null)
 			{
 				summary.Errors.Add($"Spell resource failed to load: {path}");
