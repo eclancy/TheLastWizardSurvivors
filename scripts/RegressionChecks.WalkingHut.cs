@@ -17,10 +17,17 @@ public static partial class RegressionChecks
 		if (WalkingHutEvent.YardGapWidth < 100f || WalkingHutEvent.CorneredRadius <= 0f || WalkingHutEvent.CorneredRadius >= WalkingHutEvent.YardRadius)
 			warnings.Add($"Walking hut: the yard must admit the hut (gap {WalkingHutEvent.YardGapWidth}) and corner it inside the ring (cornered {WalkingHutEvent.CorneredRadius} of {WalkingHutEvent.YardRadius}).");
 
-		// Herded on paper (unlock-puzzles.md 3.3): her yard 750 px from the circle, its one gap facing away.
-		// A herding chase - press from the far side of the hut, the gap's mouth first, then the middle - must
-		// drive it in in under two minutes on open ground, and a straight chase must never get it in: running
-		// straight at it just moves it, and the fence has no way in on the side it is pushed from.
+		// It kneels only in the yard's MIDDLE (in-flight 82, Eric 2026-11-09: "Baba Yaga's hut should only kneel down
+		// once it's in the center of the bone yard") - a few tens of px, not just past the gap.
+		if (WalkingHutEvent.CorneredRadius > 40f)
+			warnings.Add($"Walking hut: it kneels {WalkingHutEvent.CorneredRadius} px from the yard's middle; it should walk on to the middle (a few tens of px).");
+
+		// Driven on paper (unlock-puzzles.md 3.3): her yard 750 px from the circle, its one gap facing away. Since
+		// in-flight 79 (Eric: "Baba Yaga's hut should head toward the yard if you're near it at all, it's too hard to
+		// herd it") fright sends it for its yard (WalkingHutEvent.YardGoal: round the fence, the gap's mouth, the
+		// middle), so a STRAIGHT chase - running at it from wherever he finds it - drives it in as well as a herding
+		// one, and that is the point now, not a hole. Both must get it to the middle well under two minutes on open
+		// ground, and it must still bolt on the way.
 		{
 			Vector2 yard = new(0f, 750f);
 			float gapAngle = Mathf.Pi / 2f; // facing away from the circle at the origin
@@ -31,6 +38,7 @@ public static partial class RegressionChecks
 				// The fence as the event tests it: the step's segment against the ring, every way but the gap.
 				FleeingMover theMover = mover;
 				mover.IsBlocked = at => CrossesPaperFence(theMover.Position, at, yard, gapAngle);
+				mover.Goal = at => WalkingHutEvent.YardGoal(at, yard, gapAngle);
 				Vector2 him = mover.Position + new Vector2(0f, -600f);
 				float t = 0f;
 				const float Dt = 1f / 60f;
@@ -49,15 +57,33 @@ public static partial class RegressionChecks
 					driven = hut.DistanceTo(yard) <= WalkingHutEvent.CorneredRadius;
 					t += Dt;
 				}
-				if (herds && !driven)
-					warnings.Add($"Walking hut: a herding chase on open ground never drove it into the yard ({t:0} s; it stood {NewChaseMover(_ => false).Position.DistanceTo(yard):0} px out at the start).");
-				else if (herds && t > 120f)
-					warnings.Add($"Walking hut: a herding chase took {t:0} s to drive it in; it should be well under two minutes.");
-				if (!herds && driven)
-					warnings.Add($"Walking hut: a STRAIGHT chase drove it into the yard in {t:0} s; the gap faces away, so only herding should.");
-				if (herds && driven && mover.BoltsStarted < 2)
-					warnings.Add($"Walking hut: the herding drive startled it {mover.BoltsStarted} time(s); it should bolt again and again.");
+				string chase = herds ? "a herding chase" : "a straight chase";
+				if (!driven)
+					warnings.Add($"Walking hut: {chase} on open ground never drove it to the yard's middle ({t:0} s); fright should send it home.");
+				else if (t > 60f)
+					warnings.Add($"Walking hut: {chase} took {t:0} s to drive it in; it should be well under two minutes.");
+				if (driven && mover.BoltsStarted < 1)
+					warnings.Add($"Walking hut: {chase} drove it in without startling it once; it should still bolt.");
 			}
+		}
+
+		// Never through him (in-flight 79): with its goal straight on past where he stands, it goes round him.
+		{
+			var mover = NewChaseMover(_ => false);
+			mover.Position = Vector2.Zero;
+			Vector2 goal = new(0f, 1000f);
+			mover.Goal = _ => goal;
+			Vector2 him = new(0f, 200f);
+			float nearest = float.MaxValue;
+			for (int i = 0; i < 60 * 10; i++)
+			{
+				mover.Step(1f / 60f, him, 220f);
+				nearest = MathF.Min(nearest, mover.Position.DistanceTo(him));
+			}
+			if (nearest < 60f)
+				warnings.Add($"Walking hut: running for its yard past him, it came within {nearest:0} px of him; it should go round him, never through.");
+			if (mover.Position.Y < him.Y + 100f)
+				warnings.Add($"Walking hut: with him standing in its way to the yard it never got past him (ended at {mover.Position}).");
 		}
 
 		// Water across its way cuts a bolt short, and it never walks into it: a wall of water east of x = 300 and him

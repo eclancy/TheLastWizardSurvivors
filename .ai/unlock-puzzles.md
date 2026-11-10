@@ -326,6 +326,19 @@ the same straight chase (must never corner it); `_ExploreProbe --stage=0` herds 
 `--lose-hut` leg checks it calms and stands where it was left. Not built: the driven-in sound (reuses the
 Earth impact for now; a bespoke creak-and-settle is a tools/audio ask for later).
 
+**Changed 2026-11-10 (in-flight 79, 80 and 82).** Eric, 2026-11-09: *"Baba Yaga's hut should head toward the yard
+if you're near it at all, it's too hard to herd it"*, *"it freaks out and changes facing too often"* and *"Baba
+Yaga's hut should only kneel down once it's in the center of the bone yard"*. So the herding is gone as a skill:
+once he is near enough that it flees, fright sends it HOME (`FleeingMover.Goal`, `WalkingHutEvent.YardGoal`) -
+round the fence on a ring 90 px outside it to the gap's mouth, then in to the middle - with "away from him" only a
+lean, and round him, never through him, when he stands in its way. It still bolts, tires with `DriveProgress` and
+is cornered. `CorneredRadius` is 28 px (was the ring less 34, 96 of 130), so it walks on to the middle before it
+kneels. Its wall and flip now follow a smoothed heading (drawing only, never the movement), each held at least half
+a second, the flip with a wider dead band. `ValidateWalkingHut` now EXPECTS a straight chase to drive it in (on
+paper both chases take about six to eight seconds from 750 px; the check warns past a minute), checks it bolts on
+the way, that it passes a wizard standing in its way at a distance, and that it kneels within 40 px of the middle.
+The `_ExploreProbe` herding leg was not re-run for this change.
+
 ### 3.4 Paracelsus - choose his path
 
 **Was:** `GibbetCageEvent` - hold the winch 2 s; he follows your steps at 75% of your walk to the ferry

@@ -15,9 +15,12 @@ using TheOneHeMissed.scripts;
 // its back and strides off, quicker than his walk for two seconds, then slower than him (FleeingMover, the
 // primitive section 7 asked for: SecretMover inverted). Near its circle stands HER YARD: a fence of bones round
 // a clearing with one way in, the gap between the two brightest skull lanterns, facing away from the circle.
-// Stand on the far side of the hut and it flees where you want; trees, water and the fence itself are the walls
-// you herd with. Driven through the gap it has nowhere left to run: it stops, turns its door to him, kneels,
-// and she steps out. The old 30 s bar and its band are gone - the yard is the whole ask.
+// Since in-flight 79 (Eric, 2026-11-09: "Baba Yaga's hut should head toward the yard if you're near it at all,
+// it's too hard to herd it") fright sends it HOME: once he is near enough that it flees, it runs for its yard - round
+// the fence to the gap's mouth, then in to the middle (YardGoal) - with "away from him" only a lean, and round him,
+// never through him, when he stands in its way. It still bolts, tires and is cornered. In the middle of the yard
+// (in-flight 82, "only kneel down once it's in the center of the bone yard") it has nowhere left to run: it stops,
+// turns its door to him, kneels, and she steps out. The old 30 s bar and its band are gone - the yard is the whole ask.
 //
 // NOTHING LOCKS, NOTHING IS LOST. Losing it costs nothing: past LoseRadius it soon calms and stands where it is,
 // the bar held, the gold arrow still on it, and its prints lead back - every fall lays a fresh three-toed print,
@@ -49,8 +52,31 @@ public partial class WalkingHutEvent : SideEvent
 	public const float YardDriveMin = 600f;
 	public const float YardDriveMax = 900f;
 
-	/// <summary>Inside this of the yard's middle it is cornered: it stops, turns, kneels.</summary>
-	public const float CorneredRadius = YardRadius - 34f;
+	/// <summary>
+	/// Inside this of the yard's middle it is cornered: it stops, turns, kneels. Its middle, not just past the gap (in-flight
+	/// 82, Eric 2026-11-09: "Baba Yaga's hut should only kneel down once it's in the center of the bone yard"): it was
+	/// YardRadius - 34 (96 of 130), which knelt it a stride inside the fence. It walks on to here itself (YardGoal).
+	/// </summary>
+	public const float CorneredRadius = 28f;
+
+	/// <summary>
+	/// Where the fleeing hut runs for, from where it stands (in-flight 79): the yard's middle once it is inside the fence
+	/// or at the gap's mouth; the mouth once it is in front of the gap; otherwise a point on a ring round the fence a
+	/// little way round toward the gap, so it circles the bones to the way in rather than pressing into them. A ring of
+	/// YardRadius + 90 stepped a radian at a time keeps every chord clear of the fence. Static, so RegressionChecks
+	/// chases the same rule on paper.
+	/// </summary>
+	public static Vector2 YardGoal(Vector2 hut, Vector2 yard, float gapAngle)
+	{
+		Vector2 mouth = yard + Vector2.FromAngle(gapAngle) * (YardRadius + 70f);
+		Vector2 rel = hut - yard;
+		if (rel.Length() <= YardRadius || hut.DistanceTo(mouth) <= 150f)
+			return yard;
+		float off = Mathf.AngleDifference(rel.Angle(), gapAngle);
+		if (Mathf.Abs(off) <= 0.35f)
+			return mouth;
+		return yard + Vector2.FromAngle(rel.Angle() + Mathf.Clamp(off, -1f, 1f)) * (YardRadius + 90f);
+	}
 
 	/// <summary>
 	/// A bolt: how long, and how much quicker than his walk (4.1: quicker for 2 s), easing to TiredBoltShare as the bar
@@ -328,6 +354,16 @@ public partial class WalkingHutEvent : SideEvent
 	// Which wall it shows while walking (PlaceHut); the tired beat ignores it and turns to front.
 	private const int FacingBack = 0, FacingFront = 1, FacingSide = 2;
 	private int facing = FacingBack;
+	// Its look is steadier than its feet (in-flight 80, Eric 2026-11-09: "it freaks out and changes facing too often"):
+	// the wall and the flip follow a SMOOTHED heading - for the drawing only, never fed back into the mover - and each
+	// holds at least FacingHoldSeconds before it may change again; the flip off the side walls has a wider dead band.
+	private const float FacingSmoothSeconds = 0.25f;
+	private const float FacingHoldSeconds = 0.5f;
+	private const float FlipDeadBand = 0.35f;
+	private float drawAngle = float.NaN;
+	private float facingHeld = FacingHoldSeconds;
+	private float flipHeld = FacingHoldSeconds;
+	private bool flipLeft;
 
 	protected override void OnPlaced()
 	{
@@ -335,6 +371,8 @@ public partial class WalkingHutEvent : SideEvent
 		mover.Home = home;
 		mover.Position = home + Vector2.Right * CircleRadius;
 		mover.IsBlocked = Blocked;
+		// Fright sends it to its yard (in-flight 79).
+		mover.Goal = at => YardGoal(at, yard, gapAngle);
 		Texture2D hutTex = ResourceLoader.Exists(HutPath) ? GD.Load<Texture2D>(HutPath) : null;
 		printsTex = ResourceLoader.Exists(PrintsPath) ? GD.Load<Texture2D>(PrintsPath) : null;
 		Texture2D herTex = ResourceLoader.Exists(HerPath) ? GD.Load<Texture2D>(HerPath) : null;
@@ -572,6 +610,7 @@ public partial class WalkingHutEvent : SideEvent
 		Vector2 him = Player?.GlobalPosition ?? (mover.Position + Vector2.Down * 5000f);
 		float speed = Player?.WalkingSpeed ?? 220f;
 		float moved = mover.Step(delta, him, speed);
+		TickFacing(delta);
 		if (moved > 0f)
 		{
 			walkPhase += moved / (FallSpacing * 2f);
@@ -656,35 +695,60 @@ public partial class WalkingHutEvent : SideEvent
 		}
 		else if (mover.Speed > 1f)
 		{
-			// The side it shows is a fact of its heading, not a choice (item 59: four sides, so it
-			// can turn as it runs): away up the screen is its back, down the screen is its front -
-			// the shut door honestly in view - and across is the side sheet, flipped to lead with
-			// its feet. Hysteresis at the diagonals: it keeps the sheet it has until the heading
-			// clearly crosses, so a wavering flee does not flicker between walls.
-			Vector2 h = mover.Heading;
-			if (Mathf.Abs(h.Y) > Mathf.Abs(h.X) * 1.15f)
-				facing = h.Y < 0f ? FacingBack : FacingFront;
-			else if (Mathf.Abs(h.X) > Mathf.Abs(h.Y) * 1.15f)
-				facing = FacingSide;
+			// The wall and the flip are TickFacing's (item 59's four sides, held and smoothed since item 80).
+			hut.FlipH = flipLeft;
 			if (facing == FacingSide)
 			{
 				frame = FrameSideWalk + ((int)(walkPhase * SideWalkFrames) % SideWalkFrames);
 				eyes = EyesSide;
-				hut.FlipH = h.X < 0f;
 			}
 			else
-			{
 				frame = (facing == FacingFront ? FrameFrontWalk : FrameWalk)
 					+ ((int)(walkPhase * WalkFrames) % WalkFrames);
-				// It leans the way it walks.
-				if (Mathf.Abs(h.X) > 0.2f)
-					hut.FlipH = h.X < 0f;
-			}
 		}
 		else
 			frame = FrameStand + ((int)(Clock / 0.7f) % 2);
 		hut.Frame = Mathf.Clamp(frame, 0, hut.Hframes - 1);
 		skullAt = foot + new Vector2(hut.FlipH ? -eyes.X : eyes.X, eyes.Y);
+	}
+
+	// The wall it shows and which way it is flipped, from a smoothed heading (in-flight 80). The side it shows is a fact
+	// of its heading, not a choice (item 59: four sides, so it can turn as it runs): away up the screen is its back,
+	// down the screen is its front - the shut door honestly in view - and across is the side sheet, flipped to lead
+	// with its feet. Hysteresis at the diagonals, a held wall and a held flip, so a wavering flee - a dodge round a
+	// trunk, a sidestep round him - does not flicker between walls.
+	private void TickFacing(float delta)
+	{
+		facingHeld += delta;
+		flipHeld += delta;
+		if (mover.Speed <= 1f)
+			return;
+		float target = mover.Heading.Angle();
+		drawAngle = float.IsNaN(drawAngle) ? target
+			: Mathf.LerpAngle(drawAngle, target, 1f - MathF.Exp(-delta / FacingSmoothSeconds));
+		Vector2 h = Vector2.FromAngle(drawAngle);
+		int want = facing;
+		if (Mathf.Abs(h.Y) > Mathf.Abs(h.X) * 1.15f)
+			want = h.Y < 0f ? FacingBack : FacingFront;
+		else if (Mathf.Abs(h.X) > Mathf.Abs(h.Y) * 1.15f)
+			want = FacingSide;
+		bool turned = false;
+		if (want != facing && facingHeld >= FacingHoldSeconds)
+		{
+			facing = want;
+			facingHeld = 0f;
+			turned = true;
+		}
+		// The side walk must lead with its feet, so a turn onto it takes its flip at once; otherwise it leans the way
+		// it walks, past the dead band, and holds.
+		bool wantLeft = flipLeft;
+		if (facing == FacingSide ? h.X != 0f : Mathf.Abs(h.X) > FlipDeadBand)
+			wantLeft = h.X < 0f;
+		if (wantLeft != flipLeft && (turned || flipHeld >= FacingHoldSeconds))
+		{
+			flipLeft = wantLeft;
+			flipHeld = 0f;
+		}
 	}
 
 	// She steps out of the open door and a little way toward him, and once she is free goes into the light.

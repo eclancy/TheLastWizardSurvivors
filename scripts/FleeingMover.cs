@@ -10,6 +10,8 @@ namespace TheOneHeMissed.scripts;
 /// than him while he stays that close; further off it treads its own slow way. Water, a wall or a trunk across the
 /// way it wants cuts a bolt short (<see cref="BoltsCut"/>): it slides off along whatever way is open at the stride, or
 /// stands at bay if none is. Left alone past <see cref="LoseRadius"/> for <see cref="CalmSeconds"/> it calms and stands.
+/// Given a <see cref="Goal"/>, fright sends it TOWARD that instead, "away from him" only a lean (the walking hut, which
+/// runs for its yard since in-flight 79).
 /// </summary>
 /// <remarks>
 /// <para>A plain class, not a node: the owner (WalkingHutEvent) calls <see cref="Step"/> once a frame with where the
@@ -62,6 +64,16 @@ public sealed class FleeingMover
 
 	/// <summary>The owner's ground test: true where it cannot put a foot.</summary>
 	public Func<Vector2, bool> IsBlocked { get; set; } = _ => false;
+
+	/// <summary>
+	/// Where it runs TO while it flees, from where it stands; null (the default) and it runs straight away from him.
+	/// The walking hut's is its yard (in-flight 79, Eric 2026-11-09: "Baba Yaga's hut should head toward the yard if
+	/// you're near it at all, it's too hard to herd it"): the gap's mouth first, then the middle.
+	/// </summary>
+	public Func<Vector2, Vector2> Goal { get; set; }
+
+	/// <summary>With a <see cref="Goal"/>: how much "away from him" still leans its way, against the goal's 1.</summary>
+	public float AwayWeight { get; set; } = 0.35f;
 
 	public Vector2 Position { get; set; }
 
@@ -151,21 +163,23 @@ public sealed class FleeingMover
 
 		Vector2 want;
 		float speed;
+		// Where fright sends it: straight away from him, or - with a goal - toward the goal (FleeWay).
+		Vector2 flee = Goal == null ? away : FleeWay(away, d);
 		if (boltLeft > 0f)
 		{
-			want = away;
+			want = flee;
 			speed = Mathf.Lerp(BoltShare, TiredBoltShare, Mathf.Clamp(Tire, 0f, 1f)) * chaserSpeed;
 		}
 		else if (Fleeing && d <= StartleRadius)
 		{
-			want = away;
+			want = flee;
 			speed = StrideShare * chaserSpeed;
 		}
 		else if (Fleeing)
 		{
 			// Near enough to have its attention, not near enough to frighten it: it keeps on its way, turning off
-			// from him by degrees rather than snapping round.
-			want = (Heading * 2f + away).Normalized();
+			// from him (or toward its goal) by degrees rather than snapping round.
+			want = (Heading * 2f + flee).Normalized();
 			speed = TreadSpeed;
 		}
 		else if (!HasFled && CircleRadius > 1f)
@@ -182,6 +196,14 @@ public sealed class FleeingMover
 		}
 		else
 			return 0f;
+
+		// Never past its goal in one step: a stride that would carry it over the point stops on it.
+		if (Goal != null && Fleeing)
+		{
+			float toGoal = Position.DistanceTo(Goal(Position));
+			if (toGoal < speed * delta)
+				speed = toGoal / delta;
+		}
 
 		// The ground. The way it wants first, then wider either side, the side it last turned to first so it does not
 		// dither; the first way that is open is the one it goes.
@@ -216,5 +238,27 @@ public sealed class FleeingMover
 		AtBay = true;
 		turnSide = -turnSide;
 		return 0f;
+	}
+
+	// With a goal: toward it, "away from him" only a lean (AwayWeight), and never through him - when he stands across
+	// its way to the goal it goes round him, on the side its way already leans to (the side it last turned to when he
+	// is dead ahead), harder the more squarely he blocks it.
+	private Vector2 FleeWay(Vector2 away, float d)
+	{
+		Vector2 toGoal = Goal(Position) - Position;
+		if (toGoal.LengthSquared() < 1f)
+			return Heading;
+		toGoal = toGoal.Normalized();
+		Vector2 want = toGoal + away * AwayWeight;
+		float blocking = toGoal.Dot(-away);
+		if (blocking > 0.3f && d < StartleRadius * 1.5f)
+		{
+			Vector2 side = new(-away.Y, away.X);
+			float lean = side.Dot(toGoal);
+			if (lean < 0f || (lean == 0f && turnSide < 0))
+				side = -side;
+			want += side * (1.6f * blocking);
+		}
+		return want.LengthSquared() > 1e-4f ? want.Normalized() : toGoal;
 	}
 }
