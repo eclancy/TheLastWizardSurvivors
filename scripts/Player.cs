@@ -2141,60 +2141,18 @@ public partial class Player : CharacterBody2D
 		return totals;
 	}
 
-	// --- Attunement ---
-	//
-	// No spell carries the same element twice in its base tags any more, so a single-element spell
-	// contributes 1 instance where a hybrid contributes 2 (1 + 1). Attunement is what it gets back:
-	// a spell that names exactly one element is *attuned* to it and hits harder the deeper that
-	// element is stacked. Hybrids buy breadth; pure spells buy depth, and only pay off once the
-	// player has committed to the element.
-	//
-	// Deliberately reads the spell's *current* weights, which include evolution bonuses. So an
-	// evolution that adds a second tag of the same element keeps attunement and pushes the tier up,
-	// while one that branches into a second element trades attunement away for the spread. That
-	// trade is the whole point of the level 4 and level 8 choices.
-	public const float AttunementTier2Multiplier = 1.20f;
-	public const float AttunementTier4Multiplier = 1.45f;
-	public const float AttunementTier6Multiplier = 1.80f;
-
-	/// <summary>The single element a spell is attuned to, or null if it names none or several.</summary>
-	public static Element? GetAttunedElement(SpellData spell)
-	{
-		Dictionary<Element, int> weights = spell?.GetElementWeights();
-		if (weights == null || weights.Count != 1)
-			return null;
-
-		foreach (Element element in weights.Keys)
-			return element;
-
-		return null;
-	}
-
-	/// <summary>Damage multiplier a spell earns from being attuned. 1.0 for hybrids.</summary>
-	public float GetAttunementMultiplier(SpellData spell)
-	{
-		// Checked before the tier lookup because GetElementTier builds the whole instance table,
-		// and most spells are hybrids that will never earn anything here.
-		Element? attuned = GetAttunedElement(spell);
-		if (attuned == null)
-			return 1.0f;
-
-		return GetElementTier(attuned.Value) switch
-		{
-			>= 6 => AttunementTier6Multiplier,
-			>= 4 => AttunementTier4Multiplier,
-			>= 2 => AttunementTier2Multiplier,
-			_ => 1.0f,
-		};
-	}
+	// A pure spell's damage bonus for its element's tier (x1.20 / x1.45 / x1.80 at tier 2 / 4 / 6) was
+	// removed on 2026-11-10 with the cooldown a hybrid paid for a tag (Eric, in-flight 97: "we will
+	// rebalance around that later"). A pure and a hybrid spell now differ only by the tags they carry
+	// and the paths their milestones offer.
 
 	/// <summary>
-	/// The damage multiplier to hand a spell's projectile: the player's global multiplier with that
-	/// spell's attunement folded in. Every cast site uses this rather than <c>damageMultiplier</c>
-	/// directly, so attunement cannot be forgotten on a new spell.
+	/// The damage multiplier to hand a spell's projectile: the player's global multiplier with what
+	/// is charged to that one spell folded in (the Split Lens). Every cast site uses this rather than
+	/// <c>damageMultiplier</c> directly, so a per-spell term cannot be forgotten on a new spell.
 	/// </summary>
 	private float GetSpellDamageMultiplier(SpellData spell) =>
-		damageMultiplier * GetAttunementMultiplier(spell) * GetSplitLensMultiplier(spell) * castDamageScale;
+		damageMultiplier * GetSplitLensMultiplier(spell) * castDamageScale;
 
 	// The Split Lens's cost: -25% damage - charged only to a spell its +1 projectile reaches (Eric, 0.9.3:
 	// "it should only reduce damage of spells that are affected by the projectile count"). It was a cut to
@@ -2728,8 +2686,8 @@ public partial class Player : CharacterBody2D
 		if (enemy is Enemy chilled && chilled.IsSlowed && ownedChestItems.Contains(ChestItemCatalog.HoarfrostNail))
 			finalDamage = Mathf.RoundToInt(finalDamage * 1.25f);
 
-		// Crystal Prism: a spell that names exactly one element hits harder. Same bet as
-		// attunement, bought with an item instead of earned by the spell.
+		// Crystal Prism: a spell that names exactly one element hits harder - the item's own bet on
+		// a pure loadout.
 		if (source?.ElementWeights != null && source.ElementWeights.Count == 1
 			&& ownedChestItems.Contains(ChestItemCatalog.CrystalPrism))
 		{
@@ -3824,8 +3782,7 @@ public partial class Player : CharacterBody2D
 			case ChestItemCatalog.CrystalPrism:
 				// "+20% all elemental effect potency" was the vaguest line in the pool - it read as
 				// a percentage on nothing in particular. A prism splits light into single colours,
-				// so it now pays for spells that carry exactly one element, which is the same bet
-				// attunement asks the player to make.
+				// so it now pays for spells that carry exactly one element.
 				break; // Read in DealDamageToEnemy.
 
 			// Rule-changers. Three of the four do nothing here because they are conditions read

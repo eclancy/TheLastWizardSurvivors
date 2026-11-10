@@ -338,7 +338,7 @@ public partial class Player
 
 	// --- what a combination needs of the player while it fires -----------------------------------------
 
-	/// <summary>The damage multiplier a cast of this spell is handed now (attunement and the Split Lens folded in).</summary>
+	/// <summary>The damage multiplier a cast of this spell is handed now (the Split Lens folded in).</summary>
 	public float SpellDamageMultiplierFor(SpellData spell) => GetSpellDamageMultiplier(spell);
 
 	/// <summary>The enemy in reach with the most health left - a miniboss or elite first. Hunter's Mark's choice.</summary>

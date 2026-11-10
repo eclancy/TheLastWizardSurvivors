@@ -9,9 +9,7 @@
 ; boons just to reach a threshold that every other element reaches through spells. That is what the
 ; reachability audit could not see: it asks whether six is reachable, not what reaching it costs.
 ;
-; A single element tag, per the element rule. What pays for the missing second tag is attunement:
-; a spell whose tags are all one element scales with that element's tier instead of splitting its
-; contribution, so a committed Water build gets more out of this than a dabbler does.
+; A single element tag, per the element rule.
 
 ; The wave GROWS every level (2026-10-27, "the tidal wave attack area should grow as they level up so
 ; it becomes more of a spectacle"): an Area line at every level, in px on the 8 px hit radius

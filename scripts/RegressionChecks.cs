@@ -6317,19 +6317,15 @@ public static partial class RegressionChecks
 	// Arcane on 2026-11-02 for The Archmage) splits the character's opening weight without changing
 	// anything visible; two characters sharing an element makes one of them redundant without
 	// breaking a thing.
-	// Two rules that only exist as agreement between data files, so nothing but this notices when
-	// they break.
-	//
-	// 1. No spell carries the same element twice in its BASE tags. A spell used to be able to be
-	//    "Fire x2", which made a single-element spell worth as much element weight as a hybrid and
-	//    left nothing to distinguish the two. Weight is now capped at 1 per element, and what a
-	//    pure spell gets instead is attunement (Player.GetAttunementMultiplier). Evolutions may
-	//    still stack a second tag of the same element - that is the level 4 and level 8 choice -
-	//    which is why this checks the resource's declared weights and not GetElementWeights().
-	//
-	// 2. Attunement is only worth anything to a spell that deals damage, so a pure spell that is
-	//    passive gets no compensation at all for its halved element weight. Passives must carry
-	//    two elements.
+	// A rule that only exists as agreement between data files, so nothing but this notices when it
+	// breaks: no spell carries the same element twice in its BASE tags. A spell used to be able to be
+	// "Fire x2", which made a single-element spell worth as much element weight as a hybrid and left
+	// nothing to distinguish the two. Weight is now capped at 1 per element. Evolutions may still
+	// stack a second tag of the same element - that is the level 4 and level 8 choice - which is why
+	// this checks the resource's declared weights and not GetElementWeights(). (What a pure spell got
+	// back for its halved weight, a damage bonus at its element's tier, was removed on 2026-11-10,
+	// in-flight 97, to be rebalanced later; so was the rule it carried, that a passive must name two
+	// elements.)
 	// Wave formation geometry. None of this is visible to a build, and all of it fails quietly in
 	// play: a formation with a bad placement does not crash, it just spawns a wave that looks like
 	// the scatter it was meant to replace, which is indistinguishable from the feature not being
@@ -6837,7 +6833,7 @@ public static partial class RegressionChecks
 	//   1. No spell may end up naming more than TWO distinct elements. A hybrid has both of its
 	//      slots filled already, so its evolutions may only deepen what it carries - or TRADE one
 	//      element for another (SpellEvolutionOption.ReplacesElement), which keeps it at two;
-	//      branching to a new element on top is what a pure spell trades its attunement for.
+	//      branching to a new element on top is a pure spell's alone.
 	//   2. Only a pure spell may reach 3 instances of one element. A hybrid able to put both of its
 	//      gains into the same element would match a pure spell's depth and keep a second element
 	//      as well, which is most of the reason to ever pick a pure spell.

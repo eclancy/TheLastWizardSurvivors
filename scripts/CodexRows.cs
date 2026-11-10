@@ -152,7 +152,7 @@ public static class CodexRows
 		/// <summary>Draws the icon as a dark shape - a page not yet found.</summary>
 		public bool IconSilhouette;
 		public IReadOnlyList<(Element Element, int Weight)> Elements;
-		/// <summary>Said after the chips, in the meta ink: "Attuned".</summary>
+		/// <summary>A short word said after the chips, in the meta ink.</summary>
 		public string ChipNote = string.Empty;
 		/// <summary>0..1 draws a bar, with <see cref="ProgressText"/> beside it.</summary>
 		public float? Progress;

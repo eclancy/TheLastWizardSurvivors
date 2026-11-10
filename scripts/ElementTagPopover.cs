@@ -375,19 +375,13 @@ public partial class ElementTagPopover : CanvasLayer
 		if (onHit.Length > 0)
 			column.AddChild(CodexRows.MakeText(onHit, ResponsiveLayout.TextRole.Label, ink.Ink));
 
-		// The two other things a tag count buys, which no screen used to connect to the chip.
-		column.AddChild(CodexRows.MakeText(
-			$"A spell that is only {element} (attuned) also deals " +
-			$"+{Pct(Player.AttunementTier2Multiplier)}% / +{Pct(Player.AttunementTier4Multiplier)}% / +{Pct(Player.AttunementTier6Multiplier)}% damage at these tiers.",
-			ResponsiveLayout.TextRole.Label, ink.InkMeta));
+		// The other thing a tag count buys, which no screen used to connect to the chip.
 		column.AddChild(CodexRows.MakeText(
 			$"An ascension that wants {element} needs {Player.AscensionElementRequirement} {element} tags.",
 			ResponsiveLayout.TextRole.Label, ink.InkMeta));
 
 		return panel;
 	}
-
-	private static int Pct(float multiplier) => Mathf.RoundToInt((multiplier - 1f) * 100f);
 
 	private static Control Glyph(string key)
 	{

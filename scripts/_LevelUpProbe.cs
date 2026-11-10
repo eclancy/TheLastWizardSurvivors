@@ -309,7 +309,7 @@ public partial class _LevelUpProbe : Node
 			Description = "Every arc splits once more before it dies, at the cost of a longer wind-up "
 				+ "between casts.",
 			SynergyTag = "Lightning / Chain",
-			SynergyDescription = "Deepens Lightning - keeps the spell attuned and pushes its tier.",
+			SynergyDescription = "Deepens Lightning - pushes its tier.",
 			ChainArcBonus = 2, CooldownMultiplier = 1.15f,
 		};
 		var storm = new SpellEvolutionOption
@@ -318,7 +318,7 @@ public partial class _LevelUpProbe : Node
 			Description = "Arcs no longer weaken as they jump, but each one now needs a target within "
 				+ "half the usual reach.",
 			SynergyTag = "Lightning / Wind",
-			SynergyDescription = "Trades attunement for a second element.",
+			SynergyDescription = "Branches into a second element.",
 			DamageMultiplier = 1.25f, RangeBonus = -40f,
 		};
 

@@ -460,7 +460,8 @@ the center."*
   follows its hit, not its cooldown (the longer cooldown only let more gather - the first pass, with the
   cooldown alone and the core at x1.5, measured *higher*). Damage 18 / +5 / +6 / +8 -> 8 / +2 / +3 / +8;
   Crush 6% a body (up to +90%) -> 2% (up to +30%); Twin Stars +30% damage, because Crush's Darkness lifts
-  the spell to tier 2 attunement (x1.2) and Twin Stars' gains nothing, and at the same footing the Crush
+  the spell to tier 2 attunement (x1.2, removed on 2026-11-10 with the rest of attunement, in-flight 97) and Twin
+  Stars' gains nothing, and at the same footing the Crush
   path read 1.5-1.9 times the Twin path's.
 
 Eight minutes, normal health (`--minutes=8 --timescale=2 --all-unlocked --immortal --character=0
@@ -765,7 +766,8 @@ Peer bands (Gravewell's table above): 40-60 / 70-130 / 331-465. What came of the
 **Littermates became a trade** - +1 hound, every hound bites 15% softer, about 1.7x instead of 2x, which
 puts its level 4 near 64; **the Rimehound got frost on its breath** - jaws 40% wider, so a frost hound
 chills the knot it bites into. The Ice path still pays for its slow in damage, as Frostfall does for
-Starfall: it gives up attunement (the spell names two elements) for the Ice tier and the rider, and
+Starfall: it gave up attunement (the spell names two elements; attunement was removed on 2026-11-10) for the Ice
+tier and the rider, and
 its +20% is the standard path's against the Great Hound's +35% and wider jaws. Shipped, it measures
 270 at level 8 - level with Frostfall + Constellation's 269 - and 52 at level 6, both under the bands,
 on a solo bot that holds no other Ice to give it a tier. That is the element-path convention, kept on
@@ -1378,7 +1380,7 @@ pierce). On most of the thirteen the words were wrong and the numbers reached no
   the spike twice as big as it hit, and made the wall twice as long *and* twice as thick.
 
 Each has its own block now, in Thorned Vine's way. `SpellEvolutionCatalog.Branch` fixes what a block
-may not change - the id, the name, the element gain, the attunement price of that gain and the look,
+may not change - the id, the name, the element gain (and its attunement price, until 2026-11-10) and the look,
 which `ApotheosisCatalog`, `RiptideWave.TitanEvolutionId`, `SeenAscensionIds` and `RegressionChecks`
 name - so a block only changes what a branch does and says. The budget is the archetype's: a stat
 that means nothing to a spell became one of like weight that it reads, with a small hook where the
@@ -1840,7 +1842,7 @@ spell's, tinted) belong with open issue #52.
 Eric approved 2e on 2026-10-29: *"yes lets make all mutations more unique per spell"*. Every id stayed
 (the Pyromancer's path is still `cinderbreath_amplified_impact` then `cinderbreath_titan_cataclysm`), so
 saves, `SeenAscensionIds` and the gates carry over; `Branch` still sets each default card's element gain,
-its attunement price and its tint, and the block renames the card after it. Each card's hook reads its id
+its tint (and its attunement price, until that went on 2026-11-10), and the block renames the card after it. Each card's hook reads its id
 through `HasEvolution`, its numbers are constants in the spell's script that the card's words are built
 from, and each re-specified card has its own icon (`tools/art/evolution_icons.py`). What a card leaves on
 the ground is one node per arena with a fixed pool (`CinderGround`, `WardWisps`, `ShadowCurse`), ticked on

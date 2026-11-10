@@ -298,7 +298,7 @@ public static class ConjunctionLadder
 	/// <paramref name="earned"/>, the path is one a fusion names on this very spell (never a third Ascension), the
 	/// partner is in the loadout, and the recipe is live - not made, not sealed (a parent down its other path, a fourth
 	/// element, the wizard's own spell). At half strength the partner counts at most 1. The largest share if two recipes
-	/// name the same path. It moves no tag: the element tiers, attunement and every other gate read the counts as they
+	/// name the same path. It moves no tag: the element tiers and every other gate read the counts as they
 	/// were.
 	/// </summary>
 	public static (int Weight, string Partner) PairShareFor(bool earned, string spellId, string ascensionId,

@@ -428,7 +428,7 @@ shared element is never counted twice. Zero unless earned, never for a path no r
 Ascension), never with the partner not held, never for a sealed or made recipe (a parent down its other path, a fourth
 element, the wizard's own spell). At the parents' level 7 and with no level 4 element path, the shares are: Hunter's
 Mark +1 (Starfall's Light), Constellation +2 (Hunter's Draw's Metal and Wind), Cosmic Collapse +1, Pandemic +2, Black Sun
-+1, Pyre +1; a deepening level 4 adds to them. **It moves no tag**: the element tiers, attunement and every other gate
++1, Pyre +1; a deepening level 4 adds to them. **It moves no tag**: the element tiers and every other gate
 read the counts as they were. `AscensionRequirement.Shared` / `SharedBy` carry it beside `Have`, which stays the player's
 own count; `Met` and `Missing` read both.
 

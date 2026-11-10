@@ -6,16 +6,9 @@ namespace TheOneHeMissed.scripts;
 
 public static class SpellEvolutionCatalog
 {
-	/// <summary>
-	/// What a hybrid pays to deepen one of its elements: a 12% longer cooldown.
-	/// </summary>
-	/// <remarks>
-	/// A pure spell's deepening is free, because it is the compensation for carrying half the base
-	/// element weight of a hybrid (see Player.GetAttunementMultiplier). A hybrid is owed nothing,
-	/// so its element gain is bought. Without a price, every hybrid would simply take the tag every
-	/// time and element depth would stop being a decision.
-	/// </remarks>
-	public const float AttunementGainCooldownCost = 1.12f;
+	// An element gain is free on every spell since 2026-11-10. A hybrid paid a 12% longer cooldown for
+	// each tag it deepened, the other side of the damage bonus a pure spell kept for staying single;
+	// both went together (Eric, in-flight 97: "we will rebalance around that later").
 
 	/// <summary>The elements a spell declares, in the order its resource lists them.</summary>
 	private static List<string> ElementNames(SpellData spell)
@@ -223,11 +216,9 @@ public static class SpellEvolutionCatalog
 	// PURE ARCANE SINCE 2026-11-02 (Eric: "Magic missile should also change to pure arcane"; it is The Archmage's
 	// opener, .ai/protagonist.md). It was Arcane + Lightning, a hybrid, and a pure spell is held to the pure spell's
 	// rules (RegressionChecks.ValidateElementPaths): its level 4 offers a branch that deepens its element AND one that
-	// adds another, and a deepening is free - the 12% a hybrid pays for a tag (AttunementGainCooldownCost) is the
-	// price of a second element it already has. So the Lightning it carried moved onto Twin Volley, the fork - forked
-	// lightning - as the branch; Unstable Detonation, the deepening, lost the 12%; Overcharge keeps its Lightning,
-	// which is the same element, so no route names three. In return the spell is attuned to Arcane
-	// (Player.GetAttunementMultiplier) until a branch takes Lightning.
+	// adds another. So the Lightning it carried moved onto Twin Volley, the fork - forked lightning - as the branch;
+	// Unstable Detonation is the deepening; Overcharge keeps its Lightning, which is the same element, so no route
+	// names three.
 	private static void SetupMagicMissileEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
@@ -275,8 +266,6 @@ public static class SpellEvolutionCatalog
 			// Kept (2026-10-29): it always changed the hit into a splash, but drew nothing; the burst now
 			// throws arcane sparks out to the reach it strikes.
 			Description = "Missiles detonate where they hit: an arcane burst throws sparks out round the impact, hitting everything in it for 60% damage.",
-			// No cooldown since 2026-11-02: it was the 12% a hybrid pays to deepen (AttunementGainCooldownCost), and the
-			// spell is pure now - a pure spell's deepening is free, and the card's chip says "stays attuned".
 			MilestoneLevel = 4,
 			Effect = SpellEffect.ExplosionOnHit,
 			EffectValue = 60f,
@@ -434,7 +423,7 @@ public static class SpellEvolutionCatalog
 	// a template sees a real set.
 	//
 	// The shape of every block is the hybrid's (Arcane + Light): one level 4 that deepens Light, one level 8
-	// that deepens Arcane, both bought with the 12% cooldown every hybrid pays for a tag; and per form one
+	// that deepens Arcane; and per form one
 	// Ascension that TRANSFORMS the weapon - a colossal new drawing on the boss cell (tools/art/spirit_weapons.py)
 	// at ScaleMultiplier 2, which SpiritualWeapon reads as the weapon's size and the reach of its blow alike.
 	// Every behaviour named by id lives in SpiritualWeapon; every number on a card is one it reads.
@@ -496,7 +485,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Light", 1 } },
 			DisplayName = "Dawnsplitter",
 			Description = "The axe burns with dawn-light: its " + ElementPaths.Describe(ElementRider.Weaken, 0.3f, 3f) + ".",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			Rider = ElementRider.Weaken,
 			RiderMagnitude = 0.3f,
@@ -531,7 +519,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			DisplayName = "Whirling Axes",
 			Description = "Two more axes, spinning end over end between blows: three heavy blows where there was one.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			ProjectileCountBonus = 2,
 			VisualTag = "SpiritWhirlingAxes",
@@ -578,7 +565,6 @@ public static class SpellEvolutionCatalog
 			// The slam itself Weakens through the rider (Player.DealDamageToEnemy); the hallowed ground is
 			// SpiritualWeapon's, as wide as the slam, and lasts the ZoneDuration below.
 			Description = "Every slam leaves the ground hallowed for 2.5 s: whatever stands in it is Weakened (-30% damage dealt) and slowed.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			Rider = ElementRider.Weaken,
 			RiderMagnitude = 0.3f,
@@ -600,14 +586,13 @@ public static class SpellEvolutionCatalog
 			// mjolnir()), the colossal size and the stop kept, and the lightning every slam calls down
 			// (SpiritualWeapon.CallThunder). Its Lightning is a TRADE for the hammer's Light, as Ember Caps
 			// trades Poison for Fire: a spell may never name more than two elements (RegressionChecks), and the
-			// hammer is Arcane + Light. It pays the attunement price Hallowed Ground and Hammerfall pay. The stop
+			// hammer is Arcane + Light. The stop
 			// is a freeze (SpellData.GetFreezeSecondsAtLevel); a boss takes a hard slow (Enemy.ApplySlow).
 			ReplacesElement = "Light",
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			ModulateColor = SpiritLightningTint,
 			DisplayName = "Mjolnir",
 			Description = $"A giant hammer whose slam stops what it hits and calls lightning onto the {SpiritualWeapon.MjolnirStrikes} nearest enemies past it. Trades Light for Lightning.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			ScaleMultiplier = 2.0f,
 			DamageMultiplier = 1.2f,
@@ -624,7 +609,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Arcane", 1 } },
 			DisplayName = "Hammerfall",
 			Description = "Two more hammers, falling in turn so the ground never stops shaking. Every slam hits 15% harder.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			ProjectileCountBonus = 2,
 			DamageMultiplier = 1.15f,
@@ -677,7 +661,6 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Soul Siphon",
 			// SpiritualWeapon.Siphon, capped per second (SiphonPerSecond) the way Soul Drain is per cast.
 			Description = $"Every strike heals you 1 HP, at most {SpiritualWeapon.SiphonPerSecond} HP a second.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			Effect = SpellEffect.Lifesteal,
 			EffectValue = 1f,
@@ -709,7 +692,6 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Thousand Cuts",
 			// SpiritualWeapon: FlurryCuts cuts of FlurryShare each, FlurryGap apart.
 			Description = "Every swing becomes a flurry of three cuts, each at 85%. A cut whose quarry has fallen goes to the nearest enemy.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			VisualTag = "SpiritThousandCuts",
 			ModulateColor = SpiritArcaneTint,
@@ -1147,8 +1129,7 @@ public static class SpellEvolutionCatalog
 			// "Fly in to you, cutting what they pass" read as cutting the wizard (Eric, 2026-11-06: "iron shards cut
 			// enemies as it is rebuilt"; recorded as in-flight 54 and missed until 2026-11-09).
 			Description = "As the ward is rebuilt, iron shards fly in and cut the enemies they pass. "
-				+ $"+{(reforgedShield - 1f) * 100f:0}% shield, 12% slower recharge.",
-			CooldownMultiplier = AttunementGainCooldownCost,
+				+ $"+{(reforgedShield - 1f) * 100f:0}% shield.",
 			MilestoneLevel = 4,
 			DamageMultiplier = reforgedShield,
 			VisualTag = "Reforged",
@@ -1165,7 +1146,6 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Sun Aegis",
 			// Player.SunAegisFlash, since 2026-10-26. The beams while charged were never built and went.
 			Description = "A breaking shield flashes like the sun, staggering and weakening everything close. Double shield.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
 			VisualTag = "SunAegis",
@@ -1204,8 +1184,7 @@ public static class SpellEvolutionCatalog
 			Id = Stormguard.ChargedAirId,
 			BonusElementWeights = new() { { "Lightning", 1 } },
 			DisplayName = "Charged Air",
-			Description = "The air itself is charged: the storm breaks after one blow fewer. 12% slower to gather.",
-			CooldownMultiplier = AttunementGainCooldownCost,
+			Description = "The air itself is charged: the storm breaks after one blow fewer.",
 			MilestoneLevel = 4,
 			VisualTag = "ChargedAir",
 			ModulateColor = new Color(1.0f, 0.95f, 0.5f),
@@ -1247,7 +1226,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Water", 1 } },
 			DisplayName = "Eye of the Storm",
 			Description = "The break leaves the storm's eye: for a few seconds enemy shots die at its edge and the rain keeps falling inside. +50% clap.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			DamageMultiplier = 1.5f,
 			VisualTag = "EyeOfTheStorm",
@@ -1283,10 +1261,9 @@ public static class SpellEvolutionCatalog
 			Id = GloamVeil.NightsClothId,
 			BonusElementWeights = new() { { "Darkness", 1 } },
 			DisplayName = "Night's Cloth",
-			// The hybrid's deepening price (AttunementGainCooldownCost elsewhere) is charged in the
-			// WALK here, not the cooldown - the veil's cooldown decides nothing, its Range does.
-			Description = "While the veil is torn, shots that would find you die in the gloom at your shoulder. The heavier cloth re-weaves a little later.",
-			RangeBonus = 50f,
+			// It paid a hybrid's price for its tag in the WALK (+50, the veil's cooldown decides nothing), until
+			// the price went on 2026-11-10 (in-flight 97).
+			Description = "While the veil is torn, shots that would find you die in the gloom at your shoulder.",
 			MilestoneLevel = 4,
 			VisualTag = "NightsCloth",
 			ModulateColor = new Color(0.55f, 0.35f, 0.8f),
@@ -1299,11 +1276,12 @@ public static class SpellEvolutionCatalog
 			Id = GloamVeil.TailwindId,
 			BonusElementWeights = new() { { "Wind", 1 } },
 			DisplayName = "Tailwind",
-			// The deepening price is folded into the walk: the gain is -90, charged 50, netting -40.
-			Description = "The tear's gust throws much harder, and the walk re-weaves the veil about 10% sooner.",
+			// -90 of the 350 walk at level 4. It netted -40 while a hybrid's tag was charged 50 of walk
+			// (in-flight 97 took the price away on 2026-11-10).
+			Description = "The tear's gust throws much harder, and the walk re-weaves the veil about 25% sooner.",
 			MilestoneLevel = 4,
 			KnockbackBonus = 140f,
-			RangeBonus = -40f,
+			RangeBonus = -90f,
 			VisualTag = "Tailwind",
 			ModulateColor = new Color(0.7f, 0.95f, 0.85f),
 			SynergyTag = "Wind / Recovery",
@@ -1372,7 +1350,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Earth", 1 } },
 			DisplayName = "Iron Brambles",
 			Description = "Increases retaliation range by +50%, and every hit you take deals 2 less damage.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			RangeBonus = 50f,
 			VisualTag = "IronBrambles",
@@ -1401,7 +1378,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Grass", 1 } },
 			DisplayName = "Living Grove",
 			Description = "Player is surrounded by permanent swirling razor vines that shred all nearby foes.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.2f,
 			AreaMultiplier = 1.8f,
@@ -1449,7 +1425,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Metal", 1 } },
 			DisplayName = "Glacial Barrier",
 			Description = "Increases armor and grants a 40% chance to completely freeze attackers.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			Effect = SpellEffect.Freeze,
 			EffectValue = 2.0f,
@@ -1478,7 +1453,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Ice", 1 } },
 			DisplayName = "Glacier Avatar",
 			Description = "Surrounds player in a colossal ice barrier (+100 Max HP, pulses screen-wide freezing waves).",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
 			AreaMultiplier = 2.0f,
@@ -1513,7 +1487,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Poison", 1 } },
 			DisplayName = "Corrosive Miasma",
 			Description = "+50% Poison tick damage and shreds enemy armor.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			PoisonTickBonus = 6,
 			VisualTag = "CorrosiveMiasma",
@@ -1571,7 +1544,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Darkness", 1 } },
 			DisplayName = "Shadow Catalyst",
 			Description = "Transforms poison cloud into dark void acid (+150% Damage, grants player +20% Dodge).",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.5f,
 			AreaMultiplier = 1.8f,
@@ -1628,7 +1600,6 @@ public static class SpellEvolutionCatalog
 			// Darkness's other verb is fear (Player.TryFrighten, a chance on every Darkness hit): the lance
 			// makes it certain, through Enemy.ApplyFear and its immunities.
 			Description = $"Everything the lance pierces flees in dread for {VoidLance.DreadSeconds:0.#}s; elites and bosses stand firm. +20% damage.",
-			CooldownMultiplier = 1.12f,
 			DamageMultiplier = 1.2f,
 			MilestoneLevel = 4,
 			VisualTag = "Dread",
@@ -1646,7 +1617,6 @@ public static class SpellEvolutionCatalog
 			// roster's own plan for the spell (section 2, "fixed, slowly rotating - position, not aim") is
 			// the Ascension: one lance that never withdraws.
 			Description = $"The lance stays in your hands and sweeps round you like the hand of a clock, once every {VoidLance.WitchingTurnSeconds:0.#}s.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 8,
 			VisualTag = "WitchingHour",
 			ModulateColor = new Color(0.94f, 0.86f, 1.0f),
@@ -1788,8 +1758,7 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Solar Prominence",
 			// Was Scorching Heat: +45% damage and the tag. The game has no burn status, so the heat is now a
 			// thing the flare throws (ElementalPulse.HurlProminences).
-			Description = $"Each pulse hurls {ElementalPulse.ProminenceLoops} loops of fire onto the nearest enemies past its rim, more as it builds. +15% damage, 12% slower.",
-			CooldownMultiplier = 1.12f,
+			Description = $"Each pulse hurls {ElementalPulse.ProminenceLoops} loops of fire onto the nearest enemies past its rim, more as it builds. +15% damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.15f,
 			VisualTag = "SolarProminence",
@@ -1817,8 +1786,7 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Light", 1 } },
 			DisplayName = "Daybreak Avatar",
 			// And a ward: enemy bolts that come inside the flare burn away (ElementalPulse.BurnBolts).
-			Description = "A flare that fills the clearing and burns away every enemy bolt that enters it: +100% Area, +100% Damage, for 12% slower pulses.",
-			CooldownMultiplier = 1.12f,
+			Description = "A flare that fills the clearing and burns away every enemy bolt that enters it: +100% area, +100% damage.",
 			MilestoneLevel = 8,
 			// 267-286 a second at level 8 on the band run of 2026-10-31 (357-375 on 10-29), under the band, and
 			// x2.5 read the same 286: the flare kills what is inside it in one pulse, so its number is how fast
@@ -1870,7 +1838,6 @@ public static class SpellEvolutionCatalog
 			// Phase 2 (.ai/spell-roster.md section 2h): the root was always there; the coil that shows it is
 			// new (BlackTentacles.DrawCoils), so the card leads with what is seen.
 			Description = "Every slap coils round its target's legs and roots it for 2 seconds. +50% slap damage.",
-			CooldownMultiplier = 1.12f,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.5f,
 			// Read by BlackTentacles.Land: a root (a slow of 0) on the enemy each slap lands on.
@@ -1955,7 +1922,7 @@ public static class SpellEvolutionCatalog
 	// default archetype's names until 2026-10-29 and only moved its numbers; each now changes what the
 	// vine does (.ai/spell-roster.md section 2e), read by id in ThornVine and Player.FireThornVine. The
 	// ids are the old ones, so saves and the Ascension browser carry over, and so are the element gains:
-	// Grass deepens on the first card, Poison on the first Ascension, each at the hybrid's price.
+	// Grass deepens on the first card, Poison on the first Ascension.
 	private static void SetupThornVineEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -1965,7 +1932,6 @@ public static class SpellEvolutionCatalog
 			Description = $"Thorns break off in what the vine cuts: for {ThornBarbs.BarbSeconds:0.#}s, walking tears them open again for {ThornBarbs.TearShare * 100f:0}% of the lash.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Grass", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "BarbedLash",
 			SynergyTag = "Grass / Barbs",
 			SynergyDescription = "Deepens Grass. The more the crowd walks, the more it bleeds - and it always walks at you."
@@ -2003,7 +1969,6 @@ public static class SpellEvolutionCatalog
 			DamageMultiplier = 1.6f,
 			AreaMultiplier = 1.3f,
 			BonusElementWeights = new() { { "Poison", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "Thicket",
 			SynergyTag = "Ascension / Poison",
 			SynergyDescription = "Ascension: deepens Poison. Every lash leaves a crescent of thorns the pack has to wade through."
@@ -2129,7 +2094,7 @@ public static class SpellEvolutionCatalog
 	// (more meteors, a bigger blast, a shove, a faster volley). Each is now something a meteor does - it
 	// breaks up in the sky, it skips on, the volley ends in a colossal one, the volley walks - read by id in
 	// MeteorImpact (BreakupId, SkipstoneId, Finale) and Player.FireMeteorSwarm (BarrageSpot). The ids and
-	// the element gains (Earth on Skipstone, Fire on Extinction Event, each at the hybrid's price) stay.
+	// the element gains (Earth on Skipstone, Fire on Extinction Event) stay.
 	private static void SetupMeteorSwarmEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -2169,7 +2134,6 @@ public static class SpellEvolutionCatalog
 			// "For 90% more" was wrong as well as vague (Eric, 2026-11-06): the bounce deals a SHARE
 			// of the meteor's damage (MeteorImpact.SkipDamageShare), not an increase.
 			Description = $"Every meteor glances off the ground and lands again; the second strike deals {MeteorImpact.SkipDamageShare * 100f:0}% of the first's. +35% damage.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.35f,
 			VisualTag = "Skipstone",
@@ -2184,7 +2148,6 @@ public static class SpellEvolutionCatalog
 			BonusElementWeights = new() { { "Fire", 1 } },
 			DisplayName = "Extinction Event",
 			Description = $"Every volley ends in one colossal meteor on the thickest pack, {MeteorImpact.FinaleArea:0.#} times as wide and {MeteorImpact.FinaleDamage:0} times as hard. +25% damage.",
-			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 8,
 			// x1.25: at x1.5 over Breakup's x1.2 it measured 433-452 a second at level 8, at x1.3 over x1.4 496.
 			DamageMultiplier = 1.25f,
@@ -2256,7 +2219,7 @@ public static class SpellEvolutionCatalog
 			// The ramp's tint rather than the old near-black, which multiplied the spike almost out of sight.
 			ModulateColor = ElementColors.GetEvolutionTint(Element.Darkness),
 			SynergyTag = "Earth / Darkness",
-			SynergyDescription = "Branches into Darkness. Trades attunement for a second element, and every spike marks what it hits for the rest of the loadout."
+			SynergyDescription = "Branches into Darkness. Every spike marks what it hits for the rest of the loadout."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -2343,7 +2306,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 4,
 			PoisonTickBonus = 1,
 			BonusElementWeights = new() { { "Poison", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "LingeringRot",
 			ModulateColor = new Color(0.78f, 1.0f, 0.55f),
 			SynergyTag = "Poison / Zone",
@@ -2410,7 +2372,6 @@ public static class SpellEvolutionCatalog
 			// already thinned the crowd.
 			DamageMultiplier = 1.85f,
 			BonusElementWeights = new() { { "Grass", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "MycelialBloom",
 			ModulateColor = new Color(0.82f, 1.0f, 0.62f),
 			SynergyTag = "Ascension / Grass",
@@ -2429,7 +2390,7 @@ public static class SpellEvolutionCatalog
 	// speed, the pierce, and often the count and the area, reached nothing at all.
 	//
 	// Each spell has its own copy now, in Thorned Vine's way. Branch() fixes what a copy may not change -
-	// the id, the name, the element gain, the attunement price of that gain and the look, which are what
+	// the id, the name, the element gain and the look, which are what
 	// ApotheosisCatalog, RiptideWave.TitanEvolutionId, the ascension browser's SeenAscensionIds
 	// (spell_id:branch_id) and RegressionChecks name - so a block can only change what a branch DOES and
 	// SAYS. Every number a block sets is one its spell reads (EvolutionStatReaders, held by
@@ -2448,7 +2409,7 @@ public static class SpellEvolutionCatalog
 
 	/// <summary>
 	/// One default-archetype branch of <paramref name="spell"/>, with the words and stats its block
-	/// gives it. Its id, name, milestone, element gain, the price of that gain and its look are set here
+	/// gives it. Its id, name, milestone, element gain and its look are set here
 	/// and nowhere else.
 	/// </summary>
 	private static SpellEvolutionOption Branch(SpellData spell, DefaultBranch branch, string description,
@@ -2456,14 +2417,10 @@ public static class SpellEvolutionCatalog
 	{
 		// The archetype's element rule, derived rather than authored: the first element deepens at level
 		// 4 and the second at level 8, so a hybrid reaches 2 of each and never 3 of either, which keeps
-		// depth a pure spell's speciality. A pure spell deepens its one element at both, for nothing - it
-		// is owed that for carrying half a hybrid's base weight - and a hybrid buys its gain with
-		// AttunementGainCooldownCost.
+		// depth a pure spell's speciality. A pure spell deepens its one element at both.
 		List<string> elements = ElementNames(spell);
-		bool isPure = elements.Count == 1;
 		string first = elements.Count > 0 ? elements[0] : string.Empty;
 		string second = elements.Count > 1 ? elements[1] : first;
-		float gainCost = isPure ? 1.0f : AttunementGainCooldownCost;
 
 		(string suffix, string name, int milestone, string gain, string visual, Color tint) = branch switch
 		{
@@ -2487,11 +2444,7 @@ public static class SpellEvolutionCatalog
 		};
 		stats?.Invoke(option);
 		if (gain.Length > 0)
-		{
 			option.BonusElementWeights = new() { { gain, 1 } };
-			// After the block's own stats, so the price multiplies whatever cooldown the branch buys.
-			option.CooldownMultiplier *= gainCost;
-		}
 		return option;
 	}
 
@@ -2551,7 +2504,7 @@ public static class SpellEvolutionCatalog
 	// until 2026-10-29 and only moved its numbers; each now changes what the grave does (.ai/spell-roster.md
 	// section 2e), read by id in GravewellTrap.For and Player.FireGravewellTrap. The ids are the old ones, so
 	// saves and the Ascension browser carry over, and so are the element gains: Earth deepens on the first
-	// card, Darkness on the first Ascension, each at the hybrid's price. None of them pulls: the pull is
+	// card, Darkness on the first Ascension. None of them pulls: the pull is
 	// Hollow Star's (the grave's own tug toward the pit is a third of the way and no more).
 	private static void SetupGravewellEvolutions(SpellData spell)
 	{
@@ -2565,7 +2518,6 @@ public static class SpellEvolutionCatalog
 			// (--enemy-hp=30), whose collapse was 30% wider.
 			DamageMultiplier = 1.2f,
 			BonusElementWeights = new() { { "Earth", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "BoneSpikes",
 			SynergyTag = "Earth / Shards",
 			SynergyDescription = "Deepens Earth. A grave reaches the ones following the one that sprang it."
@@ -2600,7 +2552,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 8,
 			DamageMultiplier = 1.8f,
 			BonusElementWeights = new() { { "Darkness", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "MassGrave",
 			SynergyTag = "Ascension / Darkness",
 			SynergyDescription = "Ascension: deepens Darkness. One grave the size of the front rank, and nothing in it walks out."
@@ -2639,7 +2590,7 @@ public static class SpellEvolutionCatalog
 			"Knot / Power", "Pull a pack in tight and every body in it hits the rest harder.",
 			o => { o.DisplayName = "Crush"; o.VisualTag = "Crush"; o.ModulateColor = Colors.White; }));
 		// +30% damage since 0.9.3. Crush gains a Darkness, which lifts a pure Hollow Star to Darkness tier 2
-		// and its attunement (x1.2); Twin Stars gains nothing, and its twin cannot open across the wizard
+		// (and, until 2026-11-10, a x1.2 damage bonus for staying pure); Twin Stars gains nothing, and its twin cannot open across the wizard
 		// (two wells either side of him would drift together onto him, HollowStar.DriftToPartner). At the
 		// same footing Crush's path measured 1.5-1.9 times this one's, and when the spell came down into the
 		// level 4 band (40-60) this path fell under it. The +30% puts the two cards near each other again.
@@ -2935,7 +2886,7 @@ public static class SpellEvolutionCatalog
 	// archetype's names until 2026-10-29 and only moved its numbers; each now changes what the ice does
 	// (.ai/spell-roster.md section 2e), read by id in IceSpike and Player.FireIceSpikes. The ids are the
 	// old ones, so saves and the Ascension browser carry over, and so are the element gains: Earth
-	// deepens on the first card, Ice on the first Ascension, each at the hybrid's price.
+	// deepens on the first card, Ice on the first Ascension.
 	private static void SetupGlacialSpikeEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -2948,7 +2899,6 @@ public static class SpellEvolutionCatalog
 			// (--enemy-hp=30), whose spikes were 30% wider.
 			DamageMultiplier = 1.2f,
 			BonusElementWeights = new() { { "Earth", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "Shatter",
 			SynergyTag = "Earth / Splinters",
 			SynergyDescription = "Deepens Earth. Every spike reaches past its own rim into the ring round it."
@@ -2988,7 +2938,6 @@ public static class SpellEvolutionCatalog
 			// old Titan Cataclysm's spike three times as wide reached a whole screen, the crown a ring round one pack.
 			DamageMultiplier = 2.5f,
 			BonusElementWeights = new() { { "Ice", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "GlacierCrown",
 			SynergyTag = "Ascension / Ice",
 			SynergyDescription = "Ascension: deepens Ice. A cage of ice round the front of the swarm, for every area spell you own."
@@ -3093,7 +3042,7 @@ public static class SpellEvolutionCatalog
 	// names until 2026-10-29 and only moved its numbers; each now changes what the bog does
 	// (.ai/spell-roster.md section 2e), read by id in TrailWeaver. The ids are the old ones, so saves and
 	// the Ascension browser carry over, and so are the element gains: Water deepens on the first card,
-	// Grass on the first Ascension, each at the hybrid's price (a longer stride between pools).
+	// Grass on the first Ascension.
 	private static void SetupMirefootEvolutions(SpellData spell)
 	{
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -3105,7 +3054,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.2f,
 			BonusElementWeights = new() { { "Water", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "SuckingMud",
 			SynergyTag = "Water / Hold",
 			SynergyDescription = "Deepens Water. Whatever follows you closest stops dead in your footprints."
@@ -3139,7 +3087,6 @@ public static class SpellEvolutionCatalog
 			DamageMultiplier = 1.6f,
 			AreaMultiplier = 1.4f,
 			BonusElementWeights = new() { { "Grass", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "GreatBog",
 			SynergyTag = "Ascension / Grass",
 			SynergyDescription = "Ascension: deepens Grass. Kite them onto the trail, then plant your feet."
@@ -3168,11 +3115,11 @@ public static class SpellEvolutionCatalog
 	//
 	// "Other spells should have paths that change their elemental tags when leveling up, such as a
 	// water element spell becoming water + poison later." The rule that answers it: a pure spell's
-	// level 4 offers one branch that DEEPENS its own element (a second tag of it, keeping attunement
-	// and pushing its tier) and one that ADDS a different element and grows the spell toward it - so
-	// the milestone is a real decision, never a free tag. A branch costs attunement (the spell names
-	// two elements from then on), so it has to pay something a deepening does not: its element's
-	// status on every hit (ElementPaths.RiderFor), and a look that says which element it took.
+	// level 4 offers one branch that DEEPENS its own element (a second tag of it, pushing its tier)
+	// and one that ADDS a different element and grows the spell toward it - so the milestone is a real
+	// decision, never a free tag. A branch spreads the spell's tags over two elements from then on, so
+	// it has to pay something a deepening does not: its element's status on every hit
+	// (ElementPaths.RiderFor), and a look that says which element it took.
 	//
 	// Hybrids are not given one: a spell may never name more than two elements, so a hybrid's path
 	// is deepening its other half, which every hybrid already offers. Branching stays a level 4
@@ -3421,7 +3368,7 @@ public static class SpellEvolutionCatalog
 		// The element path. Ice because a hound of frost is the fiction (and the developer's own example),
 		// and because Ice has only three spell carriers. The pack repaints itself in frost; the slow is the rider.
 		// Its breath changes with it: frost round the jaws widens the bite, so a frost hound chills the knot
-		// it bites into rather than one body - and pays back some of the attunement the branch gives up.
+		// it bites into rather than one body.
 		const float rimeBreath = 1.4f;
 		SpellEvolutionOption rime = ElementPathOption(spell, "dog_rimehound", "Rimehound", Element.Ice, 0.70f, 1.5f,
 			"The hound runs cold",
@@ -3772,7 +3719,7 @@ public static class SpellEvolutionCatalog
 
 	// Sleet Runes (scripts/SleetRunes.cs, .ai/spell-roster.md "The facing family"): runes of rime cast the
 	// way the player faces. Ice + Wind, a hybrid, so its element path is deepening either half: level 4
-	// deepens Ice (Great Rune) and level 8 Wind (Turning Gale), each at the hybrid's price, and neither
+	// deepens Ice (Great Rune) and level 8 Wind (Turning Gale), and neither
 	// ever reaches 3. Every card says what changes on screen (section 2h, phase 2 - the level 4 three were
 	// Deep Rime's +35% and a pierce, Rune Flurry's +2 runes and Far Wind's faster, farther runes, numbers
 	// only). Every number on these cards is one SleetRunes reads: damage, cooldown, the count through
@@ -3800,7 +3747,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 4,
 			DamageMultiplier = greatDamage,
 			BonusElementWeights = new() { { "Ice", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "GreatRune",
 			SynergyTag = "Ice / Pierce",
 			SynergyDescription = "Deepens Ice. One rune in four goes through the whole line in front of you."
@@ -3859,7 +3805,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 8,
 			DamageMultiplier = galeDamage,
 			BonusElementWeights = new() { { "Wind", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "TurningGale",
 			SynergyTag = "Ascension / Wind",
 			SynergyDescription = "Ascension: deepens Wind. Every rune is two passes, and the second comes from behind them."
@@ -3870,7 +3815,7 @@ public static class SpellEvolutionCatalog
 	// every cooldown and once more for every orb he gathers. Every card is something more a PAGE does, which is this
 	// spell's and no other's: it tears, it spills its ink, it is gilt and cuts on, the book is thrown whole, the dead are
 	// written back into it (spell-roster.md section 2e: every spell its own evolutions). Arcane + Darkness, a hybrid, so
-	// its element path is deepening either half, each at the hybrid's price: level 4 deepens Darkness (Inkblot) and
+	// its element path is deepening either half: level 4 deepens Darkness (Inkblot) and
 	// level 8 Arcane (Bound Volume) - never both at one milestone, or a hybrid would reach three of one element
 	// (ValidateEvolutionElementCeiling). No card trades Darkness away: John Dee's form deepens it (ApotheosisCatalog).
 	// Every number on these cards is one Folio reads: damage and the turn through Folio.Refresh and the fire loop, the
@@ -3907,7 +3852,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 4,
 			DamageMultiplier = inkDamage,
 			BonusElementWeights = new() { { "Darkness", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "Inkblot",
 			SynergyTag = "Darkness / Slow",
 			SynergyDescription = "Deepens Darkness. The pack wades through the ground you have already cut."
@@ -3937,7 +3881,6 @@ public static class SpellEvolutionCatalog
 			ProjectileCountBonus = volumePages,
 			DamageMultiplier = volumeDamage,
 			BonusElementWeights = new() { { "Arcane", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "BoundVolume",
 			SynergyTag = "Ascension / Arcane",
 			SynergyDescription = "Ascension: deepens Arcane. The timed turn lands as one burst of pages in the thick of them."
@@ -3961,8 +3904,8 @@ public static class SpellEvolutionCatalog
 	// the view. Every card is something more the BALL does, which is this spell's and no other's: it splits at the edge,
 	// it leaves static behind it, it burns sea-blue, it comes home to hang over him, it crowns him when he is crowded.
 	// Pure Lightning, so its level 4 offers both a deepening (Static Wake) and a branch (Spindrift, into Water - the blue
-	// that St Elmo's fire really burns, and the sea it is seen over; ValidateElementPaths), and a deepening is free (the 12%
-	// is a hybrid's price). Storm Lantern deepens again at level 8: a pure spell may reach three. Nothing here ricochets off
+	// that St Elmo's fire really burns, and the sea it is seen over; ValidateElementPaths). Storm Lantern deepens again at
+	// level 8: a pure spell may reach three. Nothing here ricochets off
 	// bodies or pens anything - that is the Anvil Line's (ComboCatalog) - and nothing is named Ball Lightning, which is
 	// Stormsweep's level 4. Every number is one Corposant reads: damage through Corposant.Refresh, the count through
 	// GetProjectileCountAtLevel, Spindrift's slow through the rider every strike carries; the behaviours by id. The shares
@@ -4041,7 +3984,7 @@ public static class SpellEvolutionCatalog
 	// Ink Ring (scripts/InkRing.cs): Ma Liang's brush, walked - a line of ink that trails the wizard and strikes everything
 	// inside when his path closes on itself. Every card is something more the INK does, which is this spell's and no
 	// other's: it lasts longer, it stays wet, it stands in the ring, it dries into a wall, the brush goes round again.
-	// Water + Darkness, a hybrid, so its element path is deepening either half at the hybrid's price, never both at one
+	// Water + Darkness, a hybrid, so its element path is deepening either half, never both at one
 	// milestone (ValidateEvolutionElementCeiling): level 4 deepens Water (Wet Ink, the line kept wet) and level 8 Darkness
 	// (Ink Prison, the ring dried black and hard). Nothing here pens with stakes or cuts what leans on a wall - that is
 	// Iron Palisade's Iron Ring - and nothing pools behind him as he kites (Mirefoot's): the line pays only by closing,
@@ -4072,7 +4015,6 @@ public static class SpellEvolutionCatalog
 			Description = $"The line stays wet and stings whatever crosses it for {InkRing.WetShare * 100f:0}% of a ring's strike.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Water", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "WetInk",
 			SynergyTag = "Water / Sting",
 			SynergyDescription = "Deepens Water. Whatever follows your trail pays for every step across it."
@@ -4100,7 +4042,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 8,
 			DamageMultiplier = prisonDamage,
 			BonusElementWeights = new() { { "Darkness", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "InkPrison",
 			SynergyTag = "Ascension / Darkness",
 			SynergyDescription = "Ascension: deepens Darkness. Ring them, and they wait inside for the next ring."
@@ -4122,9 +4063,9 @@ public static class SpellEvolutionCatalog
 	// shaken down one fruit at a time by the swarm and all at once by the wizard walking back under it. Every card is something
 	// more the ORCHARD does, which is this spell's and no other's: more trees, fruit that splits into thorns, fruit that rots,
 	// the whole orchard coming down when he is crowded, branches that lash. Grass + Metal, a hybrid, so its element path is
-	// deepening either half at the hybrid's price, never both at one milestone (ValidateEvolutionElementCeiling): level 4
+	// deepening either half, never both at one milestone (ValidateEvolutionElementCeiling): level 4
 	// deepens Grass (Bramble Fall, the thorny wood) and level 8 Metal (Iron Bough, the iron in it). Cider Rot TRADES Grass for
-	// Poison (Ember Caps' rule: still two elements, so no price), which is why it is Grass it trades - Iron Bough then deepens
+	// Poison (Ember Caps' rule: still two elements), which is why it is Grass it trades - Iron Bough then deepens
 	// the Metal the spell kept, and no path reaches three elements. Nothing here pulls (Gravewell's well), springs a trap or
 	// fires on pickups (Folio's), and no card claims a Conjunction's verb (ComboCatalog). Every number is one Windfall reads:
 	// damage through Windfall.Refresh, the trees through GetProjectileCountAtLevel, the crop through its Crop lines; the
@@ -4158,7 +4099,6 @@ public static class SpellEvolutionCatalog
 				+ $"each striking for {Windfall.ThornShare * 100f:0}% of a fruit.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Grass", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "BrambleFall",
 			SynergyTag = "Grass / Thorns",
 			SynergyDescription = "Deepens Grass. Every fruit reaches past the spot it lands on."
@@ -4202,7 +4142,6 @@ public static class SpellEvolutionCatalog
 			MilestoneLevel = 8,
 			DamageMultiplier = boughDamage,
 			BonusElementWeights = new() { { "Metal", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "IronBough",
 			SynergyTag = "Ascension / Metal",
 			SynergyDescription = "Ascension: deepens Metal. A tree no longer waits to be bumped."
@@ -4212,7 +4151,7 @@ public static class SpellEvolutionCatalog
 	// Lancet (scripts/Lancet.cs): the surgeon's needle, thrown at the most wounded in reach. Every card is something more the
 	// NEEDLE does, which is this spell's and no other's: it lets the poison out, a second one goes, it is forged a bodkin, it
 	// goes on after a kill, the outright kill takes more. Metal + Poison, a hybrid, so its element path is deepening either half
-	// at the hybrid's price - and both are at level 4, on different cards (Bloodletting deepens Poison, Bodkin Metal), so no
+	// - and both are at level 4, on different cards (Bloodletting deepens Poison, Bodkin Metal), so no
 	// path deepens both and level 8 deepens neither: one deepening at most, never three of one (ValidateEvolutionElementCeiling).
 	// Clear of the claimed verbs (ComboCatalog, ApotheosisCatalog): Bloodletting lets one body's poison out where it stands -
 	// nothing narrows a plague onto fewer carriers (Paracelsus's distil) or festers on a beat (Shadow Bolt's); Triage goes on
@@ -4234,7 +4173,6 @@ public static class SpellEvolutionCatalog
 			Description = "A needle that lances a poisoned enemy releases all its remaining poison at once, in one hit.",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Poison", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			VisualTag = "Bloodletting",
 			SynergyTag = "Poison / Release",
 			SynergyDescription = "Deepens Poison. What the poison would have taken over seconds, the needle takes now."
@@ -4263,7 +4201,6 @@ public static class SpellEvolutionCatalog
 				+ ElementPaths.Describe(ElementRider.Wither, Lancet.BodkinWither, 0f) + ".",
 			MilestoneLevel = 4,
 			BonusElementWeights = new() { { "Metal", 1 } },
-			CooldownMultiplier = AttunementGainCooldownCost,
 			Rider = ElementRider.Wither,
 			RiderMagnitude = Lancet.BodkinWither,
 			VisualTag = "Bodkin",
