@@ -20,7 +20,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 |---|---|---|---|
 | 63 | A historical gallery: each unlocked character's real history | new screen, needs design | M-L |
 | 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
-| 65 | The executable and download files still named "TheOneHeMissed" | release tooling + updater | M |
+| 65 | Download files renamed in the next release (decided); the program's own rename later | release tooling + updater | S, then M |
 | 66 | First Blood pays Lancet (decided); Canticle gets a harmony Feat; review every reward | achievements | S-M |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
@@ -1114,6 +1114,8 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     the patches, the Linux tar) by giving `package.py` a download prefix apart from `NAME`, which stays the program's
     and the `.pck`'s name inside them. Safe because every updater follows version.json's addresses, not file names,
     and ecec.dev finds downloads by their endings. The program's own rename stays the harder second half.
+    **Decided (Eric, 2026-11-10): the download rename goes in the next release** - build it then, and rehearse it with
+    `--dry-run` (check the endings ecec.dev looks for and version.json's addresses) before publishing.
 66. **Rearrange the achievements: Canticle should not come from First Blood** (Eric, 2026-11-09: *"Canticle doesn't
     seem like a spell that sounds be rewarded by 'first blood'. Rearrange some of the achievements"*). Today First
     Blood ("Defeat 1 enemy", `AchievementDefinition.cs` 446) unlocks Canticle (`arcane_explosion`, `UnlockCatalog.cs`
