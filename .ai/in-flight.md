@@ -1045,6 +1045,44 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     needing it) - `.ai/second-half.md`, the note under its status, lists what a DLC will need designing then (an
     ownership check beside `StageGate.FarShore`, a store product per platform, what a player without it sees past
     the Throne, and which shared systems stay in the base game).
+    **Week of 2026-11-16: plan it** (Eric, 2026-11-09: *"Do we have all of the far shores characters created? I want
+    to plan far shores to be a dlc when we release the game"*). Where the half stands on 0.22.0: **one of six gods is
+    built** - Artemis (F2), with her chapter the White Downs (F3), the far sky (F4) and the map and reel E (F5); the
+    stage select reaches her seat once the far shore's gate is met. The other five gods - Manannán mac Lir, Hecate, Ra,
+    Ukko, Hephaestus - are designed only (`.ai/second-half.md` 3.2), and so are their opening Conjunctions (Maelstrom,
+    Dark Lens, Orrery, Hailfront, Anvil Line), their chapters (stand-ins `stage_15`-`stage_19`, `IsPlayable = false`)
+    and each chapter's cast and boss: F6-F10, each "Conjunction M, god M, chapter L". The DLC plan has to answer what
+    64 lists, and also whether Artemis and the White Downs - already free in 0.21/0.22 - stay in the base game as a
+    taster or move behind the DLC with the other five.
+
+65. **The executable still says "The One He Missed"** (Eric, 2026-11-09: *"The file was called 'the one he missed'
+    still, let's fix the name of the executable"*). The player-facing files are `TheOneHeMissed.exe` (Windows),
+    `TheOneHeMissed.x86_64` (Linux) and the downloads `TheOneHeMissed-Setup.exe`, `-windows.zip`, `-android.apk` and
+    so on. They were kept deliberately at the 2026-11-08 rename (CLAUDE.md "Repo gotchas"); Eric now wants them changed.
+    A likely name is `TheLastWizardSurvivors` - no colon, which Windows forbids. What it touches: `export_presets.cfg`
+    (three `export_path`s), `package.py` `NAME` (every download's name, the patch's file list) and `install.sh` `APP`,
+    which must stay equal to it, `installer.iss` (the program, shortcuts, uninstall icon, and a delete of the old
+    `TheOneHeMissed.exe` beside the one that already removes `WizardSurvivors.exe`), and `release.sh`'s file list. **The
+    hard part is the copies already installed**: since 0.12 the updater "keeps an install's own program name"
+    (`package.py` BRIDGE comment, `UpdateScreen`), so an existing install would keep running `TheOneHeMissed.exe`
+    unless the updater learns to rename itself. The `.pck` must match the program's name, but the C# assembly
+    (`TheOneHeMissed.dll`, `data_TheOneHeMissed_*`) need not. ecec.dev finds downloads by how their names end, so a new
+    prefix is safe there. Read `.ai/releasing.md`, "The rename" and "The second rename", first, and rehearse with
+    `--dry-run` plus an update from an installed 0.22.0.
+66. **Rearrange the achievements: Canticle should not come from First Blood** (Eric, 2026-11-09: *"Canticle doesn't
+    seem like a spell that sounds be rewarded by 'first blood'. Rearrange some of the achievements"*). Today First
+    Blood ("Defeat 1 enemy", `AchievementDefinition.cs` 446) unlocks Canticle (`arcane_explosion`, `UnlockCatalog.cs`
+    214). Canticle is the music's spell - sung on the beat, a chord gathered from every spell's element - so its deed
+    should be about rhythm or harmony (casting on the beat, holding several elements' notes at once), not a first
+    kill. Review the whole Feat and Progress list for other mismatches at the same time, and give First Blood
+    something that suits a first kill. Moving a spell between deeds narrows nothing a save holds, but check
+    `SaveData.Migrate` step 19 (`MigrateToAchievementUnlocks`) and the validator's `ValidateAchievementMigration`,
+    which reconcile done deeds with owned spells. Save schema is 28 on main.
+67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
+    above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
+    `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
+    canvas on `DrawLayers.ForemostAir` (11), the layer already holding the bow at his shoulder. Check the notes stay
+    under `AttackIcon` (12) and the floating numbers, and that the blast itself stays on `Air`.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
