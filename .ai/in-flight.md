@@ -39,7 +39,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 81 | Rework Buckler Boss to do something that makes sense (e.g. its own small shield) | item rework | S |
 | 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
-| 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks + save | M-L |
+| 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks | M |
 | 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | S |
 | 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | S |
 | 87 | Wayland's Wings also gives movement speed (about +10%) | character | S |
@@ -1142,8 +1142,8 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     a long time - give the Forest's boss another spell, or accept it (`.ai/slow-start.md`, `ValidateGateReachability`).
     Build it in `UnlockCatalog` (a rule read from the roster, so a new wizard's opener is covered by itself) and
     `GlobalStatsManager`; `RegressionChecks.ValidateUnlockCatalog` should hold it (every non-starter opener but the
-    Familiar requires its wizard). A save that already owns such a spell keeps it - this narrows what a save is
-    granted, so it needs a schema step (29 if nothing else takes it first).
+    Familiar requires its wizard). A save that already owns such a spell keeps it - and checked 2026-11-10, nothing
+    reconciling deeds ever removes an owned spell (`GlobalStatsManager` only grants), so that needs no schema step.
     **Decided (Eric, 2026-11-09):** *"Thorn Vine can be an exception"* - it stays the Forest boss's, which also settles
     the slow-start worry. And *"We block the achievement until that wizard is unlocked. In fact, those achievements
     should require being completed with that wizard"* - the deed cannot be done before the wizard is freed, and only
