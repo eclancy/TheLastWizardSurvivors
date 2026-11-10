@@ -1240,7 +1240,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     running after the last layout. `.ai/level-up-screen.md` holds the screen's rules.
 93. **Aegis Ward's icon and animation** (Eric, 2026-11-10: *"now that aegis ward is larger, increase the fidelity of
     its icon and make its animation less obtuse"*). The icon (`assets/bonelight/ui/spells/aegis-ward-light.png`, from
-    the `aegis_ward` drawing in `tools/art/spell_icons.py`) needs the detail density the other spell icons have now
+    `aegis_ward()` in `tools/art/spell_icons_core.py`; the in-world art is `tools/art/aegis_ward.py`) needs the detail density the other spell icons have now
     (the sprite-detail memory). The in-world ward (`AegisWard.cs`: the dome, its flash on a blocked bolt, Reforged's
     shards, the reflect's shaft; pixel-art pass e5e07bee) reads as heavy-handed at its new size - make its motion
     lighter and more legible: a quieter idle, a brief clean flash on a hit, a clear break. Ask Eric what "obtuse"
