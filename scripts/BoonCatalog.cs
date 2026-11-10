@@ -348,10 +348,11 @@ public static class BoonCatalog
 		// everything. Level 2 is the Hunter's Mark's and Cait Sith's 25%; level 3's 30% is half the cap on any
 		// Vulnerable (Enemy.MaxVulnerability). Never added to another Vulnerable - the strongest wins - so a Darkness
 		// build that already exposes everything gains least from it. Wind-tagged: the chase, and the first Wind boon
-		// beside the Waywiser. The object is the trophy of a course - a black hare's foot - named for what it finds.
+		// beside the Waywiser. The object is the trophy of a course - a black hare's foot - and named for it like every
+		// other boon (Eric, 2026-11-10: "I like hares foot"; it was The Quarry). The id keeps the old name.
 		new()
 		{
-			Id = "the_quarry", Name = "The Quarry",
+			Id = "the_quarry", Name = "Hare's Foot",
 			Description = "The foot of the first black hare the hound ran down. It knows the next.",
 			ElementWeights = new[] { ("Wind", 1) },
 			Effect = BoonEffect.Quarry, Magnitude = 0.20f, MagnitudePerLevel = 0.05f,

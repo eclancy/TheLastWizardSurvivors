@@ -15,7 +15,7 @@ Existing ownership is preserved; old completed Moot deeds reconcile their new re
 - **Fireball back to The Long Road Back** (the Emberdeep's boss); its 300 Arcane Energy to **Silence in the
   Deep** (the Sunken Cave's boss, which paid 100). **Unwound** keeps Sunsteel Filament only. The gate counts
   wizards since 2.5, so the reason Fireball moved to the Sands (1.4) is gone.
-- **The Coursing pays the Quarry**, a new Wind boon, not 50 Arcane Energy: the nearest wounded enemy close
+- **The Coursing pays Hare's Foot** (built as "the Quarry", renamed 2026-11-10 at Eric's word; id `the_quarry`), a new Wind boon, not 50 Arcane Energy: the nearest wounded enemy close
   by is marked (Vulnerable plus the Hunter's Mark's arrowheads) and takes +20/25/30% damage until it falls
   or is left behind (`BoonCatalog`, `Player.TickQuarry`). Its one source.
 - **Pheasant** (Medea's opener, Solar Flare) asks for **4 Light held**, as her, not level 20.

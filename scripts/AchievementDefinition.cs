@@ -800,13 +800,13 @@ public static partial class AchievementDefinitions
 		// lifetime best), so the menu shows the best run so far and the pause screen this run's count.
 		// A Road deed of the Circle. It paid 50 Arcane Energy - the smallest reward for one of the hardest early asks -
 		// until in-flight 66's reward review (Eric, 2026-11-10: "should be something special, not just energy"): the
-		// Quarry, a hunting boon, and its only source (UnlockCatalog).
+		// Quarry, a hunting boon now called Hare's Foot, and its only source (UnlockCatalog).
 		new()
 		{
 			Id = "coursing", DisplayName = "The Coursing",
 			RequiredCharacterId = "laelaps",
 			Description = $"As Laelaps in the Broken Circle, let your hound Familiar run down {CoursingTarget} Black Hares in one run.",
-			RewardText = "Unlocks The Quarry", BoonUnlockId = "the_quarry",
+			RewardText = "Unlocks Hare's Foot", BoonUnlockId = "the_quarry",
 			Category = AchievementCategory.Challenge,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
