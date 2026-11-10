@@ -29,6 +29,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
 | 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
 | 73 | Chalice Cup: confusing text, useless after 15 kills - heal on a timer instead (about 3 HP / 20 s) | item rework | S |
+| 74 | The wizard's feet sink when he wades (not Wayland flying; Baba Yaga and Nimue to decide) | visual | S-M |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1179,6 +1180,20 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     trickle in the same set (the Familiar's Purr is the same shape, 3 every 20 s). Show it filling (a small HUD or
     relic-icon fill) so the wait reads. Add its line to the healing ledger (`GameStats.TrackHealing`) and re-run the
     5.1 measurement; reword the set's card to match. A changed relic needs no save step - nothing a save holds moves.
+74. **The wizard's feet should sink when he wades** (Eric, 2026-11-09: *"When walking over water, we should make the
+    feet of the wizard sink in (if they walk on the ground)"*). Today wading only slows him (`Player.IsWading`, a point
+    query at his boots against water's layer 6 each physics frame, `Player.cs` 7763; `WaterWadeSpeedMultiplier` 0.45)
+    and nothing changes in how he looks - only the swamp's mire rolls rings round a wader's feet (`MireSurface`); the
+    ordinary water (`WaterSurface`) draws none. To do: while `IsWading`, sink the body sprite - drop it a few pixels and
+    cut it off at a waterline (a `sink` amount in the body's shader, so the clipped part is never drawn, with a pale
+    line where it meets the water), eased in and out over about a sixth of a second, the shadow and the stance glow
+    hidden while he is in, and rings round him on every water style. How deep: about the boots and shins on the 48
+    cell (`.ai/art-direction.md` proportions). **Who does not sink** ("if they walk on the ground"): Wayland whenever
+    his wings hold him (`Player.Wings.cs`, `HoldsFlight` already keeps his flight over water); Baba Yaga, who rides
+    her mortar (does a mortar float or sink? Eric's call); and Nimue, the Lady of the Lake, who could walk on the water
+    rather than in it - Eric's call. The Swallow-Hole's mud (`SwallowHole.cs`, its own `IsWading`) should sink him
+    too. Not the abyss: the Bridge's water is not walkable (`WaterWalkable = false`). Check that it reads under the
+    `Foremost` layer's rule that the wizard is never lost under an effect, with `_UiShot` in a chapter with water.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
