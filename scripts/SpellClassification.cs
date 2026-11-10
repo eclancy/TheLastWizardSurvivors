@@ -17,7 +17,10 @@ public enum SpellTargetingMode
 	Unaimed = 7,
 	// Wherever the player walks a ring round them (Ink Ring): the spell picks nothing; his path draws the area it strikes,
 	// and it strikes when the path closes on itself.
-	Drawn = 8
+	Drawn = 8,
+	// Where the player stands, and paid out later by whatever shakes it (Windfall): a tree planted at his feet whose fruit
+	// falls on the enemy that bumps it, or all at once round it when he walks back under it.
+	Planted = 9
 }
 
 // The primary way a spell applies damage.
@@ -74,6 +77,7 @@ public static class SpellClassificationText
 		SpellTargetingMode.Facing => "the way you are facing, never at an enemy",
 		SpellTargetingMode.Unaimed => "at nothing: it sets off any which way",
 		SpellTargetingMode.Drawn => "inside a ring you walk round them",
+		SpellTargetingMode.Planted => "where you stand: a tree that pays out when it is shaken",
 		_ => null,
 	};
 

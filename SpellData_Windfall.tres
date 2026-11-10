@@ -1,0 +1,92 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/windfall-grass.png" id="3_icon"]
+
+; Windfall (scripts/Windfall.cs), 2026-11-09: a small iron-fruited tree planted where the wizard stands, whose fruit ripens
+; one at a time. An enemy bumping it brings one ripe fruit down on itself; the wizard walking back under it brings the whole
+; crop down in a ring round it. Grass + Metal: the living wood and the iron. Nobody's opener; everyone earns it with the
+; Fieldfare feat (Grass and Metal kills in one run). TargetingMode 9 is Planted - where he stands, paid out when shaken - and
+; DamageShape 3 a burst over an area (each fruit thuds on everything near where it lands).
+;
+; BaseDamage is ONE FRUIT'S THUD on each body it reaches. BaseCooldown is the planting (the ONE fire loop); a cast beside one
+; of his own trees waits, ripe, for him to step clear. BaseProjectileCount is the TREES that may stand at once (plus Amount,
+; Kindled Ward's ceiling): at the cap a planting uproots the oldest, which drops what it holds where it stood. The crop a
+; tree ripens is Windfall.BaseCrop (3) plus the Crop lines here (Effect 23, "Fruit +1" on the card); a fruit ripens every
+; Windfall.RipenSeconds (1.6 s) at the wizard's own cast speed.
+;
+; FIRST GUESSES, untuned. Spells start small (Eric, 2026-11-02): one tree and three fruit at level 1, two trees at 3, three
+; at 6; a crop of four at 2, five at 5, six at 7. Written out in full so Player.EnsureRelevantLevelUps generates nothing of
+; its own (ScalingTagsMask 19: Damage, Cooldown, ProjectileCount): every level adds damage and even levels shorten the
+; planting by 0.2 s. Level 8: 35 a fruit, three trees, six fruit each, a planting every 6.2 s - so each tree stands about
+; 19 s before it is the oldest, and fills in under 10.
+
+[sub_resource type="Resource" id="Resource_windfall_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 2
+CooldownBonus = -0.2
+Effect = 23
+EffectValue = 1.0
+
+[sub_resource type="Resource" id="Resource_windfall_lvl3"]
+script = ExtResource("2")
+Level = 3
+DamageBonus = 2
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_windfall_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 2
+CooldownBonus = -0.2
+
+[sub_resource type="Resource" id="Resource_windfall_lvl5"]
+script = ExtResource("2")
+Level = 5
+DamageBonus = 3
+Effect = 23
+EffectValue = 1.0
+
+[sub_resource type="Resource" id="Resource_windfall_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 3
+CooldownBonus = -0.2
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_windfall_lvl7"]
+script = ExtResource("2")
+Level = 7
+DamageBonus = 3
+Effect = 23
+EffectValue = 1.0
+
+[sub_resource type="Resource" id="Resource_windfall_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 4
+CooldownBonus = -0.2
+
+[resource]
+script = ExtResource("1")
+Tagline = "Plant trees, then come shake them."
+Id = "windfall"
+Name = "Windfall"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 16
+BaseCooldown = 7.0
+BaseProjectileCount = 1
+BaseRange = 0.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_windfall_lvl2"), SubResource("Resource_windfall_lvl3"), SubResource("Resource_windfall_lvl4"), SubResource("Resource_windfall_lvl5"), SubResource("Resource_windfall_lvl6"), SubResource("Resource_windfall_lvl7"), SubResource("Resource_windfall_lvl8")])
+Description = "Plants a small tree at your feet, its iron fruit ripening one at a time. An enemy that bumps it brings a fruit down on itself; walk away and come back under it, and the whole crop falls round it."
+Icon = ExtResource("3_icon")
+TargetingMode = 9
+DamageShape = 3
+ScalingTagsMask = 19
+ElementWeights = {
+"Grass": 1,
+"Metal": 1
+}

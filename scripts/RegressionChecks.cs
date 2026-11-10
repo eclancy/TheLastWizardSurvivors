@@ -63,6 +63,8 @@ public static partial class RegressionChecks
 		ValidateCorposant(warnings);
 		// Ma Liang's brush, walked: the closing loop, the cards and its feat (RegressionChecks.InkRing.cs).
 		ValidateInkRing(warnings);
+		// The iron-fruited orchard: the shake rule, the ring, the crop, the cards and its feat (RegressionChecks.Windfall.cs).
+		ValidateWindfall(warnings);
 		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
 		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);

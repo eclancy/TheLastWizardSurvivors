@@ -1217,6 +1217,10 @@ SPELLS = {
     # by the rim's light as a dark subject is: a line of the element's light round it made it a lit thing, and the ink's
     # pale middle carries it on the night. No rows to re-light (ink is never re-lit).
     "ink_ring":          dict(paint=None, travel=None, tip=(16, 16), rows=()),
+    # The iron-fruited orchard (scripts/Windfall.cs): the small tree, its steel apples, and one coming down off it (the tip,
+    # falling). Drawn in materials, verdant and steel, as the game's tree is (tools/art/windfall.py), so no element row is
+    # re-lit: Cider Rot draws its own rot.
+    "windfall":          dict(paint=si.windfall, travel=(0, 1), tip=(25, 23), rows=()),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -1268,7 +1272,7 @@ BASE = {
     "starfall": si.starfall, "familiar": si.familiar_icon, "stormsweep": si.stormsweep,
     "familiar_dog": si.familiar_dog_icon, "familiar_crow": si.familiar_crow_icon, "familiar_cat": si.familiar_cat_icon,
     "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages, "corposant": si.corposant,
-    "ink_ring": si.ink_ring,
+    "ink_ring": si.ink_ring, "windfall": si.windfall,
 }
 
 
@@ -4419,6 +4423,116 @@ def _(sp, c):
     """Second Stroke: the brush gone round again, a second ring inside the first."""
     reset(sp)
     sp.subject = _ink(second=True, flood=False, r=12.0, width=(4.2, 2.0), seed=11)
+
+
+# --- Windfall --------------------------------------------------------------------------------------
+
+# The iron-fruited orchard (scripts/Windfall.cs). Every card is something more the ORCHARD does, and every icon draws the
+# spell's own tree (si.windfall) doing it: two trees for Orchard, an apple bursting into thorns, apples gone to rot over a
+# patch of it, a whole crop coming down in a ring under a moon, an iron branch lashing down at the swarm.
+
+def wf_thorn(cv, x0, y0, dx, dy, n=4):
+    """A thorn flying out from (x0, y0) along (dx, dy): a verdant shaft and a pale Grass point."""
+    g = E["grass"]
+    v = M["verdant"]
+    ux, uy = _unit((dx, dy))
+    for k in range(n):
+        tone = v[3] if k < 1 else (g[3] if k < n - 1 else g[1])
+        cv.set(x0 + ux * k, y0 + uy * k, tone)
+
+
+def wf_rot(cv, x, y):
+    """A patch of rot on the ground: Poison's pulp splashed round a burst apple."""
+    po = E["poison"]
+    cv.disc(x, y, 5.5, 2.2, po[3])
+    cv.disc(x - 0.5, y - 0.3, 3.6, 1.4, po[2])
+    for (dx, dy) in ((-4, -1), (3, -1), (1, 1)):
+        cv.set(x + dx, y + dy, po[1])
+    st = M["steel"]
+    cv.set(x - 1, y - 1, st[2])
+    cv.set(x, y - 1, st[3])
+    cv.set(x - 1, y - 2, st[1])
+
+
+def wf_moon(cv, x, y, r=3.6):
+    """The harvest moon: bone, lit from the upper left, a pock on its dark side (the moon is bone, art-direction.md section 3)."""
+    b = M["skin"]
+    cv.disc(x, y, r, r, b[2])
+    cv.disc(x - 0.6, y - 0.6, r - 1.0, r - 1.0, b[1])
+    cv.set(x - 1.5, y - 1.5, b[0])
+    cv.set(x - 0.5, y - 1.5, b[0])
+    cv.set(x + 1.5, y + 1.0, b[3])
+
+
+@card("windfall_orchard")
+def _(sp, c):
+    """Orchard: two trees - one more standing - the second behind and to the left."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(falling=False)
+    sp.copies = [Place(0.6, at=(C0 - 6.5, C0 - 3.0), darken=1)]
+    sp.place = Place(0.74, at=(C0 + 4.5, C0 + 2.5))
+
+
+@card("windfall_bramble_fall")
+def _(sp, c):
+    """Bramble Fall: the tree up on the left, and an apple come down on the right bursting into four thorns."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(falling=False)
+    sp.place = Place(0.7, at=(C0 - 5.0, C0 - 4.0))
+
+    def burst(cv, x):
+        si.windfall_fruit(cv, 22.5, 22.5)
+        for (dx, dy) in ((1, -1), (1, 1), (-1, 1), (-1, -1)):
+            wf_thorn(cv, 22.5 + dx * 3, 22.5 + dy * 3, dx, dy)
+    O(sp, burst)
+
+
+@card("windfall_cider_rot")
+def _(sp, c):
+    """Cider Rot: the apples on the tree spotted with rot, and one fallen into a patch of it."""
+    reset(sp)
+    sp.recolour = None
+    sp.subject = lambda: si.windfall(falling=False, rot=True)
+    sp.place = Place(0.82, at=(C0 - 3.0, C0 - 3.0))
+    O(sp, lambda cv, x: wf_rot(cv, 22.5, 25.5))
+
+
+@card("windfall_harvest_moon")
+def _(sp, c):
+    """Harvest Moon: the moon up, the tree bare, and its whole crop coming down in a ring round it on the swarm."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(fruit=(), falling=False)
+    sp.place = Place(0.7, at=(C0, C0 + 1.0))
+
+    def ring(cv, x):
+        wf_moon(cv, 24.5, 7.0)
+        for k in range(6):
+            a = math.radians(30 + 60 * k)
+            si.windfall_fruit(cv, C0 + math.cos(a) * 10.5, C0 + 4.0 + math.sin(a) * 6.5, r=1.8)
+        foe(cv, 5.5, 25.0, 0.8)
+        foe(cv, 26.0, 25.5, 0.8)
+    O(sp, ring)
+
+
+@card("windfall_iron_bough")
+def _(sp, c):
+    """Iron Bough: an iron branch lashing down out of the crown at a skull standing under the tree."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(falling=False)
+    sp.place = Place(0.78, at=(C0 - 4.0, C0 - 2.0))
+
+    def lash(cv, x):
+        st = M["steel"]
+        foe(cv, 24.0, 24.5, 1.0)
+        pts = [(15.0, 13.0), (19.0, 14.0), (22.0, 16.5), (23.5, 19.5)]
+        for (a, b) in zip(pts, pts[1:]):
+            cv.line(a[0], a[1] + 1, b[0], b[1] + 1, OCC)
+            cv.line(a[0], a[1], b[0], b[1], st[2])
+            cv.line(a[0], a[1] - 1, b[0], b[1] - 1, st[0])
+        # The crack where it lands.
+        for (dx, dy) in ((1, 0), (-1, 0), (0, -1)):
+            cv.set(24 + dx * 2, 20 + dy * 2, E["metal"][1])
+    O(sp, lash)
 
 
 # --- Hunter's Draw ---------------------------------------------------------------------------------

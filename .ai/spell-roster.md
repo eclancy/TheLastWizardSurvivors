@@ -237,6 +237,84 @@ corridor). `_BalanceHarness --minutes=3 --spell=ink_ring --character=1`: the kit
 3, 9% of the bot's damage: a swarm chasing a wizard round a circle trails him along it rather than gathering inside,
 so that is a floor, not a measure. Not played, not heard, not seen on a phone.
 
+### Windfall - the spell that pays more the longer it is left (2026-11-09)
+
+Eric approved it from `.ai/character-fit.md`'s queue, reworked off its first idea (pickups are Folio's cadence): a small
+iron-fruited tree planted where the wizard stands, its fruit ripening one at a time; "windfall can be shaken by both, i
+like it" - an enemy bumping it brings one ripe fruit down on itself, and the wizard walking back under it brings the whole
+crop down in a ring. Grass + Metal, the one spell carrying that pair. Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 39 | **Windfall** (`scripts/Windfall.cs`, `Player.Windfall.cs`) | Grass+Metal | **where he stands, then whatever shakes it** (`SpellTargetingMode.Planted`, new) | the cooldown (7.0 s to 6.2 s) plants a tree; **the fruit ripens on its own clock** (1.6 s a fruit) and falls when **shaken** | **come back to it**: walk away, then walk the crowd back under the tree | heavy iron apples, each a thud that knocks back what is near where it lands - one on a body that bumps it, the whole crop in a ring when he returns | close, round each tree |
+
+- **Against the three it must not be.** Gravewell (row 27) is a proximity trap: armed, it goes off when they come. A tree
+  is the reverse: it fills while it is left and pays the more the longer it stood, and its big payout is his to call, not
+  theirs. Folio owns pickups; nothing here gathers. Kindled Ward is placed and then fights on its own: a tree only drops
+  what it has ripened, one fruit at a time to a bump, and does nothing else until he comes back (Iron Bough's lash, at
+  level 8, is the one thing it does by itself).
+- **The tree.** No collision, never in the "enemies" group, so nothing targets it and nothing hurts it (the breakables
+  rule). One `Node2D` a tree in a y-sorted holder the node adds to the arena, on `DrawLayers.Bodies` with `ZAsRelative`
+  off, so it sorts at its foot among the bodies as every world tree does and the light pool's bodies pass darkens it at
+  the edge of the dark chapters as it darkens every prop. Drawn from `tools/art/windfall.py`'s sheet: trees.py's crown
+  painter in verdant over an iron trunk (steel), five frames (grown, shaken either way, sapling, sprout), and the fruit as
+  stamps laid live - blossom, set, green, turning (iron rising from the shaded side), iron (steel with a plane of `hi`),
+  Cider Rot's spotted iron, fallen, rot. About the wizard's height; the world's trees are three times it.
+- **The shake rule** (`Windfall.StepShake`). A tree is planted with him under it and unarmed; it is armed once his feet
+  have been 76 units from its trunk, and it shakes on the frame he walks back within 36 with fruit ripe, which disarms
+  it. Walking in with nothing ripe leaves it armed. So a fresh tree never empties on the spot he planted it. The crop
+  lands evenly round the trunk at 60 units (the wizard's Area grows it), a twentieth of a second apart, each thud 26
+  across, so the ring falls round him and its thuds reach in to where he stands. **A bump** is a body within 22 of the
+  trunk (a body's width allowed), at most every 0.75 s a tree: one ripe fruit, dropped onto that body.
+- **Planting and replacement.** A cast beside one of his own trees (within 60) waits, ripe (`NoTarget`, Hunter's Draw's
+  pattern), and plants the moment he steps clear. At the cap the new planting **uproots the oldest tree, which drops what
+  it holds where it stood**, scattered under its crown, then dissolves: nothing that ripened is thrown away, and the
+  oldest, fullest tree pays once more as it goes - a floor under a player who never comes back, never as much as coming
+  back (he chooses where the crop falls and the crowd is with him). The ripening runs at his cast speed (the fire loop's
+  interval over the spell's own cooldown), so a haste that plants faster ripens faster, and a tree always fills before it
+  is the oldest (`RegressionChecks.Windfall` holds that at every level).
+- **Numbers, first guesses, untuned:** one tree at level 1, two at 3, three at 6 (the projectile count plus Amount; card
+  "Trees +1"); a crop of 3 at level 1, 4 at 2, 5 at 5, 6 at 7 (`SpellEffect.Crop`, new, "Fruit +1" on the card - the spell
+  has two counts that grow and a card has to say which); a fruit's thud 16 at level 1 to 35 at 8; the planting every
+  7.0 s to 6.2 s; a fruit every 1.6 s; the shove 110 knockback units (`SpellData.KnockbackSpeedPerPoint`), about a
+  body's width. A tree stands about trees x cooldown before it is the oldest: 7 s at level 1 (it fills in 4.8), 19 s at
+  level 8 (it fills in 9.6).
+- **Cost:** nothing walks the whole swarm. A tree asks the registry's grid who is near its trunk on its bump and lash
+  clocks (`EnemyRegistry.CollectNear`), a thud on the frame it lands, a thorn as it flies, a rot patch on its tick, Harvest
+  Moon four times a second. Fixed pools for fruit, fallen fruit, thorns and lashes; twelve tree nodes made once; a tree is
+  redrawn only when what it shows changes. Grass and Metal are not warm (`LightPool.IsWarm`): a tree lights nothing.
+- **Sound:** none new. A planting is the Grass cast cue and every thud, thorn and lash the Grass impact, throttled
+  (`SfxCatalog.DominantElement` breaks the Grass-Metal tie by enum order); Metal's once Iron Bough makes it the heavier,
+  Poison's after Cider Rot.
+
+Cards (`SpellEvolutionCatalog.SetupWindfallEvolutions`), Eric's five as he named them, the house's three at level 4 and
+two at 8, all within 130 characters: **Orchard** (L4: one more tree may stand at once, so each stands longer before it is
+uprooted, and is fuller when he comes back), **Bramble Fall** (L4, +Grass at the hybrid's 12% cooldown price: every fruit
+that falls splits into 4 thorns that fly out past where it lands, each striking for 30% of a fruit), **Cider Rot** (L4:
+**trades Grass for Poison**, Ember Caps' rule - a hybrid may never name a third element, so the card that adds Poison
+must give one up, and it gives up Grass so that Iron Bough can still deepen the Metal it kept; each fallen fruit rots
+into a patch that poisons whatever stands in it for 3 s, a fifth of a fruit a second; the rot and the fruit are drawn in
+Poison's ramp), **Harvest Moon** (L8: when 8 or more are close round him - Saint's Crown's crowd - every tree drops its
+whole crop at once wherever he is, at most every 4 s; +20% damage), **Iron Bough** (L8, +Metal at 12%: the iron branches
+lash up to three bodies under a tree every 0.8 s for 45% of a fruit, throwing them back; +20% damage). Grass deepens at 4
+and Metal at 8, never both at one milestone (`ValidateEvolutionElementCeiling`); every path stays at two elements. No card
+pulls, springs a trap, gathers, or claims a Conjunction's verb (`ComboCatalog`: converge, fester, seize, anoint, and the
+planned fling, refract, orbit, advance, ricochet). Earned through the **Fieldfare** Feat (defeat 1,000 enemies with Grass
+or Metal in a single run; `.ai/achievements-and-secrets.md`).
+
+Seen in `_UiShot` with one flag new for it, `--shutter-on-harvest=N` (the shutter held until he shakes a tree, then N
+frames), at level 8 (`--character=1 --start-spell=windfall --demo-spell-level=8`): ripe trees in the Enchanted Forest and
+the Sunken Cave (planted, walked away from and left to fill: the Cave's was `--stage=2 --walk=1,0.35 --walk-from=560
+--walk-until=630 --spell-stage=12,-280,170 --frames=1250`), and the crop coming down over a placed crowd (`--walk-circle=120 --spell-stage=18`) in the Forest and the
+Cave at 1280x720 and the Forest at 540x1212 `--portrait --safe-area`; every card exercised once in a run. The trees are the
+clearest thing on the Cave's floor; in the Forest they read as an orchard against world trees three times their size. The
+thud's grit first flew in Grass's ramp and was lost on the ground; it is Metal's now (its white-hot core and pale steel). A
+Legendary roll gilds the whole tree, as it gilds every spell. `_BalanceHarness --minutes=3 --spell=windfall --character=1`:
+the kiting bot circles back often enough to shake 46 trees in three minutes, but runs ahead of the swarm, so 130 of 163
+fruit fell on empty ground - 33 bodies thudded, 33 kills, 11.9% of its damage, Windfall left at level 1 while it took other
+spells. With `--immortal --circle=150`: 87 shakes, 49 thudded, 45 kills, 15.2%. A swarm trails a moving wizard rather than
+waiting under his trees, so both are floors. Not played, not heard, not seen on a phone.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

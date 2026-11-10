@@ -42,6 +42,9 @@ public static class RunEvents
 	// Kills numbered in Water's ink or Darkness's (Player.DealDamageToEnemy): the two halves of Ma Liang's ink. The
 	// Cormorant feat asks for them in one run, and it pays Ink Ring.
 	private static int inkKills;
+	// Kills numbered in Grass's ink or Metal's (Player.DealDamageToEnemy): the living wood and the iron. The Fieldfare feat
+	// asks for them in one run, and it pays Windfall.
+	private static int grassMetalKills;
 	// Seconds into the run the player first took damage, or -1 if they never did. Kept as a time
 	// rather than a bool so "survive N minutes untouched" works for any N instead of only the one
 	// hardcoded five-minute question the old flag could answer.
@@ -62,6 +65,7 @@ public static class RunEvents
 		haresCoursed = 0;
 		lightningKills = 0;
 		inkKills = 0;
+		grassMetalKills = 0;
 		firstDamageAtSeconds = -1f;
 	}
 
@@ -123,6 +127,11 @@ public static class RunEvents
 	/// <summary>This run's Water and Darkness kills so far (the Cormorant feat's count), for the harness.</summary>
 	public static int InkKills => inkKills;
 
+	public static void RecordGrassMetalKill() => grassMetalKills++;
+
+	/// <summary>This run's Grass and Metal kills so far (the Fieldfare feat's count), for the harness.</summary>
+	public static int GrassMetalKills => grassMetalKills;
+
 	public static void RecordFirstDamage(float atSeconds)
 	{
 		if (firstDamageAtSeconds < 0f)
@@ -164,6 +173,7 @@ public static class RunEvents
 		result.HaresCoursed = haresCoursed;
 		result.LightningKills = lightningKills;
 		result.InkKills = inkKills;
+		result.GrassMetalKills = grassMetalKills;
 		// Never hit means the whole run counts as untouched.
 		result.UndamagedSeconds = firstDamageAtSeconds < 0f ? timeSurvived : firstDamageAtSeconds;
 	}

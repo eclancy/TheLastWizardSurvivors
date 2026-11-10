@@ -45,4 +45,10 @@ public enum SpellEffect
     CastSpeed = 21,
     // Added to the wizard's dodge chance, under the dodge cap.
     Evasion = 22,
+
+    // HOW MANY FRUIT A TREE CARRIES (Windfall, 2026-11-09): added to Windfall.BaseCrop by its level table
+    // (Windfall.CropAt). Its own number because the spell has two counts that grow - the trees it may have
+    // standing (its projectile count, which Amount and Orchard add to) and the crop each tree ripens - and a
+    // card line has to say which one a level raised ("Fruit +1", Player.FormatSpellEffectUpgrade).
+    Crop = 23,
 }

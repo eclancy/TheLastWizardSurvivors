@@ -35,6 +35,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import bonelight as bl
 import raster
+# The world's tree painter (tools/art/trees.py), for Windfall's crown. Imported here, never inside a painter:
+# evolution_icons.paint() swaps raster.Canvas while a painter runs, and trees subclasses it at import.
+import trees as T
 
 OCC = bl.OCC
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -736,6 +739,60 @@ def ink_ring(opaque=False, seal=True, flood=True, sweep=330.0, r=10.5, width=(4.
     c = W.paint(CELL, layers, details, blooms=blooms, drops=drops, splats=splats, seed=W.salt_of("ink-ring-icon") + seed,
                 hard_groups=("ring", "ring2") if hard else ())
     return W.opaque(c) if opaque else c
+
+
+def windfall_fruit(c, x, y, r=2.2, rot=False):
+    """One iron apple at (x, y): steel lit from the upper left, a plane of steel's hi on that side (never a point - "Matte, not
+    wet"), its dark side down and right, a stalk. `rot` spots it with Poison's green (Cider Rot)."""
+    st = bl.MATERIALS["steel"]
+    for yy in range(int(y - r) - 1, int(y + r) + 2):
+        for xx in range(int(x - r) - 1, int(x + r) + 2):
+            nx = (xx + 0.5 - x) / r
+            ny = (yy + 0.5 - y) / r
+            d = nx * nx + ny * ny
+            if d > 1.0:
+                continue
+            v = -(nx * -0.62 + ny * -0.78)
+            c.set(xx, yy, st[1] if v > 0.35 else (st[2] if v > -0.25 else (st[3] if d < 0.8 else st[4])))
+    c.set(int(x - r * 0.45), int(y - r * 0.5), st[0])
+    c.set(int(x - r * 0.45) + 1, int(y - r * 0.5), st[0])
+    c.set(int(x), int(y - r) - 1, bl.tone("stone", "lit"))
+    if rot:
+        po = bl.ELEMENTS["poison"]
+        for (dx, dy, col) in ((1, 1, po[3]), (0, 1, po[2]), (1, 0, po[2])):
+            c.set(int(x) + dx, int(y) + dy, col)
+
+
+def windfall(fruit=((11.5, 13.5), (19.5, 15.0), (15.5, 9.5)), falling=True, rot=False):
+    """Windfall (scripts/Windfall.cs): the small iron-fruited tree, and one apple coming down off it.
+
+    The tree as the game draws it (tools/art/windfall.py), cut down to the card: an iron trunk lit on its left, a verdant
+    crown of leaf clusters lit from the upper left, and steel apples hanging in it - the brightest things on the card, as they
+    are on the tree. Low on the right one apple falls, two dashes over it the way it came down, onto a scuff of grit where
+    it will land. Grass above, Metal hanging in it and below: the two tags in one shape. No night: the crown is dark enough
+    to hold on the card's cream page, and the apples hold on the crown.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    st = bl.MATERIALS["steel"]
+    iron = [st[1], st[2], st[3], st[4], OCC]
+    # The ground and the trunk's foot.
+    for x in range(8, 25):
+        c.set(x, 29, OCC)
+    T.trunk(c, 15, 28, 18, 4, 2.5, iron, 7, flare=1.6)
+    rnd = T.Rng(7)
+    clusters = T.fill_clusters(rnd, 15.5, 12.0, 9.5, 6.0, 20, 3.2, 5.0)
+    T.crown(c, clusters, T.VE[1:5], 15.5, 12.0, 13.0, 8.5, 7, ragged=0.25)
+    for (x, y) in fruit:
+        windfall_fruit(c, x, y, rot=rot)
+    if falling:
+        windfall_fruit(c, 25.5, 23.0, rot=rot)
+        c.set(25, 18, st[2])
+        c.set(25, 19, st[3])
+        c.set(26, 16, st[3])
+        # The grit it lands on.
+        for (x, col) in ((23, bl.tone("stone", "lit")), (28, bl.tone("stone", "base")), (24, OCC), (27, OCC)):
+            c.set(x, 28, col)
+    return c
 
 
 def the_taking():
@@ -1483,6 +1540,7 @@ ICONS = [
     ("folio-arcane", folio, CELL),
     ("corposant-lightning", corposant, CELL),
     ("ink-ring-dark", ink_ring, CELL),
+    ("windfall-grass", windfall, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
     ("contagion-poison", contagion, CELL),
     ("bramble-seed-grass", bramble_seed, CELL),

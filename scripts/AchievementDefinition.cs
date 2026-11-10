@@ -267,6 +267,19 @@ public static partial class AchievementDefinitions
 	public const int CormorantInkKills = 500;
 
 	/// <summary>
+	/// Kills numbered in Grass's ink or Metal's in ONE run that pay Windfall (the Fieldfare feat): the living wood and the
+	/// iron, each counted where its number is chosen (RunEvents.RecordGrassMetalKill). Väinämöinen opens on Bramble Seed
+	/// (Grass), Wayland on Iron Palisade (Metal), Baba Yaga on Thorned Vine (numbered in Grass), and Thorned Vine is the
+	/// Forest's deed, so a save reaches it without the spell it pays. Measured 2026-11-09 (_BalanceHarness --minutes=15,
+	/// seed 1234, the real save read-only): Väinämöinen's kiting bot (--character=6) lived the run and made 378 by minute 5,
+	/// 1,234 by minute 10 and 1,676 in all; Wayland's (--character=12) died at minute 5.4 with 190, and his --immortal bot
+	/// made 303 by minute 5, 1,236 by minute 10 and 2,108 in all. Both openers kill in a crowd, so they reach Storm Petrel's
+	/// and Cormorant's 500 by minute 6: the same ask in time - most of a run with Grass or Metal in it, where the Stormcaller
+	/// bot made 500 at minute 10 - is a thousand.
+	/// </summary>
+	public const int FieldfareGrassMetalKills = 1000;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -536,6 +549,18 @@ public static partial class AchievementDefinitions
 			RewardText = "Unlocks Ink Ring", SpellUnlockId = InkRing.SpellId,
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.BestInkKillsInRun, Target = CormorantInkKills,
+		},
+		// WINDFALL'S FEAT (2026-11-09): the fieldfare is the winter thrush that comes down on an orchard for its windfalls,
+		// the apples lying in the grass - a bird beside Magpie, Storm Petrel and Cormorant. Earned by fighting with the
+		// orchard's two halves: kills numbered in Grass's ink or Metal's in a single run. Measured off the best run kept in
+		// the lifetime stats (LifetimeStats.BestGrassMetalKillsInRun), as Storm Petrel and Cormorant are.
+		new()
+		{
+			Id = "fieldfare", DisplayName = "Fieldfare",
+			Description = $"Defeat {FieldfareGrassMetalKills} enemies with Grass or Metal in a single run.",
+			RewardText = "Unlocks Windfall", SpellUnlockId = Windfall.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestGrassMetalKillsInRun, Target = FieldfareGrassMetalKills,
 		},
 		new()
 		{

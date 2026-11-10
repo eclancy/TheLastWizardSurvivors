@@ -588,7 +588,8 @@ public partial class _UiShot : Node
 	//   --walk=DX,DY                  : walks the player that way instead of kiting (a trail needs motion).
 	//   --walk-circle=R               : walks a circle of radius R instead (Ink Ring's loop); a --spell-stage
 	//                                   crowd stands at its centre. --shutter-on-ring=N shoots N frames after
-	//                                   a ring closes over it.
+	//                                   a ring closes over it. --shutter-on-harvest=N shoots N frames after
+	//                                   he walks back under a Windfall tree and shakes its crop down.
 	//   --fx-lead=N                   : frames between the trigger and the first shot (default 3).
 	//   --start-spell=ID              : the run opens on that spell in place of the wizard's own
 	//                                   (Global.ToolStartingSpellId), for any --character=N. It was the
@@ -648,6 +649,13 @@ public partial class _UiShot : Node
 	private int ringSeenAt = -1;
 	private int ringHeld;
 	private const int RingShutterGiveUp = 1800;
+	// --shutter-on-harvest=N: Windfall's, as the ring's is Ink Ring's. The shutter waits, the warmup held at its last frame,
+	// until he shakes one of his trees (Windfall.StatShakes moves) and then N frames more - so the shot opens on a crop
+	// coming down round the tree. Gives up after RingShutterGiveUp frames, saying so.
+	private int shutterOnHarvest = -1;
+	private int shakesAtHold = -1;
+	private int harvestSeenAt = -1;
+	private int harvestHeld;
 	// --cast-on-stage: with --spell-stage, every equipped spell's cooldown comes due the frame the crowd
 	// appears (Player.DebugRipenSpells), so a burst that follows starts on a cast's first frame. Aimed
 	// spells already hold their cast for the crowd; this is for the ones that fire on an empty field.
@@ -1918,6 +1926,8 @@ public partial class _UiShot : Node
 				walkCircle = float.Parse(arg.Substring("--walk-circle=".Length), System.Globalization.CultureInfo.InvariantCulture);
 			else if (arg.StartsWith("--shutter-on-ring="))
 				shutterOnRing = System.Math.Max(0, int.Parse(arg.Substring("--shutter-on-ring=".Length)));
+			else if (arg.StartsWith("--shutter-on-harvest="))
+				shutterOnHarvest = System.Math.Max(0, int.Parse(arg.Substring("--shutter-on-harvest=".Length)));
 			else if (arg == "--cast-on-stage")
 				castOnStage = true;
 			else if (arg.StartsWith("--goto="))
@@ -3125,6 +3135,9 @@ public partial class _UiShot : Node
 		}
 		// --shutter-on-ring: hold the warmup at its last frame until a ring has closed over the stage and N frames more.
 		if (!captured && shutterOnRing >= 0 && frames >= WarmupFrames - 2 && !RingShutterReady())
+			frames = WarmupFrames - 2;
+		// --shutter-on-harvest: the same hold, until a tree is shaken and N frames more.
+		if (!captured && shutterOnHarvest >= 0 && frames >= WarmupFrames - 2 && !HarvestShutterReady())
 			frames = WarmupFrames - 2;
 		if (captured || ++frames < WarmupFrames)
 		{
@@ -4516,6 +4529,24 @@ public partial class _UiShot : Node
 
 	// --shutter-on-ring: true once an Ink Ring has closed since the stage was placed (or, with no stage, since the hold
 	// began) and N frames have passed; after RingShutterGiveUp frames of waiting, true anyway.
+	private bool HarvestShutterReady()
+	{
+		harvestHeld++;
+		if (shakesAtHold < 0)
+			shakesAtHold = Windfall.StatShakes;
+		if (harvestSeenAt < 0 && Windfall.StatShakes > shakesAtHold)
+		{
+			harvestSeenAt = harvestHeld;
+			GD.Print($"_UiShot: a tree was shaken ({Windfall.StatShakes} so far, the largest crop {Windfall.StatLargestShake}); shooting in {shutterOnHarvest} frames");
+		}
+		if (harvestSeenAt >= 0)
+			return harvestHeld - harvestSeenAt >= shutterOnHarvest;
+		if (harvestHeld < RingShutterGiveUp)
+			return false;
+		GD.Print($"_UiShot: no tree was shaken in {RingShutterGiveUp} frames; shooting anyway");
+		return true;
+	}
+
 	private bool RingShutterReady()
 	{
 		ringHeld++;

@@ -198,6 +198,10 @@ public static class SpellEvolutionCatalog
 			case InkRing.SpellId:
 				SetupInkRingEvolutions(spell);
 				break;
+			// The iron-fruited orchard, shaken by the swarm and by the wizard.
+			case Windfall.SpellId:
+				SetupWindfallEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -4105,6 +4109,97 @@ public static class SpellEvolutionCatalog
 			VisualTag = "SecondStroke",
 			SynergyTag = "Ascension / Strike",
 			SynergyDescription = "Ascension: no new element. Every ring you close strikes twice."
+		});
+	}
+
+	// Windfall (scripts/Windfall.cs): the iron-fruited orchard - a tree planted at his feet, its fruit ripening one at a time,
+	// shaken down one fruit at a time by the swarm and all at once by the wizard walking back under it. Every card is something
+	// more the ORCHARD does, which is this spell's and no other's: more trees, fruit that splits into thorns, fruit that rots,
+	// the whole orchard coming down when he is crowded, branches that lash. Grass + Metal, a hybrid, so its element path is
+	// deepening either half at the hybrid's price, never both at one milestone (ValidateEvolutionElementCeiling): level 4
+	// deepens Grass (Bramble Fall, the thorny wood) and level 8 Metal (Iron Bough, the iron in it). Cider Rot TRADES Grass for
+	// Poison (Ember Caps' rule: still two elements, so no price), which is why it is Grass it trades - Iron Bough then deepens
+	// the Metal the spell kept, and no path reaches three elements. Nothing here pulls (Gravewell's well), springs a trap or
+	// fires on pickups (Folio's), and no card claims a Conjunction's verb (ComboCatalog). Every number is one Windfall reads:
+	// damage through Windfall.Refresh, the trees through GetProjectileCountAtLevel, the crop through its Crop lines; the
+	// shares (a thorn's, a lash's) are the node's own constants and RegressionChecks.Windfall holds the words to them; the
+	// behaviours by id.
+	private static void SetupWindfallEvolutions(SpellData spell)
+	{
+		const int orchardTrees = 1;
+		const float moonDamage = 1.2f;
+		const float boughDamage = 1.2f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.OrchardId,
+			DisplayName = "Orchard",
+			Description = $"{(orchardTrees == 1 ? "One more tree" : $"{orchardTrees} more trees")} may stand at once, so each one stands longer before it is uprooted, "
+				+ "and is fuller when you come back.",
+			MilestoneLevel = 4,
+			ProjectileCountBonus = orchardTrees,
+			VisualTag = "Orchard",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. More trees to come back to, each one heavier."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.BrambleFallId,
+			DisplayName = "Bramble Fall",
+			Description = $"Every fruit that falls splits into {Windfall.ThornsPerFruit} thorns that fly out past where it lands, "
+				+ $"each striking for {Windfall.ThornShare * 100f:0}% of a fruit.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Grass", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "BrambleFall",
+			SynergyTag = "Grass / Thorns",
+			SynergyDescription = "Deepens Grass. Every fruit reaches past the spot it lands on."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.CiderRotId,
+			DisplayName = "Cider Rot",
+			// Names both tags, as the card's element line does ("Grass -> Poison"), as Ember Caps does.
+			Description = "The fruit trades Grass for Poison: each one that falls rots where it lands into a patch that poisons whatever stands in it.",
+			MilestoneLevel = 4,
+			ReplacesElement = "Grass",
+			BonusElementWeights = new() { { "Poison", 1 } },
+			VisualTag = "CiderRot",
+			ModulateColor = ElementColors.GetEvolutionTint(Element.Poison),
+			SynergyTag = "Metal / Poison",
+			SynergyDescription = "Trades Grass for Poison. Where the fruit fell, the ground stays bad."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.HarvestMoonId,
+			DisplayName = "Harvest Moon",
+			Description = "When you are crowded, every tree drops its whole crop at once, wherever you are. "
+				+ $"+{(moonDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = moonDamage,
+			VisualTag = "HarvestMoon",
+			SynergyTag = "Ascension / Harvest",
+			SynergyDescription = "Ascension: no new element. Hemmed in, the whole orchard comes down at once."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.IronBoughId,
+			DisplayName = "Iron Bough",
+			Description = $"The iron branches lash whatever stands under a tree, striking for {Windfall.LashShare * 100f:0}% of a fruit "
+				+ $"and throwing it back. +{(boughDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = boughDamage,
+			BonusElementWeights = new() { { "Metal", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "IronBough",
+			SynergyTag = "Ascension / Metal",
+			SynergyDescription = "Ascension: deepens Metal. A tree no longer waits to be bumped."
 		});
 	}
 }

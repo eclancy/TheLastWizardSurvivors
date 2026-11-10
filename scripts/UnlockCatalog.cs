@@ -225,6 +225,9 @@ public static class UnlockCatalog
 		// Ma Liang's brush, walked (scripts/InkRing.cs): earned by fighting with Water and Darkness, the Cormorant feat.
 		FromAchievement("ink_ring", "cormorant",
 			$"Defeat {AchievementDefinitions.CormorantInkKills} enemies with Water or Darkness in a single run."),
+		// The iron-fruited orchard (scripts/Windfall.cs): earned by fighting with Grass and Metal, the Fieldfare feat.
+		FromAchievement("windfall", "fieldfare",
+			$"Defeat {AchievementDefinitions.FieldfareGrassMetalKills} enemies with Grass or Metal in a single run."),
 		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
 		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run."),
 		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element."),

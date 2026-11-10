@@ -1671,6 +1671,15 @@ public partial class _BalanceHarness : Node
 		// The Cormorant feat's count (RunEvents.RecordInkKill): kills numbered in Water's or Darkness's ink so far this run.
 		if (RunEvents.InkKills > 0)
 			GD.Print($"HARNESS INK KILLS m={row.Minute} kills={RunEvents.InkKills}");
+		// Windfall: trees planted and uprooted, fruit ripened, bumps, his shakes (and the largest), harvest moons, fruit
+		// landed, bodies thudded, thorn and lash strikes and rot ticks - once it has planted one.
+		if (Windfall.StatPlanted > 0)
+			GD.Print($"HARNESS WINDFALL m={row.Minute} planted={Windfall.StatPlanted} uprooted={Windfall.StatUprooted} ripened={Windfall.StatRipened}"
+				+ $" bumps={Windfall.StatBumps} shakes={Windfall.StatShakes} largestShake={Windfall.StatLargestShake} moons={Windfall.StatMoons}"
+				+ $" landed={Windfall.StatLanded} thudHits={Windfall.StatThudHits} thornHits={Windfall.StatThornHits} lashes={Windfall.StatLashes} rotTicks={Windfall.StatRotTicks}");
+		// The Fieldfare feat's count (RunEvents.RecordGrassMetalKill): kills numbered in Grass's or Metal's ink so far this run.
+		if (RunEvents.GrassMetalKills > 0)
+			GD.Print($"HARNESS GRASS METAL KILLS m={row.Minute} kills={RunEvents.GrassMetalKills}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

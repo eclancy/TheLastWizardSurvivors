@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Windfall.cs" id="1"]
+
+; Windfall's orchard: one node in the arena that carries every tree the spell plants, every fruit they drop, the thorns,
+; the rot and the lashing branches, in fixed pools (scripts/Windfall.cs). It draws the air itself (DrawLayers.Air), a child
+; the floor (Ground), and the trees stand one node each in a y-sorted holder it adds to the arena, on the bodies' layer, so
+; each sorts at its foot. No collision shape anywhere: a tree blocks nothing, and a fruit strikes what is near where it
+; lands. The art is tools/art/windfall.py's sheet.
+[node name="Windfall" type="Node2D"]
+script = ExtResource("1")

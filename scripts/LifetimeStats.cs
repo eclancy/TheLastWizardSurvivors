@@ -42,6 +42,8 @@ public sealed class LifetimeStats
 	public int BestLightningKillsInRun { get; set; }
 	/// <summary>The most kills numbered in Water's or Darkness's ink in one run: what the Cormorant feat measures (it pays Ink Ring).</summary>
 	public int BestInkKillsInRun { get; set; }
+	/// <summary>The most kills numbered in Grass's or Metal's ink in one run: what the Fieldfare feat measures (it pays Windfall).</summary>
+	public int BestGrassMetalKillsInRun { get; set; }
 
 	public Dictionary<string, float> BestTimeByStage { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 	/// <summary>Highest instance count ever held, per element. Feeds the "adept" achievements.</summary>
@@ -103,6 +105,7 @@ public sealed class LifetimeStats
 		BestChestsInRun = Math.Max(BestChestsInRun, run.ChestsOpened);
 		BestLightningKillsInRun = Math.Max(BestLightningKillsInRun, run.LightningKills);
 		BestInkKillsInRun = Math.Max(BestInkKillsInRun, run.InkKills);
+		BestGrassMetalKillsInRun = Math.Max(BestGrassMetalKillsInRun, run.GrassMetalKills);
 		if (run.CharacterId == "laelaps" && run.StageId == "stage_10")
 			BestLaelapsHaresCoursed = Math.Max(BestLaelapsHaresCoursed, run.HaresCoursed);
 		BestSpellSlotsFilled = Math.Max(BestSpellSlotsFilled, run.EquippedSpells?.Count ?? 0);
@@ -173,6 +176,7 @@ public sealed class LifetimeStats
 			["BestChestsInRun"] = BestChestsInRun,
 			["BestLightningKillsInRun"] = BestLightningKillsInRun,
 			["BestInkKillsInRun"] = BestInkKillsInRun,
+			["BestGrassMetalKillsInRun"] = BestGrassMetalKillsInRun,
 			["BestTimeByStage"] = ToFloatMap(BestTimeByStage),
 			["BestElementCount"] = ToIntMap(BestElementCount),
 			["KillsByEnemyType"] = ToIntMap(KillsByEnemyType),
@@ -211,6 +215,9 @@ public sealed class LifetimeStats
 		// Added 2026-11-09 with no schema bump, as the Lightning kills were: a save without the key reads as no Water or
 		// Darkness kill in any run, and the Cormorant feat is then done by the next run that makes the count.
 		if (dict.ContainsKey("BestInkKillsInRun")) result.BestInkKillsInRun = dict["BestInkKillsInRun"].AsInt32();
+		// Added 2026-11-09 with no schema bump, as the ink kills were: a save without the key reads as no Grass or Metal kill
+		// in any run, and the Fieldfare feat is then done by the next run that makes the count.
+		if (dict.ContainsKey("BestGrassMetalKillsInRun")) result.BestGrassMetalKillsInRun = dict["BestGrassMetalKillsInRun"].AsInt32();
 		if (dict.ContainsKey("BestTimeByStage")) result.BestTimeByStage = FromFloatMap(dict["BestTimeByStage"].AsGodotDictionary());
 		if (dict.ContainsKey("BestElementCount")) result.BestElementCount = FromIntMap(dict["BestElementCount"].AsGodotDictionary());
 		if (dict.ContainsKey("KillsByEnemyType")) result.KillsByEnemyType = FromIntMap(dict["KillsByEnemyType"].AsGodotDictionary());

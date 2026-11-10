@@ -86,6 +86,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Folio | Arcane, Darkness | Feat | **Magpie**: open 10 chests in a single run (2026-11-09); John Dee opens on it |
 | Corposant | Lightning | Feat | **Storm Petrel**: defeat 500 enemies with Lightning in a single run (2026-11-09); nobody opens on it |
 | Ink Ring | Water, Darkness | Feat | **Cormorant**: defeat 500 enemies with Water or Darkness in a single run (2026-11-09); nobody opens on it |
+| Windfall | Grass, Metal | Feat | **Fieldfare**: defeat 1,000 enemies with Grass or Metal in a single run (2026-11-09); nobody opens on it |
 | Stormsweep | Lightning | Purchase | 160 |
 | Kindled Ward | Light | Purchase | 170 |
 | Familiar | Arcane | Purchase | 170; the Coursing (Laelaps) needs it |
@@ -193,7 +194,7 @@ earned (2.3).
 | **Sleet Runes** | **The Buried Runes** | Secret | stand still in a drift field until the snow settles, then dig up the rune-stones it shows (Frozen Waste) | walking aims the runes; stopping is what finds them |
 | **Stormsweep** | **The Fulgurite** | Secret | stand by a glass tree in the dunes when the dry storm comes round and draws its lightning (Scorched Sands) | lightning that strikes sand leaves glass; a sweep of lightning, from where it struck |
 
-**Added 2026-11-09, after this table:** three Feats for three new spells, each measured off a best-run field in
+**Added 2026-11-09, after this table:** four Feats for four new spells, each measured off a best-run field in
 `LifetimeStats` added without a schema step (a save without the key reads as no run yet). **Magpie** pays Folio
 (10 chests in one run, `BestChestsInRun`). **Storm Petrel** pays Corposant (`.ai/spell-roster.md`, "Corposant"):
 *defeat 500 enemies with Lightning in a single run* (`BestLightningKillsInRun`). A Lightning kill is one numbered in
@@ -216,6 +217,19 @@ five spells): the kiting bot died at minute 7 with 168, the `--survivor` bot at 
 and the `--immortal` bot made 195 by minute 5, 638 by minute 10 and 1,235 in the run. Five hundred is Storm Petrel's
 number and the same ask: most of a run with Water or Darkness in it, or the first half of one built round them. Both
 mortal bots died before it, so a player who keeps a Water opener alive past minute 9 or so is who earns it.
+
+**Fieldfare**, a fourth, pays Windfall (`.ai/spell-roster.md`, "Windfall"): *defeat 1,000 enemies with Grass or Metal in
+a single run* (`BestGrassMetalKillsInRun`, also added without a schema step). A kill counts when it is numbered in
+Grass's ink or Metal's - the living wood and the iron - counted where the other two are (`Player.DealDamageToEnemy` ->
+`RunEvents.RecordGrassMetalKill`). Earnable without Windfall: Väinämöinen opens on Bramble Seed (Grass), Wayland on Iron
+Palisade (Metal), Baba Yaga on Thorned Vine (numbered in Grass), and Thorned Vine is the Forest's deed. The fieldfare is
+the winter thrush that comes down on an orchard for its windfalls, and a bird beside Magpie, Storm Petrel and Cormorant.
+Measured (`_BalanceHarness --minutes=15`, seed 1234, the real save read-only): Väinämöinen's kiting bot
+(`--character=6`) lived the run and made 378 by minute 5, 1,234 by minute 10 and 1,676 in all; Wayland's
+(`--character=12`) died at minute 5.4 with 190, and his `--immortal` bot made 303 by minute 5, 1,236 by minute 10 and
+2,108 in all. **Why a thousand, not the others' five hundred:** both openers kill in a crowd (a thorn patch, a wall of
+stakes) and reach 500 by minute 6, where the Stormcaller bot reached Storm Petrel's 500 at minute 10. The same ask in
+time - most of a run with Grass or Metal in it - is a thousand, which both reach at about minute 9.
 
 Totals: **11 Feats, 9 Road deeds, 9 secrets** - one spell vault in each campaign chapter but the
 Emberdeep: eight on the road before the gate, and the Cursed Dungeon's, which moves past it into the

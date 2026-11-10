@@ -61,6 +61,9 @@ public partial class Player : CharacterBody2D
 	// Ma Liang's brush, walked (scripts/InkRing.cs, Player.InkRing.cs): one node in the arena carrying the line, its rings
 	// and their prison walls.
 	[Export] public PackedScene InkRingScene { get; set; }
+	// The iron-fruited orchard (scripts/Windfall.cs, Player.Windfall.cs): one node in the arena carrying every tree it plants
+	// and every fruit they drop.
+	[Export] public PackedScene WindfallScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -1317,6 +1320,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Corposant.tres"));
 		if (!spellCatalog.ContainsKey(InkRing.SpellId))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_InkRing.tres"));
+		if (!spellCatalog.ContainsKey(Windfall.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Windfall.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -2769,6 +2774,10 @@ public partial class Player : CharacterBody2D
 			// counts (it pays Ink Ring).
 			else if (inked == Element.Water || inked == Element.Darkness)
 				RunEvents.RecordInkKill();
+			// One numbered in Grass's ink or Metal's - the living wood and the iron - is what the Fieldfare feat counts (it
+			// pays Windfall).
+			else if (inked == Element.Grass || inked == Element.Metal)
+				RunEvents.RecordGrassMetalKill();
 		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.
@@ -4889,6 +4898,8 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals(Corposant.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireCorposant(spell, CorposantScene);
 		// No timer: a ring closes when his path crosses its own line, and the ripe cooldown only arms it (Player.InkRing.cs).
 		else if (spell.Id.Equals(InkRing.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireInkRing(spell, InkRingScene);
+		// A tree planted at his feet, or - beside one of his own - the cast held ripe until he steps clear (Player.Windfall.cs).
+		else if (spell.Id.Equals(Windfall.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireWindfall(spell, WindfallScene, interval);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -8148,6 +8159,8 @@ public partial class Player : CharacterBody2D
 		ReleaseCorposant(spell);
 		// And Ink Ring's, with its line, its rings and their walls (Player.InkRing.cs).
 		ReleaseInkRing(spell);
+		// And Windfall's, with every tree it planted and every fruit in the air (Player.Windfall.cs).
+		ReleaseWindfall(spell);
 	}
 
 	// --- Level-up charges ---
@@ -9266,6 +9279,8 @@ public partial class Player : CharacterBody2D
 		"folio" => "Pages",
 		// Corposant's projectiles are the balls of storm-fire a cast looses (scripts/Corposant.cs).
 		"corposant" => "Balls",
+		// Windfall's count is the trees it may have standing at once (scripts/Windfall.cs; Kindled Ward's ceiling).
+		"windfall" => "Trees",
 		// The Familiar counts in its form's noun (Hounds, Crows, Cats - SpellVariant.CountNoun); this is the
 		// template's, which no run plays.
 		"familiar" => "Hounds",
@@ -9322,6 +9337,8 @@ public partial class Player : CharacterBody2D
 			// of the hits he slips. Percentages, as a share always is on a card.
 			SpellEffect.CastSpeed => $"Cast speed {FormatSigned(Mathf.RoundToInt(value * 100f))}%",
 			SpellEffect.Evasion => $"Evasion {FormatSigned(Mathf.RoundToInt(value * 100f))}%",
+			// How many fruit a tree carries (Windfall.CropAt): a count of things, said as one, never as a share.
+			SpellEffect.Crop => $"Fruit {FormatSigned(Mathf.RoundToInt(value))}",
 			_ => $"{effect} {FormatSigned(value)}"
 		};
 	}
