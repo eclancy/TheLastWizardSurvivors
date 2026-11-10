@@ -23,7 +23,10 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 65 | The executable and download files still named "TheOneHeMissed" | release tooling + updater | M |
 | 66 | Canticle should not come from First Blood; review every achievement's reward | achievements | S-M |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
-| 68 | Waywiser's description is confusing (reword, or simplify the rule) | text, maybe balance | S |
+| 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
+| 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
+| 70 | The chapter note covers the wizard at a run's start on a phone: condense, move clear, shorter | UI | S-M |
+| 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1108,7 +1111,42 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     reword every line the same plain way, e.g. *"While you move, the spell with the longest wait recharges 40%
     faster."*, with a flavour line that says the same in the wheel's voice; (b) simplify the rule itself - *every*
     spell recharges a smaller amount faster while moving - which needs no explaining, but loses the "suits one big slow
-    spell" design (`BoonCatalog.cs` 301) and needs a balance check against Taproot, its mirror. Eric's call.
+    spell" design (`BoonCatalog.cs` 301) and needs a balance check against Taproot, its mirror.
+    **Decided (Eric, 2026-11-09): reword - *"the spell with the longest cooldown"*.** Every line (flavour, rule, card
+    stat, level-up, pause) says it that way, e.g. *"While you walk, the spell with the longest cooldown recharges 40%
+    faster."* **Make the code match the words:** today the firing loop picks the spell with the most *seconds left*
+    (`Player.cs` 4578-4583, `remaining`), which is usually the longest-cooldown spell but hands the boon to a fast
+    spell that has just fired whenever the slow one is nearly ready. Compare `interval` instead of `remaining` there
+    and the words are exactly true, the pause line ("Winding: X") stops flickering between spells, and the "one big
+    slow spell" design is what it always meant. With two spells of equal cooldown, keep the first equipped.
+69. **Is the Twinstar Sigil's added projectile overpowered?** (Eric, 2026-11-09: *"Two star sigil - is the added
+    projectiles OP"*). The shop Power (`MainMenu.cs` 913): +1 projectile for every spell that fires them, **4 levels**,
+    60 / 100 / 140 / 180 Arcane Energy (480 for all four). About 26 spells read it (`EvolutionStatReaders`,
+    `EvolutionStat.Amount`), most starting at 1 projectile (`BaseProjectileCount = 1`), and it adds to the Split Lens's
+    +1. **On paper, yes.** Level 1 alone, for 60, doubles a one-projectile spell's hits where Runes of Ruin's first level
+    gives +8% for 30; all four take a level-1 spell from 1 projectile to 5, which also breaks "spells start small at
+    level 1 and ramp with level" (Eric's rule). Vampire Survivors' Duplicator, the model, stops at 2 ranks. Options:
+    cap it at 1 or 2 levels and refund the rest through `SaveData.RepricedPowers` (the pattern used for Fate Fracture
+    and Emberheart, schema 20); or keep 4 levels with each extra projectile weaker; or make it the last unlock on the
+    Power page. Measure before and after with `_BalanceHarness --all-unlocked` on a projectile wizard (the Archmage's
+    Magic Missile, the Frostweaver's Frost Shard) - a save change, so check `CurrentSchemaVersion` on main (28) first.
+70. **The chapter note covers the player at the start of a run on a phone** (Eric, 2026-11-09: *"the stage description
+    that shows up on the screen on mobile still covers the player right at the beginning which is annoying. We need to
+    condense that and get it out of the way more"*). `ChapterNoteCard` (layer 7): on a phone it spans the width less 40
+    a side and hangs from just under the HUD band (`TouchControls.DefaultHudBandHeight` 176 + 20 = y 196), growing
+    down with its text - heading, two or three lines and the clues - while the wizard stands at the centre of the
+    1280-tall canvas (y 640), so a note much over 440 tall is on him. It writes in at 0.028 s a letter and then holds
+    7.5 s. To do: condense the phone version (the heading and one line, the clues shorter or as a count), cap its
+    height well clear of the centre, and shorten the hold; a tap already puts it away. Photograph it before and after
+    with `_UiShot --resolution 540x1212 --portrait --safe-area` on a first-visit save, in the chapter with the longest
+    note.
+71. **Consolidate the Powers pages** (Eric, 2026-11-09: *"The power ups pages can be consolidated more - for example
+    the first page with just one power up"*). The shop pages by section (`MainMenu.Shop.cs` 144, `UpgradeSections`):
+    Spell book (1: Bound Pages), Power (6), Survival (4), Fortune (4), Level-ups (5), then Boons - six pages, the
+    first holding a single card. Bound Pages sits first on purpose (`.ai/slow-start.md` 4: the first buy teaches the
+    shop), so keep it the first card, not its own page. A likely shape: **Spell book + Power** (7), **Survival +
+    Fortune** (8), **Level-ups + Boons** - three pages - if a page holds that many cards at the phone's width; check
+    both canvases with `_UiShot` and the pad's focus order across the merged pages (`MenuNavigator`).
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
