@@ -202,6 +202,10 @@ public static class SpellEvolutionCatalog
 			case Windfall.SpellId:
 				SetupWindfallEvolutions(spell);
 				break;
+			// The surgeon's needle, at the most wounded in reach.
+			case Lancet.SpellId:
+				SetupLancetEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -4200,6 +4204,94 @@ public static class SpellEvolutionCatalog
 			VisualTag = "IronBough",
 			SynergyTag = "Ascension / Metal",
 			SynergyDescription = "Ascension: deepens Metal. A tree no longer waits to be bumped."
+		});
+	}
+
+	// Lancet (scripts/Lancet.cs): the surgeon's needle, thrown at the most wounded in reach. Every card is something more the
+	// NEEDLE does, which is this spell's and no other's: it lets the poison out, a second one goes, it is forged a bodkin, it
+	// goes on after a kill, the outright kill takes more. Metal + Poison, a hybrid, so its element path is deepening either half
+	// at the hybrid's price - and both are at level 4, on different cards (Bloodletting deepens Poison, Bodkin Metal), so no
+	// path deepens both and level 8 deepens neither: one deepening at most, never three of one (ValidateEvolutionElementCeiling).
+	// Clear of the claimed verbs (ComboCatalog, ApotheosisCatalog): Bloodletting lets one body's poison out where it stands -
+	// nothing narrows a plague onto fewer carriers (Paracelsus's distil) or festers on a beat (Shadow Bolt's); Triage goes on
+	// only from a kill, to the most wounded, never off a body or a wall (the Anvil Line's ricochet) nor through a chain of
+	// living ones (Chain Lightning's link); nothing marks the strongest (Hunter's Mark). The outright kill is never a boss's or
+	// an elite's. Every number is one Lancet reads: damage through Lancet.Refresh, the count through GetProjectileCountAtLevel,
+	// the cooldown through the fire loop, Bodkin's Wither through the rider every strike carries; the shares are the node's
+	// own constants and RegressionChecks.Lancet holds the words to them; the behaviours by id.
+	private static void SetupLancetEvolutions(SpellData spell)
+	{
+		const int twinNeedles = 1;
+		const float surgeonDamage = 1.2f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.BloodlettingId,
+			DisplayName = "Bloodletting",
+			Description = "A needle that lances a poisoned enemy releases all its remaining poison at once, in one hit.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Poison", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "Bloodletting",
+			SynergyTag = "Poison / Release",
+			SynergyDescription = "Deepens Poison. What the poison would have taken over seconds, the needle takes now."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.TwinLancetsId,
+			DisplayName = "Twin Lancets",
+			Description = $"{(twinNeedles == 1 ? "One more needle" : $"{twinNeedles} more needles")} every cast, each at the next most wounded enemy.",
+			MilestoneLevel = 4,
+			ProjectileCountBonus = twinNeedles,
+			VisualTag = "TwinLancets",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. One more of the hurt finished every throw."
+		});
+
+		// Metal's own status is Wither (ElementPaths.RiderFor): a share of max health taken for good, which leaves the body
+		// wounded - so a needle's first strike marks it as the next one's quarry. A bodkin is the needle-pointed blade that
+		// went through mail.
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.BodkinId,
+			DisplayName = "Bodkin",
+			Description = "The needle is forged a bodkin point: "
+				+ ElementPaths.Describe(ElementRider.Wither, Lancet.BodkinWither, 0f) + ".",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Metal", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			Rider = ElementRider.Wither,
+			RiderMagnitude = Lancet.BodkinWither,
+			VisualTag = "Bodkin",
+			SynergyTag = "Metal / Wither",
+			SynergyDescription = "Deepens Metal. Nothing a needle touches is unhurt again, so the next one comes back for it."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.TriageId,
+			DisplayName = "Triage",
+			Description = "A needle that kills flies on to the next most wounded enemy in reach, and on again for every kill.",
+			MilestoneLevel = 8,
+			VisualTag = "Triage",
+			SynergyTag = "Ascension / Triage",
+			SynergyDescription = "Ascension: no new element. In a hurt crowd one needle finishes a row of them."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.SurgeonsHandId,
+			DisplayName = "Surgeon's Hand",
+			Description = $"The outright kill takes an ordinary enemy under {Lancet.SurgeonsSliverShare * 100f:0}% health, "
+				+ $"not {Lancet.SliverShare * 100f:0}%. +{(surgeonDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = surgeonDamage,
+			VisualTag = "SurgeonsHand",
+			SynergyTag = "Ascension / Execute",
+			SynergyDescription = "Ascension: no new element. Twice the sliver, and a steadier hand for the rest."
 		});
 	}
 }

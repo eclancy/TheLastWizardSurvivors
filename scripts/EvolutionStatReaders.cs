@@ -351,6 +351,14 @@ public static class EvolutionStatReaders
 		[Windfall.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Knockback | EvolutionStat.Rider | EvolutionStat.Amount,
 			"Windfall.Refresh and Player.FireWindfall (trees standing at once plus Amount; Crop is a tree's fruit; Orchard by its count, Bramble Fall, Cider Rot, Harvest Moon and Iron Bough by id)",
 			SpellEffect.Crop, SpellEffect.CritDamage),
+		// The surgeon's needle (scripts/Lancet.cs): Lancet.Refresh reads a needle's damage and the reach it chooses in
+		// (GetReachAtLevel, Range), Player.FireLancet the needles a cast throws - Projectiles and Amount, Twin Lancets' +1 among
+		// them - and the fire loop the throw's cooldown, Bloodletting's and Bodkin's 12% with it. Every strike passes the spell
+		// as its source, so Bodkin's Wither and a per-spell crit reach it. No Area, Speed or Scale on a card: a needle is drawn
+		// at its own size and flies at its own speed.
+		[Lancet.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Rider | EvolutionStat.Amount,
+			"Lancet.Refresh, Lancet.Cast and Player.FireLancet (needles a cast throws plus Amount; Range is the reach it chooses in; Bloodletting, Triage and Surgeon's Hand by id, Bodkin's Wither through the house path)",
+			SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",

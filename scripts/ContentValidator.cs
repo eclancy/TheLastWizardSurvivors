@@ -123,6 +123,8 @@ public static class ContentValidator
 		"res://SpellData_InkRing.tres",
 		// The iron-fruited orchard, shaken by the swarm and by the wizard (scripts/Windfall.cs); earned with the Fieldfare feat.
 		"res://SpellData_Windfall.tres",
+		// The surgeon's needle, at the most wounded in reach (scripts/Lancet.cs); earned with the Shrike feat.
+		"res://SpellData_Lancet.tres",
 		// The combinations (ComboCatalog): never in the level-up pool, made only by fusing two ascended spells.
 		"res://SpellData_Sagittarius.tres",
 		// The Sovereign Rite (ComboCatalog's capstone, SovereignRite): a combination like the one above since 2026-11-08.

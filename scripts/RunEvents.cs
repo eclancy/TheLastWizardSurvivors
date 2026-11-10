@@ -45,6 +45,9 @@ public static class RunEvents
 	// Kills numbered in Grass's ink or Metal's (Player.DealDamageToEnemy): the living wood and the iron. The Fieldfare feat
 	// asks for them in one run, and it pays Windfall.
 	private static int grassMetalKills;
+	// Enemies that died with a poison still ticking on them (Enemy.StartDeath), whatever dealt the last blow - a poison
+	// tick, a spell, Lancet letting the poison out. The Shrike feat asks for them in one run, and it pays Lancet.
+	private static int poisonedKills;
 	// Seconds into the run the player first took damage, or -1 if they never did. Kept as a time
 	// rather than a bool so "survive N minutes untouched" works for any N instead of only the one
 	// hardcoded five-minute question the old flag could answer.
@@ -66,6 +69,7 @@ public static class RunEvents
 		lightningKills = 0;
 		inkKills = 0;
 		grassMetalKills = 0;
+		poisonedKills = 0;
 		firstDamageAtSeconds = -1f;
 	}
 
@@ -132,6 +136,11 @@ public static class RunEvents
 	/// <summary>This run's Grass and Metal kills so far (the Fieldfare feat's count), for the harness.</summary>
 	public static int GrassMetalKills => grassMetalKills;
 
+	public static void RecordPoisonedKill() => poisonedKills++;
+
+	/// <summary>This run's poisoned kills so far (the Shrike feat's count), for the harness.</summary>
+	public static int PoisonedKills => poisonedKills;
+
 	public static void RecordFirstDamage(float atSeconds)
 	{
 		if (firstDamageAtSeconds < 0f)
@@ -174,6 +183,7 @@ public static class RunEvents
 		result.LightningKills = lightningKills;
 		result.InkKills = inkKills;
 		result.GrassMetalKills = grassMetalKills;
+		result.PoisonedKills = poisonedKills;
 		// Never hit means the whole run counts as untouched.
 		result.UndamagedSeconds = firstDamageAtSeconds < 0f ? timeSurvived : firstDamageAtSeconds;
 	}

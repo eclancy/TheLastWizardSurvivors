@@ -228,6 +228,10 @@ public static class UnlockCatalog
 		// The iron-fruited orchard (scripts/Windfall.cs): earned by fighting with Grass and Metal, the Fieldfare feat.
 		FromAchievement("windfall", "fieldfare",
 			$"Defeat {AchievementDefinitions.FieldfareGrassMetalKills} enemies with Grass or Metal in a single run."),
+		// The surgeon's needle, at the most wounded in reach (scripts/Lancet.cs): earned by finishing what poison started, the
+		// Shrike feat.
+		FromAchievement("lancet", "shrike",
+			$"Defeat {AchievementDefinitions.ShrikePoisonedKills} poisoned enemies in a single run."),
 		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
 		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run."),
 		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element."),

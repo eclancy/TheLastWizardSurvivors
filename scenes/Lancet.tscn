@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Lancet.cs" id="1"]
+
+; Lancet's needles: one node in the arena that carries every needle in flight and every strike, in fixed pools, and draws
+; them itself in cells on the world's 2 px grid (scripts/Lancet.cs). No collision shape - a needle homes on the body it was
+; thrown at and strikes it on arrival - and no art: the needle, its bead of poison, the strike, the outright kill's cut and
+; Bloodletting's spray are drawn in code. Speed is how fast a needle flies; NeedleLength how long it is drawn.
+[node name="Lancet" type="Node2D"]
+script = ExtResource("1")
+Speed = 860.0
+NeedleLength = 20.0

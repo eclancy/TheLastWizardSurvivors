@@ -1,0 +1,85 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/lancet-metal.png" id="3_icon"]
+
+; Lancet (scripts/Lancet.cs), 2026-11-09: a thin steel needle that always flies at the most wounded enemy in reach - by the
+; share of its health lost, the nearest when none is hurt - and strikes harder the more it has lost, up to double; an
+; ordinary enemy under a tenth of its health dies to it outright. Metal + Poison: a poison build's finisher. Nobody's opener;
+; everyone earns it with the Shrike feat (enemies that die poisoned in one run). TargetingMode 10 is Wounded - the one spell
+; that chooses by health - and DamageShape 1 a projectile.
+;
+; BaseDamage is ONE NEEDLE on a fresh body (Lancet.WoundedDamage doubles it on one with nothing left). BaseCooldown is the
+; throw (the ONE fire loop): a fast timer, Hunter's Draw's and Sleet Runes' band. BaseProjectileCount is the needles a cast
+; throws (plus Amount), one body each. BaseRange is the reach it chooses in: the middle band (.ai/spell-roster.md section 1),
+; Folio's and Chain Lightning's.
+;
+; FIRST GUESSES, untuned. Spells start small (Eric, 2026-11-02): one needle at level 1, two at 3, three at 6. Written out in
+; full so Player.EnsureRelevantLevelUps generates nothing of its own (ScalingTagsMask 27: Damage, Cooldown, Range,
+; ProjectileCount): every level adds damage, even levels shorten the throw by 0.05 s, and 5 adds reach. Level 8: 14 a needle
+; on a fresh body, three needles every 0.65 s, over 340.
+
+[sub_resource type="Resource" id="Resource_lancet_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 1
+CooldownBonus = -0.05
+
+[sub_resource type="Resource" id="Resource_lancet_lvl3"]
+script = ExtResource("2")
+Level = 3
+DamageBonus = 1
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_lancet_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 1
+CooldownBonus = -0.05
+
+[sub_resource type="Resource" id="Resource_lancet_lvl5"]
+script = ExtResource("2")
+Level = 5
+DamageBonus = 1
+RangeBonus = 40.0
+
+[sub_resource type="Resource" id="Resource_lancet_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 1
+CooldownBonus = -0.05
+ProjectileCountBonus = 1
+
+[sub_resource type="Resource" id="Resource_lancet_lvl7"]
+script = ExtResource("2")
+Level = 7
+DamageBonus = 2
+
+[sub_resource type="Resource" id="Resource_lancet_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 2
+CooldownBonus = -0.05
+
+[resource]
+script = ExtResource("1")
+Tagline = "A needle for the most wounded."
+Id = "lancet"
+Name = "Lancet"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 5
+BaseCooldown = 0.85
+BaseProjectileCount = 1
+BaseRange = 300.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_lancet_lvl2"), SubResource("Resource_lancet_lvl3"), SubResource("Resource_lancet_lvl4"), SubResource("Resource_lancet_lvl5"), SubResource("Resource_lancet_lvl6"), SubResource("Resource_lancet_lvl7"), SubResource("Resource_lancet_lvl8")])
+Description = "A thin steel needle flies at the most wounded enemy in reach, or the nearest when none is hurt. It strikes harder the more health its target has lost, up to double, and an ordinary enemy under 10% health dies outright."
+Icon = ExtResource("3_icon")
+TargetingMode = 10
+DamageShape = 1
+ScalingTagsMask = 27
+ElementWeights = {
+"Metal": 1,
+"Poison": 1
+}

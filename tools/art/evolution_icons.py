@@ -1221,6 +1221,9 @@ SPELLS = {
     # falling). Drawn in materials, verdant and steel, as the game's tree is (tools/art/windfall.py), so no element row is
     # re-lit: Cider Rot draws its own rot.
     "windfall":          dict(paint=si.windfall, travel=(0, 1), tip=(25, 23), rows=()),
+    # The surgeon's needle (scripts/Lancet.cs): the steel needle going into the most wounded skull (the tip, its point). Its
+    # rows are its two: the needle's steel light and the bead of poison.
+    "lancet":            dict(paint=lambda: si.lancet(sky=False), travel=(1, 1), tip=(17, 17), rows=("metal", "poison")),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -1272,7 +1275,7 @@ BASE = {
     "starfall": si.starfall, "familiar": si.familiar_icon, "stormsweep": si.stormsweep,
     "familiar_dog": si.familiar_dog_icon, "familiar_crow": si.familiar_crow_icon, "familiar_cat": si.familiar_cat_icon,
     "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages, "corposant": si.corposant,
-    "ink_ring": si.ink_ring, "windfall": si.windfall,
+    "ink_ring": si.ink_ring, "windfall": si.windfall, "lancet": si.lancet,
 }
 
 
@@ -4533,6 +4536,123 @@ def _(sp, c):
         for (dx, dy) in ((1, 0), (-1, 0), (0, -1)):
             cv.set(24 + dx * 2, 20 + dy * 2, E["metal"][1])
     O(sp, lash)
+
+
+# --- Lancet ----------------------------------------------------------------------------------------
+
+# The surgeon's needle (scripts/Lancet.cs). Every card is something more the NEEDLE does, and every icon draws the spell's own
+# needle and skull (si.lancet_needle, si.lancet_skull) doing it: the poison spraying out of the wound it lanced, two needles
+# at two skulls, a bodkin's head going into a skull it has withered, a needle gone on from a kill to the next one, and the
+# outright kill's cut through the bone.
+
+def lc_spray(cv, x, y):
+    """Bloodletting's release: the poison let out of the wound at (x, y) all at once - five fat drops flung out in a fan up
+    and to the right, each a white-hot heart in Poison's hot with a short tail of its mid back toward the wound, and the
+    wound itself white. Its pale stops, so it holds on Poison's own night."""
+    po = E["poison"]
+    for (deg, r) in ((-105, 7.0), (-75, 8.5), (-45, 9.0), (-15, 8.5), (15, 7.0)):
+        a = math.radians(deg)
+        ux, uy = math.cos(a), math.sin(a)
+        hx, hy = int(round(x + ux * r)), int(round(y + uy * r))
+        for back in (2.0, 3.0):
+            cv.set(int(round(x + ux * (r - back))), int(round(y + uy * (r - back))), po[2])
+        cv.set(hx, hy, po[1])
+        cv.set(hx + 1, hy, po[1])
+        cv.set(hx, hy + 1, po[1])
+        cv.set(hx + 1, hy + 1, po[2])
+        cv.set(hx, hy, po[0])
+    cv.set(x, y, po[0])
+    cv.set(x + 1, y, po[1])
+
+
+def lc_bodkin():
+    """Bodkin: a heavier needle with a bodkin's square-shouldered head, gone into a skull it has withered."""
+    c = _cv()
+    si.lancet_skull(c, 21.0, 20.5, 1.4, cracked=False, withered=True)
+    si.lancet_needle(c, 5.0, 5.0, 16.5, 16.5, bead=False, bodkin=True)
+    si.lancet_glint(c, 17, 17)
+    return c
+
+
+def lc_triage():
+    """Triage: the needle through one skull, its eyes struck out, and on from it along a dotted path to the next."""
+    c = _cv()
+    mid, edge = E["metal"][2], E["metal"][3]
+    si.lancet_skull(c, 11.5, 11.0, 1.1, cracked=True, dead=True)
+    si.lancet_skull(c, 23.0, 23.0, 1.1, cracked=True)
+    si.lancet_needle(c, 3.0, 3.0, 9.0, 9.0, bead=False)
+    for k in range(4):
+        t = (k + 1) / 5.0
+        cv_x, cv_y = 14.5 + (18.0 - 14.5) * t * 1.6, 14.5 + (18.0 - 14.5) * t * 1.6
+        c.set(cv_x, cv_y, mid if k % 2 == 0 else edge)
+    si.lancet_needle(c, 15.0, 15.0, 19.5, 19.5, bead=True)
+    return c
+
+
+def lc_surgeons_hand():
+    """Surgeon's Hand: the outright kill - a long white cut through a skull, its two halves parted along it, a ring of steel
+    opening round it."""
+    core, hot, mid, edge = E["metal"]
+    # The skull, the spell's own, drawn whole and then parted along the cut: the half above it a pixel up and right, the
+    # half below a pixel down and left, so the gap between them is the cut's line.
+    whole = _cv()
+    si.lancet_skull(whole, 15.5, 16.0, 1.75, cracked=False, dead=True)
+    c = _cv()
+    for yy in range(CELL):
+        for xx in range(CELL):
+            px = whole.get(xx, yy)
+            if not px[3]:
+                continue
+            above = (yy - 16.0) < -(xx - 15.5) * 0.55
+            c.set(xx + (1 if above else -1), yy + (-1 if above else 1), px)
+    # The cut: white-hot through the middle, metal's hot and mid out to its ends, along the gap.
+    for k in range(-13, 14):
+        t = abs(k) / 13.0
+        tone = core if t < 0.5 else (hot if t < 0.8 else mid)
+        x = 15.5 + k
+        y = 16.0 - k * 0.55
+        c.set(int(round(x)), int(round(y)), tone)
+    # The ring opening round it: eight beats of steel.
+    for a in range(8):
+        ang = a * math.pi / 4.0 + math.pi / 8.0
+        c.set(16 + math.cos(ang) * 10.5, 16 + math.sin(ang) * 10.5, mid if a % 2 == 0 else edge)
+    return c
+
+
+@card("lancet_bloodletting")
+def _(sp, c):
+    """Bloodletting: the needle in the skull, and all the poison let out of the wound at once, a fan of it spraying back."""
+    reset(sp)
+    sp.subject = lambda: si.lancet(sky=False, drop=False)
+    sp.place = Place(0.92, at=(C0 - 1.5, C0 - 1.5))
+    sp.place = Place(0.86, at=(C0 - 3.5, C0 - 1.0))
+    O(sp, lambda cv, x: lc_spray(cv, 17.0, 16.0))
+
+
+@card("lancet_twin_lancets")
+def _(sp, c):
+    """Twin Lancets: two needles, each into a skull of its own."""
+    reset(sp)
+    sp.subject = lambda: si.lancet(sky=False, drop=False)
+    set_volley(sp, volley(2, (1, 1)))
+
+
+@card("lancet_bodkin")
+def _(sp, c):
+    reset(sp)
+    sp.subject = lc_bodkin
+
+
+@card("lancet_triage")
+def _(sp, c):
+    reset(sp)
+    sp.subject = lc_triage
+
+
+@card("lancet_surgeons_hand")
+def _(sp, c):
+    reset(sp)
+    sp.subject = lc_surgeons_hand
 
 
 # --- Hunter's Draw ---------------------------------------------------------------------------------

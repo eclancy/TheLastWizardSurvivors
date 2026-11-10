@@ -86,12 +86,12 @@ public static class StatIcons
 			return "speed";
 		// Black Tentacles counts its projectiles as tentacles, Toxic Spore Burst as mushrooms, Meteor
 		// Swarm as meteors and Starfall as stars (Player.ProjectileNoun). "stars " only at the start:
-		// "start" contains it. Stormsweep counts sweeps, Sleet Runes runes, Folio pages, Corposant balls and Windfall trees
-		// and the fruit a tree carries, also only at the start: a card's sentence can use any of those words ("it sweeps the
-		// ground", "the fruit falls") without being a count.
+		// "start" contains it. Stormsweep counts sweeps, Sleet Runes runes, Folio pages, Corposant balls, Windfall trees
+		// and the fruit a tree carries, and Lancet needles, also only at the start: a card's sentence can use any of those
+		// words ("it sweeps the ground", "the fruit falls", "the needles fly") without being a count.
 		if (t.Contains("projectile") || t.Contains("tentacle") || t.Contains("mushroom") || t.Contains("meteor")
 			|| t.StartsWith("stars ") || t.StartsWith("sweeps ") || t.StartsWith("runes ") || t.StartsWith("pages ")
-			|| t.StartsWith("balls ") || t.StartsWith("trees ") || t.StartsWith("fruit ")
+			|| t.StartsWith("balls ") || t.StartsWith("trees ") || t.StartsWith("fruit ") || t.StartsWith("needles ")
 			|| (t.Length > 1 && t[0] == 'x' && char.IsDigit(t[1])))
 			return "projectiles";
 		// A spell taken in a form counts in the form's own noun ("Axes +1", SpellVariant.CountNoun).

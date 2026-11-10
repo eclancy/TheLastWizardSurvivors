@@ -315,6 +315,101 @@ fruit fell on empty ground - 33 bodies thudded, 33 kills, 11.9% of its damage, W
 spells. With `--immortal --circle=150`: 87 shakes, 49 thudded, 45 kills, 15.2%. A swarm trails a moving wizard rather than
 waiting under his trees, so both are floors. Not played, not heard, not seen on a phone.
 
+### Lancet - the spell that chooses by health (2026-11-09)
+
+Eric approved it from `.ai/character-fit.md`'s queue as proposed: a steel needle that always flies at the most wounded
+enemy in reach (by the share of health lost; the nearest when none is hurt), on a fast timer, that hits harder the more
+health its target has lost, up to double, and kills an ordinary enemy below a small sliver outright. Metal + Poison, a
+poison build's finisher. Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 40 | **Lancet** (`scripts/Lancet.cs`, `Player.Lancet.cs`) | Metal+Poison | **the most wounded in reach, by share of health lost; the nearest when none is hurt** (`SpellTargetingMode.Wounded`, new) | fast timer (0.85 s to 0.65 s) | **wound them first**: it is worth what the rest of the loadout has already done | one needle a body, up to double on the nearly dead; an ordinary body under 10% dies outright | mid (300, 340 from level 5) |
+
+- **The only spell that chooses by health.** Hunter's Mark marks the *strongest* in reach; Lancet goes to the other end.
+  With nothing hurt in reach it is a nearest-enemy spell, so it is never idle, and the moment anything else wounds the
+  crowd it goes where the wounds are. It wants a partner that spreads damage thinly (poison, a burn, a rain) and pays
+  for it twice: the bonus, and the bodies it takes off the field.
+- **The choice is one walk.** `Lancet.Cast` walks `EnemyRegistry.Snapshot` once and keeps the best 16 bodies in reach in
+  fixed arrays by insertion (`Lancet.Rank`, ordered by `Lancet.Before`: more wounded first, a tie of wounds - every unhurt
+  body among them - to the nearer), so a body worse than the last kept costs one compare and nothing is allocated. The
+  cast's needles take the top of that list, one body each: each extra needle goes to the next most wounded, a distinct
+  target. When the crowd in reach is thinner than the volley the rest go round the list again, but only at a body the
+  needles already on their way to it could leave standing (`Lancet.Cast` keeps what it has sent at each body): a lone boss
+  takes every needle, a skeleton the first needle kills is not sent a second. The first build sent it one, and a fifth of
+  its needles fell on nothing in the harness's thin early crowd; with the rule, 4 of 66 in the first minute rather than 27
+  of 92, for the same kills. The same list is what a needle turns to, once, if its body dies before it lands, and what
+  Triage sends a killing needle on to - the first on it that no needle in flight is going for. Nothing else walks the swarm.
+- **The payload.** A needle homes on its body and strikes it once, for its damage times one plus the share of health the
+  body had lost (`Lancet.WoundedDamage`): a fresh body takes the needle, a half-dead one half again, one nearly dead almost
+  double. An **ordinary** body below 10% of its health (`Lancet.SliverShare`) dies outright - the needle strikes for at least
+  what it has left - but never an elite, a miniboss or a boss (`IsMiniBoss`, and `BossEnemy` whatever it says), which take
+  only the bonus, as the execute rule says. Every strike goes through `Player.DealDamageToEnemy` with the spell as its
+  source, so its kills are counted, numbered (Metal's ink: the first listed of a tie) and charged to it like every other
+  spell's, and a crit, a rider and the tiers ride it.
+- **Numbers, first guesses, untuned:** 5 a needle at level 1 to 14 at level 8 (on a fresh body; up to double on a hurt
+  one); one needle at level 1, two at 3, three at 6 ("Needles +1" on the card, plus Amount); the throw every 0.85 s, -0.05 s
+  at levels 2, 4, 6 and 8 (0.65 s); reach 300, +40 at level 5. A needle flies at 860 a second, so it crosses its reach in
+  about a third of a second: it is seen going to its body.
+- **Drawn in code** on `DrawLayers.Air` (which the light pool never darkens), on the world's 2 px grid, in Bonelight - not
+  the ink style: a thin line of steel with a white-hot point, steel's hot and mid down the shaft over a flank of its edge
+  on the side away from the key light, a bead of poison hanging just behind the point, and a short dithered streak of
+  steel behind it. A strike is small and clean: the needle standing a moment in the body, a steel glint, two drops of
+  poison flicked on. **An outright kill is the moment**: a long white-hot cut drawn through the body along the needle's
+  line in the first beat, then an eight-armed burst of steel and a ring of it opening round where it went in. Metal and
+  Poison are not warm (`LightPool.IsWarm`), so a needle lights nothing in the dark.
+- **Sound:** none new. A throw is the Poison cast cue (`SfxCatalog.DominantElement` breaks the Metal-Poison tie by enum
+  order; Metal's once Bodkin deepens it) and every strike the impact, throttled - one of the duals that sound one element
+  and number in the other.
+
+Cards (`SpellEvolutionCatalog.SetupLancetEvolutions`), Eric's four and a Metal card named here, the house's three at level 4
+and two at 8, all within 130 characters:
+
+- **Bloodletting** (L4, +Poison at the hybrid's 12% cooldown price): a needle that lances a poisoned enemy releases all its
+  remaining poison at once, in one hit. `Enemy.ApplyPoison` keeps a poison as three fields - the strongest tick laid
+  (`poisonDamagePerTick`), the clock left (`poisonTimeRemaining`) and the tick clock (`poisonTickTimer`, a tick every
+  second); `Enemy.RemainingPoisonDamage` reads it as the ticks the poison has left - the whole seconds in clock left plus
+  tick clock run - times the tick, at the run's dose (Sola Dosis, `PlayerPoisonScale`), and `Enemy.EndPoison` clears the
+  same three fields the poison's own expiry clears and puts the look back. The strike reads the poison **before** the
+  needle goes in (so it never lets out a poison the strike itself lays - the Poison tier's), deals it **after** as its own
+  hit numbered in Poison's ink with no elemental chain, then ends the poison: a lanced body is clean. A body the needle
+  kills dies still poisoned, so the Shrike counts it.
+- **Twin Lancets** (L4): one more needle every cast, each at the next most wounded enemy.
+- **Bodkin** (L4, +Metal at 12%; the Metal card, named here: the bodkin is the needle-pointed blade that went through
+  mail): the first hit Withers 5% of an enemy's max health - Metal's own status (`ElementPaths.RiderFor`), carried on every
+  strike by the house path. A withered body counts as wounded, so nothing a needle touches is unhurt again and the next
+  needle comes back for it; and it is the one card that does more to an elite or a boss than the bonus does.
+- **Triage** (L8): a needle that kills flies on to the next most wounded in reach, and on again for every kill (the cast's
+  list, at most 16 bodies; never one another needle is going for).
+- **Surgeon's Hand** (L8): the outright kill takes an ordinary enemy under 20% health, not 10%; +20% damage.
+
+Both halves deepen at level 4, on different cards (Bloodletting Poison, Bodkin Metal), so no path deepens both and level 8
+deepens neither: a hybrid never reaches three of one (`ValidateEvolutionElementCeiling`), and no card adds a third element.
+Clear of the claimed verbs: Bloodletting lets one body's poison out where it stands - nothing narrows a plague onto fewer
+carriers (Paracelsus's **distil**, The Dose) or festers on a beat (Shadow Bolt's **fester**); Triage goes on only from a
+kill and only to the most wounded, never off a body or a wall (the Anvil Line's **ricochet**) nor through a chain of living
+ones (Chain Lightning's **link**); nothing marks the strongest (Hunter's Mark). "Execute" is nobody's, and the cards say
+"dies outright" rather than claim it. Earned through the **Shrike** Feat (`.ai/achievements-and-secrets.md`): defeat 500
+poisoned enemies in a single run (`LifetimeStats.BestPoisonedKillsInRun`, no schema step) - not a fifth "defeat N with an
+element", since it counts what dies poisoned whatever dealt the last blow.
+
+Seen in `_UiShot` with two flags new for it: `--stage-wounds=LO,HI` (with `--stage-mortal`, every stage body left at a
+share of its health from LO to HI, spread over the crowd and shuffled through it) and `--shutter-on-lance=N` (the shutter
+held until a needle kills a body outright, then N frames). At level 8 (`--character=1 --start-spell=lancet
+--demo-spell-level=8 --spell-stage=26 --stage-mortal --stage-health=400 --stage-wounds=0.04,0.95 --frames=1200 --fx-lead=6
+--burst=8,3`): in the Enchanted Forest at 1280x720 the first cast's needles fly past the nearest bodies to the most wounded
+in the middle of the knot, and the two bodies under 10% die to the white cut; in the Sunken Cave (`--stage=2`), the dark,
+the needles and cuts are the brightest things on the floor (they are on `Air`, which the light pool never darkens); and in
+the Forest at 540x1212 `--portrait --safe-area` they are small but legible. The needle was lengthened from 18 to 20 after
+the first photographs. `_BalanceHarness --minutes=3 --spell=lancet --character=1` (the real save read-only, so Amount
+gave two needles a cast at level 1): 211 kills, 40% of the bot's damage with Lancet left at level 1, the mean struck body
+38% hurt by minute 3, 10 outright kills. Beside a poison partner (`--character=17 --spell=lancet --partner=contagion`,
+Paracelsus's Sola Dosis): 202 kills and 41% of the damage to Contagion's 17%. Every card exercised once in a run (`--solo
+--upgrade-chance=1 --force-ascension --immortal --minutes=7`, Paracelsus with Contagion beside it): Bloodletting let poison
+out 661 times for 16,462 and Triage sent needles on 1,203 times; Bodkin and Surgeon's Hand made 260 outright kills to the
+other pair's 126, the mean struck body 43% hurt; Twin Lancets threw 2,670 needles to 2,066. Those are forced, solo, immortal
+runs, not a balance measurement: the numbers are first guesses. Not played, not heard, not seen on a phone.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

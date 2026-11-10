@@ -280,6 +280,20 @@ public static partial class AchievementDefinitions
 	public const int FieldfareGrassMetalKills = 1000;
 
 	/// <summary>
+	/// Enemies that die POISONED in ONE run, whatever dealt the last blow, that pay Lancet (the Shrike feat): counted in
+	/// Enemy.StartDeath while the poison is still ticking (RunEvents.RecordPoisonedKill). Paracelsus opens on Contagion
+	/// (Poison), Baba Yaga on Thorned Vine (which poisons), and any two Poison carriers raise the Poison tier that poisons
+	/// on every hit, so a save reaches it without the spell it pays. Measured 2026-11-09 (_BalanceHarness --minutes=15,
+	/// seed 1234, the real save read-only): Baba Yaga's kiting bot (--character=15) lived the run and made 259 by minute 5,
+	/// 445 by minute 10 and 551 in all, reaching 500 at about minute 12; Paracelsus's (--character=17) lived it too and made
+	/// 723 by minute 5, 2,408 by minute 10 and 4,333 in all (his --immortal bot 703 / 2,408 / 4,544), reaching 500 at about
+	/// minute 4.3 - Contagion's plague is on nearly everything that dies. Five hundred is Storm Petrel's and Cormorant's
+	/// number and the same ask for a poison carrier that is not a plague: most of a run with Poison in it. The plague doctor
+	/// earns the surgeon's needle in the first third of one, which is his.
+	/// </summary>
+	public const int ShrikePoisonedKills = 500;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -561,6 +575,20 @@ public static partial class AchievementDefinitions
 			RewardText = "Unlocks Windfall", SpellUnlockId = Windfall.SpellId,
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.BestGrassMetalKillsInRun, Target = FieldfareGrassMetalKills,
+		},
+		// LANCET'S FEAT (2026-11-09): the shrike is the butcher-bird, which impales what it catches on a thorn - a bird beside
+		// Magpie, Storm Petrel, Cormorant and Fieldfare, and not another "defeat N with an element": it counts the dying, not
+		// the killing. Enemies that die with a poison ticking on them in a single run, whatever dealt the last blow - a
+		// poison tick, any spell, a needle (Enemy.StartDeath, RunEvents.RecordPoisonedKill) - which is the finisher's work:
+		// poison them, then finish them. Measured off the best run kept in the lifetime stats
+		// (LifetimeStats.BestPoisonedKillsInRun), as the other four are.
+		new()
+		{
+			Id = "shrike", DisplayName = "Shrike",
+			Description = $"Defeat {ShrikePoisonedKills} poisoned enemies in a single run.",
+			RewardText = "Unlocks Lancet", SpellUnlockId = Lancet.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestPoisonedKillsInRun, Target = ShrikePoisonedKills,
 		},
 		new()
 		{

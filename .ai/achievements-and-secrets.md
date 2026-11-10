@@ -87,6 +87,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Corposant | Lightning | Feat | **Storm Petrel**: defeat 500 enemies with Lightning in a single run (2026-11-09); nobody opens on it |
 | Ink Ring | Water, Darkness | Feat | **Cormorant**: defeat 500 enemies with Water or Darkness in a single run (2026-11-09); nobody opens on it |
 | Windfall | Grass, Metal | Feat | **Fieldfare**: defeat 1,000 enemies with Grass or Metal in a single run (2026-11-09); nobody opens on it |
+| Lancet | Metal, Poison | Feat | **Shrike**: defeat 500 poisoned enemies in a single run (2026-11-09); nobody opens on it |
 | Stormsweep | Lightning | Purchase | 160 |
 | Kindled Ward | Light | Purchase | 170 |
 | Familiar | Arcane | Purchase | 170; the Coursing (Laelaps) needs it |
@@ -194,7 +195,7 @@ earned (2.3).
 | **Sleet Runes** | **The Buried Runes** | Secret | stand still in a drift field until the snow settles, then dig up the rune-stones it shows (Frozen Waste) | walking aims the runes; stopping is what finds them |
 | **Stormsweep** | **The Fulgurite** | Secret | stand by a glass tree in the dunes when the dry storm comes round and draws its lightning (Scorched Sands) | lightning that strikes sand leaves glass; a sweep of lightning, from where it struck |
 
-**Added 2026-11-09, after this table:** four Feats for four new spells, each measured off a best-run field in
+**Added 2026-11-09, after this table:** five Feats for five new spells, each measured off a best-run field in
 `LifetimeStats` added without a schema step (a save without the key reads as no run yet). **Magpie** pays Folio
 (10 chests in one run, `BestChestsInRun`). **Storm Petrel** pays Corposant (`.ai/spell-roster.md`, "Corposant"):
 *defeat 500 enemies with Lightning in a single run* (`BestLightningKillsInRun`). A Lightning kill is one numbered in
@@ -230,6 +231,22 @@ Measured (`_BalanceHarness --minutes=15`, seed 1234, the real save read-only): V
 2,108 in all. **Why a thousand, not the others' five hundred:** both openers kill in a crowd (a thorn patch, a wall of
 stakes) and reach 500 by minute 6, where the Stormcaller bot reached Storm Petrel's 500 at minute 10. The same ask in
 time - most of a run with Grass or Metal in it - is a thousand, which both reach at about minute 9.
+
+**Shrike**, a fifth, pays Lancet (`.ai/spell-roster.md`, "Lancet"): *defeat 500 poisoned enemies in a single run*
+(`BestPoisonedKillsInRun`, also added without a schema step). **Not a fifth "defeat N with an element":** it counts the
+dying, not the killing - an enemy that dies with a poison still ticking on it, whatever dealt the last blow (a poison
+tick, any spell, a needle), counted in `Enemy.StartDeath` before anything clears the status (`RunEvents.RecordPoisonedKill`).
+That is the finisher's work, poison them and then finish them, and it is what Lancet is for. Earnable without Lancet:
+Paracelsus opens on Contagion, Baba Yaga on Thorned Vine (which poisons what it sweeps), and any two Poison carriers raise
+the Poison tier, which poisons on every hit. The shrike is the butcher-bird, which impales what it catches on a thorn, and a
+bird beside Magpie, Storm Petrel, Cormorant and Fieldfare. Measured (`_BalanceHarness --minutes=15`, seed 1234, the real
+save read-only): Baba Yaga's kiting bot (`--character=15`) lived the run and made 259 by minute 5, 445 by minute 10 and
+551 in all, reaching 500 at about minute 12; Paracelsus's (`--character=17`) lived it too and made 723 by minute 5, 2,408
+by minute 10 and 4,333 in all (his `--immortal` bot 703, 2,408 and 4,544), reaching 500 at about minute 4.3 - Contagion's
+plague is on nearly everything that dies. **Why five hundred:** it is Storm Petrel's and Cormorant's number and the same
+ask for a poison carrier that is not a plague, most of a run with Poison in it; sized to Paracelsus it would be two
+thousand and nobody else would earn it. The plague doctor earns the surgeon's needle in the first third of a run, which
+fits him.
 
 Totals: **11 Feats, 9 Road deeds, 9 secrets** - one spell vault in each campaign chapter but the
 Emberdeep: eight on the road before the gate, and the Cursed Dungeon's, which moves past it into the

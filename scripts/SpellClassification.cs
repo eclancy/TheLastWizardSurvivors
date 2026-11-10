@@ -20,7 +20,10 @@ public enum SpellTargetingMode
 	Drawn = 8,
 	// Where the player stands, and paid out later by whatever shakes it (Windfall): a tree planted at his feet whose fruit
 	// falls on the enemy that bumps it, or all at once round it when he walks back under it.
-	Planted = 9
+	Planted = 9,
+	// The most wounded enemy in reach, by the share of its health it has lost, and the nearest when none is hurt (Lancet):
+	// the one spell that chooses by health. Hunter's Mark marks the strongest; this is the other end.
+	Wounded = 10
 }
 
 // The primary way a spell applies damage.
@@ -78,6 +81,7 @@ public static class SpellClassificationText
 		SpellTargetingMode.Unaimed => "at nothing: it sets off any which way",
 		SpellTargetingMode.Drawn => "inside a ring you walk round them",
 		SpellTargetingMode.Planted => "where you stand: a tree that pays out when it is shaken",
+		SpellTargetingMode.Wounded => "at the most wounded enemy in reach, or the nearest when none is hurt",
 		_ => null,
 	};
 

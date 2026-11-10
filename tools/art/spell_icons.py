@@ -795,6 +795,117 @@ def windfall(fruit=((11.5, 13.5), (19.5, 15.0), (15.5, 9.5)), falling=True, rot=
     return c
 
 
+def lancet_needle(c, ax, ay, bx, by, bead=True, bodkin=False):
+    """One of Lancet's needles (scripts/Lancet.cs), from its eye at (ax, ay) to its point at (bx, by): the shaft in steel lit
+    over a flank of steel's base on its lower side, the eye a slot of occlusion, the last of it white-hot - metal's core, as
+    the game draws the point - and, `bead`, a drop of poison hanging under the shaft just behind the point. `bodkin` widens
+    the point into a bodkin's square-shouldered head."""
+    st = bl.MATERIALS["steel"]
+    core, hot, mid, edge = bl.ELEMENTS["metal"]
+    length = math.hypot(bx - ax, by - ay)
+    ux, uy = (bx - ax) / length, (by - ay) / length
+    # The side away from the key light (upper left): the flank of shade.
+    sx, sy = -uy, ux
+    if sx + sy < 0:
+        sx, sy = -sx, -sy
+    steps = int(length * 2) + 1
+    for i in range(steps + 1):
+        t = i / float(steps)
+        x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+        k = t * length
+        if 1.5 < k < length - 1.5:
+            c.set(int(round(x + sx)), int(round(y + sy)), st[2])
+    for i in range(steps + 1):
+        t = i / float(steps)
+        x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+        k = t * length
+        tone = core if k > length - 2.5 else (hot if k > length * 0.55 else st[1])
+        c.set(int(round(x)), int(round(y)), tone)
+    # The eye: a slot of occlusion in the shaft's tail.
+    c.set(int(round(ax + ux * 1.0)), int(round(ay + uy * 1.0)), OCC)
+    if bodkin:
+        # The bodkin's head: shoulders of steel either side of the point, lit on the upper one.
+        for (side, tone) in ((1.0, st[0]), (-1.0, st[2])):
+            for back in (1.5, 2.5):
+                c.set(int(round(bx - ux * back + sx * side)), int(round(by - uy * back + sy * side)), tone)
+        c.set(int(round(bx - ux * 3.5 + sx)), int(round(by - uy * 3.5 + sy)), edge)
+    if bead:
+        po = bl.ELEMENTS["poison"]
+        hx, hy = int(round(bx - ux * 3.0 + sx * 1.6)), int(round(by - uy * 3.0 + sy * 1.6))
+        c.set(hx, hy, po[1])
+        c.set(hx + 1, hy, po[2])
+        c.set(hx, hy + 1, po[2])
+        c.set(hx + 1, hy + 1, po[3])
+
+
+def lancet_skull(c, x, y, s=1.0, cracked=True, dead=False, withered=False):
+    """One of the swarm, the most hurt of it: a bone skull lit upper left, two dark eyes, and `cracked` a split across its
+    crown - the wound the needle is drawn to. `dead` crosses its eyes (an outright kill); `withered` takes a bite out of its
+    lower right, gone to the dark (Bodkin's Wither, health taken for good)."""
+    b = bl.MATERIALS["skin"]
+    c.disc(x, y, 3.6 * s, 3.9 * s, b[3])
+    c.disc(x - 0.5, y - 0.5, 2.8 * s, 3.0 * s, b[2])
+    c.set(int(x - 1.5 * s), int(y - 1.8 * s), b[1])
+    c.set(int(x - 0.5 * s), int(y - 2.2 * s), b[1])
+    if withered:
+        c.disc(x + 2.4 * s, y + 2.2 * s, 2.2 * s, 2.0 * s, b[4])
+        c.set(int(x + 1.0 * s), int(y + 2.6 * s), bl.ELEMENTS["metal"][3])
+        c.set(int(x + 2.6 * s), int(y + 0.6 * s), bl.ELEMENTS["metal"][3])
+    ex, ey = int(round(x - 1.4 * s)), int(round(y + 0.4 * s))
+    fx = int(round(x + 1.2 * s))
+    if dead:
+        # Eyes struck through, a slash each the other way: gone.
+        c.set(ex, ey, OCC)
+        c.set(ex + 1, ey + 1, OCC)
+        c.set(fx, ey + 1, OCC)
+        c.set(fx + 1, ey, OCC)
+    else:
+        c.set(ex, ey, OCC)
+        c.set(ex + 1, ey, OCC)
+        c.set(fx, ey, OCC)
+        c.set(fx + 1, ey, OCC)
+    if cracked:
+        # A zigzag split down from the crown, dark against the bone.
+        cx_, cy_ = int(round(x + 0.6 * s)), int(round(y - 3.6 * s))
+        for (dx, dy) in ((0, 0), (0, 1), (1, 2), (0, 3)):
+            c.set(cx_ + dx, cy_ + dy, OCC)
+
+
+def lancet(sky=True, bead=True, drop=True):
+    """Lancet (scripts/Lancet.cs): a thin steel needle going into the most wounded of the swarm.
+
+    The needle crosses the card from its eye up on the left to its point low on the right, where it goes into a skull with
+    a crack across its crown - the most hurt, the one it chose. Its shaft is steel lit over a flank of steel's base, its last
+    pixels white-hot, and a bead of poison hangs under it just behind the point, one drop falling from it. Steel is pale and
+    vanishes on the card's cream page (Starfall's lesson), so it is drawn on a night: the deep of a wound, red's shade and
+    deep, a night no other spell's card uses. `sky=False` leaves the night off (tools/art/evolution_icons.py lays its own).
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    if sky:
+        c.disc(15.5, 15.5, 15.0, 15.0, bl.tone("red", "shade"))
+        c.disc(15.5, 15.5, 14.0, 14.0, bl.tone("red", "deep"))
+    lancet_skull(c, 21.5, 21.0, 1.3)
+    lancet_needle(c, 6.0, 6.0, 17.0, 17.0, bead=bead)
+    lancet_glint(c, 17, 17)
+    if drop:
+        po = bl.ELEMENTS["poison"]
+        c.set(13, 21, po[1])
+        c.set(13, 22, po[2])
+        c.set(14, 22, po[3])
+    return c
+
+
+def lancet_glint(c, x, y, arm=2):
+    """Where a needle went in: a white-hot heart and four short arms of metal's hot, on the diagonals."""
+    core, hot, mid, edge = bl.ELEMENTS["metal"]
+    c.set(x, y, core)
+    for d in range(1, arm + 1):
+        tone = hot if d == 1 else mid
+        for (dx, dy) in ((d, -d), (-d, d), (d, d), (-d, -d)):
+            if (dx, dy) != (-d, -d):
+                c.set(x + dx, y + dy, tone)
+
+
 def the_taking():
     """The dark wizard's own (.ai/dark-wizard-playable.md): a hand of his dark light closing on a warm mote.
 
@@ -1541,6 +1652,7 @@ ICONS = [
     ("corposant-lightning", corposant, CELL),
     ("ink-ring-dark", ink_ring, CELL),
     ("windfall-grass", windfall, CELL),
+    ("lancet-metal", lancet, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
     ("contagion-poison", contagion, CELL),
     ("bramble-seed-grass", bramble_seed, CELL),

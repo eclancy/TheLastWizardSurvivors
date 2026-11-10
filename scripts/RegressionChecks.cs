@@ -65,6 +65,9 @@ public static partial class RegressionChecks
 		ValidateInkRing(warnings);
 		// The iron-fruited orchard: the shake rule, the ring, the crop, the cards and its feat (RegressionChecks.Windfall.cs).
 		ValidateWindfall(warnings);
+		// The surgeon's needle: the order it chooses in, the wound bonus, the outright kill, the poison let out, the cards and
+		// its feat (RegressionChecks.Lancet.cs).
+		ValidateLancet(warnings);
 		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
 		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);

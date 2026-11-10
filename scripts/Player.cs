@@ -64,6 +64,9 @@ public partial class Player : CharacterBody2D
 	// The iron-fruited orchard (scripts/Windfall.cs, Player.Windfall.cs): one node in the arena carrying every tree it plants
 	// and every fruit they drop.
 	[Export] public PackedScene WindfallScene { get; set; }
+	// The surgeon's needle (scripts/Lancet.cs, Player.Lancet.cs): one node in the arena carrying every needle in flight and
+	// every strike.
+	[Export] public PackedScene LancetScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -1322,6 +1325,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_InkRing.tres"));
 		if (!spellCatalog.ContainsKey(Windfall.SpellId))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Windfall.tres"));
+		if (!spellCatalog.ContainsKey(Lancet.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Lancet.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -4900,6 +4905,8 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals(InkRing.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireInkRing(spell, InkRingScene);
 		// A tree planted at his feet, or - beside one of his own - the cast held ripe until he steps clear (Player.Windfall.cs).
 		else if (spell.Id.Equals(Windfall.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireWindfall(spell, WindfallScene, interval);
+		// Needles at the most wounded in reach, one body each, or - nothing in reach - the cast held ripe (Player.Lancet.cs).
+		else if (spell.Id.Equals(Lancet.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireLancet(spell, LancetScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -8161,6 +8168,8 @@ public partial class Player : CharacterBody2D
 		ReleaseInkRing(spell);
 		// And Windfall's, with every tree it planted and every fruit in the air (Player.Windfall.cs).
 		ReleaseWindfall(spell);
+		// And Lancet's, with every needle in flight (Player.Lancet.cs).
+		ReleaseLancet(spell);
 	}
 
 	// --- Level-up charges ---
@@ -9281,6 +9290,8 @@ public partial class Player : CharacterBody2D
 		"corposant" => "Balls",
 		// Windfall's count is the trees it may have standing at once (scripts/Windfall.cs; Kindled Ward's ceiling).
 		"windfall" => "Trees",
+		// Lancet's projectiles are the needles a cast throws, one body each (scripts/Lancet.cs).
+		"lancet" => "Needles",
 		// The Familiar counts in its form's noun (Hounds, Crows, Cats - SpellVariant.CountNoun); this is the
 		// template's, which no run plays.
 		"familiar" => "Hounds",

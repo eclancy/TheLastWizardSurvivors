@@ -1677,9 +1677,20 @@ public partial class _BalanceHarness : Node
 			GD.Print($"HARNESS WINDFALL m={row.Minute} planted={Windfall.StatPlanted} uprooted={Windfall.StatUprooted} ripened={Windfall.StatRipened}"
 				+ $" bumps={Windfall.StatBumps} shakes={Windfall.StatShakes} largestShake={Windfall.StatLargestShake} moons={Windfall.StatMoons}"
 				+ $" landed={Windfall.StatLanded} thudHits={Windfall.StatThudHits} thornHits={Windfall.StatThornHits} lashes={Windfall.StatLashes} rotTicks={Windfall.StatRotTicks}");
+		// Lancet: casts and needles thrown, strikes (and how many found a hurt body, and the mean share of health those bodies had
+		// lost), kills and outright kills, Bloodletting's releases and what they let out, Triage's hops, re-aims and needles that
+		// fell with nothing to strike - once it has thrown one.
+		if (Lancet.StatThrown > 0)
+			GD.Print($"HARNESS LANCET m={row.Minute} casts={Lancet.StatCasts} thrown={Lancet.StatThrown} strikes={Lancet.StatStrikes}"
+				+ $" wounded={Lancet.StatWoundedStrikes} meanWound={(Lancet.StatStrikes > 0 ? Lancet.StatWoundSum / Lancet.StatStrikes : 0.0):0.00}"
+				+ $" kills={Lancet.StatKills} outright={Lancet.StatOutright} releases={Lancet.StatReleases} released={Lancet.StatReleased}"
+				+ $" triage={Lancet.StatTriage} retargets={Lancet.StatRetargets} fizzles={Lancet.StatFizzles}");
 		// The Fieldfare feat's count (RunEvents.RecordGrassMetalKill): kills numbered in Grass's or Metal's ink so far this run.
 		if (RunEvents.GrassMetalKills > 0)
 			GD.Print($"HARNESS GRASS METAL KILLS m={row.Minute} kills={RunEvents.GrassMetalKills}");
+		// The Shrike feat's count (RunEvents.RecordPoisonedKill): enemies that died with a poison ticking on them so far.
+		if (RunEvents.PoisonedKills > 0)
+			GD.Print($"HARNESS POISONED KILLS m={row.Minute} kills={RunEvents.PoisonedKills}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

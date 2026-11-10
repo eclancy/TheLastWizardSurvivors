@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=3 uid="uid://blm05dwe1lxph"]
+[gd_scene load_steps=47 format=3 uid="uid://blm05dwe1lxph"]
 
 [ext_resource type="Script" uid="uid://c03i6ui7vfdm0" path="res://scripts/Player.cs" id="1_qhqgy"]
 [ext_resource type="PackedScene" uid="uid://c5me6ajqighyl" path="res://scenes/MagicMissile.tscn" id="2_qlg0r"]
@@ -48,6 +48,7 @@
 [ext_resource type="PackedScene" path="res://scenes/Corposant.tscn" id="39_corposant"]
 [ext_resource type="PackedScene" path="res://scenes/InkRing.tscn" id="40_inkring"]
 [ext_resource type="PackedScene" path="res://scenes/Windfall.tscn" id="41_windfall"]
+[ext_resource type="PackedScene" path="res://scenes/Lancet.tscn" id="42_lancet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lj8jo"]
 size = Vector2(26, 35)
@@ -126,6 +127,7 @@ FolioScene = ExtResource("38_folio")
 CorposantScene = ExtResource("39_corposant")
 InkRingScene = ExtResource("40_inkring")
 WindfallScene = ExtResource("41_windfall")
+LancetScene = ExtResource("42_lancet")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(-3, 6.5)

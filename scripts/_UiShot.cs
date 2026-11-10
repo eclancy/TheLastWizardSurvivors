@@ -604,6 +604,9 @@ public partial class _UiShot : Node
 	//                                   follows starts on its first frame. Give it --frames past the
 	//                                   spell's cooldown (Black Tentacles is 4 s).
 	//   --stage-mortal                : the stage's skeletons keep their own health and can die.
+	//   --stage-wounds=LO,HI          : with --stage-mortal, each left at a share of its health from LO to HI
+	//                                   (Lancet's wounded crowd). --shutter-on-lance=N shoots N frames after a
+	//                                   needle kills a body outright.
 	//   --demo-evolutions=id,id       : evolutions (level 4, level 8 or an Apotheosis form id) applied
 	//                                   to the first equipped spell with the --demo-spell-level state.
 	private int stageCount;
@@ -614,6 +617,18 @@ public partial class _UiShot : Node
 	// for a spell whose look depends on how low it burns a body (Abe no Seimei's seal takes what a ward has
 	// burned below a quarter, and a 20-health skeleton dies before it is ever that low).
 	private int stageHealth;
+	// --stage-wounds=LO,HI: with --stage-mortal, every stage body is left at a share of its health between LO and HI, spread
+	// evenly over the crowd and shuffled through it - a wounded crowd for Lancet, which goes for the most hurt and kills an
+	// ordinary body under a tenth outright. Set after the body is in the tree, so its max health is its own.
+	private float stageWoundLow = -1f;
+	private float stageWoundHigh = -1f;
+	// --shutter-on-lance=N: Lancet's, as the ring's is Ink Ring's. The shutter waits, the warmup held at its last frame, until
+	// a needle kills a body outright (Lancet.StatOutright moves) and then N frames more - so the shot opens on the cut. Gives
+	// up after RingShutterGiveUp frames, saying so.
+	private int shutterOnLance = -1;
+	private int lancesAtHold = -1;
+	private int lanceSeenAt = -1;
+	private int lanceHeld;
 	private Vector2 stageOffset = new Vector2(230f, 0f);
 	private bool stagePlaced;
 	private readonly System.Collections.Generic.List<Enemy> stageCrowd = new();
@@ -1245,6 +1260,14 @@ public partial class _UiShot : Node
 				walkIntoPortal = true;
 			else if (arg.StartsWith("--stage-health="))
 				stageHealth = int.Parse(arg.Substring("--stage-health=".Length));
+			else if (arg.StartsWith("--stage-wounds="))
+			{
+				string[] wounds = arg.Substring("--stage-wounds=".Length).Split(',');
+				stageWoundLow = float.Parse(wounds[0], System.Globalization.CultureInfo.InvariantCulture);
+				stageWoundHigh = wounds.Length > 1 ? float.Parse(wounds[1], System.Globalization.CultureInfo.InvariantCulture) : stageWoundLow;
+			}
+			else if (arg.StartsWith("--shutter-on-lance="))
+				shutterOnLance = System.Math.Max(0, int.Parse(arg.Substring("--shutter-on-lance=".Length)));
 			else if (arg.StartsWith("--crowd="))
 				crowd = int.Parse(arg.Substring("--crowd=".Length));
 			// --light-probe: the light pool's readability, measured (_UiShot.LightPool.cs).
@@ -3139,6 +3162,9 @@ public partial class _UiShot : Node
 		// --shutter-on-harvest: the same hold, until a tree is shaken and N frames more.
 		if (!captured && shutterOnHarvest >= 0 && frames >= WarmupFrames - 2 && !HarvestShutterReady())
 			frames = WarmupFrames - 2;
+		// --shutter-on-lance: the same hold, until a needle kills a body outright and N frames more.
+		if (!captured && shutterOnLance >= 0 && frames >= WarmupFrames - 2 && !LanceShutterReady())
+			frames = WarmupFrames - 2;
 		if (captured || ++frames < WarmupFrames)
 		{
 			// A paused tree still draws, so the pause has to be cleared from inside the draw
@@ -4529,6 +4555,24 @@ public partial class _UiShot : Node
 
 	// --shutter-on-ring: true once an Ink Ring has closed since the stage was placed (or, with no stage, since the hold
 	// began) and N frames have passed; after RingShutterGiveUp frames of waiting, true anyway.
+	private bool LanceShutterReady()
+	{
+		lanceHeld++;
+		if (lancesAtHold < 0)
+			lancesAtHold = Lancet.StatOutright;
+		if (lanceSeenAt < 0 && Lancet.StatOutright > lancesAtHold)
+		{
+			lanceSeenAt = lanceHeld;
+			GD.Print($"_UiShot: a needle killed outright ({Lancet.StatOutright} so far, {Lancet.StatStrikes} strikes); shooting in {shutterOnLance} frames");
+		}
+		if (lanceSeenAt >= 0)
+			return lanceHeld - lanceSeenAt >= shutterOnLance;
+		if (lanceHeld < RingShutterGiveUp)
+			return false;
+		GD.Print($"_UiShot: no needle killed outright in {RingShutterGiveUp} frames; shooting anyway");
+		return true;
+	}
+
 	private bool HarvestShutterReady()
 	{
 		harvestHeld++;
@@ -4856,6 +4900,27 @@ public partial class _UiShot : Node
 				e.Health = stageHealth;
 			p.GetParent().AddChild(e);
 			stageCrowd.Add(e);
+		}
+		// --stage-wounds: each body left at its share, evenly spread from LO to HI and dealt round the knot by the same rng,
+		// so the most hurt are not all in its middle.
+		if (stageWoundLow >= 0f && stageCrowd.Count > 0)
+		{
+			int count = stageCrowd.Count;
+			var order = new int[count];
+			for (int i = 0; i < count; i++)
+				order[i] = i;
+			for (int i = count - 1; i > 0; i--)
+			{
+				int j = rng.RandiRange(0, i);
+				(order[i], order[j]) = (order[j], order[i]);
+			}
+			for (int i = 0; i < count; i++)
+			{
+				Enemy e = stageCrowd[order[i]];
+				float share = count > 1 ? Mathf.Lerp(stageWoundLow, stageWoundHigh, i / (float)(count - 1)) : stageWoundLow;
+				e.Health = System.Math.Max(1, Mathf.RoundToInt(e.MaxHealth * Mathf.Clamp(share, 0.01f, 1f)));
+			}
+			GD.Print($"_UiShot: the stage left at {stageWoundLow:P0} to {stageWoundHigh:P0} of its health");
 		}
 		stagePlaced = true;
 		if (castOnStage)
