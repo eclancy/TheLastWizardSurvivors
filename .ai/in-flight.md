@@ -29,7 +29,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
 | 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
 | 73 | Chalice Cup: heals 3 HP every 20 s, waiting until you are hurt - **built** | item rework | done |
-| 74 | The wizard's feet sink when he wades (not Wayland flying, Baba Yaga or Nimue - decided) | visual | S-M |
+| 74 | The wizard's feet sink when he wades; Baba Yaga and Nimue neither sink nor slow in water (decided) | visual + trait | S-M |
 | 75 | The Fenced Bloom's garden heal wears off after 20 HP - **built** | secret | done |
 | 76 | Show Aegis Ward recharging on the spell bar; fix its wrong tagline | HUD | S-M |
 | 77 | Balance pass on every spell (Aegis Ward's recharge looks too fast; Twinstar folded in) | balance | L |
@@ -39,7 +39,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 81 | Rework Buckler Boss to do something that makes sense (e.g. its own small shield) | item rework | S |
 | 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
-| 84 | A wizard's opener: its deed is sealed until the wizard is freed and must be done AS them (not the Familiar or Thorn Vine) | unlocks + save | M-L |
+| 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks + save | M-L |
 | 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
@@ -1153,6 +1153,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     "Find the Buried Runes as Morgan", "Hold the bog lanterns as Paracelsus" - and the original deed keeps whatever
     else it pays. Nimue is freed only at the Throne, so hers is a post-campaign deed. The Achievements page shows a
     sealed deed for a wizard not yet freed (one locked thing on show at a time, `.ai/slow-start.md`).
+    **Decided (Eric, 2026-11-09): *"Yes it should, and Nimue can also be an exception"*** - every opener moves to a new
+    deed of its own, done as its wizard; Spiritual Weapon stays the Ruins boss's, as Thorn Vine stays the Forest's. The
+    exceptions are therefore the Familiar, Thorn Vine and Spiritual Weapon. Name each new deed in the house style (the
+    Feats are birds; a chapter's are its own) and write its card with the wizard's name.
 85. **Status effects stay drawn on enemies hidden for a boss's arrival** (Eric, 2026-11-09: *"When enemies derender for
     the boss spawning animation, the animations for the cc effects on them should also derender"*). During a boss's
     entrance every ordinary enemy is held and hidden (`Node2DGame.BossEntrance.HoldOrdinaryBodies`: `SetHeld(true)`,
@@ -1268,6 +1272,12 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     `Foremost` layer's rule that the wizard is never lost under an effect, with `_UiShot` in a chapter with water.
     **Decided (Eric, 2026-11-09): Baba Yaga and Nimue both stay on top** - her mortar floats, and the Lady of the Lake
     walks on the water (rings round her feet, no sinking). Wayland, flying, stays on top too.
+    **And neither is slowed by water** (Eric, 2026-11-09: *"Baba Yaga and Nimue should also ignore being slowed by
+    water"*). Today only Wings skips the wade's slow (`Player.cs` 7765, `IsWading && !Winged`). Give the two a trait,
+    not a passive - each keeps her own - e.g. a `CharacterData` flag *rides over water* read beside `Winged` there and
+    by the sinking (one rule for "does not sink" and "is not slowed"); the Swallow-Hole's mud should ask the same.
+    **Mind Wayland:** water was half of his passive, Wings (water and floor traps); after this his floor-trap half is
+    his alone, so check his card in `.ai/character-fit.md` still sells what is unique to him.
 75. **The Fenced Bloom's ("Dandelion Grove") heal wears off** (Eric, 2026-11-09: *"the dandelion Grove effect should
     wear off after it heals you for a while"*). Once its lap was walked, the garden healed 0.5 HP a second to anyone
     inside it for the rest of the run - 30 a minute, against the budget's 9-a-minute sources, and with a pen in every
