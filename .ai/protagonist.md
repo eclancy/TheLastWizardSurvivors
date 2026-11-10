@@ -108,6 +108,11 @@ It was **Arcane + Lightning**; it is **Arcane** (`SpellData.tres`). What that mo
 | `ValidateElementReachability` | Lightning's best from it: 2 (base and Overcharge) | 2 (Twin Volley and Overcharge): Lightning's capstone is as reachable as it was |
 | `tools/art/evolution_catalog.json` | Arcane, Lightning | refreshed by `_AscensionAudit --json` (it also picked up Twin Orbs' current wording, which had drifted) |
 
+**2026-11-10: attunement is gone** (in-flight 97, Eric: "remove 'attunement' altogether ... we will rebalance
+around that later"). The attunement row above, the "stays attuned" / "attunement lost" chips and the
+"+12% cooldown" price are history: Magic Missile no longer gains +20 / 45 / 80% in an Arcane build, and no
+hybrid pays for a tag. The measurements below were taken with both, so the balance pass re-measures them.
+
 No level 4 or level 8 option trades Arcane away (`ReplacesElement`), so every route ends in the form and the form's
 +1 Arcane never makes a third element (`ValidateApotheosisCatalog`).
 
@@ -276,8 +281,9 @@ starters' band (x18-26, Marginalia 0-1) to above it**, and as a hybrid he would 
    less as a moment; `CountEvery` 3 is the lever if that reads as a loss. Alone, the dart stays in the peers'
    band (40-60 / 70-130 / 331-465) except Overcharge's level 8, 312 against 331, which was 323 before. Not
    re-measured: the other three disciplines, the Sibyl and the Test Wizard with the dart in their books.
-3. **Magic Missile is attuned in an Arcane build** - +20 / 45 / 80% at tier 2 / 4 / 6 - and Unstable Detonation is
-   12% faster; the nerf (item 2) was measured with both. Twin Volley costs that attunement for its Lightning tag.
+3. **Magic Missile was attuned in an Arcane build** - +20 / 45 / 80% at tier 2 / 4 / 6 - and Unstable Detonation is
+   12% faster; the nerf (item 2) was measured with both. Twin Volley cost that attunement for its Lightning tag.
+   (Attunement was removed on 2026-11-10, in-flight 97.)
 4. **Overcharge is the one level 8 on a pure spell that adds an element** (`.ai/spell-roster.md` 2b says "Level 8
    only deepens"). Kept because the card IS lightning, and the rule given with this change lets a level 4 or
    level 8 option add an element so long as none trades Arcane away; the alternative is Overcharge +Arcane, which

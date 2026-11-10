@@ -353,7 +353,7 @@ public static class EvolutionStatReaders
 			SpellEffect.Crop, SpellEffect.CritDamage),
 		// The surgeon's needle (scripts/Lancet.cs): Lancet.Refresh reads a needle's damage and the reach it chooses in
 		// (GetReachAtLevel, Range), Player.FireLancet the needles a cast throws - Projectiles and Amount, Twin Lancets' +1 among
-		// them - and the fire loop the throw's cooldown, Bloodletting's and Bodkin's 12% with it. Every strike passes the spell
+		// them - and the fire loop the throw's cooldown. Every strike passes the spell
 		// as its source, so Bodkin's Wither and a per-spell crit reach it. No Area, Speed or Scale on a card: a needle is drawn
 		// at its own size and flies at its own speed.
 		[Lancet.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Rider | EvolutionStat.Amount,
@@ -369,7 +369,7 @@ public static class EvolutionStatReaders
 			SpellEffect.CritChance, SpellEffect.Pierce, SpellEffect.CritDamage),
 		["cinderbreath"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider,
-			"Flamethrower.RefreshComputedStats and FlamePuff (area is the width of a tongue, never its reach; Backdraft, Ember Wake and Dragon's Breath's reach and wall by id, through CinderGround)",
+			"Flamethrower.RefreshComputedStats and FlamePuff (area is the width of a tongue, never its reach; Projectiles are jets, each on its own enemy - Backdraft's second flame; Ember Wake's embers and Dragon's Breath's reach and wall by id, through CinderGround; Fire Fan's sweep by id)",
 			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.CritDamage),
 		// The combinations (ComboCatalog). Terminal - no level-ups and no milestones of their own - so no card
 		// reaches them; the row says what the script reads of the spell itself and of the frozen parents it

@@ -643,7 +643,11 @@ phone it was drawing the heading at 16px), sets the Display role and gives the l
 stone-deep band with a gold rule at its foot. Heading ink on the band is 17.3:1; on the old
 floor's bright stone lips it was 1.25:1. On a phone the heading says only "Level Up!",
 left-aligned, because the Ascensions button owns the right of that row; `AlignAscensionButton`
-keeps the button centred on the band wherever layout puts it.
+keeps the button centred on the band wherever layout puts it - **by the button's real height**, not
+`MinTouchTarget` (2026-11-10, in-flight 92, first raised as 55): the skin's 14-a-side frame margins and
+the Label font make the button 56 tall on a PC and taller on a phone, and centring a 48 box left the
+extra hanging below the band, the button's foot over the gold rule. It also re-centres when the button
+itself is resized (`Resized`), since its height is only known once its skin and font are laid out.
 
 **The floor is matte.** `tools/art/levelup_frames.py:plate` lays the same running-bond cobbles in
 two adjacent dark `stone` tones with a one-step lip on top only - no bone-white lips, no glints, no
@@ -896,8 +900,8 @@ level-up card, whose chips keep their 88%-over-the-card face (now nudged by `Chi
 the boon enamel was 4.45:1). A tap opens **`ElementTagPopover`**, one card built by one function:
 the element on its own colour, how many the player holds and their tier, what taking the thing the
 chip sits on makes it (`CountAfter` on a card, `Gain` on a relic), each tier's effect - ticked when
-reached, "N more" in the flag ink on the next one - and what else the tags buy (the attunement
-bonus, the ascension's 4). On a PC the same card is the chip's hover tooltip; a touchscreen gets
+reached, "N more" in the flag ink on the next one - and what else the tags buy (the ascension's 4;
+the attunement bonus it also named was removed on 2026-11-10, in-flight 97). On a PC the same card is the chip's hover tooltip; a touchscreen gets
 none, since an emulated mouse left resting on the chip after a tap would raise a second copy.
 
 **On a pad, Y reads the selected card's tags** (`LevelUpMenu._Input`, 2026-10-27: "there should
@@ -909,11 +913,13 @@ the action row while a pad is connected. It reads the card's own chips, so it wo
 boon, a mutation and an Ascension path alike. `_UiShot --mixed-deal --pad=release,y` photographs it.
 
 **A gained tag is the element's chip, not words** (`BuildTagGainRow`): a mutation or an Ascension that
-adds an element shows "Arcane +1" on Arcane's own colour, with a note in Label - "stays attuned",
-"attunement lost", "+12% cooldown" or "replaces Fire" - where it was "+1 Arcane  (+12% cooldown)" in
-one ink whatever the element ("when you add a tag, show the tag color ... the +1 tag should not just
-be text"). The chip carries its gain (`ElementChip.Gain`), so the card it opens says what taking it
-makes the count. Not a focus stop: the card is.
+adds an element shows "Arcane +1" on Arcane's own colour, and a trade adds a note in Label, "replaces
+Fire" - where it was "+1 Arcane  (+12% cooldown)" in one ink whatever the element ("when you add a
+tag, show the tag color ... the +1 tag should not just be text"). The other notes, "stays attuned",
+"attunement lost" and "+12% cooldown", went with attunement and the hybrid's price on 2026-11-10
+(in-flight 97): every gain is free now, so there is nothing else to say. The chip carries its gain
+(`ElementChip.Gain`), so the card it opens says what taking it makes the count. Not a focus stop: the
+card is.
 
 **And it says the count, not the gain** (2026-10-28: "when you see that a mutation or item adds more of
 a specific tag, it should show the typical tag that tells you how many tags you have out of how many

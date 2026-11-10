@@ -4773,9 +4773,6 @@ public partial class Node2DGame : Node2D
 		box.AddChild(stats);
 		if (BuildPauseTagChips(spell.GetElementWeights().Select(p => (p.Key.ToString(), p.Value))) is Control chips)
 			box.AddChild(chips);
-		string attunement = DescribeAttunement(spell);
-		if (!string.IsNullOrEmpty(attunement))
-			box.AddChild(BuildDetailLabel(attunement, PauseInk.Reward));
 		Control details = BuildSpellClassificationBlock(spell);
 		details.Visible = escapeSpellDetailsShown;
 		escapeSpellDetailBlocks.Add(details);
@@ -4978,8 +4975,8 @@ public partial class Node2DGame : Node2D
 					StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
 					SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
 				});
-				// Gold once it is whole, the same gold as an attunement that is paying; the plain
-				// ink while it is still being gathered.
+				// Gold once it is whole, the reward's gold; the plain ink while it is still being
+				// gathered.
 				string text = complete ? $"{set.Name}  {have}/{need} - complete" : $"{set.Name}  {have}/{need}";
 				line.AddChild(BuildDetailLabel(text, complete ? PauseInk.Reward : PauseInk.InkSoft,
 					ResponsiveLayout.TextRole.Label));
@@ -5347,28 +5344,7 @@ public partial class Node2DGame : Node2D
 		if (weights == null || weights.Count == 0)
 			return "No elements";
 
-		string tags = string.Join(", ", weights.OrderBy(p => p.Key.ToString()).Select(p => p.Value > 1 ? $"{p.Key} x{p.Value}" : p.Key.ToString()));
-
-		// A spell naming exactly one element is attuned to it and scales with that element's tier.
-		// Worth saying on every card: it is the reason a single-element spell is not simply worse
-		// than a hybrid that hands you twice the element weight.
-		return weights.Count == 1 ? $"{tags} - Attuned" : tags;
-	}
-
-	// The live value of a spell's attunement, so the pause screen answers "is going deeper on Fire
-	// actually doing anything for my Fireball yet" without the player working it out from the table.
-	private string DescribeAttunement(SpellData spell)
-	{
-		Element? attuned = Player.GetAttunedElement(spell);
-		if (attuned == null || player == null)
-			return string.Empty;
-
-		int count = player.GetElementInstanceCounts().TryGetValue(attuned.Value, out int value) ? value : 0;
-		float multiplier = player.GetAttunementMultiplier(spell);
-		if (multiplier <= 1.0f)
-			return $"Attuned to {attuned.Value} ({count}/2) - no bonus until {attuned.Value} reaches 2";
-
-		return $"Attuned to {attuned.Value} ({count}) - +{(multiplier - 1f) * 100f:0}% damage";
+		return string.Join(", ", weights.OrderBy(p => p.Key.ToString()).Select(p => p.Value > 1 ? $"{p.Key} x{p.Value}" : p.Key.ToString()));
 	}
 
 	// Three sentences in place of "Classification: Targeting NearestEnemy | Shape ProjectileHit |

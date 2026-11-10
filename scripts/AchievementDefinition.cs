@@ -813,7 +813,7 @@ public static partial class AchievementDefinitions
 		},
 		new()
 		{
-			Id = "set_collector", DisplayName = "Attuned",
+			Id = "set_collector", DisplayName = "Fully Enchanted",
 			Description = "Complete 3 different relic sets.",
 			RewardText = "250 Arcane Energy", CurrencyReward = 250,
 			Category = AchievementCategory.Exploration,

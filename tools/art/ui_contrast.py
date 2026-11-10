@@ -489,7 +489,6 @@ def family_pairs(add, rev, floors):
             add(name, g, "Ink (name, description)", INK, BODY)
             add(name, g, "InkSoft (type line, element line)", INK_SOFT, BODY)
             add(name, g, "Rubric (deltas, advice)", RUBRIC, BODY)
-            add(name, g, "InkGold (stays attuned)", INK_GOLD, BODY)
         g = centre(load(UI + "ui-spell-page-upgrade%s.png" % lit, rev))
         add("upgrade page%s" % (", lit" if lit else ""), g, "rubric rule", UPGRADE_RULE, GRAPHIC)
         add("upgrade page%s" % (", lit" if lit else ""), g, "pip ring/held (gold base)", PIP_GOLD_BASE, GRAPHIC)

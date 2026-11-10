@@ -1120,8 +1120,8 @@ shop (A3) or the vaults in the world (A4 and the chapter agents) is built.
     Wishing Coin or Gilded Mote from schema 9's payback has those events' deeds done: it owns what
     they pay.
 11. **Kinds of the existing deeds**: the Coursing is a Road deed of the Broken Circle (it names the
-    chapter and frees a wizard secret until it opens); Relic Hunter, Attuned and the Grimoire are
-    Collection; the rest of the hand-written non-boss deeds are Feats. John Dee's Mortlake deed is a
+    chapter and frees a wizard secret until it opens); Relic Hunter, Fully Enchanted (`set_collector`, called
+    Attuned until 2026-11-10, when attunement was removed - in-flight 97) and the Grimoire are Collection; the rest of the hand-written non-boss deeds are Feats. John Dee's Mortlake deed is a
     Feat with no chapter, so every gate counts him.
 12. **The reveal rule is generalised**: a wizard a gate counts must be revealed by a chapter before
     that gate (`ValidateSecret`), as `.ai/endgame-castle.md` 1.6 asks.

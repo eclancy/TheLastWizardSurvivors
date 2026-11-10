@@ -321,7 +321,7 @@ What a long night would otherwise have cheapened, and now cannot:
 | The Coursing (100 hares as Laelaps, one run) | one run | the first night |
 | every Conjunction Feat, the Sovereign Rite's Feat | the first time it is met | the first night |
 | The Taker Taken, The Road Restored | each chapter's best clear by preset | the first night's clear, which is one |
-| Exterminator, Elite Hunter, the Library at Mortlake, Relic Hunter, Attuned | lifetime totals | the first night's |
+| Exterminator, Elite Hunter, the Library at Mortlake, Relic Hunter, Fully Enchanted | lifetime totals | the first night's |
 | side events, secrets, vaults, keepsakes | found | **counted when found** |
 
 ### 3.2 Arcane Energy

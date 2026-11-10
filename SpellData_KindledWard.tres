@@ -7,8 +7,7 @@
 ; The autonomous archetype: cast it and it keeps working somewhere you are not.
 ;
 ; BaseProjectileCount is how many wards may burn at once, not how many are made per cast - one is
-; made per cooldown until the cap is reached. Pure Light, so it is attuned, which is the trade a
-; single-tag spell gets for the second tag it does not carry.
+; made per cooldown until the cap is reached. Pure Light.
 
 ; Each ward BURNS WIDER every level (2026-10-27, "kindled ward ... attack area should grow as they
 ; level up so they become more of a spectacle"): an Area line at every level, a fraction on the

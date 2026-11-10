@@ -605,12 +605,6 @@ public partial class MainMenu
 				// chip would take three pushes to leave a card. A tap still opens the element's card.
 				foreach (var (element, weight) in entry.ElementList)
 					chips.AddChild(CodexRows.BuildChip(element, weight > 1 ? $"{element} x{weight}" : element.ToString(), false));
-				if (entry.ElementList.Count == 1)
-				{
-					Label attuned = CodexRows.MakeText("Attuned", ResponsiveLayout.TextRole.Label, ShopInkSoft);
-					attuned.AutowrapMode = TextServer.AutowrapMode.Off;
-					chips.AddChild(attuned);
-				}
 			}
 			footer.AddChild(chips);
 		}

@@ -5,19 +5,19 @@ namespace TheOneHeMissed.scripts;
 
 /// <summary>
 /// What Cinderbreath leaves on the ground (.ai/spell-roster.md section 2e): Ember Wake's embers,
-/// dropped where the tongues went out across the swept cone; Dragon's Breath's wall of fire, standing
-/// across the jet's path where its reach ended; and Backdraft's burst at the tip as a burn goes out.
+/// dropped where the tongues went out across the swept cone, and Dragon's Breath's wall of fire, standing
+/// across the jet's path where its reach ended. (Backdraft's burst at the tip went on 2026-11-10, when
+/// Backdraft became a second flame - Flamethrower.BackdraftId.)
 /// </summary>
 /// <remarks>
 /// One node per emitter, parented to the arena so the fire stays where it fell while the wizard walks
-/// on. Every ember, wall and burst is a slot in a fixed array, ticked on one half-second clock and
+/// on. Every ember and wall is a slot in a fixed array, ticked on one half-second clock and
 /// drawn out of the radius or the band it tests, so nothing is allocated per tongue or per frame and
 /// the fire drawn is the fire that hurts.
 ///
 /// ON THE GROUND (.ai/godot-engine.md, "Draw layers"): the char under the embers and the wall is at
 /// absolute <see cref="DrawLayers.Ground"/>, and the flames standing in it at
-/// <see cref="CraterGround.FireZ"/>, one above - under every body, as Cataclysm's craters are. A burst
-/// is thrown up into the air by ImpactDebrisLayer, over them. An element path (Hellbreath) repaints
+/// <see cref="CraterGround.FireZ"/>, one above - under every body, as Cataclysm's craters are. An element path (Hellbreath) repaints
 /// the flames in its ramp: the fire node carries the path's ElementRampMaterial over the crater fire's
 /// sprite (the tongues take the same ramp in their own shader, FlamePuff.MaterialFor), and the char
 /// below - ScorchGround's burns, pixel art since 2026-10-29 - never needs it.
@@ -29,7 +29,6 @@ public partial class CinderGround : Node2D
 
 	private const int MaxEmbers = 48;
 	private const int MaxWalls = 6;
-	private const int MaxBursts = 8;
 	private const float TickSeconds = 0.5f;
 	// How much of a body beside a wall still stands in its fire: half a skeleton's width, as the beam's
 	// pierce allowance is measured (ScorchingRayBeam.PierceHalfWidth).
@@ -63,29 +62,14 @@ public partial class CinderGround : Node2D
 		public bool Live;
 	}
 
-	// A backdraft's fire, after its blow has landed: a blaze in the bowl of the burst, burning down
-	// inside a second (CraterFire's plain impact), with a scorch under it.
-	private struct Burst
-	{
-		public Vector2 At;
-		public float Radius;
-		public float Age;
-		public uint Seed;
-		public bool Live;
-	}
-
 	private readonly Ember[] embers = new Ember[MaxEmbers];
 	private readonly Wall[] walls = new Wall[MaxWalls];
-	private readonly Burst[] bursts = new Burst[MaxBursts];
 	private int nextEmber;
 	private int nextWall;
-	private int nextBurst;
 	private int live;
 	private uint seedClock;
 	private float tick = TickSeconds;
 	private Node2D ground;
-	private static readonly ElementColors.Ramp FireRamp = ElementColors.GetRamp(Element.Fire);
-	private const float BurstSeconds = 1.6f;
 
 	/// <summary>The element path's repaint for the flames (Hellbreath), or null for plain fire.</summary>
 	public ShaderMaterial PathMaterial
@@ -137,29 +121,6 @@ public partial class CinderGround : Node2D
 		Wake();
 	}
 
-	/// <summary>
-	/// Backdraft: everything within <paramref name="radius"/> of <paramref name="at"/> takes
-	/// <paramref name="damage"/> now, the burst is thrown out to exactly that radius, and a short blaze
-	/// burns down where it rolled up.
-	/// </summary>
-	public void Backdraft(Vector2 at, float radius, int damage)
-	{
-		if (PlayerRef != null && IsInstanceValid(PlayerRef) && damage > 0)
-		{
-			float r2 = radius * radius;
-			foreach (Enemy enemy in EnemyRegistry.Snapshot)
-			{
-				if (IsInstanceValid(enemy) && !enemy.IsDying && enemy.GlobalPosition.DistanceSquaredTo(at) <= r2)
-					PlayerRef.DealDamageToEnemy(enemy, damage, source: SpellData);
-			}
-		}
-		if (GetParent() is Node2D arena)
-			ImpactDebrisLayer.Spawn(arena, at, radius, FireRamp, Colors.White);
-		bursts[nextBurst] = new Burst { At = at, Radius = radius, Age = 0f, Seed = NextSeed(), Live = true };
-		nextBurst = (nextBurst + 1) % MaxBursts;
-		Wake();
-	}
-
 	private uint NextSeed() => ++seedClock * 2654435761u;
 
 	private void Wake()
@@ -186,13 +147,6 @@ public partial class CinderGround : Node2D
 			if (walls[i].Age >= walls[i].Life) walls[i].Live = false;
 			else live++;
 		}
-		for (int i = 0; i < MaxBursts; i++)
-		{
-			if (!bursts[i].Live) continue;
-			bursts[i].Age += dt;
-			if (bursts[i].Age >= BurstSeconds) bursts[i].Live = false;
-			else live++;
-		}
 		if (warmLight && LightPool.Lit)
 			ShedLight();
 
@@ -214,11 +168,10 @@ public partial class CinderGround : Node2D
 
 	// FIRE ON THE GROUND IS A LIGHT in a dark chapter (LightPool, .ai/light-pool.md section 3): every ember a
 	// small light guttering as it goes out, every wall a band of light along it (LightPool.LightAlong) that
-	// catches and goes out with its flames, every backdraft's blaze a flare dying with its glow. The fixed slots
+	// catches and goes out with its flames. The fixed slots
 	// this node already walks; the pool keeps the strongest sixteen and culls what is off the screen.
 	private const float EmberLightReach = 2.5f;
 	private const float WallLightReach = 64f;
-	private const float BurstLightReach = 2.2f;
 
 	private void ShedLight()
 	{
@@ -235,12 +188,6 @@ public partial class CinderGround : Node2D
 			float caught = Mathf.Clamp(walls[i].Age / WallCatchSeconds, 0f, 1f);
 			float fade = Mathf.Clamp((walls[i].Life - walls[i].Age) / WallGoingOutSeconds, 0f, 1f);
 			LightPool.LightAlong(walls[i].A, walls[i].B, WallLightReach, 0.7f * caught * fade);
-		}
-		for (int i = 0; i < MaxBursts; i++)
-		{
-			if (bursts[i].Live)
-				LightPool.Light(bursts[i].At, bursts[i].Radius * BurstLightReach,
-					0.8f * (1f - Mathf.Clamp(bursts[i].Age / 0.8f, 0f, 1f)));
 		}
 	}
 
@@ -292,8 +239,8 @@ public partial class CinderGround : Node2D
 	}
 
 	// The char under it all, on the ground child: each ember a burn as wide as it burns, with a bed of
-	// coals in its cracks that cools as it dies; each wall a band of burns along it as thick as it burns;
-	// each backdraft a burn in the bowl of its blast. Pixel art through ScorchGround (the pixel-art pass,
+	// coals in its cracks that cools as it dies; each wall a band of burns along it as thick as it burns.
+	// Pixel art through ScorchGround (the pixel-art pass,
 	// 2026-10-29: these were translucent squashed DrawCircles and wide DrawLines - a dark wash that
 	// doubled where two overlapped). They crumble away edge first as they go out.
 	private void DrawChar()
@@ -323,19 +270,10 @@ public partial class CinderGround : Node2D
 				ScorchGround.Draw(ground, a.Lerp(b, t), w.HalfThickness, 0.5f * fade, fade, w.Seed + (uint)k * 7919u);
 			}
 		}
-		for (int i = 0; i < MaxBursts; i++)
-		{
-			Burst s = bursts[i];
-			if (!s.Live) continue;
-			float fade = 1f - Mathf.Clamp((s.Age - 0.6f) / (BurstSeconds - 0.6f), 0f, 1f);
-			float glow = 1f - Mathf.Clamp(s.Age / 0.8f, 0f, 1f);
-			ScorchGround.Draw(ground, ground.ToLocal(s.At), s.Radius * 0.5f, glow, fade, s.Seed);
-		}
 	}
 
-	// The flames, on this node: every ember's fire filling its radius and every burst's blaze
-	// (CraterFire, the craters' own fire), then every wall's row of blazes; then every ember's and
-	// burst's sparks, so one texture's draws stay together and batch.
+	// The flames, on this node: every ember's fire filling its radius (CraterFire, the craters' own
+	// fire), then every wall's row of blazes, so one texture's draws stay together and batch.
 	public override void _Draw()
 	{
 		for (int i = 0; i < MaxEmbers; i++)
@@ -344,22 +282,10 @@ public partial class CinderGround : Node2D
 			if (e.Live)
 				CraterFire.DrawFire(this, ToLocal(e.At), e.Radius + 12f, e.Age, e.Life, e.Seed, Colors.White);
 		}
-		for (int i = 0; i < MaxBursts; i++)
-		{
-			Burst s = bursts[i];
-			if (s.Live)
-				CraterFire.DrawFire(this, ToLocal(s.At), s.Radius, s.Age, 0f, s.Seed, Colors.White);
-		}
 		for (int i = 0; i < MaxWalls; i++)
 		{
 			if (walls[i].Live)
 				DrawWall(walls[i]);
-		}
-		for (int i = 0; i < MaxBursts; i++)
-		{
-			Burst s = bursts[i];
-			if (s.Live)
-				CraterFire.DrawEmbers(this, ToLocal(s.At), s.Radius, s.Age, 0f, s.Seed, Colors.White);
 		}
 	}
 

@@ -19,7 +19,7 @@ Constellation.
 
 Read first: `.ai/spell-roster.md` section 2 (aim, cadence, demand, payload) and section 1 (the three
 collisions), `.ai/spell-variety.md` section 6 (what to take from the genre), `.ai/gameplay-design.md`
-(element tiers, attunement, the two-element ceiling), `.ai/decisions/2026-10-10-apotheosis.md`.
+(element tiers, the two-element ceiling), `.ai/decisions/2026-10-10-apotheosis.md`.
 
 ---
 
@@ -88,8 +88,9 @@ elements: the two-element ceiling protects the pure-or-hybrid trade at levels 4 
 is past both. Every recipe below names at most three with its named Ascensions. A pure parent's level 4
 **element path** can still bring a fourth (Starfall's Frostfall brings Ice); **the strip does not offer a
 fusion that would name four**, and the browser's row says why. Each recipe lists the path that does it.
-A combination names two or more elements, so it is never attuned; the 1.2 target already counts the
-attunement a pure parent loses.
+A combination names two or more elements, so it was never attuned; the 1.2 target counted the
+attunement a pure parent lost (attunement was removed on 2026-11-10, in-flight 97, so the target is
+re-measured in the balance pass).
 
 **The Apotheosis.** A wizard's own starting spell is never an ingredient for him: its final form is his
 Apotheosis. Any other wizard may fuse it. A recipe that names a wizard's own spell (Tidal Wall on Tituba's

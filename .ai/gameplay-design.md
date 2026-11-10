@@ -23,7 +23,8 @@
 - Element counts create threshold bonuses at 2, 4, and 6 owned instances, summed across the six
   equipped slots (passives included).
 - So a hybrid contributes 2 total weight (1 + 1) and a pure spell only 1. What a pure spell gets
-  back is **attunement**, below.
+  back is depth: only it can reach 3 of one element, and only it can branch (below). It also had a
+  damage bonus for staying single, removed on 2026-11-10 (see "Attunement (removed)").
 - Canonical elements: Fire, Ice, Arcane, Darkness, Light, Grass, Earth, Wind, Lightning, Poison, Metal, Water.
 
 ### Element Threshold Balance
@@ -45,8 +46,7 @@ carrier and carries Ice as well, so four of Water's seven tag sources were boons
 element was reachable only by spending most of six shared boon slots on it. The reachability check
 could not see that, because it asks whether six is reachable and not what reaching it costs.
 **Riptide** is the answer: a pure-Water surge that does not home, pierces a line of enemies and
-drags what it passes. Being pure, it is attuned, which is the compensation a single-tag spell gets.
-It doubles as the Water wizard's signature spell in the campaign roster.
+drags what it passes. It doubles as the Water wizard's signature spell in the campaign roster.
 
 ### Status effects
 
@@ -190,13 +190,35 @@ target, it expires on its own, and everything benefits from it, including other 
 boons and chest-item effects. `Player.DealDamageToEnemy` applies it after mitigation-free damage
 assembly so it compounds with crits rather than replacing them.
 
-### Attunement
-A spell that names **exactly one** element is *attuned* to it, and deals more damage the deeper that
-element is stacked: **+20% / +45% / +80%** at that element's tier 2 / 4 / 6. Hybrids get nothing.
+### Attunement (removed 2026-11-10)
+Until 2026-11-10 a spell that named **exactly one** element was *attuned* to it and dealt +20% / +45%
+/ +80% damage at that element's tier 2 / 4 / 6, and a hybrid paid +12% cooldown for every tag a
+level 4 or 8 branch deepened (`AttunementGainCooldownCost`). Eric removed both, and every word of
+them on the cards, the pause screen, the shop and the element card (in-flight 97: "remove 'attunement'
+altogether, and all references to it. we will rebalance around that later"). Element tags and the
+tiers' own bonuses (above) are unchanged; so are the element paths and the two-element ceiling below.
+A pure spell at its element's tier 6 lost its x1.80 (44% of its damage) and every hybrid branch that
+deepens became 12% faster, so runs shift until the balance pass (in-flight 77). What the harness
+measured either side of the change is that pass's starting point:
 
-This is the whole trade. A hybrid buys breadth immediately; a pure spell buys depth, and only pays
-out once the player has committed. It is read from the spell's *current* weights, so it survives
-evolution — see below.
+`_BalanceHarness --minutes=8 --all-unlocked --immortal --seed=1234`, one run each, before -> after (other
+sessions' Godot processes shared the machine; the same run repeated before the change differed by 7%):
+
+| run | level at 8:00 | damage dealt | kills |
+|---|---|---|---|
+| Pyromancer, `--policy=ordinary` (leans on one element) | 22 -> 23 | 97,785 (repeat 105,005) -> 97,175 | 2,349 -> 2,425 |
+| Pyromancer, default policy (spreads) | 20 -> 20 | 95,122 -> 87,829 | 2,383 -> 2,287 |
+| Stormcaller, `--policy=ordinary` | 21 -> 20 | 115,697 -> 100,633 | 2,379 -> 2,349 |
+| Stormcaller, default policy | 20 -> 19 | 92,957 -> 91,240 | 2,318 -> 2,271 |
+| Cinderbreath alone, pure (Backdraft, Dragon's Breath; `--solo --upgrade-chance=1 --force-ascension --enemy-hp=10`) | 23 -> 23 | 646,412 -> 607,067 | 1,978 -> 1,882 |
+| Cinderbreath alone, hybrid (Hellbreath, Dragon's Breath; same flags) | 21 -> 22 | 519,113 -> 548,258 | 1,639 -> 1,781 |
+| Chain Lightning alone, pure (Storm Reach, Cascade; same flags without `--enemy-hp`) | 22 -> 23 | 95,041 -> 90,113 | 2,122 -> 2,106 |
+| Chain Lightning alone, hybrid (Forked Surge, Cascade; same) | 21 -> 21 | 91,138 -> 96,083 | 2,260 -> 2,330 |
+
+The cleanest reading is Chain Lightning alone at `--enemy-hp=10`, where the crowd is never cleared and the
+damage is the spell's: pure, levels 4-6 fell 56 / 65 / 74 -> 47 / 56 / 66 a second (the x1.2 of Lightning
+tier 2, gone); hybrid, 82 / 138 / 164 -> 81 / 138 / 166 (nothing to lose). A whole loadout moved by less
+than the noise: the bots' books mix elements, so few spells were pure at tier 4 or 6 for long.
 
 ### Element growth through evolution
 Levelling used to do nothing at all for element counts. Now **every** spell's level 4 and level 8
@@ -206,25 +228,23 @@ evolutions can carry an element gain, under one governing rule:
 
 That rule is what keeps the pure/hybrid trade honest, and it splits the two apart:
 
-| | level 4 | level 8 | ceiling | cost |
-|---|---|---|---|---|
-| **Pure** (1 element) | deepen it, **or** branch to a second | deepen it | 3 of its element, or 2 elements | free |
-| **Hybrid** (2 elements) | deepen element A | deepen element B | 2 + 2 | +12% cooldown per gain |
+| | level 4 | level 8 | ceiling |
+|---|---|---|---|
+| **Pure** (1 element) | deepen it, **or** branch to a second | deepen it | 3 of its element, or 2 elements |
+| **Hybrid** (2 elements) | deepen element A | deepen element B | 2 + 2 |
 
 - **Only a pure spell can reach 3 instances of one element,** and only a pure spell can branch — a
   hybrid has both of its element slots filled already, so its evolutions can only deepen what it
-  carries. Together with attunement, that is what a pure spell gets for its halved base weight.
+  carries. That is what a pure spell gets for its halved base weight.
 - **Branching is a level 4 decision, made once.** Allowing it at level 8 as well let a pure spell
   reach three elements; by the ascension tier a spell's identity is settled anyway.
-- **A hybrid buys its gains.** A pure spell's deepening is compensation and is free; a hybrid is
-  owed nothing, so each gain costs `SpellEvolutionCatalog.AttunementGainCooldownCost` (+12%
-  cooldown). Without a price every hybrid would take the tag every time and depth would stop being
-  a decision. Cards state the price.
+- **Every gain is free** since 2026-11-10. A hybrid used to pay +12% cooldown for each
+  (`AttunementGainCooldownCost`, and the Gloam Veil's in its walk), the other side of attunement
+  above, and the price went with it.
 - **A hybrid may TRADE one of its elements for another** (`SpellEvolutionOption.ReplacesElement`,
   2026-10-23). It is the one way a hybrid changes element: the branch removes that element's weight
-  before adding its own, so the spell still names two and the ceilings above hold. A trade is not a
-  gain - total weight is unchanged - so it costs no cooldown; the card says "Poison → Fire (trades
-  Poison away)". First use: Toxic Spore Burst's Ember Caps (`.ai/spell-roster.md`), the player's
+  before adding its own, so the spell still names two and the ceilings above hold. The card says
+  "Poison → Fire (trades Poison away)", and its element chip carries "replaces Poison". First use: Toxic Spore Burst's Ember Caps (`.ai/spell-roster.md`), the player's
   "changing the element of the spores along with the animation". A required Apotheosis path may
   never trade (`RegressionChecks.CheckRequiredPath`).
 - **An untagged level 8 is gated on the spell's current tags**, level 4 branch included
@@ -252,8 +272,8 @@ up, such as a water element spell becoming water + poison later." The rules that
 > half** - it already names two elements and may never name a third. **An element can only reach its
 > 6-instance capstone if it has a pure spell**, and all twelve have one.
 
-- **A branch is a different spell from then on.** It costs attunement (the spell names two elements),
-  so it pays something a deepening does not: its new element's status on **every hit** of the spell,
+- **A branch is a different spell from then on.** It spreads the spell over two elements, so it pays
+  something a deepening does not: its new element's status on **every hit** of the spell,
   and a look that says which element it took.
 - **One status per element, in one place** (`ElementPaths.RiderFor`), applied in
   `Player.DealDamageToEnemy` off the `SpellData` that dealt the hit, so no spell can take a branch and
@@ -290,7 +310,7 @@ grants exactly one tag; a branch moves that tag to another element rather than a
 tag income of a run is unchanged, and the tags were never what limited Ascensions (section "How many
 Ascensions a run gets": 33 of 36 non-ascended spells short of spell LEVEL). Both bots pick the
 deepening branch for their focus element, so their runs are untouched; a player who branches gives
-up attunement for a second element's tier and a status.
+up depth in one element for a second element's tier and a status.
 
 Measured after the change (2026-10-23, `--immortal --all-unlocked`, seed 1234, one run at a time) -
 **but on a machine saturated by other sessions' Godot processes**, so the clock is not comparable

@@ -2405,6 +2405,9 @@ public partial class LevelUpMenu : CanvasLayer
 			heading.ItemRectChanged += AlignAscensionButton;
 		if (GetNodeOrNull<Control>("Panel/VBoxContainer") is Control column)
 			column.ItemRectChanged += AlignAscensionButton;
+		// And the button's own size: it is centred by its real height, which is only known once its
+		// skin and font have been laid out.
+		ascensionButton.Resized += AlignAscensionButton;
 	}
 
 	private AscensionReadyGlow ascensionGlow;
@@ -2468,10 +2471,15 @@ public partial class LevelUpMenu : CanvasLayer
 		if (!heading.IsVisibleInTree())
 			return;
 
-		float top = heading.GlobalPosition.Y - panel.GlobalPosition.Y
-			+ (heading.Size.Y - ResponsiveLayout.MinTouchTarget) * 0.5f;
+		// Centred by the button's REAL height (in-flight 92, first raised as 55). It centred a
+		// MinTouchTarget box, but the skin's frame margins (14 a side) and the Label font make the
+		// button taller than its minimum - 56 on a PC, more on a phone - and a Control never shrinks
+		// below that, so the extra all hung below the band: the button sat 4 px low on a PC and more
+		// on a phone, its foot over the band's gold rule.
+		float height = MathF.Max(ascensionButton.Size.Y, ascensionButton.GetCombinedMinimumSize().Y);
+		float top = heading.GlobalPosition.Y - panel.GlobalPosition.Y + (heading.Size.Y - height) * 0.5f;
 		ascensionButton.OffsetTop = top;
-		ascensionButton.OffsetBottom = top + ResponsiveLayout.MinTouchTarget;
+		ascensionButton.OffsetBottom = top + height;
 	}
 
 	/// <summary>
@@ -2782,7 +2790,7 @@ public partial class LevelUpMenu : CanvasLayer
 	/// <summary>
 	/// The element an evolution adds, as that element's own chip - "Arcane 3/4" in Arcane's colour, the
 	/// count the player would hold after taking it over the next tier's threshold, the same chip a new
-	/// spell's card wears - and a short note on what it keeps or costs. Null for the untagged options,
+	/// spell's card wears - and, for a trade, which element it gives up. Null for the untagged options,
 	/// which is most of them.
 	/// </summary>
 	/// <remarks>
@@ -2799,23 +2807,16 @@ public partial class LevelUpMenu : CanvasLayer
 	/// for the next level." A gain is arithmetic the player has to do on a paused screen; the count after
 	/// it is the answer (BuildSpellTagChips' remarks). The +1 is still on the chip's card.
 	///
-	/// What it is FOR: the most consequential half of the level 4 and level 8 choice is whether the
-	/// branch deepens the spell's element - keeping it attuned and pushing its tier up - or trades
-	/// attunement for a second one, and a pure spell's gain is free (it is the compensation for its
-	/// halved base weight) while a hybrid's is bought with cooldown, which has to be on the card or
-	/// the choice looks like a free upgrade.
+	/// What it is FOR: the most consequential half of the level 4 and level 8 choice is which element
+	/// the branch pushes toward its next tier, and that is a count, not a sentence. Every gain is free
+	/// since 2026-11-10 (in-flight 97 removed the cooldown a hybrid paid for one and the bonus a pure
+	/// spell kept for staying single), so the only note left is a trade's.
 	/// </remarks>
 	private Control BuildTagGainRow(SpellEvolutionOption evo, LevelUpOption option,
 		FlowContainer.AlignmentMode alignment, CardFamily family)
 	{
 		if (evo?.BonusElementWeights == null || evo.BonusElementWeights.Count == 0)
 			return null;
-
-		// The spell's existing tags, so the note can say which way this branch goes. Empty when the
-		// preview data was not filled in, in which case the note says only what it costs.
-		Dictionary<string, int> current = option?.SpellElementTags ?? new Dictionary<string, int>();
-		bool deepens = false;
-		bool branches = false;
 
 		var row = new HFlowContainer
 		{
@@ -2830,9 +2831,6 @@ public partial class LevelUpMenu : CanvasLayer
 		{
 			if (!Enum.TryParse(pair.Key, true, out Element element))
 				continue;
-			bool alreadyCarried = current.ContainsKey(pair.Key);
-			deepens |= alreadyCarried && current.Count == 1;
-			branches |= !alreadyCarried && current.Count == 1;
 			Color face = CodexRows.ChipFill(ChipBackground(ElementColors.GetColor(element), family));
 			// What the player holds now (every spell, boon and relic) plus what this branch adds. -1 only
 			// with no player in the tree (a tool's preview), when the gain is all there is to say.
@@ -2848,20 +2846,14 @@ public partial class LevelUpMenu : CanvasLayer
 		if (row.GetChildCount() == 0)
 			return null;
 
-		// A trade (SpellEvolutionOption.ReplacesElement) is neither a deepening nor a branch: the spell
-		// keeps the same number of tags and gives one up, so the note says which - it is not a gain,
-		// so there is nothing to price.
-		string note = !string.IsNullOrEmpty(evo.ReplacesElement) ? $"replaces {evo.ReplacesElement}"
-			: deepens ? "stays attuned"
-			: branches ? "attunement lost"
-			: $"+{(SpellEvolutionCatalog.AttunementGainCooldownCost - 1f) * 100f:0}% cooldown";
-		// Gold for the branch that keeps the spell attuned, the quiet ink otherwise - each in the
-		// family's own register: dark gold on the page, gold lit on the glass.
-		bool dark = CardFamilyArt.IsDark(family);
-		Color keeps = dark ? CardFamilyArt.AscensionAdvice : InkGold;
-		Label noteLabel = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, deepens ? keeps : SoftInk(family));
-		noteLabel.AutowrapMode = TextServer.AutowrapMode.Off;
-		row.AddChild(noteLabel);
+		// A trade (SpellEvolutionOption.ReplacesElement) is not a gain: the spell keeps the same number
+		// of tags and gives one up, so the note says which, in the family's quiet ink.
+		if (!string.IsNullOrEmpty(evo.ReplacesElement))
+		{
+			Label noteLabel = CodexRows.MakeText($"replaces {evo.ReplacesElement}", ResponsiveLayout.TextRole.Label, SoftInk(family));
+			noteLabel.AutowrapMode = TextServer.AutowrapMode.Off;
+			row.AddChild(noteLabel);
+		}
 		return row;
 	}
 
