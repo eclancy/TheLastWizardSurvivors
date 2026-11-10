@@ -2301,7 +2301,6 @@ public partial class _UiShot : Node
 		data.ArcaneUpgradeLevels["vitality"] = 10;
 		data.ArcaneUpgradeLevels["recovery"] = 3;
 		data.ArcaneUpgradeLevels["attack_speed"] = 2;
-		data.ArcaneUpgradeLevels["amount"] = 1;
 		data.ArcaneUpgradeLevels["rerolls"] = 1;
 		data.ArcaneUpgradeLevels["bans"] = 1;
 		data.ArcaneUpgradeLevels["banked_levels"] = 1;
@@ -3466,7 +3465,7 @@ public partial class _UiShot : Node
 						variantOwner.UpgradeOfferChance = 0f;
 						variantOwner.BeginLevelUpOffer();
 						hand.AddRange(variantOwner.GetLevelUpOptions(int.MaxValue)
-							.Where(o => o.IsNewUnlock && !o.IsBoon && o.SpellId != showVariant && o.SpellId != Player.MarginaliaId).Take(2));
+							.Where(o => o.IsNewUnlock && !o.IsBoon && o.SpellId != showVariant && !Player.IsLastResortCard(o.SpellId)).Take(2));
 					}
 					variantMenu.SetOptions(hand, 1);
 					GD.Print($"_UiShot: show-variant {showVariant}: {offer.Variants.Count} forms - {string.Join(", ", offer.Variants.Select(v => v.DisplayName))}");
@@ -3492,7 +3491,7 @@ public partial class _UiShot : Node
 				if (tallDeal > 0)
 				{
 					int lines(LevelUpOption o) => StatIcons.Split(o.IsNewUnlock ? o.StatSummary ?? "" : o.UpgradeSummary ?? "").Count;
-					hand.AddRange(pool.Where(o => o.SpellId != Player.MarginaliaId)
+					hand.AddRange(pool.Where(o => !Player.IsLastResortCard(o.SpellId))
 						.GroupBy(o => o.SpellId).Select(g => g.First())
 						.OrderByDescending(lines).ThenByDescending(o => o.DisplayName.Length).Take(tallDeal));
 				}
@@ -3500,7 +3499,7 @@ public partial class _UiShot : Node
 				{
 					foreach (LevelUpOption card in new[]
 					{
-						pick(o => o.IsNewUnlock && !o.IsBoon && o.SpellId != Player.MarginaliaId),
+						pick(o => o.IsNewUnlock && !o.IsBoon && !Player.IsLastResortCard(o.SpellId)),
 						pick(o => !o.IsNewUnlock && !o.IsBoon),
 						pick(o => o.IsBoon),
 					})

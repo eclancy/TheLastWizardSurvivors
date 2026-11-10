@@ -153,7 +153,7 @@ public partial class MainMenu
 		// Bound Pages first (.ai/slow-start.md 4): a new player can afford the first page after his second run, and
 		// it is likely worth more than any Power it displaces, so the shop teaches itself with its first buy.
 		("Power", "Room for more spells, and every spell harder and more often.",
-			new[] { SpellBook.ShopUpgradeId, "damage", "attack_speed", "area", "duration", "amount", "crit_chance" }, false),
+			new[] { SpellBook.ShopUpgradeId, "damage", "attack_speed", "area", "duration", "crit_chance" }, false),
 		("Survival", "Staying alive, and what each run gives back.",
 			new[] { "vitality", "recovery", "extra_lives", "movespeed", "magnet", "growth", "greed", "luck" }, false),
 		// The Reliquary Shelf sits here rather than under Survival: a boon slot is one more thing a
@@ -1097,7 +1097,6 @@ public partial class MainMenu
 			"area" => ("Area and range", Times(1f + l * 0.08f)),
 			"attack_speed" => ("Attack speed", Times(1f + l * 0.08f)),
 			"duration" => ("Effect duration", Times(1f + l * 0.10f)),
-			"amount" => ("Projectiles", $"+{l}"),
 			"movespeed" => ("Move speed", Times(1f + l * 0.05f)),
 			// A percentage, never a flat distance (Eric, 2026-11-04): 20 px a level over the reach
 			// every pickup starts with (Player.BasePickupAttractDistance).
@@ -1130,7 +1129,6 @@ public partial class MainMenu
 		"area" => "area",
 		"attack_speed" => "cooldown",
 		"duration" => "duration",
-		"amount" => "projectiles",
 		"movespeed" => "speed",
 		"magnet" => "magnet",
 		"growth" => "xp",

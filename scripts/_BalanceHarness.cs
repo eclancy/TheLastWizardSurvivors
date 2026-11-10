@@ -328,7 +328,7 @@ public partial class _BalanceHarness : Node
 	private static readonly (string Id, int Cap)[] FullShopCaps =
 	{
 		("damage", 8), ("recovery", 8), ("area", 7), ("attack_speed", 16),
-		("duration", 6), ("amount", 4), ("movespeed", 8), ("magnet", 7), ("growth", 6), ("greed", 8),
+		("duration", 6), ("movespeed", 8), ("magnet", 7), ("growth", 6), ("greed", 8),
 		("extra_lives", 3), ("vitality", 10), ("luck", 20), ("crit_chance", 20),
 	};
 	// THE DROP LEDGER: every pickup that entered the world, by kind, in five-minute windows - the
@@ -1151,7 +1151,7 @@ public partial class _BalanceHarness : Node
 	private static readonly (string Id, int Base, int Step, int Cap)[] FarmedPowers =
 	{
 		("damage", 30, 20, 8), ("vitality", 25, 20, 10), ("recovery", 15, 10, 8),
-		("attack_speed", 35, 25, 16), ("area", 30, 20, 7), ("amount", 60, 40, 4), ("movespeed", 20, 15, 8),
+		("attack_speed", 35, 25, 16), ("area", 30, 20, 7), ("movespeed", 20, 15, 8),
 		("magnet", 25, 20, 7), ("growth", 30, 20, 6), ("extra_lives", 120, 80, 3), ("duration", 25, 20, 6),
 	};
 
@@ -3094,7 +3094,7 @@ public partial class _BalanceHarness : Node
 		if (!player.IsSpellBookFull)
 		{
 			LevelUpOption fresh = options
-				.Where(o => o.IsNewUnlock && !o.IsBoon && o.SpellId != Player.MarginaliaId)
+				.Where(o => o.IsNewUnlock && !o.IsBoon && !Player.IsLastResortCard(o.SpellId))
 				.OrderByDescending(Shared)
 				.FirstOrDefault();
 			if (fresh != null)
@@ -3222,6 +3222,10 @@ public partial class _BalanceHarness : Node
 			.DefaultIfEmpty(0).Max();
 		bool unblocks = o.SpellElementTags != null && o.SpellElementTags.Keys.Any(unblocking.Contains);
 
+		// The full book's two cards: Marginalia over the Arcane Energy beside it (in-flight 98), so the bot plays the
+		// late run as it did before that card existed and older reports stay comparable.
+		if (o.SpellId == Player.GleaningId)
+			return 0;
 		if (o.SpellId == Player.MarginaliaId)
 			return 1;
 		if (o.IsBoon)
@@ -3322,7 +3326,7 @@ public partial class _BalanceHarness : Node
 			if (charges.Bans > 0)
 			{
 				LevelUpOption offPlan = options.FirstOrDefault(o => o.IsNewUnlock && !o.IsBoon
-					&& o.SpellId != Player.MarginaliaId && PlanValue(o, focus, counts, unblocking) < PlanValueUseful);
+					&& !Player.IsLastResortCard(o.SpellId) && PlanValue(o, focus, counts, unblocking) < PlanValueUseful);
 				if (offPlan != null)
 					return BanAction + offPlan.SpellId;
 			}
@@ -3539,7 +3543,7 @@ public partial class _BalanceHarness : Node
 			if (otherUp != null)
 				return $"{otherUp.SpellId}:{otherUp.EvolutionChoices.First(e => !otherUp.EvolutionLockReason.ContainsKey(e.Id)).Id}";
 			LevelUpOption fuelCard = options
-				.Where(o => !o.IsBoon && o.SpellId != Player.MarginaliaId && !parentIds.Contains(o.SpellId)
+				.Where(o => !o.IsBoon && !Player.IsLastResortCard(o.SpellId) && !parentIds.Contains(o.SpellId)
 					&& !SovereignRite.DefensiveSpellIds.Contains(o.SpellId) && (!o.IsNewUnlock || !player.IsSpellBookFull))
 				.OrderBy(o => o.IsNewUnlock)
 				.ThenByDescending(o => o.NextLevel)
@@ -3600,7 +3604,7 @@ public partial class _BalanceHarness : Node
 		IReadOnlyList<LevelUpOption> pool = options;
 		if (missing > 0 && free <= missing)
 		{
-			pool = options.Where(o => !o.IsNewUnlock || o.IsBoon || o.SpellId == Player.MarginaliaId).ToList();
+			pool = options.Where(o => !o.IsNewUnlock || o.IsBoon || Player.IsLastResortCard(o.SpellId)).ToList();
 			if (pool.Count == 0)
 				return SkipAction;
 		}

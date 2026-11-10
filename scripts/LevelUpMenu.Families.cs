@@ -25,7 +25,7 @@ public partial class LevelUpMenu
 			return CardFamily.Ascension;
 		if (option.IsEvolutionMilestone && option.MilestoneLevel >= 4)
 			return CardFamily.Mutation;
-		if (!option.IsNewUnlock || option.SpellId == Player.MarginaliaId)
+		if (!option.IsNewUnlock || Player.IsLastResortCard(option.SpellId))
 			return CardFamily.Upgrade;
 		return CardFamily.NewSpell;
 	}

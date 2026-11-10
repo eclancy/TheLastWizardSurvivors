@@ -180,7 +180,6 @@ public partial class _FunctionProbe : Node
 	{
 		var data = new SaveData();
 		data.UnlockedSpellIds.Add("familiar");
-		data.ArcaneUpgradeLevels["amount"] = 5;
 		GetNode<SaveManager>("/root/SaveManager").ReplaceInMemory(data);
 		Global.SelectedCharacterIdx = CharacterRoster.IndexOf("archmage");
 		var arena = new Node2D();
@@ -194,10 +193,12 @@ public partial class _FunctionProbe : Node
 		var familiarScene = ResourceLoader.Load<PackedScene>("res://scenes/Familiar.tscn");
 		void Summon() => fire.Invoke(player, new object[] { spell, familiarScene });
 		int Count() => Descendants(arena).OfType<Familiar>().Single().GetChildren().OfType<AnimatedSprite2D>().Count();
+		// The Split Lens's +1 Amount (the shop's Twinstar Sigil gave +5 here until in-flight 69 removed it).
+		player.AddChestItem(ChestItemCatalog.CrackedPrism);
 		spell.CurrentLevel = 3;
 		Summon();
 		await Frames();
-		Check(Count() == 1, "level 3 has one hound despite +5 Amount");
+		Check(Count() == 1, "level 3 has one hound despite the Split Lens's Amount");
 		spell.CurrentLevel = 8;
 		spell.ApplyEvolution(spell.Level4Options.Single(o => o.Id == Familiar.GreatHoundId));
 		spell.ApplyEvolution(spell.Level8Options.Single(o => o.Id == Familiar.CerberusId));

@@ -42,6 +42,8 @@ public class RunResult
 	public string BalancePresetId { get; set; } = TheOneHeMissed.scripts.GlobalStatsManager.BalancePresetDefault;
 	public string StageId { get; set; } = string.Empty;
 	public int FinalPlayerLevel { get; set; } = 1;
+	/// <summary>Arcane Energy cards a full book took (Player.GleaningId); the payout adds Player.GleaningArcane for each.</summary>
+	public int GleaningsTaken { get; set; } = 0;
 	public float TimeSurvived { get; set; } = 0f;
 	public int EnemiesKilled { get; set; } = 0;
 	public string BossId { get; set; } = string.Empty;

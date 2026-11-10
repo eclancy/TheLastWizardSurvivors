@@ -393,8 +393,8 @@ Three things worth keeping in mind about this group:
   rather than a pickup. The roster had no genuine trades before it.
   **Since 0.9.3 both halves land on the same spells.** Eric, playing 0.9.2: *"there is a relic that adds
   1 to projectile count but reduced spell damage. it should only reduce damage of spells that are
-  affected by the projectile count."* The +1 is the player-wide Amount (the shop's Twinstar Sigil reads
-  the same field), and only 16 of the 35 spells add Amount to anything - the rest (Hollow Star, Fireball,
+  affected by the projectile count."* The +1 is the player-wide Amount (the shop's Twinstar Sigil paid
+  into the same field until it was removed on 2026-11-10, in-flight 69), and only 16 of the 35 spells add Amount to anything - the rest (Hollow Star, Fireball,
   Cinderbreath, the walls, the fields, Familiar, Spiritual Weapon...) paid 25% for nothing. Which spells
   read it is `EvolutionStat.Amount` on each one's `EvolutionStatReaders` row, and that one row decides
   both halves: `Player.AmountFor`, the only way a cast site reaches Amount, pays only a spell whose row
@@ -632,8 +632,10 @@ would grow without bound.
    per-kill heals, Light lifesteal, the heal on every chest - and is worth nothing
    to a build that never heals. (Regeneration does not count: it only ticks below max HP. Nor does
    the Chalice Cup since 2026-11-09: a full cup waits until he is hurt, so it never heals at full.)
-3. **It is what "shielded" means.** The Buckler Boss (Protective Ward, +15% defence while a shield
-   holds) reads the shield pool, and overheal keeps it switched on between Aegis Ward casts. (The
+3. **It is what "shielded" means.** The Buckler Boss (Protective Ward, 15% less damage while a shield
+   is up) reads the shield pool, and overheal keeps it switched on between Aegis Ward casts. Since
+   2026-11-10 (in-flight 81) it raises its own 4-point shield every 25 s (`Player.TickBuckler`), so it
+   is a shield source by itself and never dead without one. (The
    Lightning Rod's +10% move speed read it too, until issue #44 made it unconditional.)
 4. **It does not raise the ceiling heals refill to.** A heal still stops at max HP; only the excess
    goes to the shield, and the shield never heals back by itself.

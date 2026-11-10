@@ -219,6 +219,17 @@ public partial class Player : CharacterBody2D
 	/// (.ai/difficulty-curve.md 5.1) and the same shape as the Familiar's Purr.
 	/// </summary>
 	public const float EssenceChaliceSeconds = 20f;
+	/// <summary>
+	/// The Buckler Boss (protective_ward) raises its own shield of <see cref="BucklerShield"/> points every this many
+	/// seconds (TickBuckler; in-flight 81, Eric 2026-11-10: it "gives its own small shield, a few points rebuilt every so
+	/// often"). It was "+15% defense while a shield holds" alone, and with no Aegis Ward, Vial or Reliquary it did nothing.
+	/// 4 every 25 s is under 10 a minute absorbed at most, the relics' row of the healing budget (.ai/difficulty-curve.md
+	/// 5.1: the Chalice Cup's 9), and below the Reliquary set's 6-point shield per chest. It keeps the +15% while any
+	/// shield is up (GetArmorPercent), which its own shield now switches on by itself.
+	/// </summary>
+	public const float BucklerSeconds = 25f;
+	/// <summary>The Buckler Boss's shield, in points. Raised only to this (AddShield keeps the stronger pool).</summary>
+	public const int BucklerShield = 4;
 	/// <summary>What one full cup heals, before the healing bonus.</summary>
 	public const int EssenceChaliceHeal = 3;
 	/// <summary>The Tithe Chalice set heals 1 HP every Nth kill (it was every kill).</summary>
@@ -304,8 +315,9 @@ public partial class Player : CharacterBody2D
 	public Familiar.Grants FamiliarGrants => familiarGrants;
 	private float areaMultiplier = 1.0f;
 	private float durationMultiplier = 1.0f;
-	// The player-wide Amount: the Arcane Codex's Twinstar Sigil and the Split Lens. Read only through
-	// AmountFor, never at a cast site directly - that is what lets the lens charge exactly the spells it pays.
+	// The player-wide Amount: the Split Lens's +1 (the shop's Twinstar Sigil paid into it too until in-flight 69 removed
+	// it, 2026-11-10). Read only through AmountFor, never at a cast site directly - that is what lets the lens charge
+	// exactly the spells it pays.
 	private int amountBonus = 0;
 	// The Split Lens (ChestItemCatalog.CrackedPrism) is held: GetSpellDamageMultiplier charges its cost.
 	private bool splitLensHeld;
@@ -736,6 +748,8 @@ public partial class Player : CharacterBody2D
 	private bool chestPhylacteryActive = false;
 	// The Chalice Cup: seconds it has filled since it was last drunk, up to EssenceChaliceSeconds (TickEssenceChalice).
 	private float chestChaliceFill = 0f;
+	// The Buckler Boss: seconds since it last raised its shield, up to BucklerSeconds (TickBuckler).
+	private float chestBucklerFill = 0f;
 	// The cup's "+3", in the floating numbers' scene and the cup's Water ink (loaded on the first sip).
 	private static PackedScene chaliceSipTextScene;
 	private static readonly Color ChaliceSipInk = DamageNumberInk.For(Element.Water, false);
@@ -1174,7 +1188,6 @@ public partial class Player : CharacterBody2D
 		int areaLevel = GetLevel("area");
 		int attackSpeedLevel = GetLevel("attack_speed");
 		int durationLevel = GetLevel("duration");
-		int amountLevel = GetLevel("amount");
 		int moveSpeedLevel = GetLevel("movespeed");
 		int magnetLevel = GetLevel("magnet");
 		int growthLevel = GetLevel("growth");
@@ -1191,7 +1204,9 @@ public partial class Player : CharacterBody2D
 		areaMultiplier = 1.0f + (areaLevel * 0.08f);
 		attackSpeedMultiplier = 1.0f + (attackSpeedLevel * 0.08f);
 		durationMultiplier = 1.0f + (durationLevel * 0.10f);
-		amountBonus = amountLevel;
+		// No shop Amount since in-flight 69 (the Twinstar Sigil is gone); reset here so the refresh stays idempotent and
+		// the Split Lens adds its +1 on top (ApplyChestItemEffect).
+		amountBonus = 0;
 		growthMultiplier = 1.0f + (growthLevel * 0.10f);
 		if (IsPlaytestModeEnabled)
 			growthMultiplier *= 1.75f;
@@ -2347,7 +2362,7 @@ public partial class Player : CharacterBody2D
 		if (SunderingRing.Active != null && IsInstanceValid(SunderingRing.Active) && SunderingRing.Active.Contains(GlobalPosition))
 			armor += SunderingRing.ArmorInside;
 
-		// Protective Ward is worth more while a shield is up, which is the item's whole idea.
+		// Protective Ward is worth more while a shield is up - its own (TickBuckler) or any other.
 		if (shieldPoints > 0 && ownedChestItems.Contains(ChestItemCatalog.ProtectiveWard))
 			armor += 0.15f;
 
@@ -3730,7 +3745,10 @@ public partial class Player : CharacterBody2D
 			case ChestItemCatalog.IronhideCloak:
 				break; // Conditional on health - read in GetArmorPercent.
 			case ChestItemCatalog.ProtectiveWard:
-				break; // Bonus applied passively during damage calculation
+				// Its shield comes up at once, so the card's promise is seen the moment it is taken; then every
+				// BucklerSeconds (TickBuckler). The +15% is read in GetArmorPercent.
+				chestBucklerFill = BucklerSeconds;
+				break;
 
 			// Healing & Recovery items
 			case ChestItemCatalog.VialOfVitality:
@@ -4191,6 +4209,25 @@ public partial class Player : CharacterBody2D
 			FloatingText.Show(parent, chaliceSipTextScene, $"+{gained}", ChaliceSipInk, GlobalPosition + new Vector2(0f, -40f), 1.2f);
 	}
 
+	// The Buckler Boss (in-flight 81): its clock fills over BucklerSeconds and, once full, raises a BucklerShield-point
+	// shield the first moment his shield is below that - the Chalice Cup's shape: a full clock WAITS rather than spending
+	// itself on a shield already as strong, so it can never give more than one shield each BucklerSeconds. AddShield keeps
+	// the stronger pool, so it never cuts an Aegis Ward short. The clock stands still while the boss arrives.
+	private void TickBuckler(float delta)
+	{
+		if (CurrentHP <= 0 || HeldForBossEntrance || !ownedChestItems.Contains(ChestItemCatalog.ProtectiveWard))
+			return;
+		if (chestBucklerFill < BucklerSeconds)
+		{
+			chestBucklerFill += delta;
+			return;
+		}
+		if (shieldPoints >= BucklerShield)
+			return;
+		chestBucklerFill = 0f;
+		AddShield(BucklerShield);
+	}
+
 	private void OnChestEnemyKilled()
 	{
 		// Every kill used to heal: 80 HP a minute in the one measured run that assembled it.
@@ -4566,6 +4603,7 @@ public partial class Player : CharacterBody2D
 			}
 		}
 		TickEssenceChalice((float)delta);
+		TickBuckler((float)delta);
 
 		if (buffTimeRemaining > 0f)
 		{
@@ -8225,7 +8263,7 @@ public partial class Player : CharacterBody2D
 			return false;
 		// Marginalia is what a hand holds when there is nothing else; striking it would strike nothing,
 		// because it is dealt after bans are applied, and the charge would be gone for no change.
-		if (spellId.Equals(MarginaliaId, StringComparison.OrdinalIgnoreCase))
+		if (IsLastResortCard(spellId))
 			return false;
 
 		if (!bannedSpellIds.Add(spellId))
@@ -8786,9 +8824,14 @@ public partial class Player : CharacterBody2D
 
 		// The last resort, and the rule that keeps a level-up from ever being a dead pick: a full book
 		// with every spell at its card cap, and no boon left to give (six held, or every unlocked one
-		// owned). Swaps used to fill this hand. Marginalia does now - see MarginaliaId.
+		// owned). Swaps used to fill this hand. Marginalia does now - see MarginaliaId - with a second
+		// card beside it, a little Arcane Energy (GleaningId), so the hand is a choice (in-flight 98).
 		if (!browseAll && picked.Count == 0 && maxOptions > 0)
+		{
 			picked.Add(BuildMarginaliaOption());
+			if (maxOptions > 1)
+				picked.Add(BuildGleaningOption());
+		}
 
 		// Note: owned-spell upgrade options are not guaranteed to appear. A level-up first decides
 		// whether they are in its pool at all (UpgradeOfferChance, BeginLevelUpOffer); when they are,
@@ -8919,9 +8962,15 @@ public partial class Player : CharacterBody2D
 	// health, and +2% damage is nothing to a player about to die. Small, so it never competes with
 	// a real card - it only ever appears when there is no real card - and repeatable, because by
 	// then every level-up is one of these, and a level-up that pays nothing is what it replaces.
-	// Gold or Arcane Energy were the genre's answer (Vampire Survivors pays coins here); this game's
-	// Arcane Energy is paid at the end of a run from how it went, and a per-level-up drip would make
-	// late levels a currency farm rather than a fight.
+	// Gold or Arcane Energy were the genre's answer (Vampire Survivors pays coins here). This game's
+	// Arcane Energy is paid at the end of a run from how it went, and a per-level-up drip was first
+	// refused here as a way to make late levels a currency farm rather than a fight - but Eric chose it
+	// (in-flight 98, 2026-11-10: "when levelled to full and offered marginalia, offer a second choice for
+	// arcane energy if they decide not to take the marginalia"). So it is the second card of this hand
+	// and the farm is held off by its size: GleaningArcane, flat, added to the run's own payout BEFORE
+	// its multipliers (Node2DGame.CalculateArcaneReward, so the balance preset scales it as it scales the
+	// rest), and only what the run's result records - in Endless the first night's ledger, which is all
+	// that reaches the save (.ai/endless-mode.md) - so a long night deals many and pays for few.
 
 	/// <summary>The option id of the fallback card. Not a spell, not a boon: Node2DGame routes it.</summary>
 	public const string MarginaliaId = "marginalia";
@@ -8931,6 +8980,19 @@ public partial class Player : CharacterBody2D
 
 	/// <summary>How many Marginalia this run has taken. Read by the balance harness.</summary>
 	public int MarginaliaTaken { get; private set; }
+
+	/// <summary>The option id of Marginalia's second card, a little Arcane Energy. Routed by Node2DGame as Marginalia is.</summary>
+	public const string GleaningId = "gleaning";
+	/// <summary>Arcane Energy a Gleaning adds to the run's payout, before its multipliers. Eric: 10.</summary>
+	public const int GleaningArcane = 10;
+
+	/// <summary>How many Gleanings this run has taken; the run's result records it, and the payout reads that.</summary>
+	public int GleaningsTaken { get; private set; }
+
+	/// <summary>True for the two cards a level-up holds when it has nothing else: not spells, not boons, never banned.</summary>
+	public static bool IsLastResortCard(string optionId) =>
+		string.Equals(optionId, MarginaliaId, StringComparison.OrdinalIgnoreCase)
+		|| string.Equals(optionId, GleaningId, StringComparison.OrdinalIgnoreCase);
 
 	private LevelUpOption BuildMarginaliaOption()
 	{
@@ -8950,6 +9012,27 @@ public partial class Player : CharacterBody2D
 			MaxLevel = 1,
 		};
 	}
+
+	// Marginalia's twin: the same last-resort card in every respect (no pips, repeatable, never banned), paying a
+	// little Arcane Energy when the run ends instead of anything now. The energy mark as its icon, drawn large.
+	private LevelUpOption BuildGleaningOption()
+	{
+		return new LevelUpOption
+		{
+			SpellId = GleaningId,
+			DisplayName = "Arcane Energy",
+			Description = "Nothing left to write in. Keep the lesson instead, and take it home.",
+			StatSummary = $"+{GleaningArcane} Arcane Energy when the run ends",
+			Icon = StatIcons.Load("energy"),
+			IsNewUnlock = true,
+			IsPassive = true,
+			NextLevel = 1,
+			MaxLevel = 1,
+		};
+	}
+
+	/// <summary>Takes the Arcane Energy card: counted, and paid with the run's own payout.</summary>
+	public void TakeGleaning() => GleaningsTaken++;
 
 	/// <summary>Takes the Marginalia card: heals, and adds a little spell damage for the run.</summary>
 	public void TakeMarginalia()

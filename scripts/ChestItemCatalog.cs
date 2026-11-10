@@ -692,7 +692,8 @@ public static class ChestItemCatalog
 			BasaltCarapace => "Ignores one hit every 10s.",
 			AegisCrown => "+30 maximum health.",
 			IronhideCloak => "+20% defense while above 80% health.",
-			ProtectiveWard => "+15% defense while a shield holds.",
+			// Its own shield since in-flight 81 (Eric, 2026-11-10), so it is never dead; numbers from Player's constants.
+			ProtectiveWard => $"Every {Mathf.RoundToInt(Player.BucklerSeconds)} seconds, raises a {Player.BucklerShield}-point shield. Take 15% less damage while you have a shield.",
 			VialOfVitality => OverhealDescription,
 			HeartOfRenewal => $"+{Player.HeartOfRenewalRegenPerSecond * 60f:0} health regeneration a minute.",
 			Phylactery => "One revive per stage, at 25% health.",
@@ -717,7 +718,7 @@ public static class ChestItemCatalog
 			Thunderstone => "+50% lightning chain range, chains trigger 1 hit sooner.",
 			CrystalPrism => "+30% damage from spells that carry only one element.",
 			// Both halves land on the same spells (0.9.3: "it should only reduce damage of spells that are
-			// affected by the projectile count") - the ones the shop's Twinstar Sigil reaches, in its words.
+			// affected by the projectile count") - the spells that read Amount (EvolutionStatReaders), in its words.
 			CrackedPrism => SplitLensDescription,
 			DuellistsChalk => "Always crits an enemy at full health.",
 			HoarfrostNail => "+25% damage to slowed or rooted enemies.",

@@ -1031,6 +1031,8 @@ public partial class GameOverScreen : CanvasLayer
 			lines.Add(("duration", $"{a.Minutes} {(a.Minutes == 1 ? "minute" : "minutes")} survived  (x{a.PerMinute})",
 				$"+{Count(a.Minutes * a.PerMinute)}", false));
 		lines.Add(("xp", $"Level {a.Level} reached  (x{a.PerLevel})", $"+{Count(a.Level * a.PerLevel)}", false));
+		if (a.Gleaned > 0)
+			lines.Add(("energy", $"Arcane Energy kept at level-ups  ({a.Gleanings})", $"+{Count(a.Gleaned)}", false));
 		if (Math.Abs(a.UpgradeMultiplier - 1f) > 0.001f)
 			lines.Add(("energy", "Arcane Upgrades", $"x{a.UpgradeMultiplier:0.00}", false));
 		foreach (var (name, bonus) in a.DynamicParts)

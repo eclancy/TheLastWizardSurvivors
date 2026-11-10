@@ -25,8 +25,8 @@ public enum EvolutionStat
 	// Effect and EffectValue. Which effects a spell reads is a list of its own (SpellStatReaders.Effects);
 	// this flag only names the field in a report and in KnownUnbuilt.
 	Effect = 1 << 14,
-	// Not a card's field: the player-wide Amount - the Arcane Codex's Twinstar Sigil and the Split Lens
-	// relic - added to the spell's own count through Player.AmountFor. It decides both halves of the lens's
+	// Not a card's field: the player-wide Amount - the Split Lens relic's +1 (the shop's Twinstar Sigil too, until
+	// in-flight 69 removed it) - added to the spell's own count through Player.AmountFor. It decides both halves of the lens's
 	// trade (0.9.3, Eric: "it should only reduce damage of spells that are affected by the projectile
 	// count"): AmountFor pays the +1 only to a spell whose row has it, and GetSpellDamageMultiplier charges
 	// the -25% only to the same spells (SpellStatReaders.ReadsAmount).

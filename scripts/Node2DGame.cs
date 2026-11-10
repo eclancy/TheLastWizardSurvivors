@@ -4071,6 +4071,13 @@ public partial class Node2DGame : Node2D
 			CloseLevelUpMenu();
 			return;
 		}
+		// Its twin, a little Arcane Energy (in-flight 98): counted now, paid with the run (CalculateArcaneReward).
+		if (weaponId == Player.GleaningId)
+		{
+			player.TakeGleaning();
+			CloseLevelUpMenu();
+			return;
+		}
 
 		int beforeLevel = GetSpellLevel(player, weaponId);
 
@@ -7646,6 +7653,7 @@ public partial class Node2DGame : Node2D
 			// match on, and the catalog is the one place that says which id an index is.
 			StageId = StageCatalog.GetByIndex(Global.SelectedStageIdx)?.Id ?? $"stage_{Global.SelectedStageIdx}",
 			FinalPlayerLevel = player?.CurrentLevel ?? 1,
+			GleaningsTaken = player?.GleaningsTaken ?? 0,
 			TimeSurvived = timeElapsed,
 			EnemiesKilled = CalculateKillsEstimate(),
 			// A Boss Rush records no boss: its victory is over the whole roster, not a chapter's warden,
@@ -7829,7 +7837,10 @@ public partial class Node2DGame : Node2D
 		// the vigil the first night's (the ledger), whose own payout this is (Node2DGame.Endless.cs).
 		int minutesSurvived = Mathf.FloorToInt(result.TimeSurvived / 60.0f);
 		int playerLevel = Math.Max(1, result.FinalPlayerLevel);
-		int baseReward = BaseArcaneReward + (minutesSurvived * ArcanePerMinuteSurvived) + (playerLevel * ArcanePerPlayerLevel);
+		// The Arcane Energy cards a full book took (Player.GleaningArcane each, in-flight 98): in the base, so every
+		// multiplier below, the balance preset's included, scales them as it scales the rest of the run's pay.
+		int gleaned = Math.Max(0, result.GleaningsTaken) * Player.GleaningArcane;
+		int baseReward = BaseArcaneReward + (minutesSurvived * ArcanePerMinuteSurvived) + (playerLevel * ArcanePerPlayerLevel) + gleaned;
 		// The results screen shows the payout part by part. Each part is RECORDED here as the
 		// arithmetic below uses it, never recomputed elsewhere, so the breakdown cannot disagree
 		// with what was paid.
@@ -7840,6 +7851,8 @@ public partial class Node2DGame : Node2D
 			PerMinute = ArcanePerMinuteSurvived,
 			Level = playerLevel,
 			PerLevel = ArcanePerPlayerLevel,
+			Gleanings = result.GleaningsTaken,
+			Gleaned = gleaned,
 			BaseTotal = baseReward,
 		};
 		lastArcaneBreakdown = breakdown;

@@ -5280,9 +5280,13 @@ public static partial class RegressionChecks
 		if (ChestItemCatalog.GetRarity(ChestItemCatalog.BlankFolio) != ChestItemRarity.Relic)
 			warnings.Add("The Blank Folio is not Relic rarity; a seventh spell slot belongs in the rarest tier.");
 
-		string marginalia = Player.MarginaliaId;
-		if (BoonCatalog.IsBoon(marginalia) || UnlockCatalog.AllSpellIds.Contains(marginalia, StringComparer.OrdinalIgnoreCase))
-			warnings.Add($"'{marginalia}' is both the Marginalia fallback card and a spell or boon id; Node2DGame would route the real pick to the fallback.");
+		foreach (string lastResort in new[] { Player.MarginaliaId, Player.GleaningId })
+		{
+			if (BoonCatalog.IsBoon(lastResort) || UnlockCatalog.AllSpellIds.Contains(lastResort, StringComparer.OrdinalIgnoreCase))
+				warnings.Add($"'{lastResort}' is both a full book's fallback card and a spell or boon id; Node2DGame would route the real pick to the fallback.");
+		}
+		if (StatIcons.Load("energy") == null)
+			warnings.Add("The Arcane Energy card (Player.GleaningId) has no icon (stat-energy.png); run python tools/art/stat_icons.py and import.");
 		if (!ResourceLoader.Exists("res://assets/bonelight/ui/icons/marginalia.png"))
 			warnings.Add("The Marginalia card has no icon (res://assets/bonelight/ui/icons/marginalia.png); run python tools/art/relic_icons.py and import.");
 	}

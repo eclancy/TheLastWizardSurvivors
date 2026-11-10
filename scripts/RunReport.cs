@@ -86,7 +86,10 @@ public sealed class ArcaneRewardBreakdown
 	public int PerMinute { get; set; }
 	public int Level { get; set; }
 	public int PerLevel { get; set; }
-	/// <summary>BaseFlat + Minutes x PerMinute + Level x PerLevel.</summary>
+	/// <summary>The Arcane Energy cards a full book took, and what they added to the base (Player.GleaningArcane each).</summary>
+	public int Gleanings { get; set; }
+	public int Gleaned { get; set; }
+	/// <summary>BaseFlat + Minutes x PerMinute + Level x PerLevel + Gleaned.</summary>
 	public int BaseTotal { get; set; }
 	/// <summary>1 + the Arcane Upgrades that raise the payout (Avarice Seal).</summary>
 	public float UpgradeMultiplier { get; set; } = 1f;

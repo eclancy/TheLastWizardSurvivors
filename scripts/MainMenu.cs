@@ -910,7 +910,9 @@ public partial class MainMenu : Control
 		RegisterUpgrade("area", "Aether Bloom", "+8% area and range", 30, 20, 7);
 		RegisterUpgrade("attack_speed", "Tempest Rhythm", "+8% attack speed", 35, 25, 16);
 		RegisterUpgrade("duration", "Eternal Wick", "+10% effect duration", 25, 20, 6);
-		RegisterUpgrade("amount", "Twinstar Sigil", "+1 projectile for every spell that fires them", 60, 40, 4);
+		// The Twinstar Sigil ("amount", +1 projectile a level, 4 levels) was removed on 2026-11-10 (in-flight 69, Eric:
+		// "remove the Twinstar Sigil"): a whole extra shot on every counted spell was too much to buy outright. No refund
+		// and no schema step - the release that carries it resets progress. The Split Lens's +1 Amount stays.
 		RegisterUpgrade("movespeed", "Fleetfoot Glyph", "+5% movement speed", 20, 15, 8);
 		RegisterUpgrade("magnet", "Void Lure", "+20 pickup range", 25, 20, 7);
 		RegisterUpgrade("growth", "Sage Spiral", "+10% XP gain", 30, 20, 6);

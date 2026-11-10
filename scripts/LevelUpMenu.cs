@@ -835,7 +835,7 @@ public partial class LevelUpMenu : CanvasLayer
 	// Marginalia is what a full book holds when there is nothing else to deal, and striking it would
 	// strike nothing (Player.TryBanSpell refuses it), so it wears no tear and a press on it does nothing.
 	private static bool IsBannable(LevelUpOption option) =>
-		option != null && !string.IsNullOrEmpty(option.SpellId) && option.SpellId != Player.MarginaliaId;
+		option != null && !string.IsNullOrEmpty(option.SpellId) && !Player.IsLastResortCard(option.SpellId);
 
 	/// <summary>Lays a tear over every bannable card in the hand while ban mode is on, and takes them off when not.</summary>
 	private void ApplyBanTears()
@@ -1399,6 +1399,8 @@ public partial class LevelUpMenu : CanvasLayer
 			return option.IsNewUnlock ? "BOON - PERMANENT, NO SLOT" : "Level up · Boon";
 		if (option.SpellId == Player.MarginaliaId)
 			return "A note in the margin";
+		if (option.SpellId == Player.GleaningId)
+			return "Kept for after the run";
 		string kind = option.SpellId == "familiar" && option.VariantId == Familiar.CatId
 			? "Support" : option.IsPassive ? "Passive" : "Attack";
 		return FamilyOf(option) switch

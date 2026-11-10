@@ -51,6 +51,9 @@ public static class StatIcons
 
 		t = t.ToLowerInvariant();
 
+		// The currency, by name: Marginalia's twin pays it (in-flight 98), and "reward" below would call it luck.
+		if (t.Contains("arcane energy"))
+			return "energy";
 		if (t.Contains("crit"))
 			return "crit";
 		// "Re-weaves 9% sooner": Gloam Veil's recharge is a walk, not a timer, but it is still the
