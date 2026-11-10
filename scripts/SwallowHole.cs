@@ -238,10 +238,15 @@ public partial class SwallowHole : SecretVault
 		// Wings (Wayland the Smith, Player.Wings.cs): the mud neither holds his step nor stings; he flies over it. He
 		// still counts as wading (IsWading, for the probe) - his boots are over the mud - it simply costs him nothing.
 		bool held = wading && !player.FliesOverTrap();
+		// He sinks in it as in water (Player.Wading.cs, in-flight 74) - unless his wings hold him, as above, or she rides
+		// over water (RidesOverWater: Baba Yaga's mortar, Nimue): then the mud does not hold her step either. It still stings.
+		if (wading)
+			player.NoteMudUnderfoot();
+		bool slowed = held && !player.RidesOverWater;
 		Vector2 now = player.GlobalPosition;
 		Vector2 step = now - lastHeroPosition;
 		// Only an ordinary step is held back: a teleport (a probe, a respawn) is left alone.
-		if (held && heroWasWading && step.LengthSquared() < 60f * 60f)
+		if (slowed && heroWasWading && step.LengthSquared() < 60f * 60f)
 			player.GlobalPosition = lastHeroPosition + step * WadeSpeedShare;
 		lastHeroPosition = player.GlobalPosition;
 		heroWasWading = wading;

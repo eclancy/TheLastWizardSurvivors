@@ -466,6 +466,11 @@ public partial class _UiShot : Node
 	// Give it a few hundred --frames: the streamer paints one step per frame, nearest chunk first.
 	private Vector2? teleportTo;
 	private float cameraZoom;
+	// --break-shield=F (in-flight 76): at frame F of the warmup his whole shield pool is spent, as the hit that breaks it
+	// would - so the spell bar can be photographed with Aegis Ward down and coming back (pair with
+	// --start-spell=aegis_ward). Once; the frame is a count, not a share, so the sweep's progress at the shutter is
+	// the frames between it and the end.
+	private int breakShieldAt = -1;
 	private bool teleported;
 	private int teleportedAtFrame = -1;
 	// Frames the light probe waits after a teleport, so the chunks round the new spot are painted
@@ -494,6 +499,10 @@ public partial class _UiShot : Node
 	// water (TerrainStreamer.FlagFence), from outside or from inside the garden - whichever is
 	// nearer. The fence is on the ground's layer like water, so the same probe measures it.
 	private bool shoreFence;
+	// --shore-wade=N (in-flight 74): with --shore on water, he keeps walking N frames once the wade has taken hold, so
+	// the photograph has him standing IN the water - sunk to the shins, the rings round him - not at its lip.
+	private int shoreWadeFrames;
+	private bool shoreWadeBegun;
 	private Vector2I shoreCell;
 	private bool shorePlaced;
 
@@ -1640,6 +1649,8 @@ public partial class _UiShot : Node
 			// "before" half of a photograph of enemies going round a lake (.ai/terrain.md, section 9).
 			else if (arg == "--shore-fence")
 				shoreFence = true;
+			else if (arg.StartsWith("--shore-wade="))
+				shoreWadeFrames = System.Math.Max(0, int.Parse(arg.Substring("--shore-wade=".Length)));
 			else if (arg == "--no-open-routing")
 				MazeNavigation.OpenStageRouting = false;
 			// --demo-curation: two Redactions owned and Fireball set aside, in memory only, so the
@@ -2014,6 +2025,8 @@ public partial class _UiShot : Node
 			// of ground - the maze's trap pattern, say. Applied at a quarter of the warmup.
 			else if (arg.StartsWith("--zoom="))
 				cameraZoom = float.Parse(arg.Substring("--zoom=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg.StartsWith("--break-shield="))
+				breakShieldAt = int.Parse(arg.Substring("--break-shield=".Length));
 			else if (arg.StartsWith("--teleport="))
 			{
 				string[] xy = arg.Substring("--teleport=".Length).Split(',');
@@ -3183,8 +3196,12 @@ public partial class _UiShot : Node
 				// Wadeable water no longer stops him (in-flight 59), so there the walk stops itself
 				// the moment wading begins: the report then measures where the boots stood as the
 				// wade took hold, against the drawn shore - the alignment this probe exists for.
-				bool walk = shorePlaced
-					&& !(FindNodeOfType<Player>(GetTree().Root) is Player wader && wader.IsWading);
+				// Once begun, the walk ends for good when the wade frames are spent - a narrow strip of water is not
+				// walked straight out of and on across the land beyond it.
+				shoreWadeBegun |= FindNodeOfType<Player>(GetTree().Root) is Player wader && wader.IsWading;
+				if (shoreWadeBegun && shoreWadeFrames > 0)
+					shoreWadeFrames--;
+				bool walk = shorePlaced && !(shoreWadeBegun && shoreWadeFrames <= 0);
 				Press("move_right", "move_left", walk ? push.X : 0f);
 				Press("move_down", "move_up", walk ? push.Y : 0f);
 			}
@@ -3585,6 +3602,12 @@ public partial class _UiShot : Node
 			// of the rush, so he is kept whole while it steps (until --force-death means otherwise).
 			if (cameraZoom > 0f && frames >= WarmupFrames / 4 && FindNodeOfType<Camera2D>(GetTree().Root) is Camera2D runCamera)
 				runCamera.Zoom = new Vector2(cameraZoom, cameraZoom);
+			if (breakShieldAt >= 0 && frames >= breakShieldAt && FindNodeOfType<Player>(GetTree().Root) is Player shielded)
+			{
+				int spent = shielded.SpendShield(int.MaxValue);
+				GD.Print($"_UiShot: broke the shield at frame {frames} ({spent} points spent)");
+				breakShieldAt = -1;
+			}
 			if (rushSteps > 0 && !deathForced && FindNodeOfType<Player>(GetTree().Root) is Player rushPlayer && !rushPlayer.IsDead)
 				rushPlayer.CurrentHP = rushPlayer.MaxHP;
 			if (bossDeathOffset is Vector2 bossAt && FindNodeOfType<Player>(GetTree().Root) is Player bossWitness)

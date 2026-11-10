@@ -11,7 +11,8 @@ using TheOneHeMissed.scripts;
 /// <remarks>
 /// WHERE. On a PC the lower right - the opposite corner to the tracked quests, out of the band above the
 /// player's head where the run's opening writes and the achievement plate stands. On a phone the lower
-/// half belongs to the thumb, so it hangs just under the HUD band instead.
+/// half belongs to the thumb, so it hangs just under the HUD band instead - and CONDENSED (in-flight 70,
+/// Eric 2026-11-09 and 10: "it is huge on mobile and covers the wizard"; <see cref="Condense"/>).
 ///
 /// PUT AWAY by a click or tap on it, or A / Enter / Space. Layer 7, above the touch stick (5), so a tap on
 /// the paper reaches it - and only the paper takes the mouse; the rest of the screen is the stick's.
@@ -35,6 +36,8 @@ public partial class ChapterNoteCard : CanvasLayer
 {
 	private const float WriteSecondsPerChar = 0.028f;
 	private const float HoldSeconds = 7.5f;
+	// On a phone it is over the run's upper half: read and gone (in-flight 70). A tap still puts it away sooner.
+	private const float NarrowHoldSeconds = 4f;
 	// How long it stays, once written, when another message is waiting for the screen.
 	private const float ReadSecondsWhenWaitedFor = 3f;
 	private const float FadeSeconds = 0.6f;
@@ -60,6 +63,7 @@ public partial class ChapterNoteCard : CanvasLayer
 	private bool dismissing;
 	private float clock;
 	private float writeSeconds;
+	private float holdSeconds = HoldSeconds;
 
 	/// <summary>
 	/// Shows a chapter's note over the run and returns it: its intro on the first visit
@@ -96,6 +100,11 @@ public partial class ChapterNoteCard : CanvasLayer
 		Layer = 7;
 		ProcessMode = ProcessModeEnum.Pausable;
 		bool narrow = ResponsiveLayout.IsNarrow(this);
+		if (narrow)
+		{
+			Condense();
+			holdSeconds = NarrowHoldSeconds;
+		}
 
 		var root = new Control { Name = "NoteRoot", MouseFilter = Control.MouseFilterEnum.Ignore };
 		root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -225,7 +234,7 @@ public partial class ChapterNoteCard : CanvasLayer
 			rule.Modulate = new Color(1f, 1f, 1f, firstClue.VisibleRatio > 0f ? 1f : 0f);
 		if (!dismissing)
 			HudKeepOut.Set(this, page.GetGlobalRect().Grow(6f));
-		if (!dismissing && clock > 0.25f + writeSeconds + HoldSeconds)
+		if (!dismissing && clock > 0.25f + writeSeconds + holdSeconds)
 			Dismiss();
 		// It holds the screen's turn (Announcements). Once it is written and has been up long enough to
 		// read, a message waiting behind it - an achievement earned in the first seconds - may have it.
@@ -252,6 +261,34 @@ public partial class ChapterNoteCard : CanvasLayer
 			Dismiss();
 		}
 	}
+
+	// ON A PHONE, CONDENSED (in-flight 70). The card hangs from under the HUD band (y 196 of the 1280-tall canvas) and
+	// grows down toward the wizard, who stands at the canvas centre (y 640): written out in full - the heading, the
+	// place's two lines, a rule and up to three clues, each line wrapping to two at the phone's 24-unit body size - it
+	// reached him. So on a phone it carries the heading, the place's FIRST line, and the clues as a COUNT ("Three things
+	// are still hidden here.") - a single clue is shown as it is, being no longer than the count - and it holds 4 s, not
+	// 7.5. At most four short lines under the heading: about 210 units, ending near y 410, a long way above him. The
+	// PC's card, in the lower right corner, never comes near him and is as it was.
+	private void Condense()
+	{
+		if (lines.Count > 1)
+			lines = new List<string> { lines[0] };
+		if (clues.Count > 1)
+			clues = new List<string> { CountLine(clues.Count) };
+	}
+
+	// In the note's own voice, and like every clue it says that something is there and never what (ChapterNotes).
+	private static string CountLine(int count) =>
+		$"{CountWord(count)} things are still hidden here.";
+
+	private static string CountWord(int count) => count switch
+	{
+		2 => "Two",
+		3 => "Three",
+		4 => "Four",
+		5 => "Five",
+		_ => count.ToString(),
+	};
 
 	/// <summary>Puts the note away: written out in full if it was not, then faded.</summary>
 	public void Dismiss()

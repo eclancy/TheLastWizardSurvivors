@@ -46,8 +46,11 @@ using TheOneHeMissed.scripts;
 /// here and the touch - and a strip that swallowed taps would be a dead patch of screen.
 ///
 /// WHEN IT REDRAWS. On <see cref="Player.LoadoutChanged"/> only, coalesced to one rebuild per frame
-/// (a Penknife cut raises it twice). Nothing here runs per frame and nothing is allocated per frame;
-/// the slot and chip nodes are built once and re-filled.
+/// (a Penknife cut raises it twice). Nothing is allocated per frame; the slot and chip nodes are built
+/// once and re-filled. Two things run per frame, and only while there is something to show: a timed
+/// seal's drain (four times a second), and the WARD GAUGE (in-flight 76) - a slot holding Aegis Ward,
+/// Stormguard or Gloam Veil asks the player every frame whether it is up and how far it has come back,
+/// and redraws that slot's gauge alone, and only when a whole unit of it changed.
 /// </remarks>
 public partial class LoadoutHud : BoxContainer
 {
@@ -112,6 +115,15 @@ public partial class LoadoutHud : BoxContainer
 		// wax under the band drains with it: 1 full, 0 gone, -1 for no drain (the Rite's, or held until the orb).
 		public float SealDrain = -1f;
 		public bool WasSealed;
+		// THE WARD GAUGE (in-flight 76; Player.TryGetWardGauge): the slot holds a ward - Aegis Ward, Stormguard or Gloam
+		// Veil - and while it is down a dark veil covers the icon from the top, drawing back as it comes back, its edge a
+		// line of the spell's own light; the slot flares the moment it is up. WardFill is the icon units back (-1 to force
+		// a redraw), WardInk the spell's element.
+		public Control Gauge = null!;
+		public SpellData? WardSpell;
+		public bool WardUp = true;
+		public int WardFill = -1;
+		public Color WardInk;
 		// Harmony's slot (the Canticle's level 4, ArcaneExplosion.HarmonyElementOf): the slot after the Canticle's,
 		// whose spell lends the burst its element, marked with a note in that element's colour and tied to the
 		// Canticle's slot. Transparent when the slot is not Harmony's.
@@ -149,6 +161,10 @@ public partial class LoadoutHud : BoxContainer
 	private readonly List<KeyValuePair<Element, int>> order = new();
 	private HFlowContainer tagFlow = null!;
 	private bool rebuildQueued;
+	// How many slots hold a ward (the gauge runs only while one does).
+	private int wardSlots;
+	// The veil over a ward that is down: the slot backing's stone, dense enough to read as "not there yet".
+	private static readonly Color WardVeil = new(0.043f, 0.059f, 0.094f, 0.78f);
 
 	// The tags' corner. Top: the run timer's and the touch pause button's (8). Right: the canvas edge
 	// mirrored from EdgeLeft, or clear of the pause button (TouchControls: 48 wide, 8 in) with a gap.
@@ -198,7 +214,7 @@ public partial class LoadoutHud : BoxContainer
 			Holder.Connect(Player.SignalName.LoadoutChanged, new Callable(this, nameof(OnLoadoutChanged)));
 			Holder.Connect(Player.SignalName.SealsChanged, new Callable(this, nameof(OnLoadoutChanged)));
 		}
-		// Only while a seal drains (Rebuild turns it on), and then four times a second.
+		// Only while a seal drains or a ward is held (Rebuild turns it on).
 		SetProcess(false);
 		Rebuild();
 	}
@@ -222,15 +238,21 @@ public partial class LoadoutHud : BoxContainer
 
 	public override void _Process(double delta)
 	{
-		drainClock -= (float)delta;
-		if (drainClock > 0f)
-			return;
-		drainClock = DrainRedrawSeconds;
-		if (Holder == null || !IsInstanceValid(Holder) || !Holder.AnyTimedSeal)
-		{
+		bool wards = TickWards();
+		bool seals = TickSealDrain((float)delta);
+		if (!wards && !seals)
 			SetProcess(false);
-			return;
-		}
+	}
+
+	// False once no timed seal is left to drain.
+	private bool TickSealDrain(float delta)
+	{
+		if (Holder == null || !IsInstanceValid(Holder) || !Holder.AnyTimedSeal)
+			return false;
+		drainClock -= delta;
+		if (drainClock > 0f)
+			return true;
+		drainClock = DrainRedrawSeconds;
 		for (int i = 0; i < MaxSlots; i++)
 		{
 			SlotView view = slots[i];
@@ -239,6 +261,33 @@ public partial class LoadoutHud : BoxContainer
 			view.SealDrain = Holder.SealRemainingFraction(i);
 			view.Mark.QueueRedraw();
 		}
+		return true;
+	}
+
+	// THE WARD GAUGE, every frame a ward is held: each ward slot asks the player, and redraws only when it went up or
+	// down or a whole icon unit came back - about thirty redraws of one small control over a whole recharge.
+	private bool TickWards()
+	{
+		if (wardSlots == 0 || Holder == null || !IsInstanceValid(Holder))
+			return false;
+		for (int i = 0; i < MaxSlots; i++)
+		{
+			SlotView view = slots[i];
+			if (view.WardSpell == null)
+				continue;
+			Holder.TryGetWardGauge(view.WardSpell, out bool up, out float recharge);
+			int fill = up ? (int)IconSize : Mathf.Clamp((int)(recharge * IconSize), 0, (int)IconSize);
+			if (up == view.WardUp && fill == view.WardFill)
+				continue;
+			// Back: it was down and is up again, seen on this slot, not on a rebuild.
+			bool cameBack = up && !view.WardUp && view.WardFill >= 0;
+			view.WardUp = up;
+			view.WardFill = fill;
+			view.Gauge.QueueRedraw();
+			if (cameBack)
+				FlareWard(view);
+		}
+		return true;
 	}
 
 	// Anchors and offsets as built; SafeArea.Apply on the UIOverlay (Node2DGame) moves them in from
@@ -320,6 +369,14 @@ public partial class LoadoutHud : BoxContainer
 		};
 		frame.AddChild(icon);
 
+		var view = new SlotView { Frame = frame, Style = style, Icon = icon };
+		// Over the icon, under the marks and the numeral, so the level still reads over a ward that is down.
+		var gauge = new Control { Name = "WardGauge", MouseFilter = MouseFilterEnum.Ignore };
+		gauge.SetAnchorsPreset(LayoutPreset.FullRect);
+		gauge.Draw += () => DrawWard(gauge, view);
+		frame.AddChild(gauge);
+		view.Gauge = gauge;
+
 		// Bottom right, pushed down by the font's descent so the numeral sits in the corner of the
 		// icon rather than floating a third of the way up it.
 		var level = new Label
@@ -338,7 +395,7 @@ public partial class LoadoutHud : BoxContainer
 		level.AddThemeColorOverride("font_outline_color", NumeralOutline);
 		level.AddThemeConstantOverride("outline_size", NumeralOutlineSize);
 
-		var view = new SlotView { Frame = frame, Style = style, Icon = icon, Level = level };
+		view.Level = level;
 		var mark = new Control
 		{
 			Name = "SovereignMark",
@@ -525,6 +582,7 @@ public partial class LoadoutHud : BoxContainer
 		int open = Mathf.Clamp(Holder.SpellSlots, 0, MaxSlots);
 		SpellData? sovereign = Holder.SovereignSpell;
 		int anointedSlot = -1;
+		wardSlots = 0;
 		// Harmony's slot: the one after a Canticle that holds the card (ArcaneExplosion.SympathyElement's rule).
 		int harmonySlot = -1;
 		for (int i = 0; i < spells.Count; i++)
@@ -575,11 +633,25 @@ public partial class LoadoutHud : BoxContainer
 			slots[i].WasSealed = sealedByHim;
 			if (kind == SlotMark.Sovereign)
 				anointedSlot = i;
+			// A ward the bar shows coming back; a silenced or sealed one is not coming back, so it shows none.
+			SpellData? ward = (kind == SlotMark.None || kind == SlotMark.Sovereign) && Player.IsWardSpell(spell) ? spell : null;
+			if (!ReferenceEquals(slots[i].WardSpell, ward))
+			{
+				slots[i].WardSpell = ward;
+				slots[i].WardUp = true;
+				slots[i].WardFill = -1;
+				slots[i].WardInk = ward != null ? ElementColors.GetColor(SfxCatalog.DominantElement(ward)) : Colors.Transparent;
+				slots[i].Gauge.QueueRedraw();
+			}
+			if (ward != null)
+				wardSlots++;
 		}
 		if (Holder.AnyTimedSeal)
-		{
 			drainClock = DrainRedrawSeconds;
+		if (Holder.AnyTimedSeal || wardSlots > 0)
+		{
 			SetProcess(true);
+			TickWards();
 		}
 		if (sovereign != null && anointedSlot >= 0 && !sovereignArrived)
 		{
@@ -706,6 +778,27 @@ public partial class LoadoutHud : BoxContainer
 		flare.TweenInterval(delay + 0.43f);
 		flare.TweenProperty(target.Frame, "modulate", new Color(1.8f, 1.6f, 1.1f, 1f), 0.08f);
 		flare.TweenProperty(target.Frame, "modulate", Colors.White, 0.35f);
+	}
+
+	// A ward that is down: the veil over the part of the icon still to come back, from the top, and its edge a line of
+	// the spell's own light two units deep. Whole canvas units, one an icon art pixel. Nothing over a ward that is up.
+	private static void DrawWard(Control gauge, SlotView view)
+	{
+		if (view.WardSpell == null || view.WardUp || view.WardFill < 0)
+			return;
+		float veil = IconSize - view.WardFill;
+		if (veil > 0f)
+			gauge.DrawRect(new Rect2(SlotRim, SlotRim, IconSize, veil), WardVeil);
+		float edge = Mathf.Clamp(SlotRim + veil - 1f, SlotRim, SlotRim + IconSize - 2f);
+		gauge.DrawRect(new Rect2(SlotRim, edge, IconSize, 2f), view.WardInk);
+	}
+
+	// The moment a ward is back: the slot lit up and settling, in the white of the seal's flare, so the eye goes to it.
+	private static void FlareWard(SlotView view)
+	{
+		Tween flare = view.Frame.CreateTween();
+		flare.TweenProperty(view.Frame, "modulate", new Color(1.8f, 1.8f, 2f, 1f), 0.06f);
+		flare.TweenProperty(view.Frame, "modulate", Colors.White, 0.4f);
 	}
 
 	// A short flare of the seal's wax over the slot and back: what the player sees on the strip the frame

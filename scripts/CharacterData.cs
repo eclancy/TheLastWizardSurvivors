@@ -66,6 +66,15 @@ public partial class CharacterData : Resource
     [Export] public string StartingPassiveDescription { get; set; } = string.Empty;
     [Export] public bool IsLegendaryStart { get; set; } = false;
 
+    /// <summary>
+    /// A TRAIT, not a passive (in-flight 74, Eric 2026-11-09): she stays on top of the water - neither slowed by
+    /// wading (Player.MovePlayer) nor sunk in it (Player.Wading.cs), nor held back by the Swallow-Hole's mud -
+    /// and rings still spread round her feet. Baba Yaga, whose mortar floats, and Nimue, the Lady of the Lake,
+    /// who walks on it. Each keeps her own passive; this sits beside it. Wayland's Wings already carries him
+    /// over water by its own flag (Player.Winged), so he does not set this.
+    /// </summary>
+    [Export] public bool RidesOverWater { get; set; } = false;
+
     // Portrait shown on the character selection card. Left null falls back to a shared default
     // image in CharacterSelection.cs.
     [Export] public Texture2D Portrait { get; set; }
