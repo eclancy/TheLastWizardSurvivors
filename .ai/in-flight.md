@@ -922,6 +922,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     confusing (find which card he means); Attunement is confusing - revisit the mechanic or its
     words; a tag that would pass six slots just says "Max"; an item set's card always shows every
     set effect (Eric: "Just show all effects always, we can save room in other ways").
+    **Checked 2026-11-09** (Eric: *"I thought we reworded reforged?"*): the granary lines, Wither, Skipstone, Handoff
+    and "Max" had landed; **Reforged had not** - its card still said shards "fly in to you, cutting what they pass".
+    Reworded that day: *"As the ward is rebuilt, iron shards fly in and cut the enemies they pass."* (107 of 130).
+    Waywiser and the Chalice Cup were reworded here but still read as confusing, and came back as items 68 and 73.
 55. **Visual and HUD fixes** (Eric, 2026-11-06): Aegis Ward's shield bigger than the player (it
     hovers at the chest); the Archmage's sprite leans back - stand him straight; the Raven's
     highlight is too bright; the level-up Codex button is misaligned vertically; spell icons brought

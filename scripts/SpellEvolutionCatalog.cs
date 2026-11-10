@@ -1144,7 +1144,9 @@ public static class SpellEvolutionCatalog
 			Id = AegisWard.ReforgedId,
 			BonusElementWeights = new() { { "Metal", 1 } },
 			DisplayName = "Reforged",
-			Description = "Each time the ward returns, iron shards fly in to you, cutting what they pass. "
+			// "Fly in to you, cutting what they pass" read as cutting the wizard (Eric, 2026-11-06: "iron shards cut
+			// enemies as it is rebuilt"; recorded as in-flight 54 and missed until 2026-11-09).
+			Description = "As the ward is rebuilt, iron shards fly in and cut the enemies they pass. "
 				+ $"+{(reforgedShield - 1f) * 100f:0}% shield, 12% slower recharge.",
 			CooldownMultiplier = AttunementGainCooldownCost,
 			MilestoneLevel = 4,
