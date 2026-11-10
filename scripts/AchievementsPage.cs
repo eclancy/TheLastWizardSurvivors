@@ -655,10 +655,11 @@ public static partial class AchievementsPage
 		{
 			// RegressionChecks (A1) holds every sealable deed to having this line.
 			Title = item.Deed.SealedLine,
-			Meta = "Sealed until you reach it",
+			// A wizard's opener deed (in-flight 84) waits for its wizard, not for a place.
+			Meta = item.Deed.IsWizardOpener ? "Sealed until its wizard is freed" : "Sealed until you reach it",
 			// His silhouette (Eric, 2026-11-02: "always show silhouettes of characters not unlocked yet");
 			// the seal only for one sealed until he is free (the dark wizard), whose shape is never shown.
-			MetaGlyph = SealedWizardGlyph(item.Deed.CharacterUnlockId),
+			MetaGlyph = SealedWizardGlyph(item.Deed.IsWizardOpener ? item.Deed.RequiredCharacterId : item.Deed.CharacterUnlockId),
 			Quiet = true,
 			FocusStop = true,
 		}, CodexRows.Stone);

@@ -308,7 +308,7 @@ public static partial class SecretCatalog
 			DisplayName = secret.DisplayName,
 			Description = secret.FoundLine,
 			RewardText = RewardTextFor(secret),
-			SpellUnlockId = secret.MetaReward == SecretMetaReward.Spell ? secret.SpellUnlockId ?? "" : "",
+			SpellUnlockId = secret.MetaReward == SecretMetaReward.Spell && !KeepsForWizard(secret) ? secret.SpellUnlockId ?? "" : "",
 			CharacterUnlockId = secret.CharacterUnlockId,
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Secret,
@@ -323,10 +323,22 @@ public static partial class SecretCatalog
 		};
 	}
 
+	/// <summary>
+	/// A vault whose spell is a wizard's opener (in-flight 84): it still holds the spell, but its own deed does not pay it -
+	/// the deed done beside it as that wizard does (AchievementDefinitions.WizardOpenerRoadDeeds). Read off the catalog: the
+	/// spell's source is some other deed than this vault's.
+	/// </summary>
+	public static bool KeepsForWizard(SecretDefinition secret) =>
+		secret != null && secret.MetaReward == SecretMetaReward.Spell && !string.IsNullOrWhiteSpace(secret.SpellUnlockId)
+		&& UnlockCatalog.GetSpell(secret.SpellUnlockId) is UnlockDefinition source
+		&& !source.SourceId.Equals(AchievementDefinitions.SecretDeedId(secret.Id), StringComparison.OrdinalIgnoreCase);
+
 	// The three landmarks that teach (Teachings) say so, without naming the system: whichever is found first
 	// teaches the Ascension, so the lesson a vault gives depends on the order a save finds them in.
 	private static string RewardTextFor(SecretDefinition secret) => secret.MetaReward switch
 	{
+		// Never names the wizard: he may still be locked (in-flight 84).
+		SecretMetaReward.Spell when KeepsForWizard(secret) => $"Keeps {secret.SpellName} for its own wizard",
 		SecretMetaReward.Spell when secret.CharacterUnlockId == "laelaps" => "Unlocks Familiar and frees Laelaps",
 		SecretMetaReward.PageOnly when !string.IsNullOrWhiteSpace(secret.RewardText) => secret.RewardText,
 		SecretMetaReward.Spell when Teachings.IsTeacherDeed(AchievementDefinitions.SecretDeedId(secret.Id))

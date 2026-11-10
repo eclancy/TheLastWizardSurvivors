@@ -44,7 +44,7 @@ public sealed class LifetimeStats
 	public int BestInkKillsInRun { get; set; }
 	/// <summary>The most kills numbered in Grass's or Metal's ink in one run: what the Fieldfare feat measures (it pays Windfall).</summary>
 	public int BestGrassMetalKillsInRun { get; set; }
-	/// <summary>The most enemies that died poisoned in one run: what the Shrike feat measures (it pays Lancet).</summary>
+	/// <summary>The most enemies that died poisoned in one run: the Shrike feat measured it until in-flight 66 removed it; kept as a record.</summary>
 	public int BestPoisonedKillsInRun { get; set; }
 
 	public Dictionary<string, float> BestTimeByStage { get; set; } = new(StringComparer.OrdinalIgnoreCase);

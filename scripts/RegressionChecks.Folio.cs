@@ -66,16 +66,19 @@ public static partial class RegressionChecks
 		if (inkSlow <= 0f || inkSlow >= 1f)
 			warnings.Add($"Folio: Inkblot slows by {inkSlow:0%}; a slow is between none and a root.");
 
-		// The Magpie feat pays it: a run that opens one chest short does not, one that opens the target does.
+		// The Magpie feat pays it, done as John Dee once he is free (in-flight 84): a run of his that opens one chest short
+		// does not, one that opens the target does. (Done as anyone else, or before he is free, ValidateWizardOpeners.)
 		AchievementDefinition magpie = AchievementDefinitions.GetById("magpie");
 		if (magpie == null || magpie.SpellUnlockId != Folio.SpellId)
 			warnings.Add("Folio: no Magpie feat pays Folio, so nobody but John Dee can ever hold it.");
 		else
 		{
-			if (magpie.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { ChestsOpened = AchievementDefinitions.MagpieChestTarget - 1 })))
+			var withDee = new SaveData();
+			GlobalStatsManager.UnlockCharacter(withDee, "john_dee");
+			if (magpie.IsComplete(AchievementContext.Projected(withDee, new RunResult { CharacterId = "john_dee", ChestsOpened = AchievementDefinitions.MagpieChestTarget - 1 })))
 				warnings.Add($"Folio: Magpie completes on {AchievementDefinitions.MagpieChestTarget - 1} chests in a run; it asks for {AchievementDefinitions.MagpieChestTarget}.");
-			if (!magpie.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { ChestsOpened = AchievementDefinitions.MagpieChestTarget })))
-				warnings.Add($"Folio: a run that opened {AchievementDefinitions.MagpieChestTarget} chests does not complete Magpie (LifetimeStats.BestChestsInRun).");
+			if (!magpie.IsComplete(AchievementContext.Projected(withDee, new RunResult { CharacterId = "john_dee", ChestsOpened = AchievementDefinitions.MagpieChestTarget })))
+				warnings.Add($"Folio: a run as John Dee that opened {AchievementDefinitions.MagpieChestTarget} chests does not complete Magpie.");
 		}
 	}
 }

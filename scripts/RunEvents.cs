@@ -25,6 +25,8 @@ public static class RunEvents
 {
 	private static readonly Dictionary<string, int> killsByEnemyType = new(StringComparer.OrdinalIgnoreCase);
 	private static readonly Dictionary<string, int> peakElementCounts = new(StringComparer.OrdinalIgnoreCase);
+	// The most different elements held at once (Swansong, in-flight 84): unlike the peaks above, one moment's count.
+	private static int peakDistinctElements;
 	private static readonly HashSet<string> chestItemsAcquired = new(StringComparer.OrdinalIgnoreCase);
 	private static readonly HashSet<string> chestSetsCompleted = new(StringComparer.OrdinalIgnoreCase);
 	private static readonly HashSet<string> sitesDiscovered = new(StringComparer.OrdinalIgnoreCase);
@@ -46,7 +48,7 @@ public static class RunEvents
 	// asks for them in one run, and it pays Windfall.
 	private static int grassMetalKills;
 	// Enemies that died with a poison still ticking on them (Enemy.StartDeath), whatever dealt the last blow - a poison
-	// tick, a spell, Lancet letting the poison out. The Shrike feat asks for them in one run, and it pays Lancet.
+	// tick, a spell, Lancet letting the poison out. The Shrike feat asked for them in one run until in-flight 66 removed it; kept as a record.
 	private static int poisonedKills;
 	// Seconds into the run the player first took damage, or -1 if they never did. Kept as a time
 	// rather than a bool so "survive N minutes untouched" works for any N instead of only the one
@@ -57,6 +59,7 @@ public static class RunEvents
 	{
 		killsByEnemyType.Clear();
 		peakElementCounts.Clear();
+		peakDistinctElements = 0;
 		chestItemsAcquired.Clear();
 		chestSetsCompleted.Clear();
 		sitesDiscovered.Clear();
@@ -157,11 +160,15 @@ public static class RunEvents
 		if (counts == null)
 			return;
 
+		int distinct = 0;
 		foreach (KeyValuePair<string, int> entry in counts)
 		{
 			if (!peakElementCounts.TryGetValue(entry.Key, out int best) || entry.Value > best)
 				peakElementCounts[entry.Key] = entry.Value;
+			if (entry.Value > 0)
+				distinct++;
 		}
+		peakDistinctElements = Math.Max(peakDistinctElements, distinct);
 	}
 
 	public static void ApplyToRunResult(global::RunResult result, float timeSurvived)
@@ -171,6 +178,7 @@ public static class RunEvents
 
 		result.KillsByEnemyType = killsByEnemyType.ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase);
 		result.PeakElementCounts = peakElementCounts.ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase);
+		result.PeakDistinctElements = peakDistinctElements;
 		result.ChestItemIds = chestItemsAcquired.ToList();
 		result.ChestSetIds = chestSetsCompleted.ToList();
 		result.DiscoveredSiteIds = sitesDiscovered.ToList();

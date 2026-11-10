@@ -211,14 +211,16 @@ public static class UnlockCatalog
 		// EVERY SPELL THAT IS NOT A STARTER IS EARNED (Eric, 2026-10-29; .ai/achievements-and-secrets.md):
 		// eleven Feats, nine Road deeds of the chapters, and nine spell vaults hidden in the world. The
 		// shop sells no spells. What moved at schema 19, and why, is that doc's section 2.2.
-		FromAchievement("arcane_explosion", "first_blood", "Defeat your first enemy."),
+		// First Blood pays Lancet since in-flight 66 (Eric, 2026-11-09: "I like first blood unlocking lancet"); Canticle is
+		// the Sibyl's opener, earned as her (Swansong, in-flight 84).
+		FromAchievement("lancet", "first_blood", "Defeat your first enemy."),
 		// Darkness's only pure carrier, sold until schema 19 so the element could be built early. Ten
 		// minutes is the first good run, so it stays early as a Feat. Survivor paid Frost Shard before;
 		// Frost Shard is the Geode Heart's now (below).
 		FromAchievement("hollow_star", "survivor", "Survive ten minutes in a single run."),
 		// John Dee's opener since 2026-11-09 (.ai/character-fit.md section 6): the collector's book, earned by collecting
-		// as he does. He holds it whatever the save owns; everyone else opens ten chests in one run (the Magpie feat).
-		FromAchievement("folio", "magpie", "Open ten chests in a single run."),
+		// as he does. He holds it whatever the save owns; since in-flight 84 it is shared by ten chests in one run AS him.
+		FromAchievement("folio", "magpie", "Open ten chests in a single run - as its own wizard, once freed."),
 		// St Elmo's fire, aimed at nothing (scripts/Corposant.cs): earned by fighting with Lightning, the Storm Petrel feat.
 		FromAchievement("corposant", "storm_petrel",
 			$"Defeat {AchievementDefinitions.StormPetrelLightningKills} enemies with Lightning in a single run."),
@@ -228,16 +230,17 @@ public static class UnlockCatalog
 		// The iron-fruited orchard (scripts/Windfall.cs): earned by fighting with Grass and Metal, the Fieldfare feat.
 		FromAchievement("windfall", "fieldfare",
 			$"Defeat {AchievementDefinitions.FieldfareGrassMetalKills} enemies with Grass or Metal in a single run."),
-		// The surgeon's needle, at the most wounded in reach (scripts/Lancet.cs): earned by finishing what poison started, the
-		// Shrike feat.
-		FromAchievement("lancet", "shrike",
-			$"Defeat {AchievementDefinitions.ShrikePoisonedKills} poisoned enemies in a single run."),
+		// The surgeon's needle, at the most wounded in reach (scripts/Lancet.cs), is First Blood's since in-flight 66 (above);
+		// the Shrike feat that paid it is gone.
 		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
-		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run."),
-		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element."),
+		// THE OPENERS (in-flight 84): a wizard's starting spell is earned by a deed done as that wizard, once freed
+		// (AchievementDefinition.IsWizardOpener; RegressionChecks.ValidateWizardOpeners). The hints never name him.
+		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run - as its own wizard, once freed."),
+		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element - as its own wizard, once freed."),
+		FromAchievement("arcane_explosion", "swansong", "Hold four different elements at once - as its own wizard, once freed."),
 		FromAchievement("void_lance", "hoarder", "Fill all six spell slots in a run."),
 		FromAchievementBoon("umbral_veil", "untouchable", "Survive three minutes without losing health."),
-		FromAchievement("scorching_ray", "fire_adept", "End a run with 4 Fire instances."),
+		FromAchievement("scorching_ray", "fire_adept", "Hold 4 Fire instances - as its own wizard, once freed."),
 		FromAchievement("glacial_spike", "ice_adept", "End a run with 4 Ice instances."),
 		FromAchievement("toxic_spore_burst", "poison_adept", "End a run with 4 Poison instances."),
 		FromAchievement("black_tentacles", "earth_adept", "End a run with 4 Earth instances."),
@@ -253,7 +256,7 @@ public static class UnlockCatalog
 		// jailer carries a rattle (.ai/new-items.md section 7).
 		FromAchievementBoon("bone_rattle", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
 		FromAchievement("spiritual_weapon", "ruins_delver", "Defeat the boss of the Mystic Ruins."),
-		FromAchievement("riptide", "cave_choir_silenced", "Defeat the boss of the Sunken Cave."),
+		FromAchievement("riptide", "undertow", "Defeat the boss of the Sunken Cave - as its own wizard, once freed."),
 		FromAchievement("mirefoot", "swamp_cleansed", "Defeat the boss of the Blighted Swamp."),
 		FromAchievementBoon("rimebriar", "waste_thawed", "Defeat the boss of the Frozen Waste."),
 		// The Long Coil's deed pays two things: the boon it always paid, and Fireball. Fireball was the
@@ -277,12 +280,14 @@ public static class UnlockCatalog
 		// RegressionChecks holds it to the deed's SealedLine.
 		FromSecret("hunters_draw", "pale_hart", "Hidden somewhere in the Enchanted Forest."),
 		FromSecret("familiar", "pinfold", "Hidden somewhere in the Fallow Fields."),
-		FromSecret("starfall", "fallen_star", "Hidden somewhere in the Broken Circle."),
+		// Starfall, Kindled Ward and Sleet Runes are still kept in their vaults, but for their wizards (in-flight 84): the
+		// vault's own deed pays its mark on the page, and the deed done beside it as the wizard pays the spell.
+		FromAchievement("starfall", "seers_star", "Hidden somewhere in the Broken Circle - for its own wizard, once freed."),
 		FromSecret("frost_shard", "geode_heart", "Hidden somewhere in the Sunken Cave."),
 		FromSecret("molten_shard", "cold_forge", "Hidden somewhere in the Cursed Dungeon."),
 		FromSecret("gravewell", "swallow_hole", "Hidden somewhere in the Blighted Swamp."),
-		FromSecret("kindled_ward", "broken_ward", "Hidden somewhere in the Mystic Ruins."),
-		FromSecret("sleet_runes", "buried_runes", "Hidden somewhere in the Frozen Waste."),
+		FromAchievement("kindled_ward", "onmyojis_ward", "Hidden somewhere in the Mystic Ruins - for its own wizard, once freed."),
+		FromAchievement("sleet_runes", "fays_frost", "Hidden somewhere in the Frozen Waste - for its own wizard, once freed."),
 		FromSecret("stormsweep", "fulgurite", "Hidden somewhere in the Scorched Sands."),
 
 		// THE COMBINATIONS (.ai/combo-spells.md, ComboCatalog): each is the reward of the Feat derived from its
@@ -388,9 +393,12 @@ public static class UnlockCatalog
 		// wizard is.
 		FromEvent("ma_liang", UnlockKind.Character, "dotted_door", "Kept painting the portraits in the Court's Gallery.",
 			secretUntilStage: "stage_12", finalGateOnly: true),
-		FromEvent("iron_palisade", UnlockKind.Spell, "caravan_master", "Carried by the caravan master on the Scorched Sands road."),
-		FromEvent("contagion", UnlockKind.Spell, "bog_lanterns", "Kept by whatever tends the lanterns in the Blighted Swamp."),
-		FromEvent("bramble_seed", UnlockKind.Spell, "the_grove", "Grown back in the corrupted grove of the Enchanted Forest."),
+		// Three wizards' openers that were these sites' prizes (in-flight 84): still won there, but only as their wizards,
+		// through a deed done beside the site's own (AchievementDefinitions.WizardOpenerRoadDeeds). No SiteId: the site's
+		// deed pays Arcane Energy now (AchievementDefinitions.SideEventCurrency).
+		FromAchievement("iron_palisade", "smiths_toll", "Carried by the caravan master on the Scorched Sands road - for its own wizard, once freed."),
+		FromAchievement("contagion", "doctors_round", "Kept by whatever tends the lanterns in the Blighted Swamp - for its own wizard, once freed."),
+		FromAchievement("bramble_seed", "grove_sung_green", "Grown back in the corrupted grove of the Enchanted Forest - for its own wizard, once freed."),
 		// The early chapters' side events (.ai/campaign.md) pay relics, not people - see there for
 		// why a new wizard is a decision for later. The coin thrown into the last well the dark wizard
 		// has not fouled, and a fleck of the wizards' own warded circle, still lit.

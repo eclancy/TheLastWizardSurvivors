@@ -2321,7 +2321,7 @@ public partial class Enemy : CharacterBody2D
 		EndTurn();
 		var perfStart = FrameProfiler.Begin();
 		RunEvents.RecordKill(EnemyType, IsMiniBoss);
-		// Died with a poison still ticking on it, whatever dealt the last blow: what the Shrike feat counts (it pays Lancet).
+		// Died with a poison still ticking on it, whatever dealt the last blow: a lifetime best (the Shrike feat counted it until in-flight 66 removed it).
 		// Read before anything below clears the status, and every poison on an enemy is the player's (PlayerPoisonScale).
 		if (IsPoisoned)
 			RunEvents.RecordPoisonedKill();

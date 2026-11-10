@@ -270,8 +270,23 @@ public static partial class RegressionChecks
 					changed = true;
 				}
 			}
+			// A wizard's opener (in-flight 84) is done as him once he is free, where its chapter is open: beside its side
+			// event or secret through the door the run uses, or straight for a Feat or a boss.
+			foreach (AchievementDefinition opener in AchievementDefinitions.All.Where(d => d.IsWizardOpener))
+			{
+				if (GlobalStatsManager.IsAchievementUnlocked(save, opener.Id) || !GlobalStatsManager.IsCharacterUnlocked(save, opener.RequiredCharacterId))
+					continue;
+				StageDefinition at = StageCatalog.GetById(opener.StageId);
+				if (at != null && (StageCatalog.CampaignPositionOf(at.Id) < 0 || !GlobalStatsManager.IsStageAvailable(save, at)))
+					continue;
+				if (!string.IsNullOrWhiteSpace(opener.AsWizardOf))
+					AchievementManager.Complete(save, opener.AsWizardOf, opener.RequiredCharacterId);
+				else
+					AchievementManager.Complete(save, opener.Id);
+				changed = true;
+			}
 			foreach (AchievementDefinition feat in AchievementDefinitions.All.Where(d =>
-				(d.Kind == AchievementKind.Feat || d.Kind == AchievementKind.Collection)
+				(d.Kind == AchievementKind.Feat || d.Kind == AchievementKind.Collection) && !d.IsWizardOpener
 				&& !d.Id.Equals(AchievementDefinitions.GrimoireRestoredId, StringComparison.OrdinalIgnoreCase)
 				&& (string.IsNullOrWhiteSpace(d.StageId) || StageCatalog.CampaignPositionOf(d.StageId) >= 0)))
 			{

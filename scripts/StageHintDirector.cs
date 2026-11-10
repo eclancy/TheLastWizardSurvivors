@@ -228,7 +228,7 @@ public partial class StageHintDirector : Node
 			if (owned[i] || !StillHidden(i))
 				continue;
 			SideEvent sideEvent = Sources[i].Event;
-			if (sideEvent.PaysChest || (saveManager?.Data != null && DiscoveryRewards.IsSiteExhausted(saveManager.Data, Sources[i].Hint.SiteId)))
+			if (sideEvent.PaysChest || (saveManager?.Data != null && DiscoveryRewards.IsSiteExhausted(saveManager.Data, Sources[i].Hint.SiteId, AchievementManager.RunCharacterId)))
 			{
 				owned[i] = true;
 				continue;

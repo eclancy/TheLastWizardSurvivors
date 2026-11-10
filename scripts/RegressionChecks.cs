@@ -651,8 +651,10 @@ public static partial class RegressionChecks
 				string deedId = AchievementDefinitions.SecretDeedId(secret.Id);
 				if (source == null)
 					warnings.Add($"Secrets: '{secret.Id}' pays spell '{secret.SpellUnlockId}', which has no unlock catalog entry.");
-				else if (source.Source != UnlockSource.Achievement || !source.SourceId.Equals(deedId, StringComparison.OrdinalIgnoreCase))
-					warnings.Add($"Secrets: '{secret.Id}' pays '{secret.SpellUnlockId}', but the catalog sources that spell from {source.Source} '{source.SourceId}', not this vault's deed '{deedId}'.");
+				// Or a wizard's opener kept in the vault for him (in-flight 84): the deed done beside this vault's pays it.
+				else if (source.Source != UnlockSource.Achievement || (!source.SourceId.Equals(deedId, StringComparison.OrdinalIgnoreCase)
+					&& !AchievementDefinitions.DoneAsWizardBeside(deedId).Any(d => d.Id.Equals(source.SourceId, StringComparison.OrdinalIgnoreCase))))
+					warnings.Add($"Secrets: '{secret.Id}' pays '{secret.SpellUnlockId}', but the catalog sources that spell from {source.Source} '{source.SourceId}', not this vault's deed '{deedId}' or one done beside it.");
 				if (!spellNames.TryGetValue(secret.SpellUnlockId, out string name) || !name.Equals(secret.SpellName, StringComparison.Ordinal))
 					warnings.Add($"Secrets: '{secret.Id}' names its spell '{secret.SpellName}', but '{secret.SpellUnlockId}' is called '{name ?? "(no resource)"}'.");
 			}
@@ -7563,6 +7565,111 @@ public static partial class RegressionChecks
 		}
 
 		ValidateCuration(fresh, warnings);
+		ValidateWizardOpeners(warnings);
+	}
+
+	// A WIZARD'S OPENER IS EARNED AS THAT WIZARD (in-flight 84, Eric 2026-11-09: "spells that are another wizard's
+	// default spell to only be unlockable once that wizard is unlocked" - "those achievements should require being
+	// completed with that wizard"). Read from the roster, so a new wizard's opener is held to it by itself. Not held: a
+	// starter's (every save has it), a Conjunction (made in a run, not unlocked: Sagittarius, The Taking), a spell no one
+	// else is ever dealt (ExclusiveTo: Merlin's Orb of Ages), and Eric's three exceptions - the Familiar (Laelaps needs
+	// it), Thorn Vine (the Forest's boss) and Spiritual Weapon (the Ruins' boss). For every other opener: the deed that
+	// pays it requires that wizard, and it counts only played as him, once free.
+	private static readonly string[] OpenerExceptions = { "familiar", "thorn_vine", "spiritual_weapon" };
+
+	private static void ValidateWizardOpeners(List<string> warnings)
+	{
+		foreach (CharacterData character in CharacterRoster.GetAll())
+		{
+			string spellId = character?.StartingSpellResource?.Id;
+			if (string.IsNullOrWhiteSpace(spellId) || OpenerExceptions.Contains(spellId, StringComparer.OrdinalIgnoreCase))
+				continue;
+			UnlockDefinition spell = UnlockCatalog.GetSpell(spellId);
+			if (spell == null || spell.Source == UnlockSource.Starter || ComboCatalog.ForId(spellId) != null
+				|| spell.ExclusiveTo.Equals(character.Id, StringComparison.OrdinalIgnoreCase))
+				continue;
+			AchievementDefinition deed = spell.Source == UnlockSource.Achievement ? AchievementDefinitions.GetById(spell.SourceId) : null;
+			if (deed == null || !deed.IsWizardOpener || !deed.RequiredCharacterId.Equals(character.Id, StringComparison.OrdinalIgnoreCase))
+			{
+				warnings.Add($"Wizard openers: {character.Name}'s opener '{spellId}' is paid by '{spell.SourceId}', which is not a deed done as {character.Name} (in-flight 84).");
+				continue;
+			}
+			if (string.IsNullOrWhiteSpace(deed.SealedLine))
+				warnings.Add($"Wizard openers: '{deed.Id}' has no sealed line for its row while {character.Name} is not free.");
+
+			// Behaviour, not just the field: done as him once free it counts; as someone else, or before he is free, not.
+			// Each case on a save of its own, since doing it records it.
+			SaveData Free()
+			{
+				var save = new SaveData();
+				GlobalStatsManager.UnlockCharacter(save, character.Id);
+				return save;
+			}
+			var free = Free();
+			var locked = new SaveData();
+			string other = character.Id.Equals("pyromancer", StringComparison.OrdinalIgnoreCase) ? "frostweaver" : "pyromancer";
+			if (!string.IsNullOrWhiteSpace(deed.AsWizardOf))
+			{
+				bool asHim = Opened(Free(), deed, character.Id);
+				bool asOther = Opened(Free(), deed, other);
+				bool beforeFree = Opened(locked, deed, character.Id);
+				if (!asHim || asOther || beforeFree)
+					warnings.Add($"Wizard openers: '{deed.Id}' beside '{deed.AsWizardOf}' - as {character.Name} once free {(asHim ? "pays" : "does NOT pay")}, as another {(asOther ? "PAYS" : "does not pay")}, before he is free {(beforeFree ? "PAYS" : "does not pay")}.");
+				AchievementDefinition beside = AchievementDefinitions.GetById(deed.AsWizardOf);
+				if (beside != null && !string.IsNullOrWhiteSpace(beside.RequiredCharacterId))
+					warnings.Add($"Wizard openers: '{beside.Id}', which '{deed.Id}' is done beside, asks a wizard itself; the road's and the record's deeds ask none.");
+			}
+			else
+			{
+				bool asHim = deed.IsComplete(AchievementContext.ForRun(free, EverythingRun(deed, character.Id)));
+				bool asOther = deed.IsComplete(AchievementContext.ForRun(free, EverythingRun(deed, other)));
+				bool beforeFree = deed.IsComplete(AchievementContext.ForRun(locked, EverythingRun(deed, character.Id)));
+				bool offRun = deed.IsComplete(AchievementContext.ForSave(free));
+				if (!asHim || asOther || beforeFree || offRun)
+					warnings.Add($"Wizard openers: '{deed.Id}' - a full run as {character.Name} once free {(asHim ? "completes it" : "does NOT complete it")}, as another {(asOther ? "COMPLETES it" : "does not")}, before he is free {(beforeFree ? "COMPLETES it" : "does not")}, off a run {(offRun ? "COMPLETES it" : "does not")}.");
+			}
+		}
+
+		// The page: sealed while he is shown and not free, listed in full once he is.
+		foreach (AchievementDefinition deed in AchievementDefinitions.All.Where(d => d.IsWizardOpener))
+		{
+			var free = new SaveData();
+			GlobalStatsManager.UnlockCharacter(free, deed.RequiredCharacterId);
+			if (AchievementDefinitions.IsSealed(deed, free) || !AchievementDefinitions.IsListed(deed, free))
+				warnings.Add($"Wizard openers: '{deed.Id}' is not listed in full once its wizard is free.");
+			if (AchievementDefinitions.IsListed(deed, new SaveData()))
+				warnings.Add($"Wizard openers: '{deed.Id}' is listed in full on a new save, naming a wizard not yet freed.");
+		}
+	}
+
+	// Completes the deed an opener deed is done beside, as someone, on a copy of nothing but this save: true when the
+	// opener's deed was recorded and its spell granted.
+	private static bool Opened(SaveData save, AchievementDefinition deed, string playedAs)
+	{
+		AchievementManager.Complete(save, deed.AsWizardOf, playedAs);
+		return GlobalStatsManager.IsAchievementUnlocked(save, deed.Id)
+			&& GlobalStatsManager.IsSpellUnlockedForLevelUp(save, deed.SpellUnlockId);
+	}
+
+	// A run that does everything an opener Feat or boss deed could ask, as someone: every element held deep, chests and
+	// levels to spare, and the deed's chapter's boss beaten.
+	private static RunResult EverythingRun(AchievementDefinition deed, string characterId)
+	{
+		var run = new RunResult
+		{
+			CharacterId = characterId,
+			Outcome = RunOutcome.Victory,
+			FinalPlayerLevel = 60,
+			ChestsOpened = 99,
+			PeakDistinctElements = 12,
+			StageId = deed.StageId,
+		};
+		foreach (string element in Enum.GetNames(typeof(Element)))
+			run.PeakElementCounts[element] = 9;
+		StageDefinition stage = StageCatalog.GetById(deed.StageId);
+		if (stage != null && BossCatalog.ForStageIndex(stage.Index) is BossDefinition boss)
+			run.BossId = boss.Id;
+		return run;
 	}
 
 	// A secret wizard's card is a sealed blank until its reveal condition holds (UnlockDefinition.
@@ -7785,8 +7892,9 @@ public static partial class RegressionChecks
 			warnings.Add($"Achievement '{id}' frees a secret wizard but has no sealed line for the row it shows before his chapter opens.");
 
 		// A combination's Feat is completed in the run too, the first time its recipe is met (ComboCatalog).
+		// And a wizard's opener deed done beside a side event's or a secret's (AsWizardOf, in-flight 84).
 		bool mirrors = !string.IsNullOrWhiteSpace(deed.SiteId) || !string.IsNullOrWhiteSpace(deed.SecretId)
-			|| !string.IsNullOrWhiteSpace(deed.ComboId);
+			|| !string.IsNullOrWhiteSpace(deed.ComboId) || !string.IsNullOrWhiteSpace(deed.AsWizardOf);
 		if (deed.CompletesInRun != mirrors)
 			warnings.Add($"Achievement '{id}' {(deed.CompletesInRun ? "completes in the run but mirrors no site or secret" : "mirrors a site or a secret but is not completed in the run")}.");
 		if (!string.IsNullOrWhiteSpace(deed.SiteId) && !global::SideEventDirector.HoldsSite(deed.StageId, deed.SiteId))

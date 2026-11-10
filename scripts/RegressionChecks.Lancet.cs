@@ -139,22 +139,24 @@ public static partial class RegressionChecks
 				warnings.Add("Lancet: a level 8 card deepens an element; both are deepened at level 4, so a path would reach three of one.");
 		}
 
-		// THE SHRIKE pays it: a run one poisoned kill short does not, one that makes the count does.
-		AchievementDefinition shrike = AchievementDefinitions.GetById("shrike");
-		if (shrike == null || shrike.SpellUnlockId != Lancet.SpellId)
-			warnings.Add("Lancet: no Shrike feat pays Lancet, so nobody can ever hold it.");
+		// FIRST BLOOD pays it since in-flight 66 (Eric, 2026-11-09: "I like first blood unlocking lancet"): a run with no
+		// kill does not, one with a kill does. The Shrike feat that paid it is gone.
+		AchievementDefinition firstBlood = AchievementDefinitions.GetById("first_blood");
+		if (firstBlood == null || firstBlood.SpellUnlockId != Lancet.SpellId)
+			warnings.Add("Lancet: First Blood does not pay Lancet (in-flight 66), so nobody can ever hold it.");
 		else
 		{
-			int target = AchievementDefinitions.ShrikePoisonedKills;
-			if (shrike.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { PoisonedKills = target - 1 })))
-				warnings.Add($"Lancet: Shrike completes on {target - 1} poisoned kills in a run; it asks for {target}.");
-			if (!shrike.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { PoisonedKills = target })))
-				warnings.Add($"Lancet: a run with {target} poisoned kills does not complete Shrike (LifetimeStats.BestPoisonedKillsInRun).");
-			// Kept across a save round trip, so the menu's bar survives a restart.
-			var save = new SaveData();
-			save.Lifetime.Absorb(new RunResult { PoisonedKills = 42 });
-			if (LifetimeStats.FromDictionary(save.Lifetime.ToGodotDictionary()).BestPoisonedKillsInRun != 42)
-				warnings.Add("Lancet: LifetimeStats.BestPoisonedKillsInRun is lost through the save's round trip.");
+			if (firstBlood.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { EnemiesKilled = 0 })))
+				warnings.Add("Lancet: First Blood completes on a run with no kill.");
+			if (!firstBlood.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { EnemiesKilled = 1 })))
+				warnings.Add("Lancet: a run with one kill does not complete First Blood.");
 		}
+		if (AchievementDefinitions.GetById("shrike") != null)
+			warnings.Add("Lancet: the Shrike feat is back; it paid only Lancet, which is First Blood's since in-flight 66.");
+		// Still kept across a save round trip, as a lifetime best, though no feat reads it now.
+		var save = new SaveData();
+		save.Lifetime.Absorb(new RunResult { PoisonedKills = 42 });
+		if (LifetimeStats.FromDictionary(save.Lifetime.ToGodotDictionary()).BestPoisonedKillsInRun != 42)
+			warnings.Add("Lancet: LifetimeStats.BestPoisonedKillsInRun is lost through the save's round trip.");
 	}
 }

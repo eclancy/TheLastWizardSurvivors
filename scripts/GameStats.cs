@@ -95,8 +95,14 @@ public class RunResult
 	public int InkKills { get; set; } = 0;
 	/// <summary>Kills numbered in Grass's ink or Metal's this run (Player.DealDamageToEnemy): the Fieldfare feat, which pays Windfall.</summary>
 	public int GrassMetalKills { get; set; } = 0;
-	/// <summary>Enemies that died poisoned this run (Enemy.StartDeath): the Shrike feat, which pays Lancet.</summary>
+	/// <summary>Enemies that died poisoned this run (Enemy.StartDeath). It fed the Shrike feat, gone since in-flight 66;
+	/// still kept as a lifetime best (LifetimeStats.BestPoisonedKillsInRun).</summary>
 	public int PoisonedKills { get; set; } = 0;
+	/// <summary>
+	/// The most different elements held at once this run (RunEvents.RecordElementCounts): Swansong, the Cumaean Sibyl's
+	/// deed that pays Canticle (in-flight 84) - the chord it sings is gathered from its casters' elements.
+	/// </summary>
+	public int PeakDistinctElements { get; set; } = 0;
 	/// <summary>Seconds survived before the first hit landed; equals TimeSurvived if never hit.</summary>
 	public float UndamagedSeconds { get; set; } = 0f;
 	/// <summary>The far sky (F4, .ai/second-half.md 5): the Conjunction this run was named, empty for none.</summary>

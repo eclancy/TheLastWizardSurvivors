@@ -173,10 +173,17 @@ public static class AchievementManager
 	{
 		if (saveManager?.Data == null)
 			return new List<RunUnlockEntry>();
-		List<RunUnlockEntry> granted = Complete(saveManager.Data, achievementId);
+		// In a run: a wizard's opener deed done beside this one counts if the run is played as him (in-flight 84).
+		List<RunUnlockEntry> granted = Complete(saveManager.Data, achievementId, RunCharacterId);
 		saveManager.SaveGame();
 		return Named(granted);
 	}
+
+	/// <summary>
+	/// The character the current run is played as (the roster id behind Global.SelectedCharacterIdx). What a deed done
+	/// in the run - a side event won, a secret found - asks of a wizard's opener deed beside it (in-flight 84).
+	/// </summary>
+	public static string RunCharacterId => CharacterRoster.GetByIndex(global::Global.SelectedCharacterIdx)?.Id ?? string.Empty;
 
 	/// <summary>
 	/// <see cref="CompleteNow"/> without the save to disk and without names: records the deed, writes the
@@ -184,7 +191,14 @@ public static class AchievementManager
 	/// agree, pays its Arcane Energy if this is the first time it is recorded, and grants every unlock it
 	/// carries that the save does not own. Safe to call twice: the second call changes nothing.
 	/// </summary>
-	public static List<RunUnlockEntry> Complete(SaveData data, string achievementId)
+	public static List<RunUnlockEntry> Complete(SaveData data, string achievementId) => Complete(data, achievementId, null);
+
+	/// <param name="playedAs">
+	/// The character the deed was done as, or null off a run. A wizard's opener deed done beside this one
+	/// (<see cref="AchievementDefinition.AsWizardOf"/>, in-flight 84) is completed with it, and pays its spell, only when
+	/// that is its wizard and the save has him free (<see cref="AchievementDefinitions.CountsAsWizard"/>).
+	/// </param>
+	public static List<RunUnlockEntry> Complete(SaveData data, string achievementId, string playedAs)
 	{
 		var granted = new List<RunUnlockEntry>();
 		AchievementDefinition definition = AchievementDefinitions.GetById(achievementId);
@@ -203,6 +217,14 @@ public static class AchievementManager
 		if (UnlockAchievement(data, definition.Id))
 			PayCurrency(data, definition, null);
 		granted.AddRange(GrantUnlocks(data, definition, $"Found during the run: {definition.DisplayName}"));
+		foreach (AchievementDefinition opener in AchievementDefinitions.DoneAsWizardBeside(definition.Id))
+		{
+			if (!AchievementDefinitions.CountsAsWizard(opener, data, playedAs))
+				continue;
+			if (UnlockAchievement(data, opener.Id))
+				PayCurrency(data, opener, null);
+			granted.AddRange(GrantUnlocks(data, opener, $"Found during the run: {opener.DisplayName}"));
+		}
 		return granted;
 	}
 

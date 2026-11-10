@@ -622,7 +622,11 @@ public partial class SecretDirector : Node
 		// A bought spell's vault says so (4.5): the spell was owned before the vault was found.
 		if (firstEver && secret.MetaReward == SecretMetaReward.Spell && granted.Count == 0)
 		{
-			paid = $"Spell already known - {secret.SpellName}";
+			// A vault that keeps its spell for a wizard's own (in-flight 84), found as anyone else: it says so, and never
+			// names him - he may still be locked. Found again as him, once free, it pays it (the deed beside, above).
+			bool kept = SecretCatalog.KeepsForWizard(secret)
+				&& !GlobalStatsManager.IsSpellUnlockedForLevelUp(saveManager?.Data, secret.SpellUnlockId);
+			paid = kept ? $"Kept for its own wizard - {secret.SpellName}" : $"Spell already known - {secret.SpellName}";
 			line = "";
 		}
 		// The lesson it owes, on the same plate: one more line, never a second message beside it.

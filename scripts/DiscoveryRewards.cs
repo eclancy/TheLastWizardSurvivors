@@ -37,8 +37,16 @@ public static class DiscoveryRewards
 	}
 
 	/// <summary>True when everything the site gives is already owned, so the event pays a chest instead.</summary>
-	public static bool IsSiteExhausted(SaveData data, string siteId)
+	/// <param name="playedAs">The character the run is played as (AchievementManager.RunCharacterId), or null off a run.</param>
+	public static bool IsSiteExhausted(SaveData data, string siteId, string playedAs = null)
 	{
+		// A wizard's opener the site keeps for him (in-flight 84): never exhausted while the run is played as him, he is
+		// free, and the deed that pays it is undone - whatever the site's own deed has paid.
+		foreach (AchievementDefinition opener in AchievementDefinitions.DoneAsWizardBeside(AchievementDefinitions.EventDeedId(siteId)))
+		{
+			if (AchievementDefinitions.CountsAsWizard(opener, data, playedAs) && !GlobalStatsManager.IsAchievementUnlocked(data, opener.Id))
+				return false;
+		}
 		foreach (UnlockDefinition definition in UnlockCatalog.ForDiscoverySite(siteId))
 		{
 			bool owned = definition.Kind switch
@@ -66,7 +74,8 @@ public static class DiscoveryRewards
 		if (saveManager?.Data == null)
 			return new List<Grant>();
 
-		List<Grant> granted = GrantSite(saveManager.Data, siteId);
+		// Played as the run's wizard: a site that keeps his opener pays it to him (in-flight 84).
+		List<Grant> granted = GrantSite(saveManager.Data, siteId, AchievementManager.RunCharacterId);
 		// Always: the win itself is new to the save (EventsWon, the deed), even when what it pays was owned.
 		saveManager.SaveGame();
 		return granted;
@@ -76,13 +85,13 @@ public static class DiscoveryRewards
 	/// <see cref="GrantSite(SaveManager, string)"/> on a save in memory, without writing it: what the
 	/// validators run to prove a new save can earn what a gate counts.
 	/// </summary>
-	public static List<Grant> GrantSite(SaveData data, string siteId)
+	public static List<Grant> GrantSite(SaveData data, string siteId, string playedAs = null)
 	{
 		var granted = new List<Grant>();
 		if (data == null || string.IsNullOrWhiteSpace(siteId))
 			return granted;
 
-		foreach (RunUnlockEntry entry in AchievementManager.Complete(data, AchievementDefinitions.EventDeedId(siteId)))
+		foreach (RunUnlockEntry entry in AchievementManager.Complete(data, AchievementDefinitions.EventDeedId(siteId), playedAs))
 		{
 			switch (entry.Kind)
 			{

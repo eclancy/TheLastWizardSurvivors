@@ -273,7 +273,8 @@ public partial class SideEventDirector : Node
 		{
 			sideEvent.Name = sideEvent.Index == 0 ? "SideEvent" : $"SideEvent{sideEvent.Index + 1}";
 			sideEvent.Game = Game;
-			sideEvent.PaysChest = saveManager != null && DiscoveryRewards.IsSiteExhausted(saveManager.Data, sideEvent.SiteId);
+			// Played as the run's wizard: a site that keeps his opener is not spent for him (in-flight 84).
+			sideEvent.PaysChest = saveManager != null && DiscoveryRewards.IsSiteExhausted(saveManager.Data, sideEvent.SiteId, AchievementManager.RunCharacterId);
 		}
 
 		// The wayfinder, on its own stream so a change to how an event lays itself out never moves it. Kept off

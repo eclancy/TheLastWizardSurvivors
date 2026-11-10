@@ -7688,11 +7688,16 @@ public partial class Node2DGame : Node2D
 			: BuildRunResult(RunOutcome.Defeat, string.Empty);
 		GameStats.ApplyTelemetryToRunResult(snapshot);
 		RunEvents.ApplyToRunResult(snapshot, timeElapsed);
+		int distinct = 0;
 		foreach (KeyValuePair<string, int> held in snapshot.ElementCounts)
 		{
 			if (!snapshot.PeakElementCounts.TryGetValue(held.Key, out int peak) || held.Value > peak)
 				snapshot.PeakElementCounts[held.Key] = held.Value;
+			if (held.Value > 0)
+				distinct++;
 		}
+		// What is held this moment counts toward Swansong too (in-flight 84), as it does toward the peaks.
+		snapshot.PeakDistinctElements = Math.Max(snapshot.PeakDistinctElements, distinct);
 		return snapshot;
 	}
 

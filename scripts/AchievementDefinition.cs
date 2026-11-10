@@ -111,8 +111,28 @@ public sealed class AchievementDefinition
 	/// <summary>A boon this achievement grants, if any. Same role as SpellUnlockId.</summary>
 	public string BoonUnlockId { get; init; } = string.Empty;
 	public string CharacterUnlockId { get; init; } = string.Empty;
-	/// <summary>A named-character challenge is listed only after that character is owned.</summary>
+	/// <summary>
+	/// A named-character challenge is listed only after that character is owned. On a wizard's opener deed
+	/// (<see cref="IsWizardOpener"/>, in-flight 84) it is also the only wizard the deed counts for: done in a run played
+	/// as him, once he is free (<see cref="AchievementDefinitions.PlayedAsFreed"/>), and a sealed row until then.
+	/// </summary>
 	public string RequiredCharacterId { get; init; } = string.Empty;
+
+	/// <summary>
+	/// A wizard's opener deed (in-flight 84, Eric 2026-11-09: "spells that are another wizard's default spell to only be
+	/// unlockable once that wizard is unlocked" - "those achievements should require being completed with that wizard"):
+	/// it pays <see cref="RequiredCharacterId"/>'s starting spell, counts only as him, and is a sealed row on the
+	/// achievements page while he is shown but not free (<see cref="AchievementDefinitions.IsSealed"/>).
+	/// </summary>
+	public bool IsWizardOpener { get; init; }
+
+	/// <summary>
+	/// For an opener deed done at a side event or a secret: the deed it is done beside (an event_ or secret_ deed), which
+	/// keeps whatever else it pays and asks no wizard - it is the road's and the record's. Completed with that deed, the
+	/// moment it is done, when the run is played as <see cref="RequiredCharacterId"/> and he is free
+	/// (AchievementManager.Complete). Empty on every other deed.
+	/// </summary>
+	public string AsWizardOf { get; init; } = string.Empty;
 	public int CurrencyReward { get; init; }
 
 	/// <summary>
@@ -280,20 +300,6 @@ public static partial class AchievementDefinitions
 	public const int FieldfareGrassMetalKills = 1000;
 
 	/// <summary>
-	/// Enemies that die POISONED in ONE run, whatever dealt the last blow, that pay Lancet (the Shrike feat): counted in
-	/// Enemy.StartDeath while the poison is still ticking (RunEvents.RecordPoisonedKill). Paracelsus opens on Contagion
-	/// (Poison), Baba Yaga on Thorned Vine (which poisons), and any two Poison carriers raise the Poison tier that poisons
-	/// on every hit, so a save reaches it without the spell it pays. Measured 2026-11-09 (_BalanceHarness --minutes=15,
-	/// seed 1234, the real save read-only): Baba Yaga's kiting bot (--character=15) lived the run and made 259 by minute 5,
-	/// 445 by minute 10 and 551 in all, reaching 500 at about minute 12; Paracelsus's (--character=17) lived it too and made
-	/// 723 by minute 5, 2,408 by minute 10 and 4,333 in all (his --immortal bot 703 / 2,408 / 4,544), reaching 500 at about
-	/// minute 4.3 - Contagion's plague is on nearly everything that dies. Five hundred is Storm Petrel's and Cormorant's
-	/// number and the same ask for a poison carrier that is not a plague: most of a run with Poison in it. The plague doctor
-	/// earns the surgeon's needle in the first third of one, which is his.
-	/// </summary>
-	public const int ShrikePoisonedKills = 500;
-
-	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -363,18 +369,20 @@ public static partial class AchievementDefinitions
 	/// </summary>
 	private static readonly (string Site, string Name, string Description, string Reward)[] SideEventWords =
 	{
-		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", "Unlocks Bramble Seed"),
+		// The grove, the lanterns and the caravan master paid Väinämöinen's, Paracelsus's and Wayland's openers until in-flight
+		// 84 moved each to a deed done as its wizard (WizardOpenerRoadDeeds); their own deeds pay Arcane Energy instead.
+		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", $"{OpenerMovedArcane} Arcane Energy"),
 		("walking_hut", "The Hut Herded Home", "Drive the walking hut of the Enchanted Forest into the bone-fenced yard.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
 		("tithe_scale", "The Scale Held Level", "Fill both pans of the Tithe-Reeve's scale in the Fallow Fields and hold its beam level.", "Frees Medea"),
 		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Slip the Gaoler's key past his lantern-bearers to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
-		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", "Unlocks Contagion"),
+		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", $"{OpenerMovedArcane} Arcane Energy"),
 		("gibbet_cage", "The Ferry Reached", "Lower the gibbet's cage in the Blighted Swamp and bring the man in it to the ferry landing alive.", "Frees Paracelsus"),
 		("five_pointed_seal", "The Seal Broken", "Turn the four guardian stones to face the seal in the Mystic Ruins.", "Frees Abe no Seimei"),
 		("nine_mouths", "The True Mouth", "Find the one mouth of nine her voice comes out of first, in the Sunken Cave.", "Frees The Cumaean Sibyl"),
 		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
-		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", "Unlocks Iron Palisade"),
+		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", $"{OpenerMovedArcane} Arcane Energy"),
 		("tomb_beacons", "The Sun Let In", "Turn the bronze mirrors on the Scorched Sands until the sunlight reaches the disc over the dry tomb's door.", "Frees Imhotep"),
 		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
 		("the_barge", "The Way Lit", "Light the dead lamps along the Last Bridge ahead of the barge below until it comes in to its landing.", "Frees Morgan le Fay"),
@@ -399,6 +407,13 @@ public static partial class AchievementDefinitions
 	public const int SilverHindCurrency = 200;
 
 	/// <summary>
+	/// What a road deed pays, once, in place of the wizard's opener that moved off it to a deed done as that wizard
+	/// (in-flight 84): the three side events (the grove, the lanterns, the caravan master) and the Sunken Cave's boss. A
+	/// deed must pay something, and Arcane Energy is the one prize no gate counts. A first guess for Eric to tune.
+	/// </summary>
+	public const int OpenerMovedArcane = 100;
+
+	/// <summary>
 	/// What a far chapter's side event pays, once, with its deed: Arcane Energy, and the deed itself is the keepsake
 	/// (.ai/second-half.md 4.3 - "an achievement, not an unlock"). A site here gives nothing in UnlockCatalog; the
 	/// first win completes its deed and pays this, and every win after pays a chest, as an exhausted road site does
@@ -408,6 +423,9 @@ public static partial class AchievementDefinitions
 	/// </summary>
 	public static int SideEventCurrency(string siteId) => (siteId ?? string.Empty).ToLowerInvariant() switch
 	{
+		// Three road sites whose only prize was a wizard's opener (in-flight 84): it is held there for its wizard now
+		// (WizardOpenerRoadDeeds, DiscoveryRewards.IsSiteExhausted), and the site's own deed pays this, once.
+		"the_grove" or "bog_lanterns" or "caravan_master" => OpenerMovedArcane,
 		// F3 (White Downs)
 		"silver_hind" => SilverHindCurrency,
 		// (F6's line is below; leave this one as it is)
@@ -443,9 +461,11 @@ public static partial class AchievementDefinitions
 		// --- Progress: the spine of the campaign ---------------------------------------------
 		new()
 		{
+			// Lancet since in-flight 66 (Eric, 2026-11-09: "I like first blood unlocking lancet"): the lancet is the tool that
+			// draws first blood. Canticle, which this paid, is the Sibyl's opener and earned as her (Swansong, below).
 			Id = "first_blood", DisplayName = "First Blood",
 			Description = "Defeat 1 enemy.",
-			RewardText = "Unlocks Canticle", SpellUnlockId = "arcane_explosion",
+			RewardText = "Unlocks Lancet", SpellUnlockId = Lancet.SpellId,
 			Category = AchievementCategory.Progress,
 			Measure = c => c.Lifetime.TotalKills, Target = 1,
 		},
@@ -470,14 +490,9 @@ public static partial class AchievementDefinitions
 			Category = AchievementCategory.Progress,
 			Measure = c => c.Lifetime.TotalVictories, Target = 1,
 		},
-		new()
-		{
-			Id = "max_level", DisplayName = "Archmage Training",
-			Description = "Reach level 20 in a run.",
-			RewardText = "Unlocks Solar Flare", SpellUnlockId = "solar_flare",
-			Category = AchievementCategory.Progress,
-			Measure = c => c.Lifetime.BestPlayerLevel, Target = 20,
-		},
+		// Medea's opener (in-flight 84): the pheasant is the bird of the Phasis, the river of her own Colchis.
+		OpenerFeat("max_level", "Pheasant", "medea", "As Medea, reach level 20 in a run.", "solar_flare", "Solar Flare",
+			AchievementCategory.Progress, c => c.Run.FinalPlayerLevel, 20),
 		new()
 		{
 			Id = "hoarder", DisplayName = "Full Grimoire",
@@ -488,15 +503,17 @@ public static partial class AchievementDefinitions
 		},
 
 		// --- Mastery: element thresholds, measured at their peak, not at run end ---------------
-		new()
-		{
-			Id = "elementalist", DisplayName = "Elementalist",
-			Description = "Hold 4 instances of any one element.",
-			RewardText = "Unlocks Cyclone Slash", SpellUnlockId = "cyclone_slash",
-			Category = AchievementCategory.Mastery,
-			Measure = c => c.Lifetime.BestElementCount.Values.DefaultIfEmpty(0).Max(), Target = 4,
-		},
-		ElementAdept("fire_adept", "Fire Adept", "Fire", "scorching_ray", "Scorching Ray"),
+		// THE OPENERS EARNED AS THEIR WIZARDS (in-flight 84): the four Feats that paid only a wizard's opener are his now,
+		// renamed in the Feats' house style - birds - and done only as him. Laelaps's goshawk is the hunter's own hawk.
+		OpenerFeat("elementalist", "Goshawk", "laelaps", "As Laelaps, hold 4 instances of any one element.", "cyclone_slash",
+			"Cyclone Slash", AchievementCategory.Mastery, c => RunPeakOfAny(c), 4),
+		// Imhotep was High Priest of Ra at Heliopolis, whose sun-bird was the bennu - the heron the phoenix came from.
+		OpenerFeat("fire_adept", "Bennu", "imhotep", "As Imhotep, hold 4 instances of Fire.", "scorching_ray", "Scorching Ray",
+			AchievementCategory.Mastery, c => RunPeakOf(c, "Fire"), 4),
+		// Canticle's deed (in-flight 66 and 84): harmony, as the Sibyl - the chord it sings is gathered from its casters'
+		// elements, so the ask is four of them held at once. Swans are Apollo's, and she is his prophetess.
+		OpenerFeat("swansong", "Swansong", "sibyl", "As the Cumaean Sibyl, hold four different elements at once.",
+			"arcane_explosion", "Canticle", AchievementCategory.Mastery, c => c.Run.PeakDistinctElements, 4),
 		ElementAdept("ice_adept", "Ice Adept", "Ice", "glacial_spike", "Glacial Spike"),
 		ElementAdept("poison_adept", "Poison Adept", "Poison", "toxic_spore_burst", "Toxic Spore Burst"),
 		ElementAdept("earth_adept", "Earth Adept", "Earth", "black_tentacles", "Black Tentacles"),
@@ -527,18 +544,12 @@ public static partial class AchievementDefinitions
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.TotalKills, Target = 2000,
 		},
-		// FOLIO'S FEAT (.ai/character-fit.md section 6, 2026-11-09): John Dee opens on Folio, and everyone else earns it by
-		// collecting the way he does - ten chests in a single run. One run, not a lifetime: Elite Hunter and The Library at
-		// Mortlake already count every chest ever opened. Measured off the best run kept in the lifetime stats
-		// (LifetimeStats.BestChestsInRun), so the menu shows the best run so far and the pause screen this run's count.
-		new()
-		{
-			Id = "magpie", DisplayName = "Magpie",
-			Description = $"Open {MagpieChestTarget} chests in a single run.",
-			RewardText = "Unlocks Folio", SpellUnlockId = "folio",
-			Category = AchievementCategory.Challenge,
-			Measure = c => c.Lifetime.BestChestsInRun, Target = MagpieChestTarget,
-		},
+		// FOLIO'S FEAT (.ai/character-fit.md section 6, 2026-11-09): John Dee opens on Folio, and it is shared by collecting
+		// the way he does - ten chests in a single run. One run, not a lifetime: Elite Hunter and The Library at Mortlake
+		// already count every chest ever opened. Since in-flight 84 it is done as him, once he is free, so it is measured
+		// off the run itself and the menu shows no bar; the pause screen shows this run's count.
+		OpenerFeat("magpie", "Magpie", "john_dee", $"As John Dee, open {MagpieChestTarget} chests in a single run.", "folio", "Folio",
+			AchievementCategory.Challenge, c => c.Run.ChestsOpened, MagpieChestTarget),
 		// CORPOSANT'S FEAT (2026-11-09): St Elmo's fire is the sailor's sign of a storm, and the storm petrel is the bird
 		// sailors saw before one - a bird named for St Peter, as Magpie (Folio's) is a bird too. Earned by fighting with
 		// Lightning: kills numbered in its ink in a single run. Not the Lightning Adept (Stormguard's), which counts
@@ -576,20 +587,8 @@ public static partial class AchievementDefinitions
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.BestGrassMetalKillsInRun, Target = FieldfareGrassMetalKills,
 		},
-		// LANCET'S FEAT (2026-11-09): the shrike is the butcher-bird, which impales what it catches on a thorn - a bird beside
-		// Magpie, Storm Petrel, Cormorant and Fieldfare, and not another "defeat N with an element": it counts the dying, not
-		// the killing. Enemies that die with a poison ticking on them in a single run, whatever dealt the last blow - a
-		// poison tick, any spell, a needle (Enemy.StartDeath, RunEvents.RecordPoisonedKill) - which is the finisher's work:
-		// poison them, then finish them. Measured off the best run kept in the lifetime stats
-		// (LifetimeStats.BestPoisonedKillsInRun), as the other four are.
-		new()
-		{
-			Id = "shrike", DisplayName = "Shrike",
-			Description = $"Defeat {ShrikePoisonedKills} poisoned enemies in a single run.",
-			RewardText = "Unlocks Lancet", SpellUnlockId = Lancet.SpellId,
-			Category = AchievementCategory.Challenge,
-			Measure = c => c.Lifetime.BestPoisonedKillsInRun, Target = ShrikePoisonedKills,
-		},
+		// The Shrike (500 poisoned enemies in a run) paid Lancet until in-flight 66 moved Lancet to First Blood; it paid
+		// nothing else, so it went (Eric, 2026-11-09).
 		new()
 		{
 			Id = "elite_hunter", DisplayName = "Elite Hunter",
@@ -618,7 +617,9 @@ public static partial class AchievementDefinitions
 			Measure = c => c.Lifetime.HasDefeatedBoss("castle_warden") ? 1f : 0f,
 			Target = 1,
 		},
-		BossClear("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", "riptide", "Riptide"),
+		// Riptide, which this paid, is Tituba's opener and earned as her since in-flight 84 (The Undertow); the deed stays the
+		// road's and pays Arcane Energy in its place.
+		BossClearArcane("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", OpenerMovedArcane),
 		BossClear("swamp_cleansed", "Cut the Rot Out", "swamp_mother", "the Blighted Swamp", "mirefoot", "Mirefoot"),
 		// The Archivist teaches rung III of the Conjunction ladder (ConjunctionLadder.PairShareDeedId; Teachings.PairSharesLesson):
 		// "teaches a lesson", the one locked thing it puts on show (.ai/conjunction-progression.md section 3).
@@ -863,7 +864,7 @@ public static partial class AchievementDefinitions
 		// F10: Every Seat Lit - all six gods rekindled.
 		// (F10's second line is below; leave this one as it is)
 		// F10: All the Gods' Forms - each god's Apotheosis taken.
-	}).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).Concat(EndlessDeeds()).ToList();
+	}).Concat(WizardOpenerRoadDeeds()).Concat(SideEventDeeds()).Concat(SecretDeeds()).Concat(CombinationDeeds()).Concat(EndlessDeeds()).ToList();
 
 	/// <summary>
 	/// One Road deed for every side event of every chapter (SideEventDirector.EventsFor - a chapter may hold
@@ -1018,6 +1019,11 @@ public static partial class AchievementDefinitions
 	/// </summary>
 	public static bool IsSealed(AchievementDefinition deed, SaveData save)
 	{
+		// A wizard's opener deed (in-flight 84): its ask names him, so it is a sealed row while he is shown but not free,
+		// and not on the page at all before he is shown (a secret wizard's chapter not open) - one locked thing at a time.
+		if (deed != null && deed.IsWizardOpener)
+			return !GlobalStatsManager.IsCharacterUnlocked(save, deed.RequiredCharacterId)
+				&& GlobalStatsManager.IsCharacterRevealed(save, deed.RequiredCharacterId);
 		if (deed == null || string.IsNullOrWhiteSpace(deed.CharacterUnlockId))
 			return false;
 		UnlockDefinition wizard = UnlockCatalog.GetCharacter(deed.CharacterUnlockId);
@@ -1057,6 +1063,135 @@ public static partial class AchievementDefinitions
 		string phrase = ChapterPhrase(stageId);
 		return phrase.Length > 0 ? char.ToUpperInvariant(phrase[0]) + phrase.Substring(1) + " holds someone" : string.Empty;
 	}
+
+	// --- A wizard's opener, earned as that wizard (in-flight 84) -------------------------------------------------------
+	//
+	// Eric, 2026-11-09: "I also want spells that are another wizard's default spell to only be unlockable once that
+	// wizard is unlocked" ... "those achievements should require being completed with that wizard". Every such opener is
+	// paid by a deed of its own (IsWizardOpener), done only in a run played as its wizard once he is free. Where the
+	// opener came from a chapter's boss, side event or secret, that deed keeps whatever else it pays and asks no wizard -
+	// it is the road's and the record's - and the opener's deed is done beside it (AsWizardOf). The exceptions are
+	// Eric's: the Familiar (Laelaps needs it), Thorn Vine (the Forest's boss) and Spiritual Weapon (the Ruins' boss).
+	// RegressionChecks.ValidateWizardOpeners holds every other wizard's opener to a deed that requires him.
+
+	/// <summary>What an opener deed's row says while its wizard is shown but not free. It never names him.</summary>
+	public const string WizardOpenerSealedLine = "A spell kept for a wizard not yet freed";
+
+	/// <summary>
+	/// True when the run measured is played as <paramref name="wizardId"/> and the save has him free: the rule every
+	/// opener deed's measure reads. Never true off a run - the menu has none - so only the run that does it completes it.
+	/// </summary>
+	public static bool PlayedAsFreed(AchievementContext context, string wizardId) =>
+		context?.Run != null && !string.IsNullOrWhiteSpace(wizardId)
+		&& string.Equals(context.Run.CharacterId, wizardId, StringComparison.OrdinalIgnoreCase)
+		&& GlobalStatsManager.IsCharacterUnlocked(context.Save, wizardId);
+
+	/// <summary>
+	/// Whether a deed done as <paramref name="playedAs"/> counts for the opener deed <paramref name="deed"/> on this save:
+	/// played as its wizard, and he is free. The in-run half of <see cref="PlayedAsFreed"/>, for the deeds done beside a
+	/// side event or a secret (AchievementManager.Complete, DiscoveryRewards.IsSiteExhausted).
+	/// </summary>
+	public static bool CountsAsWizard(AchievementDefinition deed, SaveData save, string playedAs) =>
+		deed != null && !string.IsNullOrWhiteSpace(deed.RequiredCharacterId)
+		&& string.Equals(playedAs, deed.RequiredCharacterId, StringComparison.OrdinalIgnoreCase)
+		&& GlobalStatsManager.IsCharacterUnlocked(save, deed.RequiredCharacterId);
+
+	/// <summary>The opener deeds done beside <paramref name="deedId"/> (their <see cref="AchievementDefinition.AsWizardOf"/>).</summary>
+	public static IReadOnlyList<AchievementDefinition> DoneAsWizardBeside(string deedId)
+	{
+		if (string.IsNullOrWhiteSpace(deedId))
+			return Array.Empty<AchievementDefinition>();
+		besideCache ??= All.Where(d => !string.IsNullOrWhiteSpace(d.AsWizardOf))
+			.GroupBy(d => d.AsWizardOf, StringComparer.OrdinalIgnoreCase)
+			.ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
+		return besideCache.TryGetValue(deedId, out AchievementDefinition[] deeds) ? deeds : Array.Empty<AchievementDefinition>();
+	}
+
+	private static Dictionary<string, AchievementDefinition[]> besideCache;
+
+	// One element's peak in the run measured, and the highest of any.
+	private static float RunPeakOf(AchievementContext c, string element) =>
+		c.Run?.PeakElementCounts != null && c.Run.PeakElementCounts.TryGetValue(element, out int n) ? n : 0;
+
+	private static float RunPeakOfAny(AchievementContext c) =>
+		c.Run?.PeakElementCounts?.Values.DefaultIfEmpty(0).Max() ?? 0;
+
+	// An opener Feat: measured off the run, and only one played as its wizard once he is free.
+	private static AchievementDefinition OpenerFeat(string id, string name, string wizardId, string ask, string spellId,
+		string spellName, AchievementCategory category, Func<AchievementContext, float> measure, float target) => new()
+	{
+		Id = id,
+		DisplayName = name,
+		Description = ask,
+		RewardText = $"Unlocks {spellName}",
+		SpellUnlockId = spellId,
+		RequiredCharacterId = wizardId,
+		IsWizardOpener = true,
+		SealedLine = WizardOpenerSealedLine,
+		Category = category,
+		Measure = c => PlayedAsFreed(c, wizardId) ? measure(c) : 0f,
+		Target = target,
+	};
+
+	// An opener done at a chapter: its boss as him (measured off the run), or its side event or secret as him (done
+	// beside that deed, the moment it is, and measured by its own record as a combination's Feat is).
+	private static AchievementDefinition OpenerRoad(string id, string name, string wizardId, string stageId, string ask,
+		string spellId, string spellName, string asWizardOf = "", string bossId = "")
+	{
+		bool beside = !string.IsNullOrWhiteSpace(asWizardOf);
+		return new AchievementDefinition
+		{
+			Id = id,
+			DisplayName = name,
+			Description = ask,
+			RewardText = $"Unlocks {spellName}",
+			SpellUnlockId = spellId,
+			RequiredCharacterId = wizardId,
+			IsWizardOpener = true,
+			SealedLine = WizardOpenerSealedLine,
+			AsWizardOf = asWizardOf ?? string.Empty,
+			Category = AchievementCategory.Exploration,
+			Kind = AchievementKind.Road,
+			Visibility = AchievementVisibility.ChapterOpen,
+			StageId = stageId ?? string.Empty,
+			CompletesInRun = beside,
+			Measure = beside
+				? c => c.Save != null && GlobalStatsManager.IsAchievementUnlocked(c.Save, id) ? 1f : 0f
+				: c => PlayedAsFreed(c, wizardId) && string.Equals(c.Run.BossId, bossId, StringComparison.OrdinalIgnoreCase) ? 1f : 0f,
+			Target = 1,
+		};
+	}
+
+	// The chapter's half of the openers: a boss, three side events and three secrets, each as its wizard. The secrets'
+	// asks name the chapter and never the secret (decision 7: a hidden thing is never named before it is seen).
+	private static IEnumerable<AchievementDefinition> WizardOpenerRoadDeeds()
+	{
+		// Tituba's Riptide: it was the Sunken Cave boss's prize; that deed now pays nothing else and stays the road's.
+		yield return OpenerRoad("undertow", "The Undertow", "tituba", StageOfBoss("cave_choir"),
+			"As Tituba, defeat the boss of the Sunken Cave.", "riptide", "Riptide", bossId: "cave_choir");
+		yield return OpenerRoad("doctors_round", "The Doctor's Round", "paracelsus", StageOfSite("bog_lanterns"),
+			"As Paracelsus, snuff the lanterns of the Blighted Swamp and face what tends them.", "contagion", "Contagion",
+			asWizardOf: EventDeedId("bog_lanterns"));
+		yield return OpenerRoad("grove_sung_green", "The Grove Sung Green", "vainamoinen", StageOfSite("the_grove"),
+			"As Väinämöinen, hold the corrupted grove in the Enchanted Forest until it grows back.", "bramble_seed", "Bramble Seed",
+			asWizardOf: EventDeedId("the_grove"));
+		yield return OpenerRoad("smiths_toll", "The Smith's Toll", "wayland", StageOfSite("caravan_master"),
+			"As Wayland the Smith, catch the caravan master on the Scorched Sands road.", "iron_palisade", "Iron Palisade",
+			asWizardOf: EventDeedId("caravan_master"));
+		yield return OpenerRoad("fays_frost", "The Fay's Frost", "morgan", StageOfSecret(SecretCatalog.BuriedRunesId),
+			"As Morgan le Fay, find the spell hidden in the Frozen Waste.", "sleet_runes", "Sleet Runes",
+			asWizardOf: SecretDeedId(SecretCatalog.BuriedRunesId));
+		yield return OpenerRoad("seers_star", "The Seer's Star", "nostradamus", StageOfSecret(SecretCatalog.FallenStarId),
+			"As Nostradamus, find the spell hidden in the Broken Circle.", "starfall", "Starfall",
+			asWizardOf: SecretDeedId(SecretCatalog.FallenStarId));
+		yield return OpenerRoad("onmyojis_ward", "The Onmyoji's Ward", "seimei", StageOfSecret(SecretCatalog.BrokenWardId),
+			"As Abe no Seimei, find the spell hidden in the Mystic Ruins.", "kindled_ward", "Kindled Ward",
+			asWizardOf: SecretDeedId(SecretCatalog.BrokenWardId));
+	}
+
+	private static string StageOfSite(string siteId) => global::SideEventDirector.ChapterOfSite(siteId)?.Id ?? string.Empty;
+
+	private static string StageOfSecret(string secretId) => SecretCatalog.Get(secretId)?.StageId ?? string.Empty;
 
 	// The chapter clears are written in the order the chapters were made, and the deeds page lists
 	// them as written. Moving them into campaign order here - in the slots they already hold, so no

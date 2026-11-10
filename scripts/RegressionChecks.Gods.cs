@@ -214,8 +214,12 @@ public static partial class RegressionChecks
 		foreach (Teachings.Lesson lesson in Teachings.Ladder)
 		{
 			AchievementDefinition teacher = AchievementDefinitions.GetById(AchievementDefinitions.SecretDeedId(lesson.TeacherSecretId));
-			if (teacher == null || string.IsNullOrEmpty(teacher.SpellUnlockId)
-				|| !UnlockCatalog.GrimoireSpellIds.Contains(teacher.SpellUnlockId, StringComparer.OrdinalIgnoreCase))
+			// Or a wizard's opener kept in the teacher's vault for him (in-flight 84: Starfall, in the Fallen Star, is
+			// Nostradamus's): the deed that pays it is only ever done beside the teacher's, which records the find, so the
+			// Grimoire still implies the lesson.
+			bool paysGrimoire = teacher != null && new[] { teacher }.Concat(AchievementDefinitions.DoneAsWizardBeside(teacher.Id))
+				.Any(d => !string.IsNullOrEmpty(d.SpellUnlockId) && UnlockCatalog.GrimoireSpellIds.Contains(d.SpellUnlockId, StringComparer.OrdinalIgnoreCase));
+			if (!paysGrimoire)
 				warnings.Add($"Gods: {lesson.Name}'s teacher ('{lesson.TeacherSecretId}') pays no spell the Grimoire counts, so the far shore's gate no longer implies it has been taught - a god would open on a Conjunction for a save never taught one. Make the gate ask Teachings directly.");
 		}
 	}
