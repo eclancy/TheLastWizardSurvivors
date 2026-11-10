@@ -70,6 +70,18 @@ public partial class Player
 	/// <summary>True while the Waywiser boon is held.</summary>
 	public bool HasWaywiser => boonWalkingRecharge > 0f;
 
+	// The Quarry (in-flight 66, The Coursing's boon): the extra damage the marked enemy takes; 0 = not held.
+	private float boonQuarryBonus;
+	// The enemy it marks, kept until it falls or is left behind; and the mark drawn over it.
+	private Enemy boonQuarry;
+	private HuntersMark quarryMark;
+	private float quarryScanClock;
+
+	// What the harness reports (HARNESS QUARRY): quarries marked, hits that landed on one, and the damage its mark added.
+	public static int QuarryStatMarked { get; private set; }
+	public static int QuarryStatHits { get; private set; }
+	public static long QuarryStatBonusDamage { get; private set; }
+
 	// --- The chest's charges (Eric: "you can use rerolls on chests as well as level ups. You can also
 	// ban items") ------------------------------------------------------------------------------------
 	private readonly HashSet<string> bannedRelicIds = new(StringComparer.OrdinalIgnoreCase);
@@ -287,6 +299,86 @@ public partial class Player
 		if (spellFireTimers.TryGetValue(longest.Id, out float timer))
 			spellFireTimers[longest.Id] = timer + boonWalkingRecharge * (float)delta;
 		WaywiserWindingSpellName = longest.Name;
+	}
+
+	// --- The Quarry -------------------------------------------------------------------------------
+	//
+	// In-flight 66 (Eric, 2026-11-10): The Coursing pays a hunting boon, "the nearest wounded enemy is marked and takes
+	// extra damage". The mark is a Vulnerable (Enemy.ApplyVulnerable) - stacking-resistant, so it never adds to another,
+	// and every source of damage reads it on the one line in DealDamageToEnemy - and it wears the Hunter's Mark's
+	// arrowheads (HuntersMark, a second instance of its own), since the Vulnerable glyph alone is on every body a
+	// Darkness build touches and "a visible mark is the point". Held until it falls or is left behind: the hound runs one
+	// hare down before it looks for the next, so the mark does not flit from body to body as the crowd's wounds change.
+
+	/// <summary>How close the quarry is chosen from: Lancet's reach, "close to you" on the card.</summary>
+	public const float QuarryReach = 300f;
+
+	// Kept until it is this much further off, so a quarry on the edge of reach does not blink on and off.
+	private const float QuarryKeepReach = QuarryReach * 1.3f;
+
+	// Rescanned four times a second; the mark and its Vulnerable are laid for a second each time, so both hold unbroken
+	// while it is the quarry (HuntersMark fades only in its last half second), and both lapse within a second of it
+	// being let go. One walk of the registry a quarter second, and none while a quarry holds.
+	private const float QuarryScanSeconds = 0.25f;
+	private const float QuarryMarkSeconds = 1f;
+
+	private void TickQuarry(float delta)
+	{
+		if (boonQuarryBonus <= 0f || HeldForBossEntrance || IsDead)
+			return;
+		quarryScanClock -= delta;
+		if (quarryScanClock > 0f)
+			return;
+		quarryScanClock = QuarryScanSeconds;
+
+		if (!IsQuarryStillHeld(boonQuarry))
+		{
+			boonQuarry = FindQuarry();
+			if (boonQuarry != null)
+				QuarryStatMarked++;
+		}
+		if (boonQuarry == null)
+			return;
+
+		boonQuarry.ApplyVulnerable(boonQuarryBonus, QuarryMarkSeconds);
+		if (quarryMark == null || !IsInstanceValid(quarryMark))
+		{
+			quarryMark = new HuntersMark { Name = "QuarryMark" };
+			AddChild(TagSpell(quarryMark));
+		}
+		quarryMark.Mark(boonQuarry, QuarryMarkSeconds);
+	}
+
+	// Still a body to hunt: alive, targetable (a burrower under the ground has left the registry), not fighting for the
+	// player (Dragon's Teeth), and not left behind.
+	private bool IsQuarryStillHeld(Enemy quarry) =>
+		quarry != null && IsInstanceValid(quarry) && !quarry.IsDying && quarry.InEnemyRegistry && !quarry.IsTurned
+		&& GlobalPosition.DistanceSquaredTo(quarry.GlobalPosition) <= QuarryKeepReach * QuarryKeepReach;
+
+	// The nearest enemy in reach that has lost any health, or null: none is wounded until something has struck it.
+	private Enemy FindQuarry()
+	{
+		Enemy nearest = null;
+		float nearestSquared = QuarryReach * QuarryReach;
+		foreach (Enemy enemy in EnemyRegistry.Snapshot)
+		{
+			if (!IsInstanceValid(enemy) || enemy.IsDying || enemy.IsTurned || enemy.HealthFraction >= 1f)
+				continue;
+			float squared = GlobalPosition.DistanceSquaredTo(enemy.GlobalPosition);
+			if (squared <= nearestSquared)
+			{
+				nearestSquared = squared;
+				nearest = enemy;
+			}
+		}
+		return nearest;
+	}
+
+	// From DealDamageToEnemy, for a hit on the quarry: what its Vulnerable added (another source's, if stronger).
+	private static void TallyQuarryHit(int added)
+	{
+		QuarryStatHits++;
+		QuarryStatBonusDamage += Math.Max(0, added);
 	}
 
 	// --- the chest's charges ----------------------------------------------------------------------

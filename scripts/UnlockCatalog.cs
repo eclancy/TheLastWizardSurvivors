@@ -232,45 +232,55 @@ public static class UnlockCatalog
 			$"Defeat {AchievementDefinitions.FieldfareGrassMetalKills} enemies with Grass or Metal in a single run."),
 		// The surgeon's needle, at the most wounded in reach (scripts/Lancet.cs), is First Blood's since in-flight 66 (above);
 		// the Shrike feat that paid it is gone.
-		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
 		// THE OPENERS (in-flight 84): a wizard's starting spell is earned by a deed done as that wizard, once freed
 		// (AchievementDefinition.IsWizardOpener; RegressionChecks.ValidateWizardOpeners). The hints never name him.
-		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run - as its own wizard, once freed."),
+		// Pheasant asks for Light held, not level 20, since in-flight 66's reward review (Eric, 2026-11-10).
+		FromAchievement("solar_flare", "max_level", "Hold 4 Light instances - as its own wizard, once freed."),
 		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element - as its own wizard, once freed."),
 		FromAchievement("arcane_explosion", "swansong", "Hold four different elements at once - as its own wizard, once freed."),
 		FromAchievement("void_lance", "hoarder", "Fill all six spell slots in a run."),
 		FromAchievementBoon("umbral_veil", "untouchable", "Survive three minutes without losing health."),
 		FromAchievement("scorching_ray", "fire_adept", "Hold 4 Fire instances - as its own wizard, once freed."),
-		FromAchievement("glacial_spike", "ice_adept", "End a run with 4 Ice instances."),
-		FromAchievement("toxic_spore_burst", "poison_adept", "End a run with 4 Poison instances."),
-		FromAchievement("black_tentacles", "earth_adept", "End a run with 4 Earth instances."),
-		FromAchievement("gale_blade", "wind_adept", "End a run with 4 Wind instances."),
+		// The Adepts count the most held at any point in a run (LifetimeStats.BestCountForElement), never what a run ended
+		// with - so the hints say "hold", as the deeds do (in-flight 66's reward review, 2026-11-10).
+		FromAchievement("glacial_spike", "ice_adept", "Hold 4 Ice instances in a single run."),
+		FromAchievement("toxic_spore_burst", "poison_adept", "Hold 4 Poison instances in a single run."),
+		FromAchievement("black_tentacles", "earth_adept", "Hold 4 Earth instances in a single run."),
+		FromAchievement("gale_blade", "wind_adept", "Hold 4 Wind instances in a single run."),
 		// The defensive returns (in-flight item 9), each paid by its own element's adept Feat - the
 		// two adepts the five above never covered. Stormguard answers Lightning, the veil Darkness.
-		FromAchievement("stormguard", "lightning_adept", "End a run with 4 Lightning instances."),
-		FromAchievement("gloam_veil", "darkness_adept", "End a run with 4 Darkness instances."),
+		FromAchievement("stormguard", "lightning_adept", "Hold 4 Lightning instances in a single run."),
+		FromAchievement("gloam_veil", "darkness_adept", "Hold 4 Darkness instances in a single run."),
 		FromAchievement("thorn_vine", "forest_cleared", "Defeat the boss of the Enchanted Forest."),
 		// Shadow Bolt was the Gaoler's second prize until 2026-11-07; it is a Conjunction now (below, with
 		// the other combinations), and a save that owned it keeps it (SaveData.MigrateShadowBoltToConjunction).
-		// The Gaoler's deed pays a second thing, as the Long Coil's does: the third reactive boon, since a
+		// The Gaoler's deed pays a boon, as the Long Coil's does: the third reactive boon, since a
 		// jailer carries a rattle (.ai/new-items.md section 7).
 		FromAchievementBoon("bone_rattle", "castle_conqueror", "Defeat the boss of the Cursed Dungeon."),
 		FromAchievement("spiritual_weapon", "ruins_delver", "Defeat the boss of the Mystic Ruins."),
 		FromAchievement("riptide", "undertow", "Defeat the boss of the Sunken Cave - as its own wizard, once freed."),
 		FromAchievement("mirefoot", "swamp_cleansed", "Defeat the boss of the Blighted Swamp."),
 		FromAchievementBoon("rimebriar", "waste_thawed", "Defeat the boss of the Frozen Waste."),
-		// The Long Coil's deed pays two things: the boon it always paid, and Fireball. Fireball was the
-		// Warden of the Deep's, in the Emberdeep - behind the old final gate, which counted every spell,
-		// so no save written since schema 8 could ever open the Emberdeep (.ai/achievements-and-secrets.md
-		// 1.4). The big slow blast is a late shape, and chapter 9 is the latest place before the gate.
-		FromAchievement("fireball", "sands_unwound", "Defeat the boss of the Scorched Sands."),
+		// Fireball is the Warden of the Deep's again, in the Emberdeep (in-flight 66's reward review, Eric 2026-11-10). From
+		// schema 19 it was the Long Coil's, because the old final gate counted every spell and no save written since schema
+		// 8 could open the Emberdeep (.ai/achievements-and-secrets.md 1.4); the gate counts wizards now (2.5), so a spell
+		// may be paid behind it. The big slow blast is a late shape, and the fire depths its place. The Sands keep the sun.
+		FromAchievement("fireball", "emberdeep_ended", "Defeat the boss of the Emberdeep."),
 		FromAchievementBoon("sunsteel_filament", "sands_unwound", "Defeat the boss of the Scorched Sands."),
 		// The two early chapters (.ai/campaign.md). Boons, not spells: chosen when the final gate still
 		// counted every spell (it counts wizards now), and kept, since a boon is what those chapters'
 		// elements were short of. Both were PurchaseBoon entries that no screen sold - cards no new save
-		// could ever be dealt - and they have a source at last.
+		// could ever be dealt - and they have a source at last. The Circle's pays a spell since in-flight 66 (below).
 		FromAchievementBoon("thornseed", "fields_hurdled", "Defeat the boss of the Fallow Fields."),
-		FromAchievementBoon("shadegrease", "circle_unclosed", "Defeat the boss of the Broken Circle."),
+		// Veteran and the Ninth Stone swapped rewards in in-flight 66's reward review (Eric, 2026-11-10): the first clear
+		// paid three spells in one run and the Circle, the first wall, a +6% boon. Shadegrease ("Nothing quite gets hold of
+		// you") suits a clear without falling; meteors suit the heath the Fallen Star came down on.
+		FromAchievementBoon("shadegrease", "veteran", "Clear a chapter without falling."),
+		FromAchievement("meteor_swarm", "circle_unclosed", "Defeat the boss of the Broken Circle."),
+		// The Coursing's hunting boon (in-flight 66, Eric 2026-11-10: "should be something special, not just energy"), and its
+		// one source. The hint never names the hound: he may still be locked, so it calls him by his quest-log epithet.
+		FromAchievementBoon("the_quarry", "coursing",
+			$"Let a hound Familiar run down {AchievementDefinitions.CoursingTarget} Black Hares in the Broken Circle - as the hound in the pen, once freed."),
 
 		// THE SPELL VAULTS (.ai/achievements-and-secrets.md 6.4): one secret in each chapter before the
 		// gate that pays a spell, once ever, through its derived deed (SecretCatalog.AsAchievement). Eight
@@ -396,7 +406,8 @@ public static class UnlockCatalog
 		// Three wizards' openers that were these sites' prizes (in-flight 84): still won there, but only as their wizards,
 		// through a deed done beside the site's own (AchievementDefinitions.WizardOpenerRoadDeeds). No SiteId: the site's
 		// deed pays Arcane Energy now (AchievementDefinitions.SideEventCurrency).
-		FromAchievement("iron_palisade", "smiths_toll", "Carried by the caravan master on the Scorched Sands road - for its own wizard, once freed."),
+		// Iron Palisade is kept at the Cold Forge since in-flight 66 (Eric, 2026-11-10), off the caravan master.
+		FromAchievement("iron_palisade", "smiths_toll", "Hidden somewhere in the Cursed Dungeon - for its own wizard, once freed."),
 		FromAchievement("contagion", "doctors_round", "Kept by whatever tends the lanterns in the Blighted Swamp - for its own wizard, once freed."),
 		FromAchievement("bramble_seed", "grove_sung_green", "Grown back in the corrupted grove of the Enchanted Forest - for its own wizard, once freed."),
 		// The early chapters' side events (.ai/campaign.md) pay relics, not people - see there for

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using TheOneHeMissed.scripts;
 
 // Iron Palisade: a line of stakes driven up between the player and the nearest pack (.ai/side-events.md,
-// issue #64). Carried by the caravan master on the Scorched Sands road.
+// issue #64). Wayland's opener, kept at the Cold Forge in the Cursed Dungeon for him (in-flight 66).
 //
 // **The wall.** The one delivery shape #64 still listed as missing: something that occupies space
 // against the swarm. It is not a physics body - a body on a layer the enemies collide with would

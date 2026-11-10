@@ -1685,6 +1685,10 @@ public partial class _BalanceHarness : Node
 				+ $" wounded={Lancet.StatWoundedStrikes} meanWound={(Lancet.StatStrikes > 0 ? Lancet.StatWoundSum / Lancet.StatStrikes : 0.0):0.00}"
 				+ $" kills={Lancet.StatKills} outright={Lancet.StatOutright} releases={Lancet.StatReleases} released={Lancet.StatReleased}"
 				+ $" triage={Lancet.StatTriage} retargets={Lancet.StatRetargets} fizzles={Lancet.StatFizzles}");
+		// The Quarry (in-flight 66, Player.ItemRules.cs): quarries marked, hits landed on one, and the damage its mark added
+		// (--grant-boons=the_quarry) - once it has marked one.
+		if (Player.QuarryStatMarked > 0)
+			GD.Print($"HARNESS QUARRY m={row.Minute} marked={Player.QuarryStatMarked} hits={Player.QuarryStatHits} bonusDamage={Player.QuarryStatBonusDamage}");
 		// The Fieldfare feat's count (RunEvents.RecordGrassMetalKill): kills numbered in Grass's or Metal's ink so far this run.
 		if (RunEvents.GrassMetalKills > 0)
 			GD.Print($"HARNESS GRASS METAL KILLS m={row.Minute} kills={RunEvents.GrassMetalKills}");

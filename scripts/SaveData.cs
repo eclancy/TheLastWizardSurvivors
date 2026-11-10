@@ -1274,9 +1274,9 @@ public class SaveData
 	///      deed whose fact the save already holds, so the next run's end does not announce as new an
 	///      event won a month ago. A save credited with discoveries by schema 10, or with Wishing Coin and
 	///      Gilded Mote by schema 9's payback, owns them and so has their deeds: what it was credited with;
-	///   3. reconcile: every deed done is granted its current unlock (Survivor done gets Hollow Star,
-	///      Unwound done gets Fireball), never its Arcane Energy - The Long Road Back done keeps its Fireball
-	///      and is not paid the 300 its deed pays now;
+	///   3. reconcile: every deed done is granted its current unlock (Survivor done gets Hollow Star; as
+	///      written at 19, Unwound done got Fireball - The Long Road Back's again since in-flight 66, which the
+	///      live reconcile follows), never its Arcane Energy;
 	///   4. a save that met the schema 18 gate - every spell of the 35 and every wizard of the 7, frozen
 	///      here - gets the Emberdeep written into its opened list, which the gate honours (rule 1), so
 	///      whatever the gate is, a save that could enter the Emberdeep still can; and any gate chapter

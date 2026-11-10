@@ -371,6 +371,7 @@ public static partial class AchievementDefinitions
 	{
 		// The grove, the lanterns and the caravan master paid Väinämöinen's, Paracelsus's and Wayland's openers until in-flight
 		// 84 moved each to a deed done as its wizard (WizardOpenerRoadDeeds); their own deeds pay Arcane Energy instead.
+		// Wayland's is done at the Cold Forge since in-flight 66 (Eric, 2026-11-10); the caravan's deed keeps its Energy.
 		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", $"{OpenerMovedArcane} Arcane Energy"),
 		("walking_hut", "The Hut Herded Home", "Drive the walking hut of the Enchanted Forest into the bone-fenced yard.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
@@ -408,8 +409,9 @@ public static partial class AchievementDefinitions
 
 	/// <summary>
 	/// What a road deed pays, once, in place of the wizard's opener that moved off it to a deed done as that wizard
-	/// (in-flight 84): the three side events (the grove, the lanterns, the caravan master) and the Sunken Cave's boss. A
-	/// deed must pay something, and Arcane Energy is the one prize no gate counts. A first guess for Eric to tune.
+	/// (in-flight 84): the three side events (the grove, the lanterns, the caravan master). A deed must pay something, and
+	/// Arcane Energy is the one prize no gate counts. A first guess for Eric to tune. The Sunken Cave's boss paid it too,
+	/// until in-flight 66's reward review gave it the Emberdeep's 300 (Eric, 2026-11-10).
 	/// </summary>
 	public const int OpenerMovedArcane = 100;
 
@@ -423,8 +425,9 @@ public static partial class AchievementDefinitions
 	/// </summary>
 	public static int SideEventCurrency(string siteId) => (siteId ?? string.Empty).ToLowerInvariant() switch
 	{
-		// Three road sites whose only prize was a wizard's opener (in-flight 84): it is held there for its wizard now
-		// (WizardOpenerRoadDeeds, DiscoveryRewards.IsSiteExhausted), and the site's own deed pays this, once.
+		// Three road sites whose only prize was a wizard's opener (in-flight 84): the grove's and the lanterns' are held there
+		// for their wizards now (WizardOpenerRoadDeeds, DiscoveryRewards.IsSiteExhausted), and the site's own deed pays this,
+		// once. Wayland's moved off the caravan to the Cold Forge (in-flight 66); the caravan's deed still pays this.
 		"the_grove" or "bog_lanterns" or "caravan_master" => OpenerMovedArcane,
 		// F3 (White Downs)
 		"silver_hind" => SilverHindCurrency,
@@ -484,15 +487,20 @@ public static partial class AchievementDefinitions
 		},
 		new()
 		{
+			// Shadegrease since in-flight 66's reward review (Eric, 2026-11-10): Meteor Swarm, which this paid, is the
+			// Ninth Stone's (Out of the Ring) - this completed in the same run as Forest Cleared and Survivor, three spells
+			// at once, while the Circle, the first wall, paid a +6% boon. And "without falling" is measured now: a win an
+			// extra life saved does not count (RunResult.RevivesUsed). Off the run, then, as the openers are, since the
+			// lifetime's victories never said how they were won; the menu's bar reads 0 until the run that does it.
+			// From the boss's fall the snapshot is the win (Node2DGame.SnapshotRunResult), and the endless ledger is taken
+			// at the first vigil, so a life spent in the night after it never takes back the clear.
 			Id = "veteran", DisplayName = "Veteran",
 			Description = "Clear a chapter without falling.",
-			RewardText = "Unlocks Meteor Swarm", SpellUnlockId = "meteor_swarm",
+			RewardText = "Unlocks Shadegrease", BoonUnlockId = "shadegrease",
 			Category = AchievementCategory.Progress,
-			Measure = c => c.Lifetime.TotalVictories, Target = 1,
+			Measure = c => c.Run != null && c.Run.Outcome == global::RunOutcome.Victory && c.Run.RevivesUsed == 0 ? 1f : 0f,
+			Target = 1,
 		},
-		// Medea's opener (in-flight 84): the pheasant is the bird of the Phasis, the river of her own Colchis.
-		OpenerFeat("max_level", "Pheasant", "medea", "As Medea, reach level 20 in a run.", "solar_flare", "Solar Flare",
-			AchievementCategory.Progress, c => c.Run.FinalPlayerLevel, 20),
 		new()
 		{
 			Id = "hoarder", DisplayName = "Full Grimoire",
@@ -510,6 +518,12 @@ public static partial class AchievementDefinitions
 		// Imhotep was High Priest of Ra at Heliopolis, whose sun-bird was the bennu - the heron the phoenix came from.
 		OpenerFeat("fire_adept", "Bennu", "imhotep", "As Imhotep, hold 4 instances of Fire.", "scorching_ray", "Scorching Ray",
 			AchievementCategory.Mastery, c => RunPeakOf(c, "Fire"), 4),
+		// Medea's opener (in-flight 84): the pheasant is the bird of the Phasis, the river of her own Colchis. It asks
+		// for Light held since in-flight 66's reward review (Eric, 2026-11-10): level 20 came at about minute 8 and said
+		// nothing about her. Light is her grandfather the Sun and Solar Flare's own tag, and no Adept asks for it. The id
+		// stays "max_level", the deed's since schema 19, so nothing that names it has to move.
+		OpenerFeat("max_level", "Pheasant", "medea", "As Medea, hold 4 instances of Light.", "solar_flare", "Solar Flare",
+			AchievementCategory.Mastery, c => RunPeakOf(c, "Light"), 4),
 		// Canticle's deed (in-flight 66 and 84): harmony, as the Sibyl - the chord it sings is gathered from its casters'
 		// elements, so the ask is four of them held at once. Swans are Apollo's, and she is his prophetess.
 		OpenerFeat("swansong", "Swansong", "sibyl", "As the Cumaean Sibyl, hold four different elements at once.",
@@ -618,23 +632,23 @@ public static partial class AchievementDefinitions
 			Target = 1,
 		},
 		// Riptide, which this paid, is Tituba's opener and earned as her since in-flight 84 (The Undertow); the deed stays the
-		// road's and pays Arcane Energy in its place.
-		BossClearArcane("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", OpenerMovedArcane),
+		// road's and pays Arcane Energy in its place - 300 since in-flight 66's reward review (Eric, 2026-11-10), the
+		// Emberdeep's, which pays Fireball now: at 100 the Hollow Choir paid less than Exterminator.
+		BossClearArcane("cave_choir_silenced", "Silence in the Deep", "cave_choir", "the Sunken Cave", 300),
 		BossClear("swamp_cleansed", "Cut the Rot Out", "swamp_mother", "the Blighted Swamp", "mirefoot", "Mirefoot"),
 		// The Archivist teaches rung III of the Conjunction ladder (ConjunctionLadder.PairShareDeedId; Teachings.PairSharesLesson):
 		// "teaches a lesson", the one locked thing it puts on show (.ai/conjunction-progression.md section 3).
 		BossClear("ruins_delver", "Ruins Delver", "ruins_sentinel", "the Mystic Ruins", "spiritual_weapon", "Spiritual Weapon", "teaches a lesson"),
 		BossClearBoon("waste_thawed", "Broke the Guard", "frost_warden", "the Frozen Waste", "rimebriar", "Rimebriar"),
-		// Two things since schema 19: the boon it always paid, and Fireball, moved here from the Warden of
-		// the Deep's deed - a spell only the far side of the old final gate paid, while that gate counted
-		// every spell, so no save written since schema 8 could ever open the Emberdeep
-		// (.ai/achievements-and-secrets.md 1.4). The Sands are the latest chapter before the gate.
+		// The boon it always paid. From schema 19 it paid Fireball too, moved here from the Warden of the Deep's deed while
+		// the final gate counted every spell (.ai/achievements-and-secrets.md 1.4); the gate counts wizards now (2.5), so
+		// Fireball went back to the fire depths in in-flight 66's reward review (Eric, 2026-11-10) - the Sands pay the sun.
 		new()
 		{
 			Id = "sands_unwound", DisplayName = "Unwound",
 			Description = "Defeat the boss of the Scorched Sands.",
-			RewardText = "Unlocks Fireball and Sunsteel Filament",
-			SpellUnlockId = "fireball", BoonUnlockId = "sunsteel_filament",
+			RewardText = "Unlocks Sunsteel Filament",
+			BoonUnlockId = "sunsteel_filament",
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
@@ -643,17 +657,18 @@ public static partial class AchievementDefinitions
 			Measure = c => c.Lifetime.HasDefeatedBoss("sands_coil") ? 1f : 0f,
 			Target = 1,
 		},
-		// The gate chapter's own deed pays Arcane Energy since schema 19 - its Fireball moved to the Long
-		// Coil - and opens the castle (.ai/endgame-castle.md) once it is built. A save that had done it
-		// keeps its Fireball and is not paid the 300: reconciling pays unlocks, never currency.
-		// From 2026-11-02 to 2026-11-08 it also paid the Sovereign Rite. The Rite is a Conjunction since, paid by its
-		// own Feat (.ai/sovereign-spell.md section 9), so the deed is back to its Arcane Energy; a save that beat the
-		// Warden keeps the Rite (SaveData.MigrateRiteToConjunction, schema 26).
+		// The gate chapter's own deed, which opens the castle (.ai/endgame-castle.md). Fireball again since in-flight 66's
+		// reward review (Eric, 2026-11-10): it moved to the Long Coil at schema 19 only because the final gate then counted
+		// every spell, and since the gate counts wizards (.ai/achievements-and-secrets.md 2.5) a later chapter may pay a
+		// spell - and the hardest chapter on the road, the fire depths, paid only Arcane Energy. Its 300 went to the
+		// Sunken Cave's boss. From 2026-11-02 to 2026-11-08 it also paid the Sovereign Rite; the Rite is a Conjunction
+		// since, paid by its own Feat (.ai/sovereign-spell.md section 9), and a save that beat the Warden keeps it
+		// (SaveData.MigrateRiteToConjunction, schema 26).
 		new()
 		{
 			Id = "emberdeep_ended", DisplayName = "The Long Road Back",
 			Description = "Defeat the boss of the Emberdeep.",
-			RewardText = "300 Arcane Energy", CurrencyReward = 300,
+			RewardText = "Unlocks Fireball", SpellUnlockId = "fireball",
 			Category = AchievementCategory.Exploration,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
@@ -728,12 +743,15 @@ public static partial class AchievementDefinitions
 			Measure = c => ChaptersClearedAt(c, GlobalStatsManager.PresetRankDefault),
 			Target = CampaignChapterCount,
 		},
-		// The two early chapters (.ai/campaign.md) pay in boons, for the reason the Frozen Waste and
+		// The two early chapters (.ai/campaign.md) paid in boons, for the reason the Frozen Waste and
 		// the Sands do. Both boons were sold-but-never-sold (the shop registers no boons), so until then
-		// no new save could ever be dealt them. Listed only once their chapter is playable.
+		// no new save could ever be dealt them. Listed only once their chapter is playable. The Circle's
+		// pays a spell since in-flight 66 (below); its Shadegrease is Veteran's.
 		// The Hayward taught the Ascension until the slow start (2026-11-02); a landmark teaches it now (Teachings).
 		BossClearBoon("fields_hurdled", "Round the Hurdle", "fields_hayward", "the Fallow Fields", "thornseed", "Thornseed"),
-		BossClearBoon("circle_unclosed", "Out of the Ring", "heath_ninth_stone", "the Broken Circle", "shadegrease", "Shadegrease"),
+		// Meteor Swarm since in-flight 66's reward review (Eric, 2026-11-10), swapped with Veteran's Shadegrease: the
+		// Circle is the first wall and paid a +6% boon. Meteors suit the heath the Fallen Star came down on.
+		BossClear("circle_unclosed", "Out of the Ring", "heath_ninth_stone", "the Broken Circle", "meteor_swarm", "Meteor Swarm"),
 		// THE FAR SHORE'S CHAPTER CLEARS (.ai/second-half.md 4.3, marked by F0): each warden's deed pays its god -
 		// the one unlock a far chapter carries - and is that god's one source (UnlockCatalog). Not listed until its
 		// chapter is playable (IsChapterBuilt), and sorted after the campaign's (CampaignRankOfStage). A line a
@@ -780,13 +798,15 @@ public static partial class AchievementDefinitions
 		// (Familiar.Strike), and only a Black Hare - the Circle's fast body and the Warrener's summons - so
 		// the deed names one map, one form and one quarry. Measured over one run (RunEvents, then the
 		// lifetime best), so the menu shows the best run so far and the pause screen this run's count.
-		// A Road deed of the Circle, paying currency rather than a second rescue.
+		// A Road deed of the Circle. It paid 50 Arcane Energy - the smallest reward for one of the hardest early asks -
+		// until in-flight 66's reward review (Eric, 2026-11-10: "should be something special, not just energy"): the
+		// Quarry, a hunting boon, and its only source (UnlockCatalog).
 		new()
 		{
 			Id = "coursing", DisplayName = "The Coursing",
 			RequiredCharacterId = "laelaps",
 			Description = $"As Laelaps in the Broken Circle, let your hound Familiar run down {CoursingTarget} Black Hares in one run.",
-			RewardText = "50 Arcane Energy", CurrencyReward = 50,
+			RewardText = "Unlocks The Quarry", BoonUnlockId = "the_quarry",
 			Category = AchievementCategory.Challenge,
 			Kind = AchievementKind.Road,
 			Visibility = AchievementVisibility.ChapterOpen,
@@ -1162,7 +1182,7 @@ public static partial class AchievementDefinitions
 		};
 	}
 
-	// The chapter's half of the openers: a boss, three side events and three secrets, each as its wizard. The secrets'
+	// The chapter's half of the openers: a boss, two side events and four secrets, each as its wizard. The secrets'
 	// asks NAME the secret, in its catalog name, as well as the chapter (in-flight 84, Eric 2026-11-10: "Find the Buried
 	// Runes as Morgan"): an exception to decision 7 (a hidden thing is never named before it is seen), since these deeds
 	// stay sealed until their wizard is freed and are about a secret the road has already taught exists.
@@ -1177,9 +1197,13 @@ public static partial class AchievementDefinitions
 		yield return OpenerRoad("grove_sung_green", "The Grove Sung Green", "vainamoinen", StageOfSite("the_grove"),
 			"As Väinämöinen, hold the corrupted grove in the Enchanted Forest until it grows back.", "bramble_seed", "Bramble Seed",
 			asWizardOf: EventDeedId("the_grove"));
-		yield return OpenerRoad("smiths_toll", "The Smith's Toll", "wayland", StageOfSite("caravan_master"),
-			"As Wayland the Smith, catch the caravan master on the Scorched Sands road.", "iron_palisade", "Iron Palisade",
-			asWizardOf: EventDeedId("caravan_master"));
+		// Wayland's Iron Palisade at the Cold Forge, the forge that made the shackles, since in-flight 66's reward review (Eric,
+		// 2026-11-10) - it was the caravan master's, which suits a chained smith far less. The forge's own deed keeps Molten
+		// Shard; this is done beside it, so finding the forge again as him completes it even when the forge was found before
+		// (SecretDirector.Found completes the secret's deed on every find, and AchievementManager.Complete the deeds beside).
+		yield return OpenerRoad("smiths_toll", "The Smith's Toll", "wayland", StageOfSecret(SecretCatalog.ColdForgeId),
+			$"As Wayland the Smith, find {SecretNamed(SecretCatalog.ColdForgeId)} in the Cursed Dungeon.", "iron_palisade", "Iron Palisade",
+			asWizardOf: SecretDeedId(SecretCatalog.ColdForgeId));
 		yield return OpenerRoad("fays_frost", "The Fay's Frost", "morgan", StageOfSecret(SecretCatalog.BuriedRunesId),
 			$"As Morgan le Fay, find {SecretNamed(SecretCatalog.BuriedRunesId)} in the Frozen Waste.", "sleet_runes", "Sleet Runes",
 			asWizardOf: SecretDeedId(SecretCatalog.BuriedRunesId));

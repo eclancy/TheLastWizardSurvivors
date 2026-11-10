@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/iron-palisade-metal.png" id="3_icon"]
 
 ; The wall (issue #64). Pure Metal. Effect 7 (AreaSize) lengthens the wall in pixels; Effect 13
-; (ZoneDuration) keeps it standing longer in seconds. Found: the Scorched Sands caravan master.
+; (ZoneDuration) keeps it standing longer in seconds. Found: the Cold Forge, as Wayland (in-flight 66).
 
 [sub_resource type="Resource" id="Resource_iron_palisade_lvl2"]
 script = ExtResource("2")

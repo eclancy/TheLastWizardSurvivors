@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Boon icons. Run: python tools/art/boon_icons.py
 
-Seventeen 32x32 icons, one per boon, rendered at x2 to the 32x32 UI cell in art-direction.md
+Eighteen 32x32 icons, one per boon, rendered at x2 to the 32x32 UI cell in art-direction.md
 section 1 - the same cell the spell icons use, because a boon is offered on the same card as a
 spell and has to survive the comparison.
 
@@ -437,6 +437,79 @@ def bone_rattle():
     return c
 
 
+def _shaded_limb(c, a, b, r0, r1, tones):
+    """A tapered capsule from a to b, shaded as a rounded body under the house key (upper left).
+
+    Each pixel's normal is read off the nearest point of the axis, so the limb is lit on whichever
+    side faces the key whatever way it runs - a straight-sided toning by "left of the axis" lights
+    the wrong side of anything that is not upright. Later limbs paint over earlier ones.
+    """
+    hi, lit, base, shade, deep = tones
+    ax, ay = a
+    bx, by = b
+    length = math.sqrt((bx - ax) ** 2 + (by - ay) ** 2)
+    ux, uy = ((bx - ax) / length, (by - ay) / length) if length > 1e-6 else (0.0, 0.0)
+    norm = math.sqrt(1.0 + 1.0 + 1.4 * 1.4)
+    lx, ly, lz = -1.0 / norm, -1.0 / norm, 1.4 / norm
+    for y in range(CELL):
+        for x in range(CELL):
+            t = 0.0
+            if length > 1e-6:
+                t = max(0.0, min(1.0, ((x - ax) * ux + (y - ay) * uy) / length))
+            r = r0 + (r1 - r0) * t
+            ox, oy = x - (ax + ux * t * length), y - (ay + uy * t * length)
+            if ox * ox + oy * oy > r * r:
+                continue
+            nx, ny = ox / r, oy / r
+            nz = math.sqrt(max(0.0, 1.0 - nx * nx - ny * ny))
+            lum = nx * lx + ny * ly + nz * lz
+            c.set(x, y, hi if lum > 0.9 else (lit if lum > 0.68 else (base if lum > 0.35 else (shade if lum > 0.05 else deep))))
+
+
+def the_quarry():
+    """The foot of the first black hare the hound ran down. Wind, the marked enemy takes more.
+
+    In-flight 66 (Eric, 2026-11-10): The Coursing's boon. A hare's-foot charm, the trophy of a course:
+    the long hind foot hangs from a gold cap and ring and turns at the heel into the toes, with bone
+    claws showing through the fur. The fur is the violet row - the Black Hares of the Broken Circle
+    are dark, and the boon window's backlight is what keeps a dark relic readable. It hangs from the
+    upper left and the toes point down to the right, so the upper right stays clear for the glint.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    fur = _ramp("violet")
+    gold = _ramp("gold")
+    hi, lit, base, shade, deep = fur
+    claw = bl.tone("skin", "lit")
+    claw_shade = bl.tone("skin", "shade")
+
+    # the shank, then the foot turning at the heel, then the toes at its end
+    _shaded_limb(c, (12.0, 9.0), (13.5, 19.0), 2.6, 3.2, fur)
+    _shaded_limb(c, (13.5, 19.0), (20.5, 24.5), 3.2, 2.6, fur)
+    for (x, y) in [(23.0, 22.0), (24.0, 25.0), (22.0, 27.5)]:
+        _shaded_limb(c, (x, y), (x, y), 1.6, 1.6, fur)
+    # the clefts between the toes
+    for (x, y) in [(22, 24), (23, 23), (22, 26), (23, 26)]:
+        c.set(x, y, deep)
+    # the lie of the fur: hairs down the shank in shade, a parting along the foot, a fleck of sheen
+    for (x0, y0, x1, y1) in [(13, 11, 14, 16), (14, 18, 15, 21), (16, 22, 19, 25)]:
+        c.line(x0, y0, x1, y1, shade)
+    for (x, y) in [(10, 13), (11, 17)]:
+        c.set(x, y, hi)
+    # the claws, bone, through the fur at the toes' tips
+    for (x, y) in [(25, 21), (26, 24), (24, 28)]:
+        c.set(x, y, claw)
+    for (x, y) in [(25, 22), (26, 25), (23, 28)]:
+        c.set(x, y, claw_shade)
+
+    # the gold cap the foot is set in, and the ring it hangs by
+    _shaded_limb(c, (11.5, 6.5), (12.0, 8.5), 2.4, 2.4, gold)
+    c.ring(10, 2, 1.8, 1.8, gold[2], 1)
+    c.set(9, 1, gold[0])
+    c.set(11, 3, gold[4])
+    _shadow(c, 17, 7)
+    return c
+
+
 # --- the enchantment -------------------------------------------------------------
 #
 # A BOON IS AN OBJECT, BUT IT IS NOT AN ITEM. The material-row rule above did its job - nobody
@@ -479,6 +552,7 @@ ELEMENT = {
     "taproot": "earth",
     "waywiser": "wind",
     "bone_rattle": "darkness",
+    "the_quarry": "wind",
 }
 
 _ROLE = {"core": 0, "hot": 1, "mid": 2, "edge": 3}
@@ -560,6 +634,13 @@ INLAYS = {
     "bone_rattle": [
         (12, 9, "mid"), (13, 10, "edge"), (19, 10, "core"), (18, 11, "hot"), (20, 9, "edge"),
         (23, 16, "mid"), (22, 16, "edge"),
+    ],
+    # The wind of the chase written across the fur: three short streaks blown down the foot, the
+    # middle one lit hottest - the Wind of the boon's one tag, and the speed of the thing it hunts.
+    "the_quarry": [
+        (11, 12, "edge"), (12, 12, "mid"), (13, 11, "hot"),
+        (12, 17, "mid"), (13, 16, "hot"), (14, 16, "core"), (15, 15, "mid"),
+        (16, 22, "edge"), (17, 21, "mid"), (18, 21, "hot"),
     ],
 }
 
@@ -807,6 +888,7 @@ ICONS = [
     ("taproot", taproot),
     ("waywiser", waywiser),
     ("bone_rattle", bone_rattle),
+    ("the_quarry", the_quarry),
 ]
 
 

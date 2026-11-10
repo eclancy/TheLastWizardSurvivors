@@ -233,7 +233,8 @@ public static class AchievementManager
 	/// (.ai/achievements-and-secrets.md 2.6 and section 3, step 3). Only ever adds, and only unlocks -
 	/// never Arcane Energy, which cannot be checked as already paid. So when a reward moves between deeds
 	/// it reaches the saves that had done the deed with no schema step: Survivor done pays Hollow Star,
-	/// Unwound done pays Fireball, and a reward that moved away stays where it was.
+	/// The Long Road Back done pays Fireball (back there since in-flight 66), and a reward that moved away stays
+	/// where it was.
 	/// </summary>
 	/// <returns>Every unlock it granted, unnamed (the migration has no use for names).</returns>
 	public static List<RunUnlockEntry> Reconcile(SaveData data)

@@ -2006,6 +2006,10 @@ public partial class Player : CharacterBody2D
 			case BoonEffect.Frighten:
 				boonFrightenSeconds = Mathf.Max(boonFrightenSeconds, next);
 				break;
+			// Read where it acts: the tick that marks the quarry (TickQuarry, Player.ItemRules.cs).
+			case BoonEffect.Quarry:
+				boonQuarryBonus = Mathf.Max(boonQuarryBonus, next);
+				break;
 		}
 
 	}
@@ -2739,7 +2743,13 @@ public partial class Player : CharacterBody2D
 		// The Vulnerable debuff. Applied here so EVERY source benefits - the whole point of it is
 		// that Shadow Bolt makes the rest of the loadout hit harder rather than hitting hard itself.
 		if (enemy is Enemy exposed && exposed.IsVulnerable)
+		{
+			int unexposed = finalDamage;
 			finalDamage = Mathf.RoundToInt(finalDamage * (1.0f + exposed.VulnerabilityBonus));
+			// The Quarry's mark is a Vulnerable like any other; the harness counts what it added (Player.ItemRules.cs).
+			if (exposed == boonQuarry)
+				TallyQuarryHit(finalDamage - unexposed);
+		}
 
 		// The Gimmel Ring and the Fede Hoop: the pair's own damage (Player.ItemRules.cs).
 		finalDamage = ApplyPairDamage(source, finalDamage);
@@ -4604,6 +4614,7 @@ public partial class Player : CharacterBody2D
 		}
 		TickEssenceChalice((float)delta);
 		TickBuckler((float)delta);
+		TickQuarry((float)delta);
 
 		if (buffTimeRemaining > 0f)
 		{

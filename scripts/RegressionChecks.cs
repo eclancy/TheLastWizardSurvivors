@@ -1126,8 +1126,10 @@ public static partial class RegressionChecks
 			warnings.Add("Coursing: no 'coursing' achievement.");
 			return;
 		}
-		if (!string.IsNullOrEmpty(deed.CharacterUnlockId) || deed.CurrencyReward != 50)
-			warnings.Add("Coursing: the hunt must pay 50 Arcane Energy, without a character unlock.");
+		// The Quarry since in-flight 66's reward review (Eric, 2026-11-10: "something special, not just energy"); it paid 50.
+		if (!string.IsNullOrEmpty(deed.CharacterUnlockId) || deed.CurrencyReward != 0
+			|| !"the_quarry".Equals(deed.BoonUnlockId, StringComparison.OrdinalIgnoreCase) || BoonCatalog.GetById(deed.BoonUnlockId) == null)
+			warnings.Add("Coursing: the hunt must pay the Quarry boon, and no Arcane Energy or character unlock.");
 		if (AchievementDefinitions.IsListed(deed, new SaveData()))
 			warnings.Add("Coursing: Laelaps' named hunt is shown before his rescue.");
 		var shortRun = new global::RunResult { HaresCoursed = AchievementDefinitions.CoursingTarget - 1, StageId = "stage_10", CharacterId = "laelaps" };
@@ -4017,15 +4019,16 @@ public static partial class RegressionChecks
 				warnings.Add("Achievement migration (the Long Coil and the Warden beaten): should own Fireball and Sunsteel Filament.");
 		});
 
-		Sample("the Long Coil beaten, not the Warden", s =>
+		// Fireball went back to the Warden of the Deep's deed in in-flight 66's reward review (2026-11-10): the reconcile
+		// reads the live catalog, so The Long Road Back done pays it, and Unwound done keeps only its Sunsteel Filament.
+		Sample("the Warden beaten, not the Long Coil", s =>
 		{
-			s.UnlockedAchievementIds.Add("sands_unwound");
-			s.UnlockedBoonIds.Add("sunsteel_filament");
-			s.Lifetime.BossesDefeated.Add("sands_coil");
+			s.UnlockedAchievementIds.Add("emberdeep_ended");
+			s.Lifetime.BossesDefeated.Add("emberdeep_warden");
 		}, s =>
 		{
 			if (!OwnsSpell(s, "fireball"))
-				warnings.Add("Achievement migration (the Long Coil beaten): Unwound done should pay Fireball, which moved to it.");
+				warnings.Add("Achievement migration (the Warden beaten): The Long Road Back done should pay Fireball, which moved back to it.");
 		});
 
 		Sample("met the old gate without the Long Coil", s =>

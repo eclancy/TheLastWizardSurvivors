@@ -68,6 +68,13 @@ public enum BoonEffect
 	/// reactions' shared pulse and radius. Magnitude is the fright's seconds (Player.FearSeconds).
 	/// </summary>
 	Frighten,
+
+	/// <summary>
+	/// The hunt (in-flight 66, The Coursing's boon): the nearest wounded enemy close to the player is marked as his
+	/// quarry and takes more damage from everything until it falls or he leaves it behind. Magnitude is the extra
+	/// damage it takes, as a fraction (Enemy.ApplyVulnerable). Read by Player.TickQuarry.
+	/// </summary>
+	Quarry,
 }
 
 public sealed class BoonDefinition
@@ -328,6 +335,27 @@ public static class BoonCatalog
 			ElementWeights = new[] { ("Darkness", 1) },
 			Effect = BoonEffect.Frighten, Magnitude = Player.FearSeconds, MagnitudePerLevel = 0.5f,
 		},
+
+		// --- Wind: the hunt -------------------------------------------------------------------
+		//
+		// The Coursing's boon (in-flight 66; Eric, 2026-11-10, of the hound's deed: "should be something special, not
+		// just energy" - he chose a boon over a familiar's form or a look). The nearest wounded enemy close by is
+		// marked and takes more from everything: Vulnerable (Enemy.ApplyVulnerable), so it rides the one line every
+		// source of damage already reads, and wears the Hunter's Mark's arrowheads so the player can see which one.
+		// Held until it falls or he leaves it behind - a hound does not change hares mid-course (Player.TickQuarry).
+		//
+		// Sized against the other marks, not Lantern Oil: it is one body, so it may stand well above +8% on
+		// everything. Level 2 is the Hunter's Mark's and Cait Sith's 25%; level 3's 30% is half the cap on any
+		// Vulnerable (Enemy.MaxVulnerability). Never added to another Vulnerable - the strongest wins - so a Darkness
+		// build that already exposes everything gains least from it. Wind-tagged: the chase, and the first Wind boon
+		// beside the Waywiser. The object is the trophy of a course - a black hare's foot - named for what it finds.
+		new()
+		{
+			Id = "the_quarry", Name = "The Quarry",
+			Description = "The foot of the first black hare the hound ran down. It knows the next.",
+			ElementWeights = new[] { ("Wind", 1) },
+			Effect = BoonEffect.Quarry, Magnitude = 0.20f, MagnitudePerLevel = 0.05f,
+		},
 	};
 
 	/// <summary>How long the player must stand still before a stance boon takes hold.</summary>
@@ -408,6 +436,7 @@ public static class BoonCatalog
 			BoonEffect.StanceRegen => $"Stand still and you heal {m:0.0} health every second until you move.",
 			BoonEffect.WalkingRecharge => $"While you walk, the spell with the longest cooldown recharges {m * 100f:0}% faster.",
 			BoonEffect.Frighten => $"When you are struck, every enemy close around you is frightened (at most {once}).",
+			BoonEffect.Quarry => $"The nearest wounded enemy close to you is marked, and takes {m * 100f:0}% more damage from everything until it falls or you leave it behind.",
 			_ => string.Empty,
 		};
 	}
@@ -448,6 +477,8 @@ public static class BoonCatalog
 			BoonEffect.WalkingRecharge => $"Walking: the spell with the longest cooldown recharges {m * 100f:0}% faster",
 			// "when struck" picks the reactions' glyph, as Saltbound Chain's and Rimebriar's lines do.
 			BoonEffect.Frighten => "Frightens nearby enemies when struck",
+			// "damage" picks the damage glyph (StatIcons.KeyFor) - never "damage taken", which is the shield's.
+			BoonEffect.Quarry => $"Marks the nearest wounded enemy: +{m * 100f:0}% damage to it",
 			_ => string.Empty,
 		};
 	}
@@ -482,6 +513,7 @@ public static class BoonCatalog
 			BoonEffect.StanceRegen => $"Stand still: +{next:0.0} HP per second",
 			BoonEffect.WalkingRecharge => $"Walking: the spell with the longest cooldown recharges {next * 100f:0}% faster",
 			BoonEffect.Frighten => $"Fright lasts {next:0.0} s",
+			BoonEffect.Quarry => $"Damage to the marked enemy +{step * 100f:0}%",
 			_ => string.Empty,
 		};
 	}

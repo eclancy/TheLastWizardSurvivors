@@ -7,6 +7,23 @@ and unlocks Orb of Ages, keeping Gilded Mote. Medea's granary stays in the Field
 Default campaign-completion deed retains its ID but pays 1,000 Arcane Energy as The Road Restored.
 Existing ownership is preserved; old completed Moot deeds reconcile their new rewards.
 
+**Reward review, 2026-11-10 (Eric, in-flight 66; supersedes the rows below that disagree).** Five fixes:
+- **Veteran pays Shadegrease, Out of the Ring (the Ninth Stone) pays Meteor Swarm** - the first clear no
+  longer hands out three spells in one run, and the Circle, the first wall, pays a spell. Veteran's
+  "without falling" is measured now: a win an extra life saved does not count (`RunResult.RevivesUsed`,
+  read off the run, so its bar reads 0 until the run that does it).
+- **Fireball back to The Long Road Back** (the Emberdeep's boss); its 300 Arcane Energy to **Silence in the
+  Deep** (the Sunken Cave's boss, which paid 100). **Unwound** keeps Sunsteel Filament only. The gate counts
+  wizards since 2.5, so the reason Fireball moved to the Sands (1.4) is gone.
+- **The Coursing pays the Quarry**, a new Wind boon, not 50 Arcane Energy: the nearest wounded enemy close
+  by is marked (Vulnerable plus the Hunter's Mark's arrowheads) and takes +20/25/30% damage until it falls
+  or is left behind (`BoonCatalog`, `Player.TickQuarry`). Its one source.
+- **Pheasant** (Medea's opener, Solar Flare) asks for **4 Light held**, as her, not level 20.
+- **The Smith's Toll** (Wayland's opener, Iron Palisade) is done **at the Cold Forge**, as him, not at the
+  caravan master; the forge's own deed keeps Molten Shard, and finding it again as Wayland completes the
+  Toll even if it was found before. The caravan's deed keeps its 100 Arcane Energy.
+The six element-Adept hints say "Hold 4", as the deeds measure (the peak), not "End a run with 4".
+
 **2026-11-06 override (Eric):** the Pinfold pays both Familiar and Laelaps after the player frees
 its ghostly hound, cat and bird individually. The central essence pickup is gone. Laelaps' Coursing
 challenge now pays 50 Arcane Energy for 100 Black Hares caught by his hound in one Broken Circle run;
@@ -115,7 +132,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Iron Rivets, Tidewater Flask, Lantern Oil, Mossgrown Charm, Taproot | Starter | |
 | Umbral Veil | Achievement | Untouchable: 3 minutes without losing health |
 | Thornseed | Achievement | the Hayward (Fields boss) |
-| Shadegrease | Achievement | the Ninth Stone (Circle boss) |
+| Shadegrease | Achievement | the Ninth Stone (Circle boss); Veteran since 2026-11-10 |
 | Rimebriar | Achievement | the Still Warden (Waste boss) |
 | Sunsteel Filament | Achievement | the Long Coil (Sands boss) |
 | Wishing Coin | Discovery | the well (Fields side event) |
@@ -171,7 +188,7 @@ earned (2.3).
 |---|---|---|---|---|
 | Arcane Explosion | First Blood | Feat | defeat 1 enemy | unchanged. The first thing anyone does, and a spell that charges off the others wants to arrive while there are others to charge it |
 | **Hollow Star** | **Survivor** | Feat | survive 10 minutes in one run | **moved from the shop.** The only pure Darkness carrier; it was sold rather than earned so Darkness could be built early (`UnlockCatalog`'s comment). Ten minutes is the first good run, so it stays early |
-| Meteor Swarm | Veteran | Feat | clear a chapter without falling | unchanged |
+| Meteor Swarm | Veteran | Feat | clear a chapter without falling | unchanged (the Ninth Stone's since 2026-11-10; Veteran pays Shadegrease) |
 | Solar Flare | Archmage Training | Feat | reach level 20 in a run | unchanged |
 | Void Lance | Full Grimoire | Feat | carry six spells at once | unchanged |
 | Cyclone Slash | Elementalist | Feat | hold 4 of any one element | unchanged |
@@ -183,8 +200,8 @@ earned (2.3).
 | Contagion | **The Lanterns Out** | Road | snuff the bog lanterns (Swamp) | was a Discovery |
 | Mirefoot | Cut the Rot Out | Road | beat Mother Rot | unchanged |
 | Spiritual Weapon | Ruins Delver | Road | beat the Archivist | unchanged |
-| Iron Palisade | **The Caravan Stopped** | Road | catch the caravan master (Sands) | was a Discovery |
-| **Fireball** | **Unwound** | Road | beat the Long Coil (Sands); the deed keeps paying Sunsteel Filament too | **moved from the Warden of the Deep** (1.4). The big slow blast is a late shape, and chapter 9 is the latest place the gate can pay it |
+| Iron Palisade | **The Caravan Stopped** | Road | catch the caravan master (Sands) | was a Discovery (Wayland's opener at the Cold Forge since 2026-11-10) |
+| **Fireball** | **Unwound** | Road | beat the Long Coil (Sands); the deed keeps paying Sunsteel Filament too | **moved from the Warden of the Deep** (1.4). The big slow blast is a late shape, and chapter 9 is the latest place the gate can pay it. **Back to the Warden of the Deep on 2026-11-10** (the gate counts wizards now) |
 | **Hunter's Draw** | **The Pale Hart** | Secret | follow a hart of warm light through the wood to an old hunter's stand (Forest) | a bow that charges while you move and looses when you stop: the hart is followed by moving and waits when you stop. The wood's own hunters used the stand |
 | **Familiar** | **The Pinfold** | Secret | a hound of light in the Hayward's pound; wake its guards, beat them, and it comes to you (Fields) | the Hayward impounded strays (`campaign.md` 5). The Familiar is that hound, and the next chapter's Coursing needs it |
 | **Starfall** | **The Fallen Star** | Secret | gather the seven shards strewn along a fallen star's trail, then stand in its crater (Broken Circle) | a rain of many small lights, earned by picking up many small lights. The moot watched this sky |

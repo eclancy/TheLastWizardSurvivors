@@ -266,7 +266,7 @@ public static class ApotheosisCatalog
 		// (.ai/chapter-wizards.md 4.6, .ai/unlock-puzzles.md 3.1). He opens on Scorching Ray since 2026-11-09
 		// (.ai/character-fit.md section 1; Eric: "I like your imhotep suggestion, implement that as well"): a ray that
 		// heats up on one target is the sun focused through his bronze mirror, the act that frees him. He opened on
-		// Fireball before, and the form moved with him; Fireball stays the Sands boss's deed spell.
+		// Fireball before, and the form moved with him; Fireball is the Emberdeep boss's deed spell (in-flight 66).
 		// "Blind" was nobody's: the High Priest of Ra focuses the sun, and the hottest ray of each cast flares like it -
 		// whatever sees it loses him for two seconds and wanders, and the hotter the ray the wider the flare
 		// (ScorchingRayBeam.EyeOfRaId, Enemy.ApplyBlind). Not fear (the dark wizard's Dread): a frightened body runs from

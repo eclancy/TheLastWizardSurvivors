@@ -57,7 +57,7 @@ that is what was on the machine. No numpy, no f-strings, no `math.tau`.
 | Spells | 45, with evolutions and level-up branches |
 | Wizards | 21, and one hound who is not a wizard |
 | Relics | 40 — 38 in 13 Full Set Enchantments, and 2 that act on the spell book itself |
-| Boons | 17 |
+| Boons | 18 |
 
 The bosses were designed as outlines before a pixel of detail was placed — a T, a bell, a dome, a
 slab, a wedge, an S and an H — on the theory that a player meeting them fifteen minutes apart
