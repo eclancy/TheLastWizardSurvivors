@@ -2,6 +2,15 @@
 
 > **2026-11-09:** the Sketchbook (`stage_8`) with its whole cast - the kids' drawings, Elim's boss and ghost, the dog - and the Test Wizard were removed at Eric's request; git history holds them, and schema 28 takes both out of saves. Where this doc still names them it is the record of what was, not the game. Stage index 8 and roster index 0 are retired, never reused. A command here with `--character=0` named the Test Wizard: `--spell` / `--start-spell` now open any wizard on the spell, so say `--character=1`.
 
+> **0.22.0 is released (2026-11-09), and it is a story reset:** release commit `11f528a2`, tag `v0.22.0`, story
+> epoch 2 -> 3 (`c5505536`, Eric: "This release should reset the game for players"). All nine downloads are
+> published; the three version.json addresses serve 0.22.0 with `progressEpoch` 3; the APK reads
+> `com.ecec.wizardsurvivors` 2200 / 0.22.0, labelled *The Last Wizard: Survivors*. It carries the far shore
+> (the White Downs, Artemis), 20-minute far-shore runs, endless, the Conjunction ladder, the two-spell Sovereign
+> Rite, the redrawn prologue, the character-fit walk-through, the four new spells (Corposant, Ink Ring, Windfall,
+> Lancet: merge `f0af5110`) and the Sketchbook and Test Wizard removal. Validator 0 errors, 0 warnings at
+> epoch 3. **Not played by hand:** the four new spells' feel and numbers, the reset on a real installed copy.
+
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
 ## Next week (list started 2026-11-04, after the 0.13.0 release)
