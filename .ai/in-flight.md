@@ -11,6 +11,20 @@
 > Lancet: merge `f0af5110`) and the Sketchbook and Test Wizard removal. Validator 0 errors, 0 warnings at
 > epoch 3. **Not played by hand:** the four new spells' feel and numbers, the reset on a real installed copy.
 
+## The next release: Eric's list of changes (started 2026-11-09)
+
+Eric, 2026-11-09: *"Let's just start compiling a list of changes and we'll determine another release soon."*
+Collected, not built; he decides when it becomes a release. Each line points at its full entry under "Next week".
+
+| # | change | kind | size |
+|---|---|---|---|
+| 63 | A historical gallery: each unlocked character's real history | new screen, needs design | M-L |
+| 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
+| 65 | The executable and download files still named "TheOneHeMissed" | release tooling + updater | M |
+| 66 | Canticle should not come from First Blood; review every achievement's reward | achievements | S-M |
+| 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
+| 68 | Waywiser's description is confusing (reword, or simplify the rule) | text, maybe balance | S |
+
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
 ## Next week (list started 2026-11-04, after the 0.13.0 release)
@@ -1083,6 +1097,18 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
     canvas on `DrawLayers.ForemostAir` (11), the layer already holding the bow at his shoulder. Check the notes stay
     under `AttackIcon` (12) and the floating numbers, and that the blast itself stays on `Air`.
+68. **Waywiser's description is very confusing** (Eric, 2026-11-09). The boon (`BoonCatalog.cs` 307, a Wind starter)
+    makes whichever spell has the longest wait until its next cast recharge 40% faster (+10% a level) while the wizard
+    walks. It is explained four ways, none plainly. The flavour line is a riddle: *"A wheel that counts the road, and
+    pays out for every turn."* The rule line says *"While you walk, whichever of your spells is furthest from ready
+    recharges 40% faster."* (`BoonCatalog.cs` 406). The card's stat line and the level-up line say *"the spell
+    furthest from ready **winds** 40% faster"* (444, 479). The pause screen says *"Winding: X."* / *"Not winding - walk
+    to wind the spell furthest from ready."* (`Node2DGame.cs` 4793). "Winds" and "furthest from ready" are code
+    words (the player-words rule), and which spell it helps changes from moment to moment, invisibly. Options: (a)
+    reword every line the same plain way, e.g. *"While you move, the spell with the longest wait recharges 40%
+    faster."*, with a flavour line that says the same in the wheel's voice; (b) simplify the rule itself - *every*
+    spell recharges a smaller amount faster while moving - which needs no explaining, but loses the "suits one big slow
+    spell" design (`BoonCatalog.cs` 301) and needs a balance check against Taproot, its mirror. Eric's call.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
