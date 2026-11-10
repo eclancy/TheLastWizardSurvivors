@@ -25,7 +25,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
 | 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
-| 70 | The chapter note covers the wizard at a run's start on a phone: condense, move clear, shorter | UI | S-M |
+| 70 | The chapter note (the stage intro with its hints) is huge on a phone and covers the wizard: condense, move clear, shorter | UI | S-M |
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
 | 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
 | 73 | Chalice Cup: heals 3 HP every 20 s, waiting until you are hurt - **built** | item rework | done |
@@ -45,7 +45,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 87 | Wayland's Wings also gives movement speed (about +10%) | character | S |
 | 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | M |
 | 89 | The Archmage's passive card: "Avoids death once per run." | text | S |
-| 90 | The objectives list (quest tracker) smaller at a run's start | HUD | S |
+| 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1208,13 +1208,13 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     death once per run' - simplify the description"*). Overlooked's card (`CharacterData_Archmage.tres`
     `StartingPassiveDescription`) says *"Once a run, a killing blow misses. Invincible for 10s."* - make it *"Avoids
     death once per run."* (or as close as reads). Text only; check the character select and pause screen show it.
-90. **The objectives list is too big at the start of a run** (Eric, 2026-11-10: *"I also want to make the list of
-    objectives smaller at the beginning of a run"* - not on the list before; item 70 is the chapter note). It is
-    `QuestTracker` (lower left, `.ai/quests-and-notes.md`): up to three tracked quests, each a heading and a line with
-    its count, 340 wide on a PC and 400 on a phone, shown in full from the first second - while the chapter note
-    (item 70) and the run's opening also want the screen. To do: start it compact (headings only, or one line a quest,
-    smaller type) and let it open out once the opening has passed or when a quest moves; keep it registered with
-    `HudKeepOut` at whatever size it is. Photograph both canvases with `_UiShot` at a run's first seconds.
+90. **Lancet's icon should look more magical** (Eric, 2026-11-10: *"Lancet's icon should look a bit more magical in
+    nature"*). Its spell icon (`assets/bonelight/ui/spells/lancet-metal.png`, drawn by `lancet()` in
+    `tools/art/spell_icons.py`) is a plain steel surgeon's needle going into a skull, which reads as a tool, not a
+    spell. Give the needle a spell's light - a glow along it, runes or a sigil on the steel, a trail of light behind
+    the point - in its elements' ramps (Metal, Poison), and keep the evolution icons that reuse `lancet_needle` /
+    `lancet_skull` (`tools/art/evolution_icons.py`) in step. Judge it at icon size beside the other spells; edit the
+    generator and re-run it, never the PNG.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
@@ -1260,6 +1260,9 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     height well clear of the centre, and shorten the hold; a tap already puts it away. Photograph it before and after
     with `_UiShot --resolution 540x1212 --portrait --safe-area` on a first-visit save, in the chapter with the longest
     note.
+    **Raised again 2026-11-10** (Eric: *"I meant the stage introduction that shows hints as to what is hidden in the
+    level. it is huge on mobile and covers the wizard"* - he first said "the list of objectives", which was briefly
+    recorded as a quest-tracker item; it is this note, its clues included).
 71. **Consolidate the Powers pages** (Eric, 2026-11-09: *"The power ups pages can be consolidated more - for example
     the first page with just one power up"*). The shop pages by section (`MainMenu.Shop.cs` 144, `UpgradeSections`):
     Spell book (1: Bound Pages), Power (6), Survival (4), Fortune (4), Level-ups (5), then Boons - six pages, the
