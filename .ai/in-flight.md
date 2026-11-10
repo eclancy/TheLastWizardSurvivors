@@ -20,8 +20,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 |---|---|---|---|
 | 63 | A historical gallery: each unlocked character's real history | new screen, needs design | M-L |
 | 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
-| 65 | Download files renamed in the next release (decided); the program's own rename later | release tooling + updater | S, then M |
-| 66 | Reward review done: five fixes decided (Veteran/Ninth Stone swap, Fireball to the Emberdeep, a Quarry boon for The Coursing, Pheasant asks 4 Light, Smith's Toll at the Cold Forge) | achievements | S-M |
+| 65 | Download files renamed in the next release (decided); the program's own rename later | release tooling + updater | done |
+| 66 | Reward review done: five fixes decided (Veteran/Ninth Stone swap, Fireball to the Emberdeep, a Quarry boon for The Coursing, Pheasant asks 4 Light, Smith's Toll at the Cold Forge) | achievements | done |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | done |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | done |
 | 69 | Remove the Twinstar Sigil from the shop (decided); that release resets progress (epoch 5) | shop | done |
@@ -43,7 +43,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | done |
 | 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | done |
 | 87 | Wayland's Wings also gives movement speed (about +10%) | character | done |
-| 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | M |
+| 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | done |
 | 89 | The Archmage's passive card: "Avoids death once per run." | text | done |
 | 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | S |
 | 91 | Backdraft: two flames on different enemies; Fire Fan reworked into a wide sweeping arc (decided) | spell | M |
@@ -63,6 +63,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 **The next release resets progress again (epoch 5)** - Eric, 2026-11-10, choosing a reset over a refund when the Twinstar Sigil is removed (item 69).
 
 **Built 2026-11-10, second batch, on `main-ff86ni`, not released** (cd074d7c, ef9a8fb3, d713c382, 434858e1, ef5d4b12, 925d41e1, 5593144c): 65 first half (downloads named `TheLastWizardSurvivors-*`, the program keeps `TheOneHeMissed`), 69 (Twinstar Sigil removed), 71 (three Powers sections, cards spread evenly; 8 pages on the Pixel 9, 11 on desktop), 76a (Aegis Ward's text), 81 (Buckler Boss: a 4-point shield every 25 s, keeps +15% defense while a shield holds), 84 (the vault deeds name their secret), 86 (the phone's stage card grows up and scrolls; Start always on screen), 89, 93 (Aegis icon redrawn; ring 64 px across, thinner, quieter; dome 52 -> 44; Reforged 6 shards at 0.8), 95 (every boss passes its owner; corpses drop their warnings), 96, 98 (+10 Arcane Energy card beside Marginalia), 99 (Elderbark: slam 210 -> 280 with a 1.3 s tell, roots 66 -> 120), 100, 101 (Pinfold guards leashed to posts by the gate, blue glow and seal mark, the latch lights). Build 0 errors, validator clean, boss probe and function probe pass, release dry run names all eight downloads. **Not played yet.** **Before the next release:** ecec.dev's download page takes the program name and the Linux folder from the download's file name (its `data-base` spans), so it would say TheLastWizardSurvivors.exe - **fixed and live 2026-11-10** (eclancy/EricClancyEngineeringAndCrafts#55: the program's name is written in the page, no longer read from the file names). That release resets progress (epoch 5, item 69).
+
+**Built 2026-11-10, third batch, on `main-ff86ni`, not released:** 66's five reward fixes and the Quarry boon (ab544d52); 88, the town attack from inside the town (d52799a1); 65's second half, the program renamed `TheLastWizardSurvivors.exe` from 0.24 with every installed copy still updating (merge 867fbe96, tested from a real 0.23.0 copy; existing installs keep `TheOneHeMissed.exe` until the setup is run over them); and a latent validator race fixed (1a82089c: `ValidateSpellData` discarded each loaded spell, the `gchandle.is_released()` crash the tide's timing exposed). The site's PR 55 was reverted (PR 56, live): program and downloads share a name again from 0.24. Open: the Quarry adds about 1% damage in a swarm (strong only on elites and bosses) and may want a stronger rule and a thing's name (Hare's Foot).
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
