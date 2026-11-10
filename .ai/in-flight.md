@@ -27,6 +27,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
 | 70 | The chapter note covers the wizard at a run's start on a phone: condense, move clear, shorter | UI | S-M |
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
+| 72 | The "Dandelion Grove" (flower pen) is far too common: the Forest only, one or two a run | world gen | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -996,7 +997,8 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     **Built 2026-11-07 (`feat/baba-yaga-hut`):** the hut asks, with item 3's herded-yard puzzle -
     solid (a feet box on the blocking layer), four-sided (front and side walk cycles, facing from
     its heading), and it falls facing the camera as the kneel frames always did.
-    Still open here: the dandelion secret and the Grove's spread.
+    Still open here: the Grove's spread - now item 72 (the "dandelion" is the flower pen's moonflower, and its
+    secret was built as the Fenced Bloom).
 60. **Audio** (Eric, 2026-11-06): the shield-break noise is annoying - deeper, like cracking glass
     (`tools/audio/sfx.py`); battle music per chapter still reads to Eric as the menu's music - check
     what section 3a item 7's per-chapter stems actually play in a run.
@@ -1147,6 +1149,19 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     shop), so keep it the first card, not its own page. A likely shape: **Spell book + Power** (7), **Survival +
     Fortune** (8), **Level-ups + Boons** - three pages - if a page holds that many cards at the phone's width; check
     both canvases with `_UiShot` and the pad's focus order across the merged pages (`MenuNavigator`).
+72. **The "Dandelion Grove" is still much too common in the Forest** (Eric, 2026-11-09; first raised in item 59,
+    2026-11-06/07: *"too common - why is it in more than one map?"*). It is the **flower pen** - the one landmark kind
+    (`Landmark.cs`, `FlowerPenLayout`, art in `tools/art/ground_detail.py`): a fenced garden, 20 x 14 cells, round one
+    pale moonflower, which since then carries the Forest's Fenced Bloom secret (walk a lap, `FencedBloom.cs`,
+    `SecretCatalog.EnchantedForest`). Why it is everywhere (`Node2DGame.cs` 2663-2735): every 1536 px chunk rolls
+    `LandmarkChance = 0.25`, and `LandmarkAttempts` went from 8 to 24 on 2026-10-28 when the pen grew, so nearly every
+    chunk that rolls now places one - about one chunk in four, several a run, against the comment's "rare enough to be
+    a find". And `HasLandmarks` is on for five chapters (`StageEnvironmentCatalog`: the Forest, the Swamp, the Ruins,
+    the Cave, the Fallow Fields), though the secret is hooked only in the Forest, so in the other four it is an empty
+    pen. To do: the Forest only (the other four off, or their own landmark later), and one or two a run - a far lower
+    chance with a minimum spacing between pens, or one pen at a seeded anchor ring as `.ai/stage-secrets.md` places
+    secrets. Keep at least one reachable: the First Tree's dead clearing waits for the moonflower's seed. Check with
+    `_ExploreProbe` on the Forest that the secret still opens, and that `ValidateSecrets` / the decor margins hold.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
