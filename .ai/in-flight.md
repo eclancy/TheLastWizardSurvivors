@@ -49,6 +49,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 91 | Cinderbreath's Backdraft: two flames on different enemies and directions, damage rebalanced (Fire Fan overlap) | spell | S-M |
 | 92 | The level-up Codex button sits off the heading's line (raised before, item 55) | UI | S |
 | 93 | Aegis Ward: a more detailed icon, and a less heavy-handed animation at its new size | art + VFX | S-M |
+| 94 | Ink Ring becomes Ma Liang's starting spell; The Painted Door moves onto it | character | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1245,6 +1246,18 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     shards, the reflect's shaft; pixel-art pass e5e07bee) reads as heavy-handed at its new size - make its motion
     lighter and more legible: a quieter idle, a brief clean flash on a hit, a clear break. Ask Eric what "obtuse"
     points at first if a shot of it does not make it obvious. Edit the generators, never the PNGs.
+94. **Ink Ring becomes Ma Liang's starting spell** (Eric, 2026-11-10: *"would it make sense for ink ring to be his
+    starting spell instead?"* - then *"Yes, add it"*; asked after he earned Ink Ring without Ma Liang freed, since it
+    was nobody's opener). His brush, walked: drawing a line that becomes real is his legend, and it makes the
+    watercolour ink his signature. What moves: `CharacterData_MaLiang.tres` `StartingSpellResource` to Ink Ring (his
+    card no longer reads "Familiar - Crow"); **his Apotheosis, The Painted Door, moves from the crow Familiar to Ink
+    Ring and keeps its verb (*displace*)** - closing a ring paints a door and sends everything inside it away
+    (`ApotheosisCatalog` ~381-393; `ValidateApotheosisCatalog`'s one-verb and element rules; Ink Ring is Water +
+    Darkness); Ink Ring's deed becomes his under item 84 (Cormorant, done as Ma Liang, sealed until he is freed) and
+    the Familiar leaves item 84's exceptions list for good (it comes only from the Pinfold). The ink crow stays his
+    look whenever he takes the Familiar later. Check Ink Ring carries an opening alone - it asks the player to walk
+    loops; measure with `_BalanceHarness --character=<Ma Liang> --circle` and nudge its level-1 numbers if he cannot
+    hold the first minutes. Update `.ai/character-fit.md` (row 21, and the Ma Liang lines) with the decision.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
