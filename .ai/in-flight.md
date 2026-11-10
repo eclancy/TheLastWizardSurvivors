@@ -52,7 +52,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 94 | Ink Ring becomes Ma Liang's starting spell; The Painted Door moves onto it | character | M |
 | 95 | An enemy's attack circles (and their hits) vanish the moment it dies | bug | S |
 | 96 | The Scythe set's card: "...kills it outright (except bosses)." in place of "...kills it outright. Not bosses." (`ChestItemCatalog.cs` 413; Eric, 2026-11-10) | text | trivial |
-| 54 | "Attunement" on the level-4/8 cards is confusing (Eric asked again 2026-11-10, "what does attune mean?"): say "stays pure Fire" / "becomes Fire + Ice: +12% cooldown" instead, or rethink it | text | S |
+| 97 | Remove attunement altogether - its damage bonus for pure spells, its cooldown price, every word of it (decided; rebalance in 77) | mechanic | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1271,6 +1271,21 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     painted through the death animation - cancel it in `Enemy.StartDeath` (`GroundSlamAttack.Cancel`) so it goes on the
     same frame the body stops being targetable. Check every telegraphed enemy (`ValidateAttackPatternEnemies` lists
     them) and every boss's phase hits.
+97. **Remove attunement altogether** (Eric, 2026-11-10: *"remove 'attunement' altogether, and all references to it. we
+    will rebalance around that later."*, after asking what it meant; supersedes the attunement wording in item 54). It
+    is three things, about 106 references in `scripts/` (SpellEvolutionCatalog 49, Player 23, Node2DGame 14, LevelUpMenu
+    6, RegressionChecks 3, MainMenu.Shop 3, and single ones elsewhere) and eight docs (`gameplay-design.md`,
+    `level-up-screen.md`, `combo-spells.md`, `conjunction-progression.md`, `protagonist.md`, `endless-mode.md`,
+    `achievements-and-secrets.md`): (1) the damage bonus - a pure one-element spell deals x1.20 / x1.45 / x1.80 at its
+    element's tier 2 / 4 / 6 (`Player.AttunementTier*Multiplier`, `GetAttunementMultiplier`, `GetAttunedElement`, in
+    the damage product ~2178); (2) the cooldown price on a level-4/8 branch that adds a second element
+    (`SpellEvolutionCatalog.AttunementGainCooldownCost` 1.12, every `CooldownMultiplier = AttunementGainCooldownCost`);
+    (3) the words - "stays attuned" / "attunement lost" on the level-up cards, the pause screen's line
+    (`Node2DGame.DescribeAttunement`), "Attuned" in the shop's codex rows, the element popover. Remove all three and
+    their validators' rules; the element tiers' own bonuses stay. **Balance warning:** pure-element builds lose up to
+    80% of their damage at tier 6 and hybrid branches get 12% faster, so runs will shift until the balance pass
+    (item 77) - Eric knows ("we will rebalance around that later"). Measure a pure and a hybrid build with
+    `_BalanceHarness` before and after so the pass starts from numbers. Element tags themselves are unchanged.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
