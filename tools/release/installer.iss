@@ -4,7 +4,7 @@
 ;
 ; Packs the export in build\windows\ into build\release\TheLastWizardSurvivors-Setup.exe.
 ;
-; Per-user, no admin prompt: it installs to %LOCALAPPDATA%\Programs\TheOneHeMissed, which the
+; Per-user, no admin prompt: it installs to %LOCALAPPDATA%\Programs\TheLastWizardSurvivors, which the
 ; player can write to - and must, because the game updates itself by robocopying new files into
 ; its own folder (scripts/UpdateScreen.cs). Program Files would leave it stuck on its version.
 ; See .ai/releasing.md.
@@ -18,8 +18,8 @@
 ; in place instead of installing a second copy. It is why the rename needed nothing more here than
 ; the [InstallDelete] below: a copy installed as Wizard Survivors is this program.
 AppId={{B8EAA8FA-C3BC-4790-ACE3-438B4BC1F103}
-; The name a player reads (2026-11-08, .ai/game-name.md). Every file and folder name below keeps
-; TheOneHeMissed: those are what an installed copy's updater looks for (.ai/releasing.md, "The rename").
+; The name a player reads (2026-11-08, .ai/game-name.md). The program and the folder say it without
+; the colon, TheLastWizardSurvivors, since 0.24.0 (.ai/releasing.md, "The third rename").
 AppName=The Last Wizard: Survivors
 AppVersion={#AppVersion}
 ; Apps & features shows the name alone; the version has its own column there.
@@ -30,16 +30,17 @@ AppPublisherURL=https://ecec.dev/games/the-last-wizard-survivors
 SourceDir=..\..
 PrivilegesRequired=lowest
 ; A new install. An upgrade keeps the folder it already has (UsePreviousAppDir) - for a copy installed
-; before the rename, ...\Programs\WizardSurvivors, which nothing needs to move.
-DefaultDirName={localappdata}\Programs\TheOneHeMissed
+; before 0.24.0, ...\Programs\TheOneHeMissed, and before the first rename ...\Programs\WizardSurvivors,
+; neither of which anything needs to move: the updater writes into whatever folder the program is in.
+DefaultDirName={localappdata}\Programs\TheLastWizardSurvivors
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 UsePreviousAppDir=yes
 WizardStyle=modern
 SetupIconFile=icon.ico
-UninstallDisplayIcon={app}\TheOneHeMissed.exe
+UninstallDisplayIcon={app}\TheLastWizardSurvivors.exe
 OutputDir=build\release
-; The download's name (in-flight 65), package.py's DOWNLOAD; the program it installs is still TheOneHeMissed.exe.
+; The download's name (in-flight 65), package.py's DOWNLOAD.
 OutputBaseFilename=TheLastWizardSurvivors-Setup
 Compression=lzma2/max
 SolidCompression=yes
@@ -68,6 +69,18 @@ Type: files; Name: "{autodesktop}\Wizard Survivors.lnk"
 ; because Inno remembers the desktopicon task the player chose last time.
 Type: files; Name: "{autoprograms}\The One He Missed.lnk"
 Type: files; Name: "{autodesktop}\The One He Missed.lnk"
+; KEPT ON PURPOSE, the second name's program: from 0.12.0 to 0.23.x the program was TheOneHeMissed.exe,
+; and an install keeps that name when it updates itself (UpdateScreen installs every update under the
+; running program's name). Installing this setup over it finishes the move to TheLastWizardSurvivors.exe.
+; NOT its .NET folder: data_TheOneHeMissed_windows_x86_64 is named for the C# assembly, which kept the
+; name, and is the live one - [Files] below writes into it.
+Type: files; Name: "{app}\TheOneHeMissed.exe"
+Type: files; Name: "{app}\TheOneHeMissed.pck"
+; The shortcuts of the current name, which until 0.24.0 named TheOneHeMissed.exe. [Icons] makes them
+; again pointing at the new program; deleted first so one the player does not choose this time (an
+; unticked desktop icon) is not left behind pointing at the program just deleted.
+Type: files; Name: "{autoprograms}\The Last Wizard - Survivors.lnk"
+Type: files; Name: "{autodesktop}\The Last Wizard - Survivors.lnk"
 
 [Files]
 ; The export only. "How to play.txt" is written into the zip by package.py, never into
@@ -77,11 +90,11 @@ Source: "build\windows\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubd
 [Icons]
 ; A shortcut is a file, and Windows forbids ":" in a file name, so the shortcuts say " - " where the
 ; name has its colon.
-Name: "{autoprograms}\The Last Wizard - Survivors"; Filename: "{app}\TheOneHeMissed.exe"
-Name: "{autodesktop}\The Last Wizard - Survivors"; Filename: "{app}\TheOneHeMissed.exe"; Tasks: desktopicon
+Name: "{autoprograms}\The Last Wizard - Survivors"; Filename: "{app}\TheLastWizardSurvivors.exe"
+Name: "{autodesktop}\The Last Wizard - Survivors"; Filename: "{app}\TheLastWizardSurvivors.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\TheOneHeMissed.exe"; Description: "Play The Last Wizard: Survivors now"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\TheLastWizardSurvivors.exe"; Description: "Play The Last Wizard: Survivors now"; Flags: postinstall nowait skipifsilent
 
 [UninstallDelete]
 ; The whole folder, including files the self-updater added. The save lives in

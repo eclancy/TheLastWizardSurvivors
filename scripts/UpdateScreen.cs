@@ -63,10 +63,13 @@ public partial class UpdateScreen : Control
 		ProjectSettings.GetSetting("application/config/version", "0.0.0").AsString();
 
 	/// <summary>
-	/// The running program's name without its extension - TheOneHeMissed for TheOneHeMissed.exe or
-	/// TheOneHeMissed.x86_64. Godot loads the .pck of this name from beside the program, so an update is
-	/// installed under it whatever the release calls its files. That is what keeps a copy installed before
-	/// the rename (still WizardSurvivors.exe, which every shortcut to it names) updating.
+	/// The running program's name without its extension - TheLastWizardSurvivors for
+	/// TheLastWizardSurvivors.exe or .x86_64, as a release has called it since 0.24.0. Godot loads the .pck
+	/// of this name from beside the program, so an update is installed under it whatever the release calls
+	/// its files. That is what keeps a copy installed under an earlier name updating: TheOneHeMissed.exe
+	/// (0.12.0 to 0.23.x) or WizardSurvivors.exe (before the first rename), which every shortcut to it, the
+	/// installer's and the Linux menu entry included, still names. Running a newer setup or install.sh is
+	/// what moves an install to the new name (.ai/releasing.md, "The third rename").
 	/// </summary>
 	static string ProgramName => Path.GetFileNameWithoutExtension(OS.GetExecutablePath());
 

@@ -368,9 +368,11 @@ session**, the validator run below included.
   the game), the export presets' Windows product name and Android label, the installer, the Linux menu
   entry and the title art. **`config/name` stays "The One He Missed"**: Godot names the desktop save
   folder after it, and Windows forbids the ":" in a folder name. So do the bug report's `game` key, the
-  `TheOneHeMissed` namespace, solution and assembly, the program's own file names (`TheOneHeMissed.exe`, its
-  `.pck`) and the env vars; the downloads are `TheLastWizardSurvivors-*` since 2026-11-10 (`package.py`
-  `DOWNLOAD`, in-flight 65). New text that
+  `TheOneHeMissed` namespace, solution and assembly (so the .NET folder stays `data_TheOneHeMissed_*`) and the
+  env vars. The downloads are `TheLastWizardSurvivors-*` and the program `TheLastWizardSurvivors.exe` /
+  `.x86_64` / `.pck` from 0.24.0 (`package.py` `DOWNLOAD` and `NAME`, in-flight 65); **an install made before
+  then keeps running `TheOneHeMissed.exe`**, because the updater installs under the running program's name, and
+  only a newer setup or `install.sh` moves it (`.ai/releasing.md`, "The third rename"). New text that
   names the game reads `DisplayProfile.GameTitle`, never a literal. **The repo and the website moved the
   same day**: `eclancy/TheLastWizardSurvivors` (GitHub redirects both old slugs) and
   `ecec.dev/the-last-wizard-survivors/`; the old `version.json` and `download` addresses answer forever, and
