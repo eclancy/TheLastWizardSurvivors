@@ -2995,29 +2995,38 @@ public static class SpellEvolutionCatalog
 
 	// Cinderbreath (scripts/Flamethrower.cs, FlamePuff.cs): a held jet of thrown tongues of flame. Area
 	// is how WIDE each tongue burns - never how far, or the jet would outrange a bolt - and it reached
-	// nothing before. Speed is how fast tongues leave the nozzle. Projectiles are tongues per throw.
-	// Pierce means nothing to a tongue that already burns everything it touches, so Infinite Horizon's
-	// projectiles and pierce are two more tongues a throw together: three at once, tripling the jet.
-	// Its cooldown is the recharge between burns. Amplified Impact and Titan Cataclysm are the
-	// Pyromancer's Apotheosis path.
+	// nothing before. Speed is how fast tongues leave the nozzle. Projectiles are jets: each is its own
+	// flame on its own enemy (Flamethrower.AimOtherJet). Pierce means nothing to a tongue that already
+	// burns everything it touches. Its cooldown is the recharge between burns. Amplified Impact and Titan
+	// Cataclysm are the Pyromancer's Apotheosis path.
 	//
 	// EVERY CARD ITS OWN (.ai/spell-roster.md section 2e, built 2026-10-29). Each card's name and first
-	// line are what the jet does differently where you can see it - a burst at the tip, embers left on
-	// the ground, a longer breath and a wall of fire, three jets - and its numbers ride along. The ids,
-	// the element gains and the tints stay the archetype's (Branch), so the Pyromancer's Apotheosis path
-	// (Backdraft, then Dragon's Breath) and every save carry over; only the name is set here, after
-	// Branch, which is why each block below writes DisplayName itself. The behaviour and its numbers
-	// are Flamethrower's (BackdraftId, EmberWakeId, DragonsBreathId) and CinderGround's.
+	// line are what the jet does differently where you can see it - a second flame, embers left on the
+	// ground, a longer breath and a wall of fire, one broad flame sweeping - and its numbers ride along.
+	// The ids, the element gains and the tints stay the archetype's (Branch), so the Pyromancer's
+	// Apotheosis path (Backdraft, then Dragon's Breath) and every save carry over; only the name is set
+	// here, after Branch, which is why each block below writes DisplayName itself. The behaviour and its
+	// numbers are Flamethrower's (BackdraftId, EmberWakeId, DragonsBreathId, FireFanId) and CinderGround's.
+	//
+	// BACKDRAFT AND FIRE FAN, 2026-11-10 (in-flight 91). Backdraft was one jet whose far end burst for 3x
+	// as each breath ended, +35%; it is two flames (Eric: "they should never face the same direction /
+	// target the same enemy - we want to feel like there are two different flames around him"), the
+	// second on an enemy of its own at least a right angle from the first, each at BackdraftShare. Fire Fan
+	// was three jets each on its own enemy, which would have read as Backdraft's second flame and a third;
+	// it is one broad flame swept back and forth across a wide arc in front of him (Eric's decision), and
+	// with Backdraft both flames sweep. Sized against their siblings with _BalanceHarness --spell=cinderbreath
+	// --solo (.ai/spell-roster.md, the Cinderbreath table).
+	private const float BackdraftShare = 0.6f;
+	private const float FireFanDamage = 2.4f;
+	private const float FireFanWidth = 1.5f;
+	private const float FireFanRecharge = 0.5f;
+
 	private static void SetupCinderbreathEvolutions(SpellData spell)
 	{
-		const int extraTongues = 2;
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.AmplifiedImpact,
-			// Said in the player's words (Eric, 2026-11-04: "Backdraft description is confusing"): it was "As each burn
-			// ends, its fire rolls back into a burst at the tip for 3x a tongue" - "burn" and "tongue" are the code's
-			// names for a breath and one flame of it.
-			$"When each breath of fire ends, the far end of the flame explodes for {Flamethrower.BackdraftDamageShare:0}x its damage. +35% damage.",
-			"Power / Burst", "The jet's far end is where the pack is caught - and blown apart.",
-			o => { o.DisplayName = "Backdraft"; o.VisualTag = "Backdraft"; o.DamageMultiplier = 1.35f; }));
+			$"A second flame, turned on an enemy of its own and never the way the first faces. Each flame deals {BackdraftShare * 100f:0}% damage.",
+			"Twin / Flames", "Two fires round you: what comes at your back burns as well.",
+			o => { o.DisplayName = "Backdraft"; o.VisualTag = "Backdraft"; o.DamageMultiplier = BackdraftShare; o.ProjectileCountBonus = 1; }));
 		spell.Level4Options.Add(Branch(spell, DefaultBranch.HyperAcceleration,
 			$"The jet leaves embers: the cone it swept burns for {Flamethrower.EmberSeconds:0}s. Tongues thrown 25% faster.",
 			"Ground / Burn", "Sweep the jet across their path, and the ground they cross is on fire.",
@@ -3027,14 +3036,11 @@ public static class SpellEvolutionCatalog
 			$"A dragon's breath, {(Flamethrower.DragonReach - 1f) * 100f:0}% longer and twice as wide, raising a wall of fire where each burn ends. +80% damage.",
 			"Ascension / Breath", "Ascension: a breath that holds the line, and a wall the pack has to walk through to reach you.",
 			o => { o.DisplayName = "Dragon's Breath"; o.VisualTag = "DragonsBreath"; o.DamageMultiplier = 1.8f; o.AreaMultiplier = 2.0f; }));
-		// x1.9 damage: the extra casts land where the first ones are already working (caps, spacing,
-		// a knot already held), so it adds damage: x2.41 of the spell at level 7 with it (2026-10-26, --enemy-hp=10).
-		// The three jets each turned on their own enemy are Eric's (2026-10-28, Flamethrower.SpreadAims):
-		// the proposal's Fire Fan, which is its name now.
 		spell.Level8Options.Add(Branch(spell, DefaultBranch.InfiniteHorizon,
-			$"It breathes {1 + extraTongues} jets at once, each on its own enemy. -50% recharge, every hit +90% damage.",
-			"Ascension / Fan", "Ascension: fire every way at once.",
-			o => { o.DisplayName = "Fire Fan"; o.VisualTag = "FireFan"; o.DamageMultiplier = 1.9f; o.CooldownMultiplier = 0.5f; o.ProjectileCountBonus = extraTongues; }));
+			$"One broad flame sweeps back and forth across a wide arc in front of you. Flames {(FireFanWidth - 1f) * 100f:0}% wider, "
+				+ $"{(1f - FireFanRecharge) * 100f:0}% faster recharge, +{(FireFanDamage - 1f) * 100f:0}% damage.",
+			"Ascension / Sweep", "Ascension: one flame that rakes the whole front of the pack.",
+			o => { o.DisplayName = "Fire Fan"; o.VisualTag = "FireFan"; o.DamageMultiplier = FireFanDamage; o.AreaMultiplier = FireFanWidth; o.CooldownMultiplier = FireFanRecharge; }));
 	}
 
 	// Mirefoot (scripts/TrailWeaver.cs, LingeringZone.cs, MireSurface.cs): bog pools laid behind you as you

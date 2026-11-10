@@ -369,7 +369,7 @@ public static class EvolutionStatReaders
 			SpellEffect.CritChance, SpellEffect.Pierce, SpellEffect.CritDamage),
 		["cinderbreath"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider,
-			"Flamethrower.RefreshComputedStats and FlamePuff (area is the width of a tongue, never its reach; Backdraft, Ember Wake and Dragon's Breath's reach and wall by id, through CinderGround)",
+			"Flamethrower.RefreshComputedStats and FlamePuff (area is the width of a tongue, never its reach; Projectiles are jets, each on its own enemy - Backdraft's second flame; Ember Wake's embers and Dragon's Breath's reach and wall by id, through CinderGround; Fire Fan's sweep by id)",
 			SpellEffect.AreaSize, SpellEffect.ZoneDuration, SpellEffect.CritDamage),
 		// The combinations (ComboCatalog). Terminal - no level-ups and no milestones of their own - so no card
 		// reaches them; the row says what the script reads of the spell itself and of the frozen parents it

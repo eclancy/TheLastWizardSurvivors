@@ -907,9 +907,9 @@ part of this pass.
 | The tongue (`FlamePuff`) | **Failed.** A five-frame strip (`tools/art/spell_flames.py`, generated and clean as a sheet) that the engine turned to the tongue's heading and scaled by the jet's width: at any heading but four its art pixels came out rotated and sheared, and at a width of 1.15 or 1.75 uneven - the smear `spirit_weapons.py` draws every heading to avoid |
 | The char under Ember Wake's embers, Dragon's Breath's wall and Backdraft's blaze (`CinderGround`) | **Failed.** Squashed translucent `DrawCircle`s and 30-50%-alpha `DrawLine`s as wide as the wall - a dark wash that doubled wherever two overlapped, as embers along a cone do |
 | The flames standing in the embers, the wall and the backdraft | **Passed.** `CraterFire`'s sheet (`crater_fire.py`, Meteor Swarm's - the bar), snapped to the grid; Hellbreath repaints it through `ElementRampMaterial` |
-| Backdraft's burst | **Passed** (`ImpactDebris`) |
+| Backdraft's burst | **Passed** (`ImpactDebris`). Gone since 2026-11-10: Backdraft is a second flame (in-flight 91), and its burst, blaze and bowl went with it |
 | Cataclysm, the Pyromancer's Apotheosis | **Passed.** `CataclysmField` draws its craters with `crater.gdshader` and `CraterFire` - the bar itself |
-| Fire Fan's three jets | The tongue, as above; the aim (each jet at its own enemy, Eric's of 2026-10-28) is untouched |
+| Fire Fan's three jets | The tongue, as above; the aim (each jet at its own enemy, Eric's of 2026-10-28) is untouched. Since 2026-11-10 (in-flight 91) Fire Fan is one broad flame sweeping an arc and the jet on its own enemy is Backdraft's second flame; neither card's icon (`evolution_icons.py`) was redrawn for it |
 
 **New look** (`scenes/shaders/cinder_tongue.gdshader`). A tongue is one quad drawn by a shader that snaps to
 the world cell before it turns into the tongue's frame, so its pixels are square and upright at any heading

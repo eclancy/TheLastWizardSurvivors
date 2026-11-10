@@ -75,12 +75,23 @@ public partial class Flamethrower : Node2D
 	// One aim per tongue in a throw (2026-10-28: "cinderbreath ascension that spreads 3 tongues should
 	// all target enemies in different directions"). They all went into the one cone at the nearest enemy,
 	// so three tongues were one thicker jet. Now each is its own jet: the first at the nearest enemy, each
-	// next at the nearest enemy at least a cone's width away in bearing from every jet already aimed, and
-	// any jet left without one fanned evenly round from the first. A single tongue aims as it always did.
+	// other at the nearest enemy that is not another jet's and lies at least JetSeparationDegrees from
+	// every other jet's bearing, and a jet with none is fanned evenly round from the first - opposite it,
+	// for two. A single tongue aims as it always did. Since 2026-11-10 the second jet is Backdraft's (it
+	// was Fire Fan's three).
 	private readonly float[] aims = new float[MaxTonguesPerThrow];
 	private readonly Node2D[] aimTargets = new Node2D[MaxTonguesPerThrow];
+	// Each jet re-aims on its own clock (Eric, 2026-11-10: "they should never face the same direction /
+	// target the same enemy - we want to feel like there are two different flames around him"), the
+	// clocks staggered a share of AimRefreshSeconds apart, so the two never swing together; and the
+	// moment the first jet's swing brings it within JetSeparationDegrees of another, that one re-aims at
+	// once rather than waiting its beat. The jets can never line up.
+	private readonly float[] jetAimSeconds = new float[MaxTonguesPerThrow];
 	// How far a second jet will look for its own enemy: a little past the jet's reach.
 	private const float SpreadSearchRangeFactor = 2.2f;
+	// How far apart two jets always point: a right angle, so two flames read as two (the cone itself is
+	// 55 degrees, and two cones one cone apart read as one fat jet).
+	public const float JetSeparationDegrees = 90f;
 
 	// EVERY CARD ITS OWN (.ai/spell-roster.md section 2e, 2026-10-29: "yes lets make all mutations more
 	// unique per spell"). Each milestone changes what the jet DOES where you can see it; the numbers ride
@@ -88,10 +99,12 @@ public partial class Flamethrower : Node2D
 	// Dragon's Breath) and every save's choices carry over; the cards in SpellEvolutionCatalog say what
 	// each does with these numbers, which are read from here and from nowhere else.
 	//
-	// Backdraft: as a burn goes out, the fire rolls back into a burst at the tip of every jet.
+	// Backdraft: two flames (Eric, 2026-11-10: "update cinderbreath's 'backdraft' so it produces two flames"),
+	// the second on an enemy of its own at least JetSeparationDegrees from the first. The jet count is the
+	// card's ProjectileCountBonus and the share each flame burns at its DamageMultiplier (SpellEvolutionCatalog);
+	// this id is named so the card and the Apotheosis path point at one place. It was one jet whose far end
+	// burst for 3x as each burn went out (CinderGround's burst went with it).
 	public const string BackdraftId = "cinderbreath_amplified_impact";
-	public const float BackdraftRadius = 58f;
-	public const float BackdraftDamageShare = 3f;
 	// Ember Wake: every second tongue drops an ember where it goes out, across the swept cone.
 	public const string EmberWakeId = "cinderbreath_hyper_acceleration";
 	public const int EmberEvery = 2;
@@ -109,20 +122,27 @@ public partial class Flamethrower : Node2D
 	// The wall's half-length as a share of the reach: the cone's own chord where the wall stands.
 	private const float WallHalfLengthShare = 0.4f;
 	private const float WallAtShare = 0.85f;
-	// Fire Fan: three jets, each turned on its own enemy (SpreadAims). Read through the count; named here
-	// so the card and the hook point at one id.
+	// Fire Fan: ONE broad flame swept back and forth across a wide arc in front of him (Eric, 2026-11-10:
+	// reworked "so it never reads as Backdraft's second flame"; it was three jets, each on its own enemy).
+	// Every jet sweeps - FanSweepHalfDegrees either side of its own aim, there and back once every
+	// FanSweepSeconds - and its tongues scatter over FanScatterShare of the cone rather than all of it, so
+	// what the eye follows is one flame moving, not a wider wedge. All jets sweep on the one clock, so
+	// Backdraft's two keep their right angle. Its breadth is the card's AreaMultiplier (a tongue's width).
 	public const string FireFanId = "cinderbreath_infinite_horizon";
+	public const float FanSweepHalfDegrees = 60f;
+	public const float FanSweepSeconds = 1.3f;
+	public const float FanScatterShare = 0.4f;
 
-	private bool backdraft;
 	private bool emberWake;
 	private bool dragonsBreath;
+	private bool fireFan;
+	private float sweepSeconds;
 	private int tongueCounter;
 	private CinderGround cinderGround;
 
 	private bool burning = false;
 	private float stateSeconds = 0f;
 	private float emitSeconds = 0f;
-	private float aimSeconds = 0f;
 
 	private readonly RandomNumberGenerator rng = new();
 
@@ -136,6 +156,7 @@ public partial class Flamethrower : Node2D
 		burning = true;
 		stateSeconds = 0f;
 		emitSeconds = EmitInterval;
+		StaggerAimClocks();
 		PlayIgnitionCue();
 	}
 
@@ -175,15 +196,23 @@ public partial class Flamethrower : Node2D
 			* (1f + SpellData.GetEffectValueAtLevel(SpellEffect.AreaSize, CurrentLevel)));
 		burnSeconds = BurnSeconds + SpellData.GetEffectValueAtLevel(SpellEffect.ZoneDuration, CurrentLevel);
 		throwRate = MathF.Max(0.25f, SpellData.GetSpeedMultiplier());
+		int jetsBefore = tonguesPerThrow;
 		tonguesPerThrow = Math.Clamp(SpellData.GetProjectileCountAtLevel(CurrentLevel), 1, MaxTonguesPerThrow);
+		// A jet gained mid-burn (Backdraft taken while the jet is lit) is aimed now, not left pointing
+		// east until its own clock comes round.
+		if (tonguesPerThrow != jetsBefore && IsInsideTree())
+		{
+			RefreshAim();
+			StaggerAimClocks();
+		}
 
 		// Kept current here because the emitter outlives the level 4 pick that branches it: the fire
 		// loop refreshes it every cooldown.
 		pathMaterial = SpellData.GetBranchElement() is Element branch ? ElementRampMaterial.For(branch) : null;
 
-		backdraft = SpellData.HasEvolution(BackdraftId);
 		emberWake = SpellData.HasEvolution(EmberWakeId);
 		dragonsBreath = SpellData.HasEvolution(DragonsBreathId);
+		fireFan = SpellData.HasEvolution(FireFanId);
 		if (dragonsBreath)
 			range *= DragonReach;
 		if (cinderGround != null && IsInstanceValid(cinderGround))
@@ -211,31 +240,22 @@ public partial class Flamethrower : Node2D
 		cinderGround = null;
 	}
 
-	// The moment a burn goes out: Backdraft's burst and Dragon's Breath's wall, at the tip of every jet.
+	// The moment a burn goes out: Dragon's Breath's wall, at the tip of every jet, across the way that jet
+	// is pointing as it goes out (a Fire Fan's sweep included).
 	private void BurnOut()
 	{
-		if (!backdraft && !dragonsBreath)
+		if (!dragonsBreath)
 			return;
 		CinderGround ground = EnsureGround();
 		if (ground == null)
 			return;
-		int jets = tonguesPerThrow > 1 ? tonguesPerThrow : 1;
-		for (int t = 0; t < jets; t++)
+		for (int t = 0; t < tonguesPerThrow; t++)
 		{
-			Vector2 dir = Vector2.FromAngle(tonguesPerThrow > 1 ? aims[t] : Rotation);
-			if (backdraft)
-			{
-				float radius = BackdraftRadius * tongueWidth * AreaMultiplier;
-				ground.Backdraft(GlobalPosition + dir * range * 0.9f, radius,
-					Math.Max(1, Mathf.RoundToInt(damagePerPuff * BackdraftDamageShare)));
-			}
-			if (dragonsBreath)
-			{
-				Vector2 centre = GlobalPosition + dir * range * WallAtShare;
-				Vector2 half = dir.Orthogonal() * range * WallHalfLengthShare;
-				ground.RaiseWall(centre - half, centre + half, WallHalfThickness * MathF.Sqrt(tongueWidth * AreaMultiplier),
-					WallSeconds, Math.Max(1, Mathf.RoundToInt(damagePerPuff * WallDamageShare)));
-			}
+			Vector2 dir = Vector2.FromAngle(JetAim(t));
+			Vector2 centre = GlobalPosition + dir * range * WallAtShare;
+			Vector2 half = dir.Orthogonal() * range * WallHalfLengthShare;
+			ground.RaiseWall(centre - half, centre + half, WallHalfThickness * MathF.Sqrt(tongueWidth * AreaMultiplier),
+				WallSeconds, Math.Max(1, Mathf.RoundToInt(damagePerPuff * WallDamageShare)));
 		}
 	}
 
@@ -254,24 +274,40 @@ public partial class Flamethrower : Node2D
 				// the player sees is fire and not a pause.
 				emitSeconds = EmitInterval;
 				RefreshAim();
+				StaggerAimClocks();
 				PlayIgnitionCue();
 			}
 			return;
 		}
 
-		aimSeconds += dt;
-		if (aimSeconds >= AimRefreshSeconds)
+		for (int t = 0; t < tonguesPerThrow; t++)
 		{
-			aimSeconds = 0f;
-			RefreshAim();
+			jetAimSeconds[t] += dt;
+			if (jetAimSeconds[t] < AimRefreshSeconds)
+				continue;
+			jetAimSeconds[t] = 0f;
+			if (t == 0)
+			{
+				AimFirstJet();
+				KeepJetsApart();
+			}
+			else
+			{
+				AimOtherJet(t, tonguesPerThrow);
+			}
 		}
+
+		// The sweep's clock runs only while the jet is lit, so each burn takes up the sweep where the last
+		// left it rather than snapping back to the middle.
+		if (fireFan)
+			sweepSeconds += dt;
 
 		emitSeconds += dt;
 		if (emitSeconds >= EmitInterval / throwRate)
 		{
 			emitSeconds = 0f;
 			for (int t = 0; t < tonguesPerThrow; t++)
-				ThrowOnePuff(tonguesPerThrow > 1 ? aims[t] : Rotation);
+				ThrowOnePuff(JetAim(t));
 		}
 
 		if (stateSeconds >= burnSeconds)
@@ -282,7 +318,34 @@ public partial class Flamethrower : Node2D
 		}
 	}
 
+	// Where jet t is pointing now: its aim, swung by the Fire Fan's sweep. The sweep is one sine on one
+	// clock for every jet, so two jets swing together and stay their right angle apart.
+	private float JetAim(int t)
+	{
+		float aim = aims[t];
+		if (fireFan)
+			aim += Mathf.DegToRad(FanSweepHalfDegrees) * MathF.Sin(Mathf.Tau * sweepSeconds / FanSweepSeconds);
+		return aim;
+	}
+
+	// Each jet's next re-aim a share of AimRefreshSeconds after the one before it, so two jets never
+	// swing on the same frame.
+	private void StaggerAimClocks()
+	{
+		for (int t = 0; t < MaxTonguesPerThrow; t++)
+			jetAimSeconds[t] = tonguesPerThrow > 1 ? AimRefreshSeconds * t / tonguesPerThrow : 0f;
+	}
+
+	// Every jet at once, as a burn lights: the first, then each other against those already aimed.
 	private void RefreshAim()
+	{
+		AimFirstJet();
+		for (int t = 1; t < tonguesPerThrow; t++)
+			AimOtherJet(t, t);
+	}
+
+	// The first jet: the nearest enemy, as the single jet always aimed.
+	private void AimFirstJet()
 	{
 		Node2D nearest = null;
 		float best = float.MaxValue;
@@ -308,47 +371,59 @@ public partial class Flamethrower : Node2D
 			if (toTarget.LengthSquared() > 0.0001f)
 				Rotation = toTarget.Angle();
 		}
-
-		if (tonguesPerThrow > 1)
-			SpreadAims(nearest);
+		aims[0] = Rotation;
+		aimTargets[0] = nearest;
 	}
 
-	// Each further jet takes the nearest enemy whose bearing is at least a cone's width from every jet
-	// already aimed, within SpreadSearchRangeFactor of the reach; one that finds none is fanned evenly
-	// round from the first, so three jets with one enemy about still burn three ways. A pass over the
-	// swarm per jet, ten times a second, into fixed arrays - nothing allocated.
-	private void SpreadAims(Node2D first)
+	// The first jet has just swung: any other it has come within JetSeparationDegrees of, or whose enemy it
+	// has taken, re-aims now rather than on its own beat.
+	private void KeepJetsApart()
 	{
-		aims[0] = Rotation;
-		aimTargets[0] = first;
-		float minSeparation = Mathf.DegToRad(ConeAngleDegrees);
-		float searchSq = range * SpreadSearchRangeFactor * range * SpreadSearchRangeFactor;
+		float minSeparation = Mathf.DegToRad(JetSeparationDegrees);
 		for (int t = 1; t < tonguesPerThrow; t++)
 		{
-			Node2D pick = null;
-			float best = float.MaxValue;
-			float pickAngle = 0f;
-			foreach (Node node in EnemyRegistry.Snapshot)
-			{
-				if (node is not Node2D enemy || !IsInstanceValid(node))
-					continue;
-				Vector2 to = enemy.GlobalPosition - GlobalPosition;
-				float dist = to.LengthSquared();
-				if (dist >= best || dist > searchSq || dist < 0.0001f)
-					continue;
-				float angle = to.Angle();
-				bool apart = true;
-				for (int k = 0; k < t && apart; k++)
-					apart = MathF.Abs(Mathf.AngleDifference(aims[k], angle)) >= minSeparation;
-				if (!apart)
-					continue;
-				best = dist;
-				pick = enemy;
-				pickAngle = angle;
-			}
-			aimTargets[t] = pick;
-			aims[t] = pick != null ? pickAngle : Rotation + Mathf.Tau * t / tonguesPerThrow;
+			bool sameEnemy = aimTargets[t] != null && ReferenceEquals(aimTargets[t], aimTargets[0]);
+			if (sameEnemy || MathF.Abs(Mathf.AngleDifference(aims[0], aims[t])) < minSeparation)
+				AimOtherJet(t, tonguesPerThrow);
 		}
+	}
+
+	// Jet t takes the nearest enemy, within SpreadSearchRangeFactor of the reach, that no other jet is on
+	// and whose bearing is at least JetSeparationDegrees from every other jet below <paramref name="upTo"/>
+	// (those already aimed this pass); with none it is fanned evenly round from the first - opposite it,
+	// for two. A pass over the swarm, into fixed arrays - nothing allocated.
+	private void AimOtherJet(int t, int upTo)
+	{
+		float minSeparation = Mathf.DegToRad(JetSeparationDegrees);
+		float searchSq = range * SpreadSearchRangeFactor * range * SpreadSearchRangeFactor;
+		Node2D pick = null;
+		float best = float.MaxValue;
+		float pickAngle = 0f;
+		foreach (Node node in EnemyRegistry.Snapshot)
+		{
+			if (node is not Node2D enemy || !IsInstanceValid(node))
+				continue;
+			Vector2 to = enemy.GlobalPosition - GlobalPosition;
+			float dist = to.LengthSquared();
+			if (dist >= best || dist > searchSq || dist < 0.0001f)
+				continue;
+			float angle = to.Angle();
+			bool apart = true;
+			for (int k = 0; k < upTo && apart; k++)
+			{
+				if (k == t)
+					continue;
+				apart = !ReferenceEquals(aimTargets[k], enemy)
+					&& MathF.Abs(Mathf.AngleDifference(aims[k], angle)) >= minSeparation;
+			}
+			if (!apart)
+				continue;
+			best = dist;
+			pick = enemy;
+			pickAngle = angle;
+		}
+		aimTargets[t] = pick;
+		aims[t] = pick != null ? pickAngle : aims[0] + Mathf.Tau * t / tonguesPerThrow;
 	}
 
 	private void ThrowOnePuff(float aim)
@@ -360,7 +435,9 @@ public partial class Flamethrower : Node2D
 		if (arena == null)
 			return;
 
-		float halfAngle = Mathf.DegToRad(ConeAngleDegrees * 0.5f);
+		// A Fire Fan's tongues keep close to the sweep (FanScatterShare of the cone), so the eye follows one
+		// flame moving across the arc rather than a wider cone flickering.
+		float halfAngle = Mathf.DegToRad(ConeAngleDegrees * 0.5f) * (fireFan ? FanScatterShare : 1f);
 		float angle = aim + rng.RandfRange(-halfAngle, halfAngle);
 
 		// Speed and lifetime are derived from range together, so the cone's reach is the spell's

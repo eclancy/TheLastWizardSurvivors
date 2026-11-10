@@ -1880,6 +1880,36 @@ Departures: Dragon's Breath reaches 75% farther, not twice as far: at level 8 th
 tongues are twice as wide, not the old three times, since the reach and the wall carry the card now.
 Backdraft and Ember Wake gave up the old +30% width and -30% recharge for their bursts and embers.
 
+**Backdraft and Fire Fan, reworked 2026-11-10 (in-flight 91).** Eric: *"update cinderbreath's 'backdraft' so it
+produces two flames, and balance the damage. they should never face the same direction / target the same enemy -
+we want to feel like there are two different flames around him"*; and Fire Fan, whose three jets would have read as
+Backdraft's second flame and a third, became one broad flame sweeping an arc (his decision). Both rows above are
+history:
+
+| card | now |
+|---|---|
+| Backdraft (level 4, +Fire) | **two flames**: the first on the nearest enemy, the second on the nearest enemy that is not the first's and lies at least a right angle from it (`Flamethrower.JetSeparationDegrees` 90), opposite the first when there is none. Each re-aims on its own clock, staggered half a beat, and the moment the first swings within 90 degrees of the second the second re-aims at once, so they never line up. +1 jet (`ProjectileCountBonus`), each at 60% damage, in place of the burst at the tip (3x) and the +35%; the burst, its blaze and its bowl left `CinderGround` |
+| Fire Fan (Ascension) | **one broad flame swept back and forth** across 60 degrees either side of its aim, there and back every 1.3 s, its tongues scattered over 40% of the cone so the eye follows one moving flame. 50% wider tongues, -50% recharge, +140% damage; no extra jets. With Backdraft both flames sweep on one clock, so they keep their right angle |
+
+Sized with `_BalanceHarness --character=1 --spell=cinderbreath --solo --upgrade-chance=1 --enemy-hp=10 --seed=1234
+--minutes=6.5` (short of the Pyromancer's Apotheosis gate, so level 8 is the Ascension alone), damage a second:
+
+| level 4, held at level 7 for 225 s (no Ascension) | /s |
+|---|---|
+| Backdraft | 473 |
+| Ember Wake | 581 |
+| Hellbreath | 477 (its Vulnerable rider pays the rest of a loadout, which `--solo` cannot see) |
+
+| level 8 (`--force-ascension`, about 3.5 min at level 8) | after Ember Wake | after Backdraft |
+|---|---|---|
+| Dragon's Breath | 1,747 | 1,550 |
+| Fire Fan at +120% (first pass) | 1,617 | 1,416 |
+| Fire Fan at +140% (shipped) | 1,813 | 1,540 |
+
+Backdraft sits level with Hellbreath and under Ember Wake, which stays the strongest level 4 alone; Fire Fan at +140%
+sits level with Dragon's Breath on either level 4. Neither card's icon was redrawn (`evolution_icons.py` still draws
+Backdraft's burst and Fire Fan's three jets).
+
 **Kindled Ward** (`KindledWard`, `WardWisps`), a mote of light that drifts at the nearest enemy:
 
 | card | was | now |
