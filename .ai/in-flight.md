@@ -41,6 +41,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
 | 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks + save | M-L |
 | 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | S |
+| 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | S |
+| 87 | Wayland's Wings also gives movement speed (about +10%) | character | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1164,6 +1166,22 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     burrower, `StatusEffectLayer.cs` 261) - so the slow, freeze, poison and other marks keep drawing over the empty
     spots. Fix, one line: skip `!e.Visible` there as well (or `e.IsHeld`). Check the other things drawn for an enemy
     outside its own node do the same: the attack icon (`TelegraphIcon`), elite marks, the mire's wader rings.
+86. **The stage card's Start button is still off the bottom of the phone** (Eric, 2026-11-09). On a phone the world
+    map's card (`WorldMap.cs` 433-440) is a fixed `NarrowCardHeight` (456) anchored to the screen's foot, Start its last
+    row. When its rows need more than that - the card body has grown (the far sky's line, Endless's vigil, rewards) and
+    the foretelling button adds one (`WorldMap.Foretell.MakeRoomForForetell` patches only its own row) - the panel's
+    minimum size wins and, growing the default way (down), it pushes Start under the bottom edge and the gesture bar.
+    Fix: size the card to its content and grow it UP (`GrowVertical = Begin`) to a cap, with the card body in a
+    ScrollContainer (`TouchScroll` already prepares those) so Start is always pinned on screen inside the safe area;
+    the map view's bottom follows the card's real top on every rebuild. Check with `_UiShot --resolution 540x1212
+    --portrait --safe-area` on the stop with the most on its card (a far-shore stop with the far sky, Endless and the
+    foretelling earned) and on the Pixel 9 itself.
+87. **Wayland gets a movement speed buff as well** (Eric, 2026-11-09: *"Wayland can also have a movement speed
+    buff"*). Wings (`Player.Wings.cs`) was +10% move speed (`move_speed_10`) until it became "floor traps never touch
+    him and water never slows him" on 2026-11-09; with item 74 giving the water to Baba Yaga and Nimue too, his flight
+    gets speed back: e.g. +10% while he flies (he flies when he moves). Card in player words, with percentages
+    (`.ai/character-fit.md` row 20, the Wings section); the one-verb rule for passives is about his feet, which this
+    keeps.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
