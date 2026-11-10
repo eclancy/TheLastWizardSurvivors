@@ -43,6 +43,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | S |
 | 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | S |
 | 87 | Wayland's Wings also gives movement speed (about +10%) | character | S |
+| 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | M |
+| 89 | The Archmage's passive card: "Avoids death once per run." | text | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1191,6 +1193,20 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     gets speed back: e.g. +10% while he flies (he flies when he moves). Card in player words, with percentages
     (`.ai/character-fit.md` row 20, the Wings section); the one-verb rule for passives is about his feet, which this
     keeps.
+88. **The town's attack in the opening, seen from inside the town** (Eric, 2026-11-10: *"when the town is attacked in
+    the opening sequence, i want that scene to be different cinematically. the 'camera' should be from within the town,
+    looking up at the houses burning, people running, and monsters attacking"*). Today it is the prologue's `tide`
+    panel (`tools/art/prologue.py` `p_tide`, "A TOWN OVERRUN", Eric 2026-11-08): a distant view from the hill, the
+    flood pouring over the crest into the town while its people flee out of frame, the tower far off. Redraw it as a
+    low angle from a street inside the town: houses towering and burning against the sky, people running past the
+    camera, monsters breaking in among them; keep the tower's glowing eye somewhere on the skyline if it still reads.
+    Its animated box (`write_anim`) and `Prologue.cs`'s drift carry the motion; the memory on cinematics asks for shake
+    and speed lines where they fit and pauses before and after. Read `.ai/prologue.md` and `.ai/cutscenes.md` first;
+    edit the generator and re-run it, never the PNG.
+89. **The Archmage's passive, said simply** (Eric, 2026-11-10: *"archmage's passive can just be something like 'Avoids
+    death once per run' - simplify the description"*). Overlooked's card (`CharacterData_Archmage.tres`
+    `StartingPassiveDescription`) says *"Once a run, a killing blow misses. Invincible for 10s."* - make it *"Avoids
+    death once per run."* (or as close as reads). Text only; check the character select and pause screen show it.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
