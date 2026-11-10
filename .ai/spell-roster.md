@@ -152,7 +152,7 @@ no target, no spot and no direction** (`SpellTargetingMode.Unaimed`, new for it)
 
 | # | spell | element | aim | cadence | demand | payload | band |
 |---|---|---|---|---|---|---|---|
-| 37 | **Corposant** (`scripts/Corposant.cs`, `Player.Corposant.cs`) | Lightning | **nothing**: balls loosed in random directions, spread evenly round a random start, turned only by **the edges of the camera's view** | timer (3.0 s to 2.6 s), every cast whatever is near | **fight in the open**: a maze wall grounds a ball where it touches | a piercing ball that strikes everything its path passes, each body at most every half second | the whole screen |
+| 37 | **Corposant** (`scripts/Corposant.cs`, `Player.Corposant.cs`) | Lightning | **nothing**: balls loosed in random directions, spread evenly round a random start, turned only by **the edges of the camera's view** | timer (3.0 s to 2.6 s), every cast whatever is near | **keep the fight on screen**: it flies over walls, so only the view's edges turn it | a piercing ball that strikes everything its path passes, each body at most every half second | the whole screen |
 
 - **The edges are the camera's**, read once a frame from the canvas transform (`Corposant.WorldView`), so they
   follow the wizard and are right on the PC's 1280x720 and the phone's 720x1280 canvas at zoom 0.85. An axis turns

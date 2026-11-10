@@ -11,9 +11,9 @@ namespace TheOneHeMissed.scripts;
 // start, so two never leave together), and nothing after that looks for an enemy: a ball flies straight, pierces
 // everything it passes and turns only at the edge of what the camera shows. It is the only spell that picks no target,
 // no spot and no direction (SpellTargetingMode.Unaimed; .ai/spell-variety.md section 2, the Runetracer row). Its worth
-// is the open ground it crosses, so it rewards fighting in the open: a maze wall (MazeNavigation.IsWallAt, the test
-// every bolt uses) GROUNDS a ball where it touches - the storm-fire goes to earth - and a wizard pressed against a wall
-// loses half of every cast into it.
+// is the ground it crosses. It flies OVER walls (Eric, 2026-11-09): the first build grounded a ball on a maze wall, which
+// threw away half of every cast in the Cursed Dungeon, and that was never asked for - the spec was the edges of the view
+// and nothing else (.ai/character-fit.md section 4).
 //
 // THE EDGES ARE THE CAMERA'S. The visible rect taken back through the canvas transform, read once a frame (ViewNow), so
 // they follow the wizard and are right on the PC's 1280x720 landscape canvas and the phone's 720x1280 portrait one at
@@ -36,7 +36,7 @@ namespace TheOneHeMissed.scripts;
 // THE DRAWING. One node in the arena at the origin, drawing in world space on the 2 px grid, on DrawLayers.Air. A ball is
 // a white-hot heart in a pale shell of the element's ramp with a rim of its edge, three tongues of storm-fire streaming
 // back against its travel (it burns like a flame, not a lamp) and crackling spurs re-chosen every flicker. A strike draws
-// a jagged bolt from the ball to the body for a tenth of a second - what it hits is seen hit - and a bounce, a grounding
+// a jagged bolt from the ball to the body for a tenth of a second - what it hits is seen hit - and a bounce, a split
 // and a burnt-out ball each crack where they happen. Every fade is a dither (SpellInk.DitherByCell). Lightning is not a
 // warm element (LightPool.IsWarm), so a ball lights nothing in the dark chapters.
 //
@@ -147,7 +147,7 @@ public partial class Corposant : Node2D, IPaintsElementPath
 
 	private struct Wake { public Vector2 At; public float Age; public int Damage; public uint Seed; public bool Live; }
 
-	private enum SparkKind : byte { Bounce, Ground, Out, Split }
+	private enum SparkKind : byte { Bounce, Out, Split }
 
 	private struct Spark { public Vector2 At; public float Age; public float Size; public uint Seed; public SparkKind Kind; public bool Live; }
 
@@ -157,7 +157,6 @@ public partial class Corposant : Node2D, IPaintsElementPath
 	// For the harness (_BalanceHarness's CORPOSANT line). Process-wide, as Folio's are.
 	public static int StatLaunched { get; set; }
 	public static int StatBounces { get; set; }
-	public static int StatGrounded { get; set; }
 	public static int StatStrikes { get; set; }
 	public static int StatTwins { get; set; }
 	public static int StatWakeStrikes { get; set; }
@@ -275,7 +274,6 @@ public partial class Corposant : Node2D, IPaintsElementPath
 		{
 			UpdateCrown(dt);
 			Rect2 view = ViewNow(me).Grow(-radius);
-			MazeNavigation nav = MazeNavigation.Active;
 			int crownCount = 0;
 			if (crowned)
 				for (int b = 0; b < MaxBalls; b++)
@@ -305,14 +303,6 @@ public partial class Corposant : Node2D, IPaintsElementPath
 				Move(b, ref ball, dt, me, view, crownCount, ref crownIndex);
 				if (!ball.Live)
 					continue;
-				if (ball.Mode != Mode.Hang && nav != null && nav.IsWallAt(ball.Pos))
-				{
-					// Stone grounds it: the storm-fire goes to earth where it touched.
-					ball.Live = false;
-					StatGrounded++;
-					AddSpark(ball.Pos, 16f, SparkKind.Ground);
-					continue;
-				}
 				if (wakeForm)
 					LayWake(ref ball);
 			}
@@ -941,7 +931,7 @@ public partial class Corposant : Node2D, IPaintsElementPath
 		}
 	}
 
-	// A crack where a ball turned off an edge, went to ground, burnt out or split: a white heart and four arms, square or
+	// A crack where a ball turned off an edge, burnt out or split: a white heart and four arms, square or
 	// diagonal by its seed, shrinking over its life, and a broken ring opening out to its size.
 	private static readonly Vector2[] Arms =
 	{
@@ -973,7 +963,7 @@ public partial class Corposant : Node2D, IPaintsElementPath
 				continue;
 			// The ring: eight beats of light opening out, every other one dropping out halfway.
 			float ring = Mathf.Lerp(4f, spark.Size + 4f, u);
-			Color shock = Ink(spark.Kind == SparkKind.Ground ? ramp.Edge : ramp.Mid, coverage);
+			Color shock = Ink(ramp.Mid, coverage);
 			for (int a = 0; a < 8; a++)
 			{
 				if (u > 0.5f && a % 2 == 1)
