@@ -39,7 +39,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 81 | Rework Buckler Boss to do something that makes sense (e.g. its own small shield) | item rework | S |
 | 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
-| 84 | A wizard's opener unlocks only once that wizard is (not the Familiar); mind the first boss's reward | unlocks + save | M |
+| 84 | A wizard's opener: its deed is sealed until the wizard is freed and must be done AS them (not the Familiar or Thorn Vine) | unlocks + save | M-L |
+| 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1141,6 +1142,24 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     `GlobalStatsManager`; `RegressionChecks.ValidateUnlockCatalog` should hold it (every non-starter opener but the
     Familiar requires its wizard). A save that already owns such a spell keeps it - this narrows what a save is
     granted, so it needs a schema step (29 if nothing else takes it first).
+    **Decided (Eric, 2026-11-09):** *"Thorn Vine can be an exception"* - it stays the Forest boss's, which also settles
+    the slow-start worry. And *"We block the achievement until that wizard is unlocked. In fact, those achievements
+    should require being completed with that wizard"* - the deed cannot be done before the wizard is freed, and only
+    counts in a run played AS that wizard (Fire Adept as Imhotep, Magpie as John Dee, level 20 as Medea, and so on).
+    **The catch to design around:** several of these deeds are not only spell rewards. The chapter boss deeds
+    (`cave_choir_silenced` for Tituba's Riptide, `ruins_delver` for Nimue's Spiritual Weapon) are campaign
+    progression, the `event_<site>` and `secret_<id>` deeds are the events' and secrets' own records, and requiring a
+    wizard for those would block the road. So the opener moves to a NEW deed of its own - "Silence the Choir as Tituba",
+    "Find the Buried Runes as Morgan", "Hold the bog lanterns as Paracelsus" - and the original deed keeps whatever
+    else it pays. Nimue is freed only at the Throne, so hers is a post-campaign deed. The Achievements page shows a
+    sealed deed for a wizard not yet freed (one locked thing on show at a time, `.ai/slow-start.md`).
+85. **Status effects stay drawn on enemies hidden for a boss's arrival** (Eric, 2026-11-09: *"When enemies derender for
+    the boss spawning animation, the animations for the cc effects on them should also derender"*). During a boss's
+    entrance every ordinary enemy is held and hidden (`Node2DGame.BossEntrance.HoldOrdinaryBodies`: `SetHeld(true)`,
+    `Visible = false`) but stays targetable, and `StatusEffectLayer` skips only an enemy that is not targetable (a
+    burrower, `StatusEffectLayer.cs` 261) - so the slow, freeze, poison and other marks keep drawing over the empty
+    spots. Fix, one line: skip `!e.Visible` there as well (or `e.IsHeld`). Check the other things drawn for an enemy
+    outside its own node do the same: the attack icon (`TelegraphIcon`), elite marks, the mire's wader rings.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
