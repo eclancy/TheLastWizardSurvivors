@@ -54,7 +54,7 @@ that is what was on the machine. No numpy, no f-strings, no `math.tau`.
 |---|---|
 | Chapters | 14 — the campaign's 13 and the first chapter of the far shore, each ending in a boss |
 | Bosses | 14 — among them a hurdle that must be walked round, a stone circle that closes on you, three bodies that must all be silent at the same moment, one that sheds pieces of itself, a burrower, one that quotes four of the others, a steward who flees through the walls and must be hunted room to room, and the dark wizard himself, who seals your spells until you take them back |
-| Spells | 41, with evolutions and level-up branches |
+| Spells | 45, with evolutions and level-up branches |
 | Wizards | 21, and one hound who is not a wizard |
 | Relics | 40 — 38 in 13 Full Set Enchantments, and 2 that act on the spell book itself |
 | Boons | 17 |
