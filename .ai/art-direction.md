@@ -13,7 +13,8 @@ settings, the per-stage light table, and the migration order.
 does the colouring — a cold key from the upper left, a deep indigo ambient in shadow, and a
 1 px bone-white rim on the key-facing edge of every actor, softened where it lights a dark surface
 (§2, "Matte, not wet"). Colour is a *lighting* variable, not a pigment one, so a stage changes
-room through two shader uniforms instead of a repaint.
+room through two shader uniforms instead of a repaint. **One sanctioned departure:** Ma Liang's ink is
+watercolour, off the contract by design (§3a).
 
 ## Why this, and why Bonelight
 
@@ -428,6 +429,132 @@ ground's own hue family. Those four need their cores held at full white and thei
 *more* saturated than the warm rows — a pale blue effect on a deep blue floor is the one place
 this tone can fail. Check any new cold-element effect against a Castle floor before shipping it.
 
+## 3a. Ink: the one sanctioned departure
+
+Eric, 2026-11-09: *"make sure the ink spells are a very different style of art than other parts of the
+game. the art-drawn crow familiar should also look significantly different, almost watercolor style ink
+blots"*. So what Ma Liang's brush makes is not lit by the room and not drawn in the contract's ramps. It is
+ink on wet paper, in one ink of its own, with real alpha. **This is the only art in the game allowed off
+the contract.** It covers Ma Liang's ink and nothing else: today the seven ink looks of his crow
+(`crow-ink`, `stormcrow-ink`, `raven-ink`, `morrigan-ink`, `morrigan-storm-ink`, `griffin-ink`,
+`griffin-storm-ink`), and **Ink Ring** - its line, its rings, its spell icon and its five card icons ("Ink
+Ring: a line drawn live", below). His other paint (the dotted door's trace, the painted flask, The Painted
+Door, the crow's motes and pecks) is still his *light* and still on the contract.
+
+**One painter, so every ink thing is one hand.** `tools/art/ink_wash.py` holds the palette, the painter
+(`paint`) and the check (`audit`). A generator lays its figure as **layers**: for every pixel, each wash
+laid on it from first to last, as a pigment **density** (0 bare paper, 1 ink pooled as deep as it goes),
+with the **group** (one brush stroke) it belongs to and stroke-local coordinates. `familiar.ink_frame` is
+the worked example: `crow()` and `griffin()` lay the same parts as the crow of light, and `Fig.group` names
+the strokes. Ink Ring paints through `ink_wash.paint` too (`tools/art/ink_ring.py`), never imitating it.
+
+**The palette.** Twelve stops, `ink_wash.INK_TONES`; stop = `round(density x 11)`:
+`#E6E0D4 #D2CDC3 #BCB8B1 #A4A19E #8C8A8B #757479 #5F5E66 #4B4A54 #393843 #282733 #191823 #0D0C15`.
+Nearly neutral, a breath warm at the paper end and a breath blue in the pooled black. Bonelight forbids grey
+("nothing dark is allowed to be grey"), which is exactly why ink reads as a painting and not as a lit thing.
+Only stop 11 is black, and it appears only where ink pooled deepest.
+
+**Alpha** comes in eighths, `ALPHA_STEPS` = 64, 96, 128, 160, 192, 224, 255. A wash is
+`0.62 + 0.62 x density`, stepped down: a thin wash at about 5/8, a stroke and every tide line opaque. The
+bleed is 3/8 to 4/8 a pixel out and 2/8 two pixels out. **A translucent pixel is always an ink stop.**
+Contract colours appear only opaque and crisp, as **accents**: the vermilion seal (`ember` base and shade),
+the warm amber eye, an element path's light (the Stormcrow's lightning edge and sparks, the Morrigan's ember
+eyes). The ink is the creature; the element is the spell. The reserved lights (`#DCE8FF`, `#A8B8DC`,
+`#232C46`) are pigment nowhere, ink included. `ink_wash.audit` holds a frame to exactly this, and
+`familiar.main` runs it on the ink looks *in place of* `raster.Canvas.audit`. That is the named exception.
+Nothing else is let off the contract's check.
+
+**How a stroke is painted** (numbers are the `ink_wash` constants, so a change is made there once):
+
+- **Density from the key, not colour from the key.** The key light still turns the form: a stroke carries
+  0.42 to 0.80 by its tone and a thin wash 0.18 to 0.50 (`familiar.STROKE_DENSITY`, `WASH_DENSITY`). That is
+  then smoothed twice within the stroke, so the five tones run together as a wash does, never into the next
+  stroke. A slow **wet-in-wet wander** of +/-0.12 runs across about 4 px. **No ordered dither**: Bayer is
+  pixel art's gradient, and a wash grades by its own granulation.
+- **The tide line** (a drying wash runs to its edge). A hard edge gets +0.40, plus +0.12 on its far side
+  (down and right, away from the key, where it pooled), and a third of that one pixel in. Where one stroke
+  lies over another it gets +0.26. Some pixels of the faint lines between the parts of one stroke (the
+  feathers of a wing) get +0.08. Three pixels and more from any edge, the middle gives up 0.05. **So every
+  stroke is paler in the middle and dark at its rim**, which is what makes it a blot and not a fill.
+- **The bleed.** Half the silhouette (`SOFT_SHARE`, value noise about 2.6 px across) was still wet: no tide
+  line there, and the ink feathers out into a translucent fringe one to two pixels wide. **Hard groups never
+  bleed**: whatever carries the read at the game's size must stay crisp. On the crow that is the hat (the
+  wizard's silhouette-breaking attachment, section 4) and the beak.
+- **Overlapping washes.** A wash shows the one under it at 0.34 of its density, edges included, so the far
+  wing is a darker ghost through the body's wash, as two glazes are.
+- **Worked wet paint**, placed through the figure's own transform so it rides with it. A **bloom** in a thin
+  wash (a backrun: the centre 0.07 paler inside a ragged ring 0.22 darker). **Drops** where ink was loaded
+  into the wet (+0.30, feathered, never a disc). Three or four dots of **splatter** flung off the brush.
+- **Granulation**: 9% of pixels a distinctly darker grain (+0.10), keyed to the stroke's own coordinates.
+- **The boil.** Which edges bled and which dried hard is seeded per frame (`salt_of(anim) + 13 x frame`),
+  so the wet margins creep from frame to frame: a living painting. The inside of each stroke (its grain and
+  wander) is keyed to the stroke and rides with it, so only the margins move. **An ink effect that does not
+  move (a ring on the floor) still boils**, over its own frames, on the same rule.
+- **No rim, no matte finish, no occlusion line.** A painting is not lit by the room it is in. A flyer's
+  detached shadow is a thin puddle of dark ink (stops 9 to 10 at 3/8 to 4/8), so it darkens every floor,
+  pale and dark alike. Its ends dry ragged.
+
+**In the engine, real alpha means plain blending.** `SpellInk.DitherByTexel` / `DitherByCell` read alpha as
+coverage, and would break every wash into opaque specks. So `Familiar.ApplyFrames` gives an ink look no
+material (`IsInkLook`), and its blink is a translucent fade of the ink rather than a dither. Ink Ring must
+likewise be drawn without the dither materials. If any part of it is drawn in code, it uses these twelve
+stops at these alphas.
+
+**Ink Ring: a line drawn live** (2026-11-09, `scripts/InkRing.cs`, `tools/art/ink_ring.py`). The crow is a
+sprite sheet; Ink Ring's line is wherever the wizard walked, so it cannot be one picture. It is **stamps**, one
+sheet (`assets/bonelight/effects/ink-ring.png`, authored 1:1, drawn at x2 like every effect), laid one per point
+of his path. What that took, beyond the crow's rules:
+
+- **A dab is a window, never a stroke.** Each line stamp is cut out of the middle of a much longer stroke
+  `ink_wash.paint` laid, so it has no ends and no tide line across it, and dabs laid 6 art pixels apart run
+  together into one line instead of a string of beads. Eight headings over half a turn (a stroke has no
+  direction), three windows along the long stroke (each its own grain) and two boils of each.
+- **It ages in the sheet, not in a modulate.** Five rows: wet from the brush (wide, 78% of its edge still
+  bleeding), setting, dried (hard tide lines and a paler middle - the stage a held ring keeps), a pale wash
+  one alpha step down, a ghost three down. `ink_wash.paint`'s `soft_share` is how much of an edge is still
+  wet, and `ink_wash.faded` steps alpha down in eighths, so a fading line is still ink at an allowed alpha;
+  nothing is ever modulated, tinted or dithered on the way to the screen. Each dab is drawn at its own
+  point's age, so the line dries from its tail toward his feet. Wet Ink keeps it wet for half its life.
+- **The flood is a wash, not cobbles.** A closing ring floods inward: blots with wet cauliflower edges
+  (`soft_share` 0.8-0.96, so they merge), each appearing by how deep inside the ring it lies, the rim
+  first and the middle last, and drying back through a backrun to a pale wash and a ghost. A backrun is
+  painted in one shape of the two and only while the flood is wet: a backrun in every blot read as a
+  field of eyes. Inkwell holds the dried wash for its pool; Ink Prison holds the ring's line at its hard
+  tide lines; then both dry away as any ink does.
+- **What it struck is seen struck.** A splat under every body inside (on the floor) and a splash of ink on
+  it for a third of a second (`DrawLayers.Air`, the only part not on `DrawLayers.Ground`).
+- **The ink is never re-lit.** No element path recolours it: Wet Ink and Ink Prison deepen the Water and
+  Darkness it already is, and it is the same black on every floor.
+- **Readable**: the middle of a stroke is never darker than stop 6 and its tide lines are stops 9-10, so
+  the middle carries it on the Cursed Dungeon's black and the rims on snow (`ink_ring.py --preview` lays it
+  over the five floors `ink_wash.swatch` uses).
+
+Its **icons** are ink too. The spell's own (`spell_icons.ink_ring`, `ink-ring-dark`) is an enso on paper with
+real alpha and the vermilion seal, held to `ink_wash.audit` (`spell_icons.INK_ICONS`). Its five card icons
+(`evolution_icons`, `INK_SUBJECTS`) set the ink on their milestone's night, so it is laid **opaque**
+(`ink_wash.opaque`): a translucent wash over the night would blend into a colour that is neither an ink stop
+nor the night's. Held to `ink_wash.audit` too - its ink stops opaque, the frame's contract colours as ever -
+and painted a little paler than the spell's icon, since a night is dark where the card's page is cream.
+
+**What still binds ink**, because it is still an actor or an effect in this game:
+
+- **The grid and the import.** The cells, sizes and render scale of section 1 (x2, nearest), the import
+  settings of section 6 (lossless, no mipmaps, `fix_alpha_border`), the draw layers. The ink crow keeps the
+  crow of light's cells, poses, anchors and strike frames exactly. Its `.tres` files were rewritten
+  byte-identical.
+- **A clear border.** The bleed and the splatter keep a one-pixel margin inside the cell. Only the drawing
+  itself may meet the edge, where the shared pose does.
+- **Readability on every floor**, the dark ones above all. On a dark floor the pale wash and the paler
+  middles of the strokes carry it. On a pale floor the tide lines and pooled blacks do. Both are always
+  there. The crow was photographed with `_UiShot` (Ma Liang, `--character=22`) in the Cursed Dungeon
+  (`--stage=1`) and the Sunken Cave (`--stage=2`) among a placed crowd. It is the palest thing in that crowd
+  and reads at a glance. Ink Ring was photographed the same way (`--walk-circle`, `--shutter-on-ring`, a placed
+  crowd at its middle): a ring closing in the Forest, the Sunken Cave (PC and phone), the Cursed Dungeon, the Frozen
+  Waste, the Scorched Sands and the Fallow Fields. On every one the line and the ring are a pale brush stroke under the
+  crowd and the splash a dark blot on what was struck. No chapter at the game's camera has a floor as pale as the
+  swatch's last, so the pale-floor read rests on `ink_ring.py --preview`.
+- **Section 4's attachment rule.** The hat stays, hard-edged, so the bird filled black is still the wizard's.
+
 ## 4. Silhouette taxonomy
 
 Bodies are naturalistic, so proportion alone will not separate seven enemy types — the audit
@@ -671,6 +798,8 @@ Phase 2 is also where wave tuning has to be revisited, per the size note in §1.
   reference. `tools/art/spriteframes.py` handles this; anything else that writes a `.tres` must
   too.
 - Use `#DCE8FF`, `#A8B8DC` or `#232C46` as pigment — the shader keys on them.
+- Draw anything off the contract but Ma Liang's ink (§3a), or loosen `raster.Canvas.audit` to let something
+  through. Ink is the one named exception, painted by `tools/art/ink_wash.py` and checked by its own `audit`.
 - Write an actor's frames around `tools/art/matte.py`. A near-white glint on a dark surface, or a
   full white rim against an actor's darkest stops, is what made the cast read wet (§2, "Matte, not
   wet"); `pixel.write_strip` finishes any palette carrying the rim, and a renderer of its own (the

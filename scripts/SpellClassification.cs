@@ -11,7 +11,19 @@ public enum SpellTargetingMode
 	DirectionalCone = 5,
 	// The way the player is facing (Player.FacingDirection / FacingSide): the facing family, which
 	// never aims at an enemy (.ai/spell-variety.md, phase 1).
-	Facing = 6
+	Facing = 6,
+	// Nothing at all: loosed in a random direction and left to wander (Corposant, which caroms off the edges of the
+	// view - .ai/spell-variety.md section 2, the Runetracer row). The one spell that picks no target, spot or direction.
+	Unaimed = 7,
+	// Wherever the player walks a ring round them (Ink Ring): the spell picks nothing; his path draws the area it strikes,
+	// and it strikes when the path closes on itself.
+	Drawn = 8,
+	// Where the player stands, and paid out later by whatever shakes it (Windfall): a tree planted at his feet whose fruit
+	// falls on the enemy that bumps it, or all at once round it when he walks back under it.
+	Planted = 9,
+	// The most wounded enemy in reach, by the share of its health it has lost, and the nearest when none is hurt (Lancet):
+	// the one spell that chooses by health. Hunter's Mark marks the strongest; this is the other end.
+	Wounded = 10
 }
 
 // The primary way a spell applies damage.
@@ -66,6 +78,10 @@ public static class SpellClassificationText
 		SpellTargetingMode.MultiTarget => "at several enemies at once",
 		SpellTargetingMode.DirectionalCone => "in a cone in front of you",
 		SpellTargetingMode.Facing => "the way you are facing, never at an enemy",
+		SpellTargetingMode.Unaimed => "at nothing: it sets off any which way",
+		SpellTargetingMode.Drawn => "inside a ring you walk round them",
+		SpellTargetingMode.Planted => "where you stand: a tree that pays out when it is shaken",
+		SpellTargetingMode.Wounded => "at the most wounded enemy in reach, or the nearest when none is hurt",
 		_ => null,
 	};
 

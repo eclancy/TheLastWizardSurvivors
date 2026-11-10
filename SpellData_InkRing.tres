@@ -1,0 +1,90 @@
+[gd_resource type="Resource" script_class="SpellData" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/SpellData.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/SpellLevelUpgrade.cs" id="2"]
+[ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/ink-ring-dark.png" id="3_icon"]
+
+; Ink Ring (scripts/InkRing.cs), 2026-11-09: Ma Liang's brush, walked. A thin line of ink trails the wizard; when his
+; path crosses its own line the loop closes and everything inside is struck, then slowed for a moment. Water + Darkness,
+; the two halves of the ink. Nobody's opener; everyone earns it with the Cormorant feat (Water and Darkness kills in one
+; run). TargetingMode 8 is Drawn - his walk draws the area it strikes - and DamageShape 3 a burst over an area.
+;
+; NO TIMER PUTS ANYTHING INTO THE WORLD. BaseCooldown is the RECHARGE between rings: while it is ripe the fire loop arms
+; the node, and a ring closes the moment his path crosses its line (Player.InkRing.cs). BaseDamage is ONE STRIKE of a
+; ring on each body inside it. The ink's life is InkRing.BaseInkSeconds (2 s) plus the ZoneDuration lines here (Effect
+; 13); the card says it as "Ink duration +20%", never in seconds. The slow (40% for 1.2 s) is the node's own.
+;
+; FIRST GUESSES, untuned. Spells start small (Eric, 2026-11-02): at level 1 the ink lasts 2 s, so at the wizard's walk
+; only a ring about 140 units across can close before its start has dried; 3.6 s at level 8, about 250. Written out in
+; full so Player.EnsureRelevantLevelUps generates nothing of its own (ScalingTagsMask 8195: Damage, Cooldown, Duration):
+; every level adds damage, even levels shorten the recharge by 0.1 s, odd ones and the last lengthen the ink by 0.4 s.
+; Level 8: 30 a strike, a ring every 1.6 s at most, ink lasting 3.6 s.
+
+[sub_resource type="Resource" id="Resource_inkring_lvl2"]
+script = ExtResource("2")
+Level = 2
+DamageBonus = 2
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_inkring_lvl3"]
+script = ExtResource("2")
+Level = 3
+DamageBonus = 2
+Effect = 13
+EffectValue = 0.4
+
+[sub_resource type="Resource" id="Resource_inkring_lvl4"]
+script = ExtResource("2")
+Level = 4
+DamageBonus = 2
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_inkring_lvl5"]
+script = ExtResource("2")
+Level = 5
+DamageBonus = 2
+Effect = 13
+EffectValue = 0.4
+
+[sub_resource type="Resource" id="Resource_inkring_lvl6"]
+script = ExtResource("2")
+Level = 6
+DamageBonus = 2
+CooldownBonus = -0.1
+
+[sub_resource type="Resource" id="Resource_inkring_lvl7"]
+script = ExtResource("2")
+Level = 7
+DamageBonus = 3
+Effect = 13
+EffectValue = 0.4
+
+[sub_resource type="Resource" id="Resource_inkring_lvl8"]
+script = ExtResource("2")
+Level = 8
+DamageBonus = 3
+CooldownBonus = -0.1
+Effect = 13
+EffectValue = 0.4
+
+[resource]
+script = ExtResource("1")
+Tagline = "Close a ring of ink round them."
+Id = "ink_ring"
+Name = "Ink Ring"
+CurrentLevel = 1
+MaxLevel = 8
+BaseDamage = 14
+BaseCooldown = 2.0
+BaseProjectileCount = 1
+BaseRange = 0.0
+LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_inkring_lvl2"), SubResource("Resource_inkring_lvl3"), SubResource("Resource_inkring_lvl4"), SubResource("Resource_inkring_lvl5"), SubResource("Resource_inkring_lvl6"), SubResource("Resource_inkring_lvl7"), SubResource("Resource_inkring_lvl8")])
+Description = "A thin line of ink trails behind you as you walk. Cross your own line to close a ring: everything inside it is struck, and slowed for a moment."
+Icon = ExtResource("3_icon")
+TargetingMode = 8
+DamageShape = 3
+ScalingTagsMask = 8195
+ElementWeights = {
+"Darkness": 1,
+"Water": 1
+}

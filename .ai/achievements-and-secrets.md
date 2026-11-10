@@ -84,6 +84,10 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Starfall | Light | Purchase | 150 |
 | Hollow Star | Darkness | Purchase | 160; nobody opens on it since 2026-11-09 (John Dee opens on Folio, `.ai/character-fit.md`) |
 | Folio | Arcane, Darkness | Feat | **Magpie**: open 10 chests in a single run (2026-11-09); John Dee opens on it |
+| Corposant | Lightning | Feat | **Storm Petrel**: defeat 500 enemies with Lightning in a single run (2026-11-09); nobody opens on it |
+| Ink Ring | Water, Darkness | Feat | **Cormorant**: defeat 500 enemies with Water or Darkness in a single run (2026-11-09); nobody opens on it |
+| Windfall | Grass, Metal | Feat | **Fieldfare**: defeat 1,000 enemies with Grass or Metal in a single run (2026-11-09); nobody opens on it |
+| Lancet | Metal, Poison | Feat | **Shrike**: defeat 500 poisoned enemies in a single run (2026-11-09); nobody opens on it |
 | Stormsweep | Lightning | Purchase | 160 |
 | Kindled Ward | Light | Purchase | 170 |
 | Familiar | Arcane | Purchase | 170; the Coursing (Laelaps) needs it |
@@ -190,6 +194,59 @@ earned (2.3).
 | **Kindled Ward** | **The Broken Ward** | Secret | touch five notched ward stones in notch order; the ward re-forms, and its light comes to you (Mystic Ruins) | "The old wards were broken from the inside." A ward that stands on its own, from a ward made whole |
 | **Sleet Runes** | **The Buried Runes** | Secret | stand still in a drift field until the snow settles, then dig up the rune-stones it shows (Frozen Waste) | walking aims the runes; stopping is what finds them |
 | **Stormsweep** | **The Fulgurite** | Secret | stand by a glass tree in the dunes when the dry storm comes round and draws its lightning (Scorched Sands) | lightning that strikes sand leaves glass; a sweep of lightning, from where it struck |
+
+**Added 2026-11-09, after this table:** five Feats for five new spells, each measured off a best-run field in
+`LifetimeStats` added without a schema step (a save without the key reads as no run yet). **Magpie** pays Folio
+(10 chests in one run, `BestChestsInRun`). **Storm Petrel** pays Corposant (`.ai/spell-roster.md`, "Corposant"):
+*defeat 500 enemies with Lightning in a single run* (`BestLightningKillsInRun`). A Lightning kill is one numbered in
+Lightning's ink - a Lightning spell's, a spell branched into Lightning, the Lightning tier's chain - counted where
+the number is chosen (`Player.DealDamageToEnemy` -> `RunEvents.RecordLightningKill`). Not the Lightning Adept
+(Stormguard's), which counts Lightning held; this counts what Lightning killed. The storm petrel is the bird sailors
+saw before a storm, as St Elmo's fire is the light they saw in one, and a bird beside Magpie. The count was measured
+(`_BalanceHarness --minutes=15 --character=3`, seed 1234): the Stormcaller bot spread its picks over five spells and
+never took Chain Lightning past level 3, and made 310 by minute 5, 492 by minute 10 and 672 in the run - so 500 is
+most of a run with Lightning in it, or the first half of one built round it.
+
+**Cormorant**, a third, pays Ink Ring (`.ai/spell-roster.md`, "Ink Ring"): *defeat 500 enemies with Water or Darkness
+in a single run* (`BestInkKillsInRun`, also added without a schema step). A kill counts when it is numbered in Water's
+ink or Darkness's - the two halves of Ma Liang's ink - counted where Storm Petrel's is (`Player.DealDamageToEnemy` ->
+`RunEvents.RecordInkKill`). Earnable without Ink Ring: Tituba opens on Riptide (Water), and Hollow Star (pure Darkness)
+is the Survivor feat's. The cormorant is the black diving bird the river fishermen of Ma Liang's China work with -
+ink-black and at home in the water - and a bird beside Magpie and Storm Petrel. Measured
+(`_BalanceHarness --minutes=15 --character=5`, seed 1234, Tituba, the bot keeping Riptide at level 2 to 6 among four or
+five spells): the kiting bot died at minute 7 with 168, the `--survivor` bot at minute 7.3 with 233 (119 by minute 5),
+and the `--immortal` bot made 195 by minute 5, 638 by minute 10 and 1,235 in the run. Five hundred is Storm Petrel's
+number and the same ask: most of a run with Water or Darkness in it, or the first half of one built round them. Both
+mortal bots died before it, so a player who keeps a Water opener alive past minute 9 or so is who earns it.
+
+**Fieldfare**, a fourth, pays Windfall (`.ai/spell-roster.md`, "Windfall"): *defeat 1,000 enemies with Grass or Metal in
+a single run* (`BestGrassMetalKillsInRun`, also added without a schema step). A kill counts when it is numbered in
+Grass's ink or Metal's - the living wood and the iron - counted where the other two are (`Player.DealDamageToEnemy` ->
+`RunEvents.RecordGrassMetalKill`). Earnable without Windfall: Väinämöinen opens on Bramble Seed (Grass), Wayland on Iron
+Palisade (Metal), Baba Yaga on Thorned Vine (numbered in Grass), and Thorned Vine is the Forest's deed. The fieldfare is
+the winter thrush that comes down on an orchard for its windfalls, and a bird beside Magpie, Storm Petrel and Cormorant.
+Measured (`_BalanceHarness --minutes=15`, seed 1234, the real save read-only): Väinämöinen's kiting bot
+(`--character=6`) lived the run and made 378 by minute 5, 1,234 by minute 10 and 1,676 in all; Wayland's
+(`--character=12`) died at minute 5.4 with 190, and his `--immortal` bot made 303 by minute 5, 1,236 by minute 10 and
+2,108 in all. **Why a thousand, not the others' five hundred:** both openers kill in a crowd (a thorn patch, a wall of
+stakes) and reach 500 by minute 6, where the Stormcaller bot reached Storm Petrel's 500 at minute 10. The same ask in
+time - most of a run with Grass or Metal in it - is a thousand, which both reach at about minute 9.
+
+**Shrike**, a fifth, pays Lancet (`.ai/spell-roster.md`, "Lancet"): *defeat 500 poisoned enemies in a single run*
+(`BestPoisonedKillsInRun`, also added without a schema step). **Not a fifth "defeat N with an element":** it counts the
+dying, not the killing - an enemy that dies with a poison still ticking on it, whatever dealt the last blow (a poison
+tick, any spell, a needle), counted in `Enemy.StartDeath` before anything clears the status (`RunEvents.RecordPoisonedKill`).
+That is the finisher's work, poison them and then finish them, and it is what Lancet is for. Earnable without Lancet:
+Paracelsus opens on Contagion, Baba Yaga on Thorned Vine (which poisons what it sweeps), and any two Poison carriers raise
+the Poison tier, which poisons on every hit. The shrike is the butcher-bird, which impales what it catches on a thorn, and a
+bird beside Magpie, Storm Petrel, Cormorant and Fieldfare. Measured (`_BalanceHarness --minutes=15`, seed 1234, the real
+save read-only): Baba Yaga's kiting bot (`--character=15`) lived the run and made 259 by minute 5, 445 by minute 10 and
+551 in all, reaching 500 at about minute 12; Paracelsus's (`--character=17`) lived it too and made 723 by minute 5, 2,408
+by minute 10 and 4,333 in all (his `--immortal` bot 703, 2,408 and 4,544), reaching 500 at about minute 4.3 - Contagion's
+plague is on nearly everything that dies. **Why five hundred:** it is Storm Petrel's and Cormorant's number and the same
+ask for a poison carrier that is not a plague, most of a run with Poison in it; sized to Paracelsus it would be two
+thousand and nobody else would earn it. The plague doctor earns the surgeon's needle in the first third of a run, which
+fits him.
 
 Totals: **11 Feats, 9 Road deeds, 9 secrets** - one spell vault in each campaign chapter but the
 Emberdeep: eight on the road before the gate, and the Cursed Dungeon's, which moves past it into the

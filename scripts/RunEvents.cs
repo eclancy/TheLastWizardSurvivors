@@ -36,6 +36,18 @@ public static class RunEvents
 	// Black Hares of the Broken Circle run down by a hound (Familiar.Strike): the coursing deed that frees
 	// Laelaps (AchievementDefinitions, "coursing"). One run's count - the deed asks for them in a run.
 	private static int haresCoursed;
+	// Kills numbered in Lightning's ink (Player.DealDamageToEnemy): a Lightning spell's, one branched into Lightning, the
+	// Lightning tier's chain. The Storm Petrel feat asks for them in one run, and it pays Corposant.
+	private static int lightningKills;
+	// Kills numbered in Water's ink or Darkness's (Player.DealDamageToEnemy): the two halves of Ma Liang's ink. The
+	// Cormorant feat asks for them in one run, and it pays Ink Ring.
+	private static int inkKills;
+	// Kills numbered in Grass's ink or Metal's (Player.DealDamageToEnemy): the living wood and the iron. The Fieldfare feat
+	// asks for them in one run, and it pays Windfall.
+	private static int grassMetalKills;
+	// Enemies that died with a poison still ticking on them (Enemy.StartDeath), whatever dealt the last blow - a poison
+	// tick, a spell, Lancet letting the poison out. The Shrike feat asks for them in one run, and it pays Lancet.
+	private static int poisonedKills;
 	// Seconds into the run the player first took damage, or -1 if they never did. Kept as a time
 	// rather than a bool so "survive N minutes untouched" works for any N instead of only the one
 	// hardcoded five-minute question the old flag could answer.
@@ -54,6 +66,10 @@ public static class RunEvents
 		chestsOpened = 0;
 		revivesUsed = 0;
 		haresCoursed = 0;
+		lightningKills = 0;
+		inkKills = 0;
+		grassMetalKills = 0;
+		poisonedKills = 0;
 		firstDamageAtSeconds = -1f;
 	}
 
@@ -105,6 +121,26 @@ public static class RunEvents
 
 	public static void RecordHareCoursed() => haresCoursed++;
 
+	public static void RecordLightningKill() => lightningKills++;
+
+	/// <summary>This run's Lightning kills so far, for the harness.</summary>
+	public static int LightningKills => lightningKills;
+
+	public static void RecordInkKill() => inkKills++;
+
+	/// <summary>This run's Water and Darkness kills so far (the Cormorant feat's count), for the harness.</summary>
+	public static int InkKills => inkKills;
+
+	public static void RecordGrassMetalKill() => grassMetalKills++;
+
+	/// <summary>This run's Grass and Metal kills so far (the Fieldfare feat's count), for the harness.</summary>
+	public static int GrassMetalKills => grassMetalKills;
+
+	public static void RecordPoisonedKill() => poisonedKills++;
+
+	/// <summary>This run's poisoned kills so far (the Shrike feat's count), for the harness.</summary>
+	public static int PoisonedKills => poisonedKills;
+
 	public static void RecordFirstDamage(float atSeconds)
 	{
 		if (firstDamageAtSeconds < 0f)
@@ -144,6 +180,10 @@ public static class RunEvents
 		result.ChestsOpened = chestsOpened;
 		result.RevivesUsed = revivesUsed;
 		result.HaresCoursed = haresCoursed;
+		result.LightningKills = lightningKills;
+		result.InkKills = inkKills;
+		result.GrassMetalKills = grassMetalKills;
+		result.PoisonedKills = poisonedKills;
 		// Never hit means the whole run counts as untouched.
 		result.UndamagedSeconds = firstDamageAtSeconds < 0f ? timeSurvived : firstDamageAtSeconds;
 	}

@@ -190,6 +190,22 @@ public static class SpellEvolutionCatalog
 			case Folio.SpellId:
 				SetupFolioEvolutions(spell);
 				break;
+			// St Elmo's fire, loosed at nothing and turned by the edges of the view.
+			case Corposant.SpellId:
+				SetupCorposantEvolutions(spell);
+				break;
+			// Ma Liang's brush, walked: a ring of ink closed round them.
+			case InkRing.SpellId:
+				SetupInkRingEvolutions(spell);
+				break;
+			// The iron-fruited orchard, shaken by the swarm and by the wizard.
+			case Windfall.SpellId:
+				SetupWindfallEvolutions(spell);
+				break;
+			// The surgeon's needle, at the most wounded in reach.
+			case Lancet.SpellId:
+				SetupLancetEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -3936,6 +3952,346 @@ public static class SpellEvolutionCatalog
 			VisualTag = "CommonplaceBook",
 			SynergyTag = "Ascension / Pages",
 			SynergyDescription = "Ascension: no new element. Every kill is another page; the faster they fall, the faster it turns."
+		});
+	}
+
+	// Corposant (scripts/Corposant.cs): St Elmo's fire, a ball of storm-fire loosed at nothing that turns off the edges of
+	// the view. Every card is something more the BALL does, which is this spell's and no other's: it splits at the edge,
+	// it leaves static behind it, it burns sea-blue, it comes home to hang over him, it crowns him when he is crowded.
+	// Pure Lightning, so its level 4 offers both a deepening (Static Wake) and a branch (Spindrift, into Water - the blue
+	// that St Elmo's fire really burns, and the sea it is seen over; ValidateElementPaths), and a deepening is free (the 12%
+	// is a hybrid's price). Storm Lantern deepens again at level 8: a pure spell may reach three. Nothing here ricochets off
+	// bodies or pens anything - that is the Anvil Line's (ComboCatalog) - and nothing is named Ball Lightning, which is
+	// Stormsweep's level 4. Every number is one Corposant reads: damage through Corposant.Refresh, the count through
+	// GetProjectileCountAtLevel, Spindrift's slow through the rider every strike carries; the behaviours by id. The shares
+	// on Twin Fires and Static Wake are the node's own constants, and RegressionChecks.Corposant holds the words to them.
+	private static void SetupCorposantEvolutions(SpellData spell)
+	{
+		const float spindriftSlow = 0.7f;
+		const float spindriftSeconds = 1.5f;
+		const float lanternDamage = 1.3f;
+		const int crownBalls = 1;
+		const float crownDamage = 1.2f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.TwinFiresId,
+			DisplayName = "Twin Fires",
+			Description = "On its first bounce a ball splits into twin fires that fly off their own ways, "
+				+ $"each striking for {Corposant.TwinShare * 100f:0}% of the ball.",
+			MilestoneLevel = 4,
+			VisualTag = "TwinFires",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. Half its life it covers twice the screen."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.StaticWakeId,
+			DisplayName = "Static Wake",
+			Description = "Each ball leaves a wake of static that crackles for a moment, zapping whatever stands in it "
+				+ $"for {Corposant.WakeShare * 100f:0}% of a strike.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Lightning", 1 } },
+			VisualTag = "StaticWake",
+			SynergyTag = "Lightning / Wake",
+			SynergyDescription = "Deepens Lightning. The ground it crossed bites a moment longer."
+		});
+
+		// The element path: Water, for the sea St Elmo's fire is seen over and the blue it really burns. Its rider is the
+		// drag Water carries (ElementPaths.RiderFor), on every strike and every wake zap.
+		spell.Level4Options.Add(ElementPathOption(spell, "spindrift", "Spindrift", Element.Water, spindriftSlow, spindriftSeconds,
+			"The fire burns sea-blue and its spray drenches what it strikes",
+			"Slowed where they stand, the crowd waits in the next ball's path."));
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.StormLanternId,
+			DisplayName = "Storm Lantern",
+			// Within the card's 130 characters (SpellEvolutionOption.DescriptionBudget, RegressionChecks.ValidateCardTextBudget).
+			Description = "The edges throw each ball home: it hangs over you like a masthead light, then flies out a new way. "
+				+ $"+{(lanternDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = lanternDamage,
+			BonusElementWeights = new() { { "Lightning", 1 } },
+			VisualTag = "StormLantern",
+			SynergyTag = "Ascension / Lightning",
+			SynergyDescription = "Ascension: deepens Lightning. Every ball crosses the crowd round you on its way out and back."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Corposant.SaintsCrownId,
+			DisplayName = "Saint's Crown",
+			Description = "When you are crowded, the balls circle close round you in a crown until the crowd thins. "
+				+ $"+{crownBalls} ball every cast, +{(crownDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			ProjectileCountBonus = crownBalls,
+			DamageMultiplier = crownDamage,
+			VisualTag = "SaintsCrown",
+			SynergyTag = "Ascension / Guard",
+			SynergyDescription = "Ascension: no new element. Surrounded, the storm-fire stays with you."
+		});
+	}
+
+	// Ink Ring (scripts/InkRing.cs): Ma Liang's brush, walked - a line of ink that trails the wizard and strikes everything
+	// inside when his path closes on itself. Every card is something more the INK does, which is this spell's and no
+	// other's: it lasts longer, it stays wet, it stands in the ring, it dries into a wall, the brush goes round again.
+	// Water + Darkness, a hybrid, so its element path is deepening either half at the hybrid's price, never both at one
+	// milestone (ValidateEvolutionElementCeiling): level 4 deepens Water (Wet Ink, the line kept wet) and level 8 Darkness
+	// (Ink Prison, the ring dried black and hard). Nothing here pens with stakes or cuts what leans on a wall - that is
+	// Iron Palisade's Iron Ring - and nothing pools behind him as he kites (Mirefoot's): the line pays only by closing,
+	// apart from Inkwell, whose pool stands inside a ring already closed. No card claims a Conjunction's verb (ComboCatalog).
+	// Every number is one InkRing reads: damage through InkRing.Refresh, the cooldown through the fire loop; the shares
+	// (Long Stroke's ink, Wet Ink's sting, Inkwell's slow) are the node's own constants and RegressionChecks.InkRing holds
+	// the words to them; the behaviours by id.
+	private static void SetupInkRingEvolutions(SpellData spell)
+	{
+		const float prisonDamage = 1.4f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.LongStrokeId,
+			DisplayName = "Long Stroke",
+			Description = $"The ink lasts {(InkRing.LongStrokeShare - 1f) * 100f:0}% longer before it dries away, so the rings you can close grow wider.",
+			MilestoneLevel = 4,
+			VisualTag = "LongStroke",
+			SynergyTag = "Reach",
+			SynergyDescription = "No new element. A wider walk, a wider ring, and more of the crowd inside it."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.WetInkId,
+			DisplayName = "Wet Ink",
+			Description = $"The line stays wet and stings whatever crosses it for {InkRing.WetShare * 100f:0}% of a ring's strike.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Water", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "WetInk",
+			SynergyTag = "Water / Sting",
+			SynergyDescription = "Deepens Water. Whatever follows your trail pays for every step across it."
+		});
+
+		// Eric's working name was Ink Pool; Inkwell keeps it clear of Folio's Inkblot, a stain that slows.
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.InkwellId,
+			DisplayName = "Inkwell",
+			Description = $"The ink that floods a closed ring stands there as a pool for a few seconds, slowing whatever wades it by {InkRing.PoolSlowShare * 100f:0}%.",
+			MilestoneLevel = 4,
+			VisualTag = "Inkwell",
+			SynergyTag = "Slow",
+			SynergyDescription = "No new element. The ground you circled stays yours for a while."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.InkPrisonId,
+			DisplayName = "Ink Prison",
+			Description = "The closed ring dries into a wall: what it caught cannot get out for a few seconds. "
+				+ $"+{(prisonDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = prisonDamage,
+			BonusElementWeights = new() { { "Darkness", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "InkPrison",
+			SynergyTag = "Ascension / Darkness",
+			SynergyDescription = "Ascension: deepens Darkness. Ring them, and they wait inside for the next ring."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.SecondStrokeId,
+			DisplayName = "Second Stroke",
+			Description = "A moment after a ring closes the brush goes round it again, and everything inside is struck a second time.",
+			MilestoneLevel = 8,
+			VisualTag = "SecondStroke",
+			SynergyTag = "Ascension / Strike",
+			SynergyDescription = "Ascension: no new element. Every ring you close strikes twice."
+		});
+	}
+
+	// Windfall (scripts/Windfall.cs): the iron-fruited orchard - a tree planted at his feet, its fruit ripening one at a time,
+	// shaken down one fruit at a time by the swarm and all at once by the wizard walking back under it. Every card is something
+	// more the ORCHARD does, which is this spell's and no other's: more trees, fruit that splits into thorns, fruit that rots,
+	// the whole orchard coming down when he is crowded, branches that lash. Grass + Metal, a hybrid, so its element path is
+	// deepening either half at the hybrid's price, never both at one milestone (ValidateEvolutionElementCeiling): level 4
+	// deepens Grass (Bramble Fall, the thorny wood) and level 8 Metal (Iron Bough, the iron in it). Cider Rot TRADES Grass for
+	// Poison (Ember Caps' rule: still two elements, so no price), which is why it is Grass it trades - Iron Bough then deepens
+	// the Metal the spell kept, and no path reaches three elements. Nothing here pulls (Gravewell's well), springs a trap or
+	// fires on pickups (Folio's), and no card claims a Conjunction's verb (ComboCatalog). Every number is one Windfall reads:
+	// damage through Windfall.Refresh, the trees through GetProjectileCountAtLevel, the crop through its Crop lines; the
+	// shares (a thorn's, a lash's) are the node's own constants and RegressionChecks.Windfall holds the words to them; the
+	// behaviours by id.
+	private static void SetupWindfallEvolutions(SpellData spell)
+	{
+		const int orchardTrees = 1;
+		const float moonDamage = 1.2f;
+		const float boughDamage = 1.2f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.OrchardId,
+			DisplayName = "Orchard",
+			Description = $"{(orchardTrees == 1 ? "One more tree" : $"{orchardTrees} more trees")} may stand at once, so each one stands longer before it is uprooted, "
+				+ "and is fuller when you come back.",
+			MilestoneLevel = 4,
+			ProjectileCountBonus = orchardTrees,
+			VisualTag = "Orchard",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. More trees to come back to, each one heavier."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.BrambleFallId,
+			DisplayName = "Bramble Fall",
+			Description = $"Every fruit that falls splits into {Windfall.ThornsPerFruit} thorns that fly out past where it lands, "
+				+ $"each striking for {Windfall.ThornShare * 100f:0}% of a fruit.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Grass", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "BrambleFall",
+			SynergyTag = "Grass / Thorns",
+			SynergyDescription = "Deepens Grass. Every fruit reaches past the spot it lands on."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.CiderRotId,
+			DisplayName = "Cider Rot",
+			// Names both tags, as the card's element line does ("Grass -> Poison"), as Ember Caps does.
+			Description = "The fruit trades Grass for Poison: each one that falls rots where it lands into a patch that poisons whatever stands in it.",
+			MilestoneLevel = 4,
+			ReplacesElement = "Grass",
+			BonusElementWeights = new() { { "Poison", 1 } },
+			VisualTag = "CiderRot",
+			ModulateColor = ElementColors.GetEvolutionTint(Element.Poison),
+			SynergyTag = "Metal / Poison",
+			SynergyDescription = "Trades Grass for Poison. Where the fruit fell, the ground stays bad."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.HarvestMoonId,
+			DisplayName = "Harvest Moon",
+			Description = "When you are crowded, every tree drops its whole crop at once, wherever you are. "
+				+ $"+{(moonDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = moonDamage,
+			VisualTag = "HarvestMoon",
+			SynergyTag = "Ascension / Harvest",
+			SynergyDescription = "Ascension: no new element. Hemmed in, the whole orchard comes down at once."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Windfall.IronBoughId,
+			DisplayName = "Iron Bough",
+			Description = $"The iron branches lash whatever stands under a tree, striking for {Windfall.LashShare * 100f:0}% of a fruit "
+				+ $"and throwing it back. +{(boughDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = boughDamage,
+			BonusElementWeights = new() { { "Metal", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "IronBough",
+			SynergyTag = "Ascension / Metal",
+			SynergyDescription = "Ascension: deepens Metal. A tree no longer waits to be bumped."
+		});
+	}
+
+	// Lancet (scripts/Lancet.cs): the surgeon's needle, thrown at the most wounded in reach. Every card is something more the
+	// NEEDLE does, which is this spell's and no other's: it lets the poison out, a second one goes, it is forged a bodkin, it
+	// goes on after a kill, the outright kill takes more. Metal + Poison, a hybrid, so its element path is deepening either half
+	// at the hybrid's price - and both are at level 4, on different cards (Bloodletting deepens Poison, Bodkin Metal), so no
+	// path deepens both and level 8 deepens neither: one deepening at most, never three of one (ValidateEvolutionElementCeiling).
+	// Clear of the claimed verbs (ComboCatalog, ApotheosisCatalog): Bloodletting lets one body's poison out where it stands -
+	// nothing narrows a plague onto fewer carriers (Paracelsus's distil) or festers on a beat (Shadow Bolt's); Triage goes on
+	// only from a kill, to the most wounded, never off a body or a wall (the Anvil Line's ricochet) nor through a chain of
+	// living ones (Chain Lightning's link); nothing marks the strongest (Hunter's Mark). The outright kill is never a boss's or
+	// an elite's. Every number is one Lancet reads: damage through Lancet.Refresh, the count through GetProjectileCountAtLevel,
+	// the cooldown through the fire loop, Bodkin's Wither through the rider every strike carries; the shares are the node's
+	// own constants and RegressionChecks.Lancet holds the words to them; the behaviours by id.
+	private static void SetupLancetEvolutions(SpellData spell)
+	{
+		const int twinNeedles = 1;
+		const float surgeonDamage = 1.2f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.BloodlettingId,
+			DisplayName = "Bloodletting",
+			Description = "A needle that lances a poisoned enemy releases all its remaining poison at once, in one hit.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Poison", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "Bloodletting",
+			SynergyTag = "Poison / Release",
+			SynergyDescription = "Deepens Poison. What the poison would have taken over seconds, the needle takes now."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.TwinLancetsId,
+			DisplayName = "Twin Lancets",
+			Description = $"{(twinNeedles == 1 ? "One more needle" : $"{twinNeedles} more needles")} every cast, each at the next most wounded enemy.",
+			MilestoneLevel = 4,
+			ProjectileCountBonus = twinNeedles,
+			VisualTag = "TwinLancets",
+			SynergyTag = "Spread",
+			SynergyDescription = "No new element. One more of the hurt finished every throw."
+		});
+
+		// Metal's own status is Wither (ElementPaths.RiderFor): a share of max health taken for good, which leaves the body
+		// wounded - so a needle's first strike marks it as the next one's quarry. A bodkin is the needle-pointed blade that
+		// went through mail.
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.BodkinId,
+			DisplayName = "Bodkin",
+			Description = "The needle is forged a bodkin point: "
+				+ ElementPaths.Describe(ElementRider.Wither, Lancet.BodkinWither, 0f) + ".",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Metal", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			Rider = ElementRider.Wither,
+			RiderMagnitude = Lancet.BodkinWither,
+			VisualTag = "Bodkin",
+			SynergyTag = "Metal / Wither",
+			SynergyDescription = "Deepens Metal. Nothing a needle touches is unhurt again, so the next one comes back for it."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.TriageId,
+			DisplayName = "Triage",
+			Description = "A needle that kills flies on to the next most wounded enemy in reach, and on again for every kill.",
+			MilestoneLevel = 8,
+			VisualTag = "Triage",
+			SynergyTag = "Ascension / Triage",
+			SynergyDescription = "Ascension: no new element. In a hurt crowd one needle finishes a row of them."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = Lancet.SurgeonsHandId,
+			DisplayName = "Surgeon's Hand",
+			Description = $"The outright kill takes an ordinary enemy under {Lancet.SurgeonsSliverShare * 100f:0}% health, "
+				+ $"not {Lancet.SliverShare * 100f:0}%. +{(surgeonDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = surgeonDamage,
+			VisualTag = "SurgeonsHand",
+			SynergyTag = "Ascension / Execute",
+			SynergyDescription = "Ascension: no new element. Twice the sliver, and a steadier hand for the rest."
 		});
 	}
 }

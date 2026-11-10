@@ -245,6 +245,55 @@ public static partial class AchievementDefinitions
 	public const int MagpieChestTarget = 10;
 
 	/// <summary>
+	/// Kills numbered in Lightning's ink in ONE run that pay Corposant (the Storm Petrel feat): a Lightning spell's, a spell
+	/// branched into Lightning, the Lightning tier's chain (RunEvents.RecordLightningKill). The Stormcaller opens on Chain
+	/// Lightning, so every save can reach it from its first run. Measured 2026-11-09 (_BalanceHarness --minutes=15
+	/// --character=3, seed 1234, the real save read-only): the bot spread its picks over five spells and never took Chain
+	/// Lightning past level 3, and still made 310 by minute 5, 492 by minute 10 and 672 in the run. Five hundred is most
+	/// of a run with Lightning in it, or the first half of one built round it - Magpie's "a good run's worth".
+	/// </summary>
+	public const int StormPetrelLightningKills = 500;
+
+	/// <summary>
+	/// Kills numbered in Water's ink or Darkness's in ONE run that pay Ink Ring (the Cormorant feat): the two halves of Ma
+	/// Liang's ink, each counted where its number is chosen (RunEvents.RecordInkKill). Tituba opens on Riptide (Water), and
+	/// Hollow Star (Darkness) is the Survivor feat's, so a save reaches it without the spell it pays. Measured 2026-11-09
+	/// (_BalanceHarness --minutes=15 --character=5, seed 1234, the real save read-only; the bot kept Riptide at level 2 to
+	/// 6 among four or five spells): the kiting bot died at minute 7 with 168, the --survivor bot at minute 7.3 with 233
+	/// (119 by minute 5), and the --immortal bot made 195 by minute 5, 638 by minute 10 and 1,235 in the run. Five hundred
+	/// is Storm Petrel's number and the same ask: most of a run with Water or Darkness in it, or the first half of one built
+	/// round them.
+	/// </summary>
+	public const int CormorantInkKills = 500;
+
+	/// <summary>
+	/// Kills numbered in Grass's ink or Metal's in ONE run that pay Windfall (the Fieldfare feat): the living wood and the
+	/// iron, each counted where its number is chosen (RunEvents.RecordGrassMetalKill). Väinämöinen opens on Bramble Seed
+	/// (Grass), Wayland on Iron Palisade (Metal), Baba Yaga on Thorned Vine (numbered in Grass), and Thorned Vine is the
+	/// Forest's deed, so a save reaches it without the spell it pays. Measured 2026-11-09 (_BalanceHarness --minutes=15,
+	/// seed 1234, the real save read-only): Väinämöinen's kiting bot (--character=6) lived the run and made 378 by minute 5,
+	/// 1,234 by minute 10 and 1,676 in all; Wayland's (--character=12) died at minute 5.4 with 190, and his --immortal bot
+	/// made 303 by minute 5, 1,236 by minute 10 and 2,108 in all. Both openers kill in a crowd, so they reach Storm Petrel's
+	/// and Cormorant's 500 by minute 6: the same ask in time - most of a run with Grass or Metal in it, where the Stormcaller
+	/// bot made 500 at minute 10 - is a thousand.
+	/// </summary>
+	public const int FieldfareGrassMetalKills = 1000;
+
+	/// <summary>
+	/// Enemies that die POISONED in ONE run, whatever dealt the last blow, that pay Lancet (the Shrike feat): counted in
+	/// Enemy.StartDeath while the poison is still ticking (RunEvents.RecordPoisonedKill). Paracelsus opens on Contagion
+	/// (Poison), Baba Yaga on Thorned Vine (which poisons), and any two Poison carriers raise the Poison tier that poisons
+	/// on every hit, so a save reaches it without the spell it pays. Measured 2026-11-09 (_BalanceHarness --minutes=15,
+	/// seed 1234, the real save read-only): Baba Yaga's kiting bot (--character=15) lived the run and made 259 by minute 5,
+	/// 445 by minute 10 and 551 in all, reaching 500 at about minute 12; Paracelsus's (--character=17) lived it too and made
+	/// 723 by minute 5, 2,408 by minute 10 and 4,333 in all (his --immortal bot 703 / 2,408 / 4,544), reaching 500 at about
+	/// minute 4.3 - Contagion's plague is on nearly everything that dies. Five hundred is Storm Petrel's and Cormorant's
+	/// number and the same ask for a poison carrier that is not a plague: most of a run with Poison in it. The plague doctor
+	/// earns the surgeon's needle in the first third of one, which is his.
+	/// </summary>
+	public const int ShrikePoisonedKills = 500;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -489,6 +538,57 @@ public static partial class AchievementDefinitions
 			RewardText = "Unlocks Folio", SpellUnlockId = "folio",
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.BestChestsInRun, Target = MagpieChestTarget,
+		},
+		// CORPOSANT'S FEAT (2026-11-09): St Elmo's fire is the sailor's sign of a storm, and the storm petrel is the bird
+		// sailors saw before one - a bird named for St Peter, as Magpie (Folio's) is a bird too. Earned by fighting with
+		// Lightning: kills numbered in its ink in a single run. Not the Lightning Adept (Stormguard's), which counts
+		// Lightning held; this counts what Lightning killed. Measured off the best run kept in the lifetime stats
+		// (LifetimeStats.BestLightningKillsInRun), so the menu shows the best run so far and the pause screen this run's.
+		new()
+		{
+			Id = "storm_petrel", DisplayName = "Storm Petrel",
+			Description = $"Defeat {StormPetrelLightningKills} enemies with Lightning in a single run.",
+			RewardText = "Unlocks Corposant", SpellUnlockId = "corposant",
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestLightningKillsInRun, Target = StormPetrelLightningKills,
+		},
+		// INK RING'S FEAT (2026-11-09): the cormorant is the black diving bird the river fishermen of Ma Liang's China work
+		// with - ink-black, and at home in the water - and a bird beside Magpie and Storm Petrel. Earned by fighting with
+		// the two halves of his ink: kills numbered in Water's ink or Darkness's in a single run. Measured off the best run
+		// kept in the lifetime stats (LifetimeStats.BestInkKillsInRun), as Storm Petrel is.
+		new()
+		{
+			Id = "cormorant", DisplayName = "Cormorant",
+			Description = $"Defeat {CormorantInkKills} enemies with Water or Darkness in a single run.",
+			RewardText = "Unlocks Ink Ring", SpellUnlockId = InkRing.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestInkKillsInRun, Target = CormorantInkKills,
+		},
+		// WINDFALL'S FEAT (2026-11-09): the fieldfare is the winter thrush that comes down on an orchard for its windfalls,
+		// the apples lying in the grass - a bird beside Magpie, Storm Petrel and Cormorant. Earned by fighting with the
+		// orchard's two halves: kills numbered in Grass's ink or Metal's in a single run. Measured off the best run kept in
+		// the lifetime stats (LifetimeStats.BestGrassMetalKillsInRun), as Storm Petrel and Cormorant are.
+		new()
+		{
+			Id = "fieldfare", DisplayName = "Fieldfare",
+			Description = $"Defeat {FieldfareGrassMetalKills} enemies with Grass or Metal in a single run.",
+			RewardText = "Unlocks Windfall", SpellUnlockId = Windfall.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestGrassMetalKillsInRun, Target = FieldfareGrassMetalKills,
+		},
+		// LANCET'S FEAT (2026-11-09): the shrike is the butcher-bird, which impales what it catches on a thorn - a bird beside
+		// Magpie, Storm Petrel, Cormorant and Fieldfare, and not another "defeat N with an element": it counts the dying, not
+		// the killing. Enemies that die with a poison ticking on them in a single run, whatever dealt the last blow - a
+		// poison tick, any spell, a needle (Enemy.StartDeath, RunEvents.RecordPoisonedKill) - which is the finisher's work:
+		// poison them, then finish them. Measured off the best run kept in the lifetime stats
+		// (LifetimeStats.BestPoisonedKillsInRun), as the other four are.
+		new()
+		{
+			Id = "shrike", DisplayName = "Shrike",
+			Description = $"Defeat {ShrikePoisonedKills} poisoned enemies in a single run.",
+			RewardText = "Unlocks Lancet", SpellUnlockId = Lancet.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestPoisonedKillsInRun, Target = ShrikePoisonedKills,
 		},
 		new()
 		{

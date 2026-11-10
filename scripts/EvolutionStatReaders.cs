@@ -329,6 +329,36 @@ public static class EvolutionStatReaders
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"Folio.Refresh, Folio.Strike and Player.FireFolio (pages a timed turn throws plus Amount; Range is the reach a page finds its quarry in; Torn Leaf, Inkblot, Gilt Edge, Bound Volume, Commonplace Book and the Spirit Mirror by id)",
 			SpellEffect.CritDamage),
+		// St Elmo's fire (scripts/Corposant.cs): Corposant.Refresh reads the cast's numbers, Player.FireCorposant the count.
+		// Projectiles and Amount are the balls a cast looses; ZoneDuration is a ball's life (Corposant.LifeAt); every strike
+		// and wake zap passes the spell as its source, so Spindrift's slow rides it. No Range (the view's edges are its
+		// range), no Area or Scale on a card (the ball grows with the wizard's own Area), no Speed (no card sets one).
+		[Corposant.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Rider | EvolutionStat.Amount,
+			"Corposant.Refresh and Player.FireCorposant (balls a cast looses plus Amount; ZoneDuration is a ball's life; Twin Fires, Static Wake, Spindrift's repaint, Storm Lantern and Saint's Crown by id)",
+			SpellEffect.ZoneDuration, SpellEffect.CritDamage),
+		// Ma Liang's brush, walked (scripts/InkRing.cs): InkRing.Refresh reads the ring's damage and the ink's life, the fire
+		// loop its cooldown (the recharge between rings). ZoneDuration is how long the ink lasts (InkRing.InkSecondsAt), and
+		// so how wide a ring can be walked. Every strike and sting passes the spell as its source, so a per-spell crit reaches
+		// it. No Range, Area, Speed, Scale or count: the wizard's walk is all of those.
+		[InkRing.SpellId] = R(Core,
+			"InkRing.Refresh, InkRing.Strike and the fire loop's recharge (ZoneDuration is the ink's life; Long Stroke, Wet Ink, Inkwell, Ink Prison and Second Stroke by id)",
+			SpellEffect.ZoneDuration, SpellEffect.CritDamage),
+		// The iron-fruited orchard (scripts/Windfall.cs): Windfall.Refresh reads a fruit's damage, the crop (Crop lines,
+		// Windfall.CropAt) and the thud's shove (KnockbackBonus over BaseKnockback, though no card sets one), Player.FireWindfall
+		// the tree cap - Projectiles and Amount, Orchard's +1 among them - and the fire loop the planting's cooldown. Every
+		// thud, thorn and lash passes the spell as its source, so a rider and a per-spell crit reach it. No Range, Area, Speed
+		// or Scale on a card: the ring and the thud grow with the wizard's own Area, which is not a card's.
+		[Windfall.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Knockback | EvolutionStat.Rider | EvolutionStat.Amount,
+			"Windfall.Refresh and Player.FireWindfall (trees standing at once plus Amount; Crop is a tree's fruit; Orchard by its count, Bramble Fall, Cider Rot, Harvest Moon and Iron Bough by id)",
+			SpellEffect.Crop, SpellEffect.CritDamage),
+		// The surgeon's needle (scripts/Lancet.cs): Lancet.Refresh reads a needle's damage and the reach it chooses in
+		// (GetReachAtLevel, Range), Player.FireLancet the needles a cast throws - Projectiles and Amount, Twin Lancets' +1 among
+		// them - and the fire loop the throw's cooldown, Bloodletting's and Bodkin's 12% with it. Every strike passes the spell
+		// as its source, so Bodkin's Wither and a per-spell crit reach it. No Area, Speed or Scale on a card: a needle is drawn
+		// at its own size and flies at its own speed.
+		[Lancet.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Rider | EvolutionStat.Amount,
+			"Lancet.Refresh, Lancet.Cast and Player.FireLancet (needles a cast throws plus Amount; Range is the reach it chooses in; Bloodletting, Triage and Surgeon's Hand by id, Bodkin's Wither through the house path)",
+			SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",

@@ -72,6 +72,7 @@ import obsidian_glass as glass
 import spell_icons_core as sc
 import spore_mushrooms as spores
 import spirit_weapons as sw
+import ink_wash
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 CATALOG = os.path.join(HERE, "evolution_catalog.json")
@@ -1208,6 +1209,21 @@ SPELLS = {
     "hollow_star":       dict(paint=si.hollow_star, travel=None, tip=(16, 16), rows=("darkness",)),
     # John Dee's opener (.ai/character-fit.md section 6): the open book and the page flying from it (the tip).
     "folio":             dict(paint=si.folio, travel=(0.8, -1), tip=(26, 4), rows=("arcane", "darkness")),
+    # St Elmo's fire (scripts/Corposant.cs): the ball coming off the edge of the view, its heart leading (the tip). Drawn
+    # without its night, as Stormsweep is; the frame lays the milestone's.
+    "corposant":         dict(paint=lambda: si.corposant(sky=False), travel=(-0.7, 0.7), tip=(9, 24), rows=("lightning",)),
+    # Ma Liang's brush, walked (scripts/InkRing.cs): the enso closing on itself, painted in INK (spell_icons.ink_ring) and
+    # laid opaque - a translucent wash over the milestone's night would blend into a colour that is neither. Not lifted
+    # by the rim's light as a dark subject is: a line of the element's light round it made it a lit thing, and the ink's
+    # pale middle carries it on the night. No rows to re-light (ink is never re-lit).
+    "ink_ring":          dict(paint=None, travel=None, tip=(16, 16), rows=()),
+    # The iron-fruited orchard (scripts/Windfall.cs): the small tree, its steel apples, and one coming down off it (the tip,
+    # falling). Drawn in materials, verdant and steel, as the game's tree is (tools/art/windfall.py), so no element row is
+    # re-lit: Cider Rot draws its own rot.
+    "windfall":          dict(paint=si.windfall, travel=(0, 1), tip=(25, 23), rows=()),
+    # The surgeon's needle (scripts/Lancet.cs): the steel needle going into the most wounded skull (the tip, its point). Its
+    # rows are its two: the needle's steel light and the bead of poison.
+    "lancet":            dict(paint=lambda: si.lancet(sky=False), travel=(1, 1), tip=(17, 17), rows=("metal", "poison")),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -1258,7 +1274,8 @@ BASE = {
     "spiritual_weapon_sword": lambda: sw.icon("sword"),
     "starfall": si.starfall, "familiar": si.familiar_icon, "stormsweep": si.stormsweep,
     "familiar_dog": si.familiar_dog_icon, "familiar_crow": si.familiar_crow_icon, "familiar_cat": si.familiar_cat_icon,
-    "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages,
+    "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages, "corposant": si.corposant,
+    "ink_ring": si.ink_ring, "windfall": si.windfall, "lancet": si.lancet,
 }
 
 
@@ -4203,6 +4220,441 @@ def _(sp, c):
     O(sp, drawn_in)
 
 
+# --- Corposant -------------------------------------------------------------------------------------
+
+# St Elmo's fire (scripts/Corposant.cs). Every card is something more the BALL does, and every icon draws the ball doing
+# it, as the spell's own icon does (si.corposant): a pale shell, an amber rim, a white heart, tongues of storm-fire
+# streaming back the way it came. Split in two at the edge, a wake of static behind it, burning sea-blue, hung at a
+# masthead, crowning a figure ringed by the swarm.
+
+def storm_fire(cv, x, y, r, back, ramp=None):
+    """One ball of storm-fire at (x, y), its tongues streaming toward `back` (a direction): the spell's ball, any size."""
+    core, hot, mid, edge = ramp or E["lightning"]
+    ux, uy = _unit(back)
+    px, py = -uy, ux
+    for (spread, length, wave) in ((0.0, r * 2.0, 0.8), (0.6, r * 1.3, -0.6), (-0.6, r * 1.3, 0.6)):
+        dx, dy = _unit((ux + px * spread, uy + py * spread))
+        qx, qy = -dy, dx
+        steps = max(2, int(length))
+        for s in range(steps):
+            t = (s + 1.0) / steps
+            sway = math.sin(t * math.pi * 1.5) * wave
+            sx = x + dx * (r * 0.6 + length * t) + qx * sway
+            sy = y + dy * (r * 0.6 + length * t) + qy * sway
+            tone = hot if t < 0.35 else (mid if t < 0.7 else edge)
+            half = 0.3 * r * (1.0 - t)
+            k = -half
+            while k <= half + 0.01:
+                cv.set(sx + qx * k, sy + qy * k, tone if abs(k) < 0.6 else mid)
+                k += 0.8
+    cv.disc(x, y, r, r, edge)
+    cv.disc(x, y, r - 1.0, r - 1.0, mid)
+    cv.disc(x + ux * 0.3, y + uy * 0.3, max(1.0, r - 2.0), max(1.0, r - 2.0), hot)
+    cv.disc(x - ux * 0.6, y - uy * 0.6, max(0.8, r * 0.35), max(0.8, r * 0.35), core)
+
+
+def edge_crack(cv, x, y, ramp=None):
+    """Where a ball turned off the edge of the view: a white heart, four arms, the diagonals short."""
+    core, hot, mid, edge = ramp or E["lightning"]
+    for d in (1, 2):
+        for (dx, dy) in ((d, 0), (-d, 0), (0, d), (0, -d)):
+            cv.set(x + dx, y + dy, core if d == 1 else hot)
+    for (dx, dy) in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
+        cv.set(x + dx, y + dy, mid)
+    cv.set(x, y, core)
+
+
+def view_edge(cv, x, y0, y1):
+    """The edge of the screen, as the spell's icon draws it: a dashed upright in the sea's lit swell."""
+    for y in range(y0, y1 + 1):
+        if y % 3 != 2:
+            cv.set(x, y, M["lichen"][1])
+
+
+def twin_fires():
+    """Twin Fires: the ball came in along the dotted path to the edge and leaves it as two, up and down and away."""
+    c = _cv()
+    core, hot, mid, edge = E["lightning"]
+    view_edge(c, 27, 4, 27)
+    for (x, t) in ((5, edge), (9, edge), (13, mid), (17, mid), (21, hot)):
+        c.set(x, 16, t)
+    storm_fire(c, 11.5, 8.0, 3.6, (1.0, 0.55))
+    storm_fire(c, 11.5, 24.0, 3.6, (1.0, -0.55))
+    edge_crack(c, 25, 16)
+    return c
+
+
+def static_wake():
+    """Static Wake: the ball low on the left, and behind it the way it came a wake of static crackling over a skull."""
+    c = _cv()
+    core, hot, mid, edge = E["lightning"]
+    foe(c, 20.5, 12.5, 1.1)
+    # The wake: kinked strokes of static laid along the path, brightest nearest the ball.
+    for (a, b, tone) in (((26, 4), (23, 8), edge), ((22, 9), (19, 13), mid), ((18, 14), (15, 17), hot)):
+        zig(c, a, b, tone, 1.2, 2, core if tone == hot else None)
+    zig(c, (24, 12), (21, 13), hot, 0.8, 2, core)
+    storm_fire(c, 10.5, 21.5, 4.2, (1.0, -1.0))
+    return c
+
+
+def storm_lantern():
+    """Storm Lantern: the ball hung at a masthead, and the three ways it has flown out and been thrown home again."""
+    c = _cv()
+    core, hot, mid, edge = E["lightning"]
+    g = M["gold"]
+    # The mast and its yard: dark wood, lit on the left.
+    c.vline(16, 12, 28, g[3])
+    c.vline(15, 13, 28, g[2])
+    c.hline(10, 22, 17, g[3])
+    c.hline(10, 21, 16, g[2])
+    # The ways out and home: dotted spokes to a crack at the edge of the night.
+    for (ex, ey) in ((5.0, 6.0), (27.0, 6.0), (27.0, 21.0)):
+        for k in range(2, 7):
+            t = k / 7.0
+            c.set(16 + (ex - 16) * t, 8 + (ey - 8) * t, mid if k % 2 == 0 else edge)
+        edge_crack(c, int(ex), int(ey))
+    storm_fire(c, 16.0, 8.0, 3.8, (0.0, 1.0))
+    return c
+
+
+def saints_crown():
+    """Saint's Crown: a hooded figure in the middle, the swarm pressing in round him, and between them five balls
+    circling close in a crown, each streaming back along the way it turns."""
+    c = _cv()
+    w = M["wool"]
+    for k in range(5):
+        a = math.radians(-90 + 72 * k + 36)
+        foe(c, C0 + math.cos(a) * 12.0, C0 + math.sin(a) * 12.0, 0.8)
+    # The figure: a pointed hat and a cloak, dark, so the crown round him is the light on the card.
+    c.poly([(16, 10), (12.5, 19), (19.5, 19)], w[2])
+    c.line(16, 10, 13, 18, w[1])
+    c.hline(11, 21, 19, w[3])
+    c.poly([(13, 20), (19, 20), (20, 24), (12, 24)], w[3])
+    for k in range(5):
+        a = math.radians(-90 + 72 * k)
+        x, y = C0 + math.cos(a) * 8.0, C0 + math.sin(a) * 8.0
+        # It turns clockwise, so its tongues stream back anticlockwise along the ring.
+        storm_fire(c, x, y, 2.4, (math.sin(a), -math.cos(a)))
+    return c
+
+
+@card("corposant_twin_fires")
+def _(sp, c):
+    reset(sp)
+    sp.subject = twin_fires
+
+
+@card("corposant_static_wake")
+def _(sp, c):
+    reset(sp)
+    sp.subject = static_wake
+
+
+@card("corposant_spindrift")
+def _(sp, c):
+    """Spindrift: the ball re-lit sea-blue on Water's night (derive's element path), and spray flung off it."""
+    O(sp, lambda cv, x: m_drops(cv, E["water"], [(4, 20), (6, 27), (12, 29), (3, 24)]))
+
+
+@card("corposant_storm_lantern")
+def _(sp, c):
+    reset(sp)
+    sp.subject = storm_lantern
+
+
+@card("corposant_saints_crown")
+def _(sp, c):
+    reset(sp)
+    sp.subject = saints_crown
+
+
+# --- Ink Ring --------------------------------------------------------------------------------------
+
+# Ma Liang's brush, walked (scripts/InkRing.cs). Every card is something more the INK does, and every icon paints the enso
+# doing it, in ink (spell_icons.ink_ring, the one sanctioned departure - .ai/art-direction.md section 3a): a longer stroke
+# with its tail coming round past its start, the stroke still wet and running onto a skull crossing it, the ring standing
+# full of ink, the ring dried black and hard round the swarm it caught, and the brush gone round a second time. Held to
+# ink_wash.audit (main, INK_SUBJECTS) in place of the contract's check: its ink stops opaque, the frame's colours as ever.
+# Paler than the spell's own icon (`ink`), since a milestone's night is dark where the card's page is cream.
+
+INK_SUBJECTS = ("ink_ring",)
+
+
+def _ink(**kw):
+    """A subject painted by spell_icons.ink_ring, laid opaque on the card's night."""
+    kw.setdefault("opaque", True)
+    kw.setdefault("seal", False)
+    kw.setdefault("ink", 0.44)
+    return image(lambda: si.ink_ring(**kw))
+
+
+SPELLS["ink_ring"]["paint"] = _ink()
+
+
+@card("ink_ring_long_stroke")
+def _(sp, c):
+    """Long Stroke: a wider ring, the stroke running on past where it closed in a long dry tail."""
+    reset(sp)
+    sp.subject = _ink(sweep=440.0, r=12.6, width=(4.6, 1.2), flood=False, seed=3)
+
+
+@card("ink_ring_wet_ink")
+def _(sp, c):
+    """Wet Ink: the stroke still wet, ink running off its foot, and a skull crossing it stung."""
+    reset(sp)
+    sp.subject = _ink(width=(4.8, 3.6), flood=False, drips=True, ink=0.5, r=9.6, cy=14.5, seed=5)
+    O(sp, lambda cv, x: foe(cv, 24.0, 18.5, 0.95))
+
+
+@card("ink_ring_inkwell")
+def _(sp, c):
+    """Inkwell: the ring standing full of ink, a pool of it to the rim."""
+    reset(sp)
+    sp.subject = _ink(pool=0.34, flood=False, r=11.0, seed=7)
+
+
+@card("ink_ring_ink_prison")
+def _(sp, c):
+    """Ink Prison: the ring dried black and hard all round, and the swarm it caught inside it."""
+    reset(sp)
+    sp.subject = _ink(sweep=360.0, width=(4.4, 4.4), flood=False, hard=True, ink=0.5, r=11.6, seed=9)
+    O(sp, lambda cv, x: (foe(cv, 12.5, 13.5, 0.9), foe(cv, 19.5, 15.0, 0.9), foe(cv, 15.5, 20.5, 0.9)))
+
+
+@card("ink_ring_second_stroke")
+def _(sp, c):
+    """Second Stroke: the brush gone round again, a second ring inside the first."""
+    reset(sp)
+    sp.subject = _ink(second=True, flood=False, r=12.0, width=(4.2, 2.0), seed=11)
+
+
+# --- Windfall --------------------------------------------------------------------------------------
+
+# The iron-fruited orchard (scripts/Windfall.cs). Every card is something more the ORCHARD does, and every icon draws the
+# spell's own tree (si.windfall) doing it: two trees for Orchard, an apple bursting into thorns, apples gone to rot over a
+# patch of it, a whole crop coming down in a ring under a moon, an iron branch lashing down at the swarm.
+
+def wf_thorn(cv, x0, y0, dx, dy, n=4):
+    """A thorn flying out from (x0, y0) along (dx, dy): a verdant shaft and a pale Grass point."""
+    g = E["grass"]
+    v = M["verdant"]
+    ux, uy = _unit((dx, dy))
+    for k in range(n):
+        tone = v[3] if k < 1 else (g[3] if k < n - 1 else g[1])
+        cv.set(x0 + ux * k, y0 + uy * k, tone)
+
+
+def wf_rot(cv, x, y):
+    """A patch of rot on the ground: Poison's pulp splashed round a burst apple."""
+    po = E["poison"]
+    cv.disc(x, y, 5.5, 2.2, po[3])
+    cv.disc(x - 0.5, y - 0.3, 3.6, 1.4, po[2])
+    for (dx, dy) in ((-4, -1), (3, -1), (1, 1)):
+        cv.set(x + dx, y + dy, po[1])
+    st = M["steel"]
+    cv.set(x - 1, y - 1, st[2])
+    cv.set(x, y - 1, st[3])
+    cv.set(x - 1, y - 2, st[1])
+
+
+def wf_moon(cv, x, y, r=3.6):
+    """The harvest moon: bone, lit from the upper left, a pock on its dark side (the moon is bone, art-direction.md section 3)."""
+    b = M["skin"]
+    cv.disc(x, y, r, r, b[2])
+    cv.disc(x - 0.6, y - 0.6, r - 1.0, r - 1.0, b[1])
+    cv.set(x - 1.5, y - 1.5, b[0])
+    cv.set(x - 0.5, y - 1.5, b[0])
+    cv.set(x + 1.5, y + 1.0, b[3])
+
+
+@card("windfall_orchard")
+def _(sp, c):
+    """Orchard: two trees - one more standing - the second behind and to the left."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(falling=False)
+    sp.copies = [Place(0.6, at=(C0 - 6.5, C0 - 3.0), darken=1)]
+    sp.place = Place(0.74, at=(C0 + 4.5, C0 + 2.5))
+
+
+@card("windfall_bramble_fall")
+def _(sp, c):
+    """Bramble Fall: the tree up on the left, and an apple come down on the right bursting into four thorns."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(falling=False)
+    sp.place = Place(0.7, at=(C0 - 5.0, C0 - 4.0))
+
+    def burst(cv, x):
+        si.windfall_fruit(cv, 22.5, 22.5)
+        for (dx, dy) in ((1, -1), (1, 1), (-1, 1), (-1, -1)):
+            wf_thorn(cv, 22.5 + dx * 3, 22.5 + dy * 3, dx, dy)
+    O(sp, burst)
+
+
+@card("windfall_cider_rot")
+def _(sp, c):
+    """Cider Rot: the apples on the tree spotted with rot, and one fallen into a patch of it."""
+    reset(sp)
+    sp.recolour = None
+    sp.subject = lambda: si.windfall(falling=False, rot=True)
+    sp.place = Place(0.82, at=(C0 - 3.0, C0 - 3.0))
+    O(sp, lambda cv, x: wf_rot(cv, 22.5, 25.5))
+
+
+@card("windfall_harvest_moon")
+def _(sp, c):
+    """Harvest Moon: the moon up, the tree bare, and its whole crop coming down in a ring round it on the swarm."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(fruit=(), falling=False)
+    sp.place = Place(0.7, at=(C0, C0 + 1.0))
+
+    def ring(cv, x):
+        wf_moon(cv, 24.5, 7.0)
+        for k in range(6):
+            a = math.radians(30 + 60 * k)
+            si.windfall_fruit(cv, C0 + math.cos(a) * 10.5, C0 + 4.0 + math.sin(a) * 6.5, r=1.8)
+        foe(cv, 5.5, 25.0, 0.8)
+        foe(cv, 26.0, 25.5, 0.8)
+    O(sp, ring)
+
+
+@card("windfall_iron_bough")
+def _(sp, c):
+    """Iron Bough: an iron branch lashing down out of the crown at a skull standing under the tree."""
+    reset(sp)
+    sp.subject = lambda: si.windfall(falling=False)
+    sp.place = Place(0.78, at=(C0 - 4.0, C0 - 2.0))
+
+    def lash(cv, x):
+        st = M["steel"]
+        foe(cv, 24.0, 24.5, 1.0)
+        pts = [(15.0, 13.0), (19.0, 14.0), (22.0, 16.5), (23.5, 19.5)]
+        for (a, b) in zip(pts, pts[1:]):
+            cv.line(a[0], a[1] + 1, b[0], b[1] + 1, OCC)
+            cv.line(a[0], a[1], b[0], b[1], st[2])
+            cv.line(a[0], a[1] - 1, b[0], b[1] - 1, st[0])
+        # The crack where it lands.
+        for (dx, dy) in ((1, 0), (-1, 0), (0, -1)):
+            cv.set(24 + dx * 2, 20 + dy * 2, E["metal"][1])
+    O(sp, lash)
+
+
+# --- Lancet ----------------------------------------------------------------------------------------
+
+# The surgeon's needle (scripts/Lancet.cs). Every card is something more the NEEDLE does, and every icon draws the spell's own
+# needle and skull (si.lancet_needle, si.lancet_skull) doing it: the poison spraying out of the wound it lanced, two needles
+# at two skulls, a bodkin's head going into a skull it has withered, a needle gone on from a kill to the next one, and the
+# outright kill's cut through the bone.
+
+def lc_spray(cv, x, y):
+    """Bloodletting's release: the poison let out of the wound at (x, y) all at once - five fat drops flung out in a fan up
+    and to the right, each a white-hot heart in Poison's hot with a short tail of its mid back toward the wound, and the
+    wound itself white. Its pale stops, so it holds on Poison's own night."""
+    po = E["poison"]
+    for (deg, r) in ((-105, 7.0), (-75, 8.5), (-45, 9.0), (-15, 8.5), (15, 7.0)):
+        a = math.radians(deg)
+        ux, uy = math.cos(a), math.sin(a)
+        hx, hy = int(round(x + ux * r)), int(round(y + uy * r))
+        for back in (2.0, 3.0):
+            cv.set(int(round(x + ux * (r - back))), int(round(y + uy * (r - back))), po[2])
+        cv.set(hx, hy, po[1])
+        cv.set(hx + 1, hy, po[1])
+        cv.set(hx, hy + 1, po[1])
+        cv.set(hx + 1, hy + 1, po[2])
+        cv.set(hx, hy, po[0])
+    cv.set(x, y, po[0])
+    cv.set(x + 1, y, po[1])
+
+
+def lc_bodkin():
+    """Bodkin: a heavier needle with a bodkin's square-shouldered head, gone into a skull it has withered."""
+    c = _cv()
+    si.lancet_skull(c, 21.0, 20.5, 1.4, cracked=False, withered=True)
+    si.lancet_needle(c, 5.0, 5.0, 16.5, 16.5, bead=False, bodkin=True)
+    si.lancet_glint(c, 17, 17)
+    return c
+
+
+def lc_triage():
+    """Triage: the needle through one skull, its eyes struck out, and on from it along a dotted path to the next."""
+    c = _cv()
+    mid, edge = E["metal"][2], E["metal"][3]
+    si.lancet_skull(c, 11.5, 11.0, 1.1, cracked=True, dead=True)
+    si.lancet_skull(c, 23.0, 23.0, 1.1, cracked=True)
+    si.lancet_needle(c, 3.0, 3.0, 9.0, 9.0, bead=False)
+    for k in range(4):
+        t = (k + 1) / 5.0
+        cv_x, cv_y = 14.5 + (18.0 - 14.5) * t * 1.6, 14.5 + (18.0 - 14.5) * t * 1.6
+        c.set(cv_x, cv_y, mid if k % 2 == 0 else edge)
+    si.lancet_needle(c, 15.0, 15.0, 19.5, 19.5, bead=True)
+    return c
+
+
+def lc_surgeons_hand():
+    """Surgeon's Hand: the outright kill - a long white cut through a skull, its two halves parted along it, a ring of steel
+    opening round it."""
+    core, hot, mid, edge = E["metal"]
+    # The skull, the spell's own, drawn whole and then parted along the cut: the half above it a pixel up and right, the
+    # half below a pixel down and left, so the gap between them is the cut's line.
+    whole = _cv()
+    si.lancet_skull(whole, 15.5, 16.0, 1.75, cracked=False, dead=True)
+    c = _cv()
+    for yy in range(CELL):
+        for xx in range(CELL):
+            px = whole.get(xx, yy)
+            if not px[3]:
+                continue
+            above = (yy - 16.0) < -(xx - 15.5) * 0.55
+            c.set(xx + (1 if above else -1), yy + (-1 if above else 1), px)
+    # The cut: white-hot through the middle, metal's hot and mid out to its ends, along the gap.
+    for k in range(-13, 14):
+        t = abs(k) / 13.0
+        tone = core if t < 0.5 else (hot if t < 0.8 else mid)
+        x = 15.5 + k
+        y = 16.0 - k * 0.55
+        c.set(int(round(x)), int(round(y)), tone)
+    # The ring opening round it: eight beats of steel.
+    for a in range(8):
+        ang = a * math.pi / 4.0 + math.pi / 8.0
+        c.set(16 + math.cos(ang) * 10.5, 16 + math.sin(ang) * 10.5, mid if a % 2 == 0 else edge)
+    return c
+
+
+@card("lancet_bloodletting")
+def _(sp, c):
+    """Bloodletting: the needle in the skull, and all the poison let out of the wound at once, a fan of it spraying back."""
+    reset(sp)
+    sp.subject = lambda: si.lancet(sky=False, drop=False)
+    sp.place = Place(0.92, at=(C0 - 1.5, C0 - 1.5))
+    sp.place = Place(0.86, at=(C0 - 3.5, C0 - 1.0))
+    O(sp, lambda cv, x: lc_spray(cv, 17.0, 16.0))
+
+
+@card("lancet_twin_lancets")
+def _(sp, c):
+    """Twin Lancets: two needles, each into a skull of its own."""
+    reset(sp)
+    sp.subject = lambda: si.lancet(sky=False, drop=False)
+    set_volley(sp, volley(2, (1, 1)))
+
+
+@card("lancet_bodkin")
+def _(sp, c):
+    reset(sp)
+    sp.subject = lc_bodkin
+
+
+@card("lancet_triage")
+def _(sp, c):
+    reset(sp)
+    sp.subject = lc_triage
+
+
+@card("lancet_surgeons_hand")
+def _(sp, c):
+    reset(sp)
+    sp.subject = lc_surgeons_hand
+
+
 # --- Hunter's Draw ---------------------------------------------------------------------------------
 
 # Every card is the bow doing something a bow does (.ai/spell-roster.md 2e, 2026-10-29), and every icon
@@ -6601,7 +7053,8 @@ def main(argv):
         if only and c["id"] not in only and c["spell"] not in only and subject_of(c) not in only:
             continue
         cv = compose(c, spec_for(c))
-        bad = cv.audit()
+        # Ma Liang's ink is the named exception to the contract (.ai/art-direction.md section 3a): its own check.
+        bad = [(h, n) for (h, a, n) in ink_wash.audit(cv.img)] if subject_of(c) in INK_SUBJECTS else cv.audit()
         if bad:
             problems.append("%s: off-contract colours %s" % (c["id"], ", ".join(h for h, _ in bad[:5])))
         made[c["id"]] = (c, cv)

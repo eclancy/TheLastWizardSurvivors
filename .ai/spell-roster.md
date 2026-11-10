@@ -143,6 +143,273 @@ from Hollow Star: every tenth page the mirror opens over the thickest pack and d
 its reach to him, and every orb it brings turns a page. Earned by everyone else through the **Magpie** Feat
 (open 10 chests in a single run, `LifetimeStats.BestChestsInRun`). Built `84e24368`; numbers untuned.
 
+### Corposant - the spell aimed at nothing (2026-11-09)
+
+Sailors' word for St Elmo's fire. Eric approved it from `.ai/character-fit.md`'s queue: "a ball of storm-fire
+that bounces around the screen for a few seconds, off the edges of the visible camera view, zapping what it
+passes through". The roster's empty row was `spell-variety.md` section 2's Runetracer: **the only spell that picks
+no target, no spot and no direction** (`SpellTargetingMode.Unaimed`, new for it). Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 37 | **Corposant** (`scripts/Corposant.cs`, `Player.Corposant.cs`) | Lightning | **nothing**: balls loosed in random directions, spread evenly round a random start, turned only by **the edges of the camera's view** | timer (3.0 s to 2.6 s), every cast whatever is near | **keep the fight on screen**: it flies over walls, so only the view's edges turn it | a piercing ball that strikes everything its path passes, each body at most every half second | the whole screen |
+
+- **The edges are the camera's**, read once a frame from the canvas transform (`Corposant.WorldView`), so they
+  follow the wizard and are right on the PC's 1280x720 and the phone's 720x1280 canvas at zoom 0.85. An axis turns
+  only while the ball is past that edge and still heading out (`Corposant.Bounce`): a camera that runs past a ball
+  never throws it about. Headless, the view is the canvas over the zoom, centred on him.
+- **Numbers, first guesses, untuned:** 6 a strike at level 1 to 15 at 8; one ball at 1, two at 3, three at 6; a
+  ball burns 3 s, 3.5 from level 5, 4 at 8 (`Corposant.BaseLifeSeconds` plus `ZoneDuration` lines, said on the
+  card as "Duration +17%"). About one ball out at level 1, four or five at 8.
+- **Cost:** one walk of `EnemyRegistry.Snapshot` a frame serves every ball, the wake and the crown's crowd count -
+  one position read a body whatever the count of balls - and nothing is allocated per frame (fixed pools; a struck
+  body is remembered by reference). Lightning is not warm (`LightPool.IsWarm`), so a ball lights nothing in the dark.
+- **Sound:** none new. The launch is the Lightning cast cue (the cast is always Fired) and every strike the
+  Lightning impact, throttled in `SfxPlayer`.
+
+Cards (`SpellEvolutionCatalog.SetupCorposantEvolutions`): **Twin Fires** (L4: on its first bounce a ball splits in
+two, each twin striking for 70%), **Static Wake** (L4, +Lightning: a wake of static that crackles 0.8 s and zaps
+what stands in it for 30% of a strike), **Spindrift** (L4, +Water, the element path: the fire burns sea-blue and
+its hits slow 30% for 1.5 s; +20%), **Storm Lantern** (L8, +Lightning: the edges throw each ball home, where it
+hangs over him like a masthead light, then flies out a new way; +30%), **Saint's Crown** (L8: while 8 or more are
+close round him the balls circle him in a crown until fewer than 5 are; +1 ball, +20%). Nothing ricochets off
+bodies or pens anything - that is the Anvil Line's - and nothing is named Ball Lightning (Stormsweep's level 4).
+Earned through the **Storm Petrel** Feat (defeat 500 enemies with Lightning in a single run,
+`LifetimeStats.BestLightningKillsInRun`; `.ai/achievements-and-secrets.md` section 2.1). Seen in `_UiShot` on both
+canvases and every card exercised once; `_BalanceHarness --minutes=3 --spell=corposant --character=1` fired and killed
+(22 kills in minute 1, 65% of the bot's damage by minute 3). Not played, not heard, not seen on a phone.
+
+### Ink Ring - the spell paid for by closing a loop (2026-11-09)
+
+Ma Liang's brush, walked. Eric approved it from `.ai/character-fit.md`'s queue: a thin line of ink trails the walker;
+crossing it closes the loop and strikes everything inside, then slows it a moment; a short recharge between rings; the
+ink fades fast at level 1 and lasts longer as it levels. **The first spell no timer fires**: it goes off when the
+wizard's path closes on itself. Drawn as watercolour, the one sanctioned departure from Bonelight
+(`.ai/art-direction.md` 3a, "Ink Ring: a line drawn live"). Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 38 | **Ink Ring** (`scripts/InkRing.cs`, `Player.InkRing.cs`) | Water+Darkness | **inside a ring he walks round them** (`SpellTargetingMode.Drawn`, new) | **a loop closing**; the cooldown (2.0 s to 1.6 s) is only the recharge between rings | **walk a loop round the crowd** | a strike on everything inside, then a 40% slow for 1.2 s | as wide as the ink lasts: about 140 across at level 1, 250 at level 8 |
+
+- **The cadence sits in the one fire loop.** While the cooldown is ripe, `Player.FireInkRing` arms the node every
+  frame and answers NoTarget, so the timer stays ripe (Hunter's Draw's pattern). The node lays the line in its own
+  physics tick whatever the cooldown is doing, and only an armed node closes a ring; the next call answers Fired -
+  the Water or Darkness cast cue is the ring closing, the cast is tallied and charges the Canticle - and the recharge
+  starts. What silences the fire loop lifts the brush (`InkRingMayCast`). No timer of its own.
+- **The loop.** His feet (`Player.FootPosition`) every 12 units into a ring buffer (`InkPath`), each point dated and
+  gone when the ink's life runs out. Each new segment is tested against the older live ones, skipping the newest
+  three; a crossing whose loop - the crossing, then every point walked since - holds at least 2,400 square units
+  (`InkRing.MinRingArea`, about a body's width across) closes a ring, and everything before it is then inert, so a
+  line closes one ring once. A jump (a door, a teleport) starts a new stroke. Every `EnemyRegistry.Snapshot` body whose
+  ground point lies inside (crossing number) is struck once. One walk of the swarm a ring, one a tick for Wet Ink and
+  Inkwell, nothing allocated per frame (fixed pools; a stung body remembered by reference).
+- **Numbers, first guesses, untuned:** 14 a strike at level 1 to 30 at 8; the recharge 2.0 s to 1.6 s; the ink 2 s,
+  +0.4 s at levels 3, 5, 7 and 8 (3.6 s; the card says "Ink duration +20%", never seconds). At his walk (220 a second)
+  that is a ring about 140 units across at level 1 and 250 at 8; Long Stroke and his own Duration widen it again.
+- **Against Mirefoot** (Water+Grass, row 25), the other spell that trails him: Mirefoot pays for distance with pools
+  you kite the crowd onto; Ink Ring's line is thin and pays nothing until it closes. The one pool it has, Inkwell,
+  stands inside a ring already closed.
+
+Cards (`SpellEvolutionCatalog.SetupInkRingEvolutions`), all within 130 characters, three at level 4 and two at 8 as the
+house has them: **Long Stroke** (L4: the ink lasts 50% longer, so wider rings close), **Wet Ink** (L4, +Water at the
+hybrid's 12% cooldown price: the line stays wet and stings whatever crosses it for 25% of a strike, a body at most every
+0.6 s), **Inkwell** (L4: the flood stands in the ring as a pool for 3 s, slowing whatever wades it 50% - Eric's "Ink
+Pool", renamed to keep clear of Folio's **Inkblot**), **Ink Prison** (L8, +Darkness at the 12% price: the ring dries
+into a wall for 3 s on the enemy-only collision layer 7, Ma Liang's inked door lines' layer, so what it caught cannot get
+out and the wizard walks through it; +40% damage; a boss shoulders through, by a collision exception, as the crowd-
+control rule says), **Second Stroke** (L8: half a second later the brush goes round again and everything inside is
+struck a second time). Water deepens at 4 and Darkness at 8, never both at one milestone
+(`ValidateEvolutionElementCeiling`). Nothing pens with stakes or cuts what leans on a wall (Iron Palisade's Iron Ring),
+and no card claims a Conjunction's verb. Earned through the **Cormorant** Feat (`.ai/achievements-and-secrets.md`).
+
+Seen in `_UiShot` with two flags new for it - `--walk-circle=R` (the wizard walks a circle, a `--spell-stage` crowd
+stood at its middle) and `--shutter-on-ring=N` (the shutter held until a ring closes over the crowd) - at level 8
+(`--character=1 --start-spell=ink_ring --demo-spell-level=8 --spell-stage=26 --walk-circle=100`), 1280x720, in the
+Enchanted Forest, the Sunken Cave, the Frozen Waste (with Wet Ink and Ink Prison), the Scorched Sands, the Fallow Fields
+and the Cursed Dungeon (a 62 circle after `--teleport` into a corridor: the start room's altar and the maze stop a wider
+one), and at 540x1212 `--portrait --safe-area` in the Sunken Cave. The ring closes as a brush stroke round what it
+struck, ink splashes on every struck body, and the flood runs inward and dries; on every floor the ink is the palest
+thing under the crowd. The flood first read as one flat grey disc, then as pebbles, and was spaced out and shortened
+until it read as wet blots. Not photographed closing: the Dungeon on the phone canvas (the circle was pinned in a
+corridor). `_BalanceHarness --minutes=3 --spell=ink_ring --character=1`: the kiting bot never walks a loop - no ring,
+58 crossings turned down as too small, dead at 1.6 min with no kill, as expected of a spell that asks for a loop. With
+`--immortal --circle=60` (the harness's existing circle walk) it closed 31 rings a minute and struck 32 bodies by minute
+3, 9% of the bot's damage: a swarm chasing a wizard round a circle trails him along it rather than gathering inside,
+so that is a floor, not a measure. Not played, not heard, not seen on a phone.
+
+### Windfall - the spell that pays more the longer it is left (2026-11-09)
+
+Eric approved it from `.ai/character-fit.md`'s queue, reworked off its first idea (pickups are Folio's cadence): a small
+iron-fruited tree planted where the wizard stands, its fruit ripening one at a time; "windfall can be shaken by both, i
+like it" - an enemy bumping it brings one ripe fruit down on itself, and the wizard walking back under it brings the whole
+crop down in a ring. Grass + Metal, the one spell carrying that pair. Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 39 | **Windfall** (`scripts/Windfall.cs`, `Player.Windfall.cs`) | Grass+Metal | **where he stands, then whatever shakes it** (`SpellTargetingMode.Planted`, new) | the cooldown (7.0 s to 6.2 s) plants a tree; **the fruit ripens on its own clock** (1.6 s a fruit) and falls when **shaken** | **come back to it**: walk away, then walk the crowd back under the tree | heavy iron apples, each a thud that knocks back what is near where it lands - one on a body that bumps it, the whole crop in a ring when he returns | close, round each tree |
+
+- **Against the three it must not be.** Gravewell (row 27) is a proximity trap: armed, it goes off when they come. A tree
+  is the reverse: it fills while it is left and pays the more the longer it stood, and its big payout is his to call, not
+  theirs. Folio owns pickups; nothing here gathers. Kindled Ward is placed and then fights on its own: a tree only drops
+  what it has ripened, one fruit at a time to a bump, and does nothing else until he comes back (Iron Bough's lash, at
+  level 8, is the one thing it does by itself).
+- **The tree.** No collision, never in the "enemies" group, so nothing targets it and nothing hurts it (the breakables
+  rule). One `Node2D` a tree in a y-sorted holder the node adds to the arena, on `DrawLayers.Bodies` with `ZAsRelative`
+  off, so it sorts at its foot among the bodies as every world tree does and the light pool's bodies pass darkens it at
+  the edge of the dark chapters as it darkens every prop. Drawn from `tools/art/windfall.py`'s sheet: trees.py's crown
+  painter in verdant over an iron trunk (steel), five frames (grown, shaken either way, sapling, sprout), and the fruit as
+  stamps laid live - blossom, set, green, turning (iron rising from the shaded side), iron (steel with a plane of `hi`),
+  Cider Rot's spotted iron, fallen, rot. About the wizard's height; the world's trees are three times it.
+- **The shake rule** (`Windfall.StepShake`). A tree is planted with him under it and unarmed; it is armed once his feet
+  have been 76 units from its trunk, and it shakes on the frame he walks back within 36 with fruit ripe, which disarms
+  it. Walking in with nothing ripe leaves it armed. So a fresh tree never empties on the spot he planted it. The crop
+  lands evenly round the trunk at 60 units (the wizard's Area grows it), a twentieth of a second apart, each thud 26
+  across, so the ring falls round him and its thuds reach in to where he stands. **A bump** is a body within 22 of the
+  trunk (a body's width allowed), at most every 0.75 s a tree: one ripe fruit, dropped onto that body.
+- **Planting and replacement.** A cast beside one of his own trees (within 60) waits, ripe (`NoTarget`, Hunter's Draw's
+  pattern), and plants the moment he steps clear. At the cap the new planting **uproots the oldest tree, which drops what
+  it holds where it stood**, scattered under its crown, then dissolves: nothing that ripened is thrown away, and the
+  oldest, fullest tree pays once more as it goes - a floor under a player who never comes back, never as much as coming
+  back (he chooses where the crop falls and the crowd is with him). The ripening runs at his cast speed (the fire loop's
+  interval over the spell's own cooldown), so a haste that plants faster ripens faster, and a tree always fills before it
+  is the oldest (`RegressionChecks.Windfall` holds that at every level).
+- **Numbers, first guesses, untuned:** one tree at level 1, two at 3, three at 6 (the projectile count plus Amount; card
+  "Trees +1"); a crop of 3 at level 1, 4 at 2, 5 at 5, 6 at 7 (`SpellEffect.Crop`, new, "Fruit +1" on the card - the spell
+  has two counts that grow and a card has to say which); a fruit's thud 16 at level 1 to 35 at 8; the planting every
+  7.0 s to 6.2 s; a fruit every 1.6 s; the shove 110 knockback units (`SpellData.KnockbackSpeedPerPoint`), about a
+  body's width. A tree stands about trees x cooldown before it is the oldest: 7 s at level 1 (it fills in 4.8), 19 s at
+  level 8 (it fills in 9.6).
+- **Cost:** nothing walks the whole swarm. A tree asks the registry's grid who is near its trunk on its bump and lash
+  clocks (`EnemyRegistry.CollectNear`), a thud on the frame it lands, a thorn as it flies, a rot patch on its tick, Harvest
+  Moon four times a second. Fixed pools for fruit, fallen fruit, thorns and lashes; twelve tree nodes made once; a tree is
+  redrawn only when what it shows changes. Grass and Metal are not warm (`LightPool.IsWarm`): a tree lights nothing.
+- **Sound:** none new. A planting is the Grass cast cue and every thud, thorn and lash the Grass impact, throttled
+  (`SfxCatalog.DominantElement` breaks the Grass-Metal tie by enum order); Metal's once Iron Bough makes it the heavier,
+  Poison's after Cider Rot.
+
+Cards (`SpellEvolutionCatalog.SetupWindfallEvolutions`), Eric's five as he named them, the house's three at level 4 and
+two at 8, all within 130 characters: **Orchard** (L4: one more tree may stand at once, so each stands longer before it is
+uprooted, and is fuller when he comes back), **Bramble Fall** (L4, +Grass at the hybrid's 12% cooldown price: every fruit
+that falls splits into 4 thorns that fly out past where it lands, each striking for 30% of a fruit), **Cider Rot** (L4:
+**trades Grass for Poison**, Ember Caps' rule - a hybrid may never name a third element, so the card that adds Poison
+must give one up, and it gives up Grass so that Iron Bough can still deepen the Metal it kept; each fallen fruit rots
+into a patch that poisons whatever stands in it for 3 s, a fifth of a fruit a second; the rot and the fruit are drawn in
+Poison's ramp), **Harvest Moon** (L8: when 8 or more are close round him - Saint's Crown's crowd - every tree drops its
+whole crop at once wherever he is, at most every 4 s; +20% damage), **Iron Bough** (L8, +Metal at 12%: the iron branches
+lash up to three bodies under a tree every 0.8 s for 45% of a fruit, throwing them back; +20% damage). Grass deepens at 4
+and Metal at 8, never both at one milestone (`ValidateEvolutionElementCeiling`); every path stays at two elements. No card
+pulls, springs a trap, gathers, or claims a Conjunction's verb (`ComboCatalog`: converge, fester, seize, anoint, and the
+planned fling, refract, orbit, advance, ricochet). Earned through the **Fieldfare** Feat (defeat 1,000 enemies with Grass
+or Metal in a single run; `.ai/achievements-and-secrets.md`).
+
+Seen in `_UiShot` with one flag new for it, `--shutter-on-harvest=N` (the shutter held until he shakes a tree, then N
+frames), at level 8 (`--character=1 --start-spell=windfall --demo-spell-level=8`): ripe trees in the Enchanted Forest and
+the Sunken Cave (planted, walked away from and left to fill: the Cave's was `--stage=2 --walk=1,0.35 --walk-from=560
+--walk-until=630 --spell-stage=12,-280,170 --frames=1250`), and the crop coming down over a placed crowd (`--walk-circle=120 --spell-stage=18`) in the Forest and the
+Cave at 1280x720 and the Forest at 540x1212 `--portrait --safe-area`; every card exercised once in a run. The trees are the
+clearest thing on the Cave's floor; in the Forest they read as an orchard against world trees three times their size. The
+thud's grit first flew in Grass's ramp and was lost on the ground; it is Metal's now (its white-hot core and pale steel). A
+Legendary roll gilds the whole tree, as it gilds every spell. `_BalanceHarness --minutes=3 --spell=windfall --character=1`:
+the kiting bot circles back often enough to shake 46 trees in three minutes, but runs ahead of the swarm, so 130 of 163
+fruit fell on empty ground - 33 bodies thudded, 33 kills, 11.9% of its damage, Windfall left at level 1 while it took other
+spells. With `--immortal --circle=150`: 87 shakes, 49 thudded, 45 kills, 15.2%. A swarm trails a moving wizard rather than
+waiting under his trees, so both are floors. Not played, not heard, not seen on a phone.
+
+### Lancet - the spell that chooses by health (2026-11-09)
+
+Eric approved it from `.ai/character-fit.md`'s queue as proposed: a steel needle that always flies at the most wounded
+enemy in reach (by the share of health lost; the nearest when none is hurt), on a fast timer, that hits harder the more
+health its target has lost, up to double, and kills an ordinary enemy below a small sliver outright. Metal + Poison, a
+poison build's finisher. Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 40 | **Lancet** (`scripts/Lancet.cs`, `Player.Lancet.cs`) | Metal+Poison | **the most wounded in reach, by share of health lost; the nearest when none is hurt** (`SpellTargetingMode.Wounded`, new) | fast timer (0.85 s to 0.65 s) | **wound them first**: it is worth what the rest of the loadout has already done | one needle a body, up to double on the nearly dead; an ordinary body under 10% dies outright | mid (300, 340 from level 5) |
+
+- **The only spell that chooses by health.** Hunter's Mark marks the *strongest* in reach; Lancet goes to the other end.
+  With nothing hurt in reach it is a nearest-enemy spell, so it is never idle, and the moment anything else wounds the
+  crowd it goes where the wounds are. It wants a partner that spreads damage thinly (poison, a burn, a rain) and pays
+  for it twice: the bonus, and the bodies it takes off the field.
+- **The choice is one walk.** `Lancet.Cast` walks `EnemyRegistry.Snapshot` once and keeps the best 16 bodies in reach in
+  fixed arrays by insertion (`Lancet.Rank`, ordered by `Lancet.Before`: more wounded first, a tie of wounds - every unhurt
+  body among them - to the nearer), so a body worse than the last kept costs one compare and nothing is allocated. The
+  cast's needles take the top of that list, one body each: each extra needle goes to the next most wounded, a distinct
+  target. When the crowd in reach is thinner than the volley the rest go round the list again, but only at a body the
+  needles already on their way to it could leave standing (`Lancet.Cast` keeps what it has sent at each body): a lone boss
+  takes every needle, a skeleton the first needle kills is not sent a second. The first build sent it one, and a fifth of
+  its needles fell on nothing in the harness's thin early crowd; with the rule, 4 of 66 in the first minute rather than 27
+  of 92, for the same kills. The same list is what a needle turns to, once, if its body dies before it lands, and what
+  Triage sends a killing needle on to - the first on it that no needle in flight is going for. Nothing else walks the swarm.
+- **The payload.** A needle homes on its body and strikes it once, for its damage times one plus the share of health the
+  body had lost (`Lancet.WoundedDamage`): a fresh body takes the needle, a half-dead one half again, one nearly dead almost
+  double. An **ordinary** body below 10% of its health (`Lancet.SliverShare`) dies outright - the needle strikes for at least
+  what it has left - but never an elite, a miniboss or a boss (`IsMiniBoss`, and `BossEnemy` whatever it says), which take
+  only the bonus, as the execute rule says. Every strike goes through `Player.DealDamageToEnemy` with the spell as its
+  source, so its kills are counted, numbered (Metal's ink: the first listed of a tie) and charged to it like every other
+  spell's, and a crit, a rider and the tiers ride it.
+- **Numbers, first guesses, untuned:** 5 a needle at level 1 to 14 at level 8 (on a fresh body; up to double on a hurt
+  one); one needle at level 1, two at 3, three at 6 ("Needles +1" on the card, plus Amount); the throw every 0.85 s, -0.05 s
+  at levels 2, 4, 6 and 8 (0.65 s); reach 300, +40 at level 5. A needle flies at 860 a second, so it crosses its reach in
+  about a third of a second: it is seen going to its body.
+- **Drawn in code** on `DrawLayers.Air` (which the light pool never darkens), on the world's 2 px grid, in Bonelight - not
+  the ink style: a thin line of steel with a white-hot point, steel's hot and mid down the shaft over a flank of its edge
+  on the side away from the key light, a bead of poison hanging just behind the point, and a short dithered streak of
+  steel behind it. A strike is small and clean: the needle standing a moment in the body, a steel glint, two drops of
+  poison flicked on. **An outright kill is the moment**: a long white-hot cut drawn through the body along the needle's
+  line in the first beat, then an eight-armed burst of steel and a ring of it opening round where it went in. Metal and
+  Poison are not warm (`LightPool.IsWarm`), so a needle lights nothing in the dark.
+- **Sound:** none new. A throw is the Poison cast cue (`SfxCatalog.DominantElement` breaks the Metal-Poison tie by enum
+  order; Metal's once Bodkin deepens it) and every strike the impact, throttled - one of the duals that sound one element
+  and number in the other.
+
+Cards (`SpellEvolutionCatalog.SetupLancetEvolutions`), Eric's four and a Metal card named here, the house's three at level 4
+and two at 8, all within 130 characters:
+
+- **Bloodletting** (L4, +Poison at the hybrid's 12% cooldown price): a needle that lances a poisoned enemy releases all its
+  remaining poison at once, in one hit. `Enemy.ApplyPoison` keeps a poison as three fields - the strongest tick laid
+  (`poisonDamagePerTick`), the clock left (`poisonTimeRemaining`) and the tick clock (`poisonTickTimer`, a tick every
+  second); `Enemy.RemainingPoisonDamage` reads it as the ticks the poison has left - the whole seconds in clock left plus
+  tick clock run - times the tick, at the run's dose (Sola Dosis, `PlayerPoisonScale`), and `Enemy.EndPoison` clears the
+  same three fields the poison's own expiry clears and puts the look back. The strike reads the poison **before** the
+  needle goes in (so it never lets out a poison the strike itself lays - the Poison tier's), deals it **after** as its own
+  hit numbered in Poison's ink with no elemental chain, then ends the poison: a lanced body is clean. A body the needle
+  kills dies still poisoned, so the Shrike counts it.
+- **Twin Lancets** (L4): one more needle every cast, each at the next most wounded enemy.
+- **Bodkin** (L4, +Metal at 12%; the Metal card, named here: the bodkin is the needle-pointed blade that went through
+  mail): the first hit Withers 5% of an enemy's max health - Metal's own status (`ElementPaths.RiderFor`), carried on every
+  strike by the house path. A withered body counts as wounded, so nothing a needle touches is unhurt again and the next
+  needle comes back for it; and it is the one card that does more to an elite or a boss than the bonus does.
+- **Triage** (L8): a needle that kills flies on to the next most wounded in reach, and on again for every kill (the cast's
+  list, at most 16 bodies; never one another needle is going for).
+- **Surgeon's Hand** (L8): the outright kill takes an ordinary enemy under 20% health, not 10%; +20% damage.
+
+Both halves deepen at level 4, on different cards (Bloodletting Poison, Bodkin Metal), so no path deepens both and level 8
+deepens neither: a hybrid never reaches three of one (`ValidateEvolutionElementCeiling`), and no card adds a third element.
+Clear of the claimed verbs: Bloodletting lets one body's poison out where it stands - nothing narrows a plague onto fewer
+carriers (Paracelsus's **distil**, The Dose) or festers on a beat (Shadow Bolt's **fester**); Triage goes on only from a
+kill and only to the most wounded, never off a body or a wall (the Anvil Line's **ricochet**) nor through a chain of living
+ones (Chain Lightning's **link**); nothing marks the strongest (Hunter's Mark). "Execute" is nobody's, and the cards say
+"dies outright" rather than claim it. Earned through the **Shrike** Feat (`.ai/achievements-and-secrets.md`): defeat 500
+poisoned enemies in a single run (`LifetimeStats.BestPoisonedKillsInRun`, no schema step) - not a fifth "defeat N with an
+element", since it counts what dies poisoned whatever dealt the last blow.
+
+Seen in `_UiShot` with two flags new for it: `--stage-wounds=LO,HI` (with `--stage-mortal`, every stage body left at a
+share of its health from LO to HI, spread over the crowd and shuffled through it) and `--shutter-on-lance=N` (the shutter
+held until a needle kills a body outright, then N frames). At level 8 (`--character=1 --start-spell=lancet
+--demo-spell-level=8 --spell-stage=26 --stage-mortal --stage-health=400 --stage-wounds=0.04,0.95 --frames=1200 --fx-lead=6
+--burst=8,3`): in the Enchanted Forest at 1280x720 the first cast's needles fly past the nearest bodies to the most wounded
+in the middle of the knot, and the two bodies under 10% die to the white cut; in the Sunken Cave (`--stage=2`), the dark,
+the needles and cuts are the brightest things on the floor (they are on `Air`, which the light pool never darkens); and in
+the Forest at 540x1212 `--portrait --safe-area` they are small but legible. The needle was lengthened from 18 to 20 after
+the first photographs. `_BalanceHarness --minutes=3 --spell=lancet --character=1` (the real save read-only, so Amount
+gave two needles a cast at level 1): 211 kills, 40% of the bot's damage with Lancet left at level 1, the mean struck body
+38% hurt by minute 3, 10 outright kills. Beside a poison partner (`--character=17 --spell=lancet --partner=contagion`,
+Paracelsus's Sola Dosis): 202 kills and 41% of the damage to Contagion's 17%. Every card exercised once in a run (`--solo
+--upgrade-chance=1 --force-ascension --immortal --minutes=7`, Paracelsus with Contagion beside it): Bloodletting let poison
+out 661 times for 16,462 and Triage sent needles on 1,203 times; Bodkin and Surgeon's Hand made 260 outright kills to the
+other pair's 126, the mean struck body 43% hurt; Twin Lancets threw 2,670 needles to 2,066. Those are forced, solo, immortal
+runs, not a balance measurement: the numbers are first guesses. Not played, not heard, not seen on a phone.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

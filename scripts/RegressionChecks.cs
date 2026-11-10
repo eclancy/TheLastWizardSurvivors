@@ -59,6 +59,15 @@ public static partial class RegressionChecks
 		ValidateFacingFamily(warnings);
 		// John Dee's opener and his Spirit Mirror on it (RegressionChecks.Folio.cs).
 		ValidateFolio(warnings);
+		// St Elmo's fire: the view it turns at, the bounce, the one-ball start, the cards and its feat (RegressionChecks.Corposant.cs).
+		ValidateCorposant(warnings);
+		// Ma Liang's brush, walked: the closing loop, the cards and its feat (RegressionChecks.InkRing.cs).
+		ValidateInkRing(warnings);
+		// The iron-fruited orchard: the shake rule, the ring, the crop, the cards and its feat (RegressionChecks.Windfall.cs).
+		ValidateWindfall(warnings);
+		// The surgeon's needle: the order it chooses in, the wound bonus, the outright kill, the poison let out, the cards and
+		// its feat (RegressionChecks.Lancet.cs).
+		ValidateLancet(warnings);
 		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
 		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);

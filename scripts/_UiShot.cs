@@ -586,6 +586,10 @@ public partial class _UiShot : Node
 	//   --cast-bramble                : one Bramble Seed sown at the player's feet, through
 	//                                   Player.FireBrambleSeed, so the patch has the radius a real cast has.
 	//   --walk=DX,DY                  : walks the player that way instead of kiting (a trail needs motion).
+	//   --walk-circle=R               : walks a circle of radius R instead (Ink Ring's loop); a --spell-stage
+	//                                   crowd stands at its centre. --shutter-on-ring=N shoots N frames after
+	//                                   a ring closes over it. --shutter-on-harvest=N shoots N frames after
+	//                                   he walks back under a Windfall tree and shakes its crop down.
 	//   --fx-lead=N                   : frames between the trigger and the first shot (default 3).
 	//   --start-spell=ID              : the run opens on that spell in place of the wizard's own
 	//                                   (Global.ToolStartingSpellId), for any --character=N. It was the
@@ -600,6 +604,9 @@ public partial class _UiShot : Node
 	//                                   follows starts on its first frame. Give it --frames past the
 	//                                   spell's cooldown (Black Tentacles is 4 s).
 	//   --stage-mortal                : the stage's skeletons keep their own health and can die.
+	//   --stage-wounds=LO,HI          : with --stage-mortal, each left at a share of its health from LO to HI
+	//                                   (Lancet's wounded crowd). --shutter-on-lance=N shoots N frames after a
+	//                                   needle kills a body outright.
 	//   --demo-evolutions=id,id       : evolutions (level 4, level 8 or an Apotheosis form id) applied
 	//                                   to the first equipped spell with the --demo-spell-level state.
 	private int stageCount;
@@ -610,6 +617,18 @@ public partial class _UiShot : Node
 	// for a spell whose look depends on how low it burns a body (Abe no Seimei's seal takes what a ward has
 	// burned below a quarter, and a 20-health skeleton dies before it is ever that low).
 	private int stageHealth;
+	// --stage-wounds=LO,HI: with --stage-mortal, every stage body is left at a share of its health between LO and HI, spread
+	// evenly over the crowd and shuffled through it - a wounded crowd for Lancet, which goes for the most hurt and kills an
+	// ordinary body under a tenth outright. Set after the body is in the tree, so its max health is its own.
+	private float stageWoundLow = -1f;
+	private float stageWoundHigh = -1f;
+	// --shutter-on-lance=N: Lancet's, as the ring's is Ink Ring's. The shutter waits, the warmup held at its last frame, until
+	// a needle kills a body outright (Lancet.StatOutright moves) and then N frames more - so the shot opens on the cut. Gives
+	// up after RingShutterGiveUp frames, saying so.
+	private int shutterOnLance = -1;
+	private int lancesAtHold = -1;
+	private int lanceSeenAt = -1;
+	private int lanceHeld;
 	private Vector2 stageOffset = new Vector2(230f, 0f);
 	private bool stagePlaced;
 	private readonly System.Collections.Generic.List<Enemy> stageCrowd = new();
@@ -629,6 +648,29 @@ public partial class _UiShot : Node
 	// family (Stormsweep, Sleet Runes) aims by the way he last walked, so a capture of a spell that
 	// keeps facing left after he stops is a capture of Player.FacingDirection surviving the stop.
 	private int walkUntilFrame;
+	// --walk-circle=R: walks a circle of radius R round a centre set off to his left on the first step, as
+	// _BalanceHarness --circle does - the walk Ink Ring needs (a ring closes when his path crosses its own line). With
+	// --spell-stage the crowd is stood at the circle's centre, so the ring he walks closes round it.
+	private float walkCircle;
+	private Vector2 walkCircleCentre;
+	private bool walkCircleCentred;
+	private int walkCircleCheckAt;
+	private Vector2 walkCircleCheckFrom;
+	// --shutter-on-ring=N: the shutter waits, the warmup held at its last frame, until an Ink Ring closes after the
+	// stage is placed (InkRing.StatRings moves), then N frames more - so a burst opens on a ring closing. Gives up and
+	// shoots anyway after RingShutterGiveUp frames, saying so.
+	private int shutterOnRing = -1;
+	private int ringsAtStage = -1;
+	private int ringSeenAt = -1;
+	private int ringHeld;
+	private const int RingShutterGiveUp = 1800;
+	// --shutter-on-harvest=N: Windfall's, as the ring's is Ink Ring's. The shutter waits, the warmup held at its last frame,
+	// until he shakes one of his trees (Windfall.StatShakes moves) and then N frames more - so the shot opens on a crop
+	// coming down round the tree. Gives up after RingShutterGiveUp frames, saying so.
+	private int shutterOnHarvest = -1;
+	private int shakesAtHold = -1;
+	private int harvestSeenAt = -1;
+	private int harvestHeld;
 	// --cast-on-stage: with --spell-stage, every equipped spell's cooldown comes due the frame the crowd
 	// appears (Player.DebugRipenSpells), so a burst that follows starts on a cast's first frame. Aimed
 	// spells already hold their cast for the crowd; this is for the ones that fire on an empty field.
@@ -1218,6 +1260,14 @@ public partial class _UiShot : Node
 				walkIntoPortal = true;
 			else if (arg.StartsWith("--stage-health="))
 				stageHealth = int.Parse(arg.Substring("--stage-health=".Length));
+			else if (arg.StartsWith("--stage-wounds="))
+			{
+				string[] wounds = arg.Substring("--stage-wounds=".Length).Split(',');
+				stageWoundLow = float.Parse(wounds[0], System.Globalization.CultureInfo.InvariantCulture);
+				stageWoundHigh = wounds.Length > 1 ? float.Parse(wounds[1], System.Globalization.CultureInfo.InvariantCulture) : stageWoundLow;
+			}
+			else if (arg.StartsWith("--shutter-on-lance="))
+				shutterOnLance = System.Math.Max(0, int.Parse(arg.Substring("--shutter-on-lance=".Length)));
 			else if (arg.StartsWith("--crowd="))
 				crowd = int.Parse(arg.Substring("--crowd=".Length));
 			// --light-probe: the light pool's readability, measured (_UiShot.LightPool.cs).
@@ -1895,6 +1945,12 @@ public partial class _UiShot : Node
 				walkFromFrame = System.Math.Max(0, int.Parse(arg.Substring("--walk-from=".Length)));
 			else if (arg.StartsWith("--walk-until="))
 				walkUntilFrame = System.Math.Max(0, int.Parse(arg.Substring("--walk-until=".Length)));
+			else if (arg.StartsWith("--walk-circle="))
+				walkCircle = float.Parse(arg.Substring("--walk-circle=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg.StartsWith("--shutter-on-ring="))
+				shutterOnRing = System.Math.Max(0, int.Parse(arg.Substring("--shutter-on-ring=".Length)));
+			else if (arg.StartsWith("--shutter-on-harvest="))
+				shutterOnHarvest = System.Math.Max(0, int.Parse(arg.Substring("--shutter-on-harvest=".Length)));
 			else if (arg == "--cast-on-stage")
 				castOnStage = true;
 			else if (arg.StartsWith("--goto="))
@@ -3066,7 +3122,9 @@ public partial class _UiShot : Node
 					if (IsInstanceValid(n))
 						n.QueueFree();
 			}
-			if (stageCount > 0 && walk is Vector2 burstHeading)
+			if (walkCircle > 0f)
+				DriveCircle();
+			else if (stageCount > 0 && walk is Vector2 burstHeading)
 				DriveWalk(burstHeading);
 			else if (stageCount > 0)
 				HoldForStage();
@@ -3098,6 +3156,15 @@ public partial class _UiShot : Node
 			}
 			return;
 		}
+		// --shutter-on-ring: hold the warmup at its last frame until a ring has closed over the stage and N frames more.
+		if (!captured && shutterOnRing >= 0 && frames >= WarmupFrames - 2 && !RingShutterReady())
+			frames = WarmupFrames - 2;
+		// --shutter-on-harvest: the same hold, until a tree is shaken and N frames more.
+		if (!captured && shutterOnHarvest >= 0 && frames >= WarmupFrames - 2 && !HarvestShutterReady())
+			frames = WarmupFrames - 2;
+		// --shutter-on-lance: the same hold, until a needle kills a body outright and N frames more.
+		if (!captured && shutterOnLance >= 0 && frames >= WarmupFrames - 2 && !LanceShutterReady())
+			frames = WarmupFrames - 2;
 		if (captured || ++frames < WarmupFrames)
 		{
 			// A paused tree still draws, so the pause has to be cleared from inside the draw
@@ -3136,6 +3203,8 @@ public partial class _UiShot : Node
 				HoldOnEventSite();
 			else if (pinHeat != null || pinStillFor != null)
 				HoldStance();
+			else if (walkCircle > 0f)
+				DriveCircle();
 			else if (walk is Vector2 heading)
 				DriveWalk(heading);
 			else if (statusShowcase && showcase.Count > 0)
@@ -4446,6 +4515,100 @@ public partial class _UiShot : Node
 			KeepStage();
 	}
 
+	// --walk-circle: the tangent, steered back onto the circle by how far he has drifted off it (_BalanceHarness's
+	// DriveCircle). With --spell-stage, under the stage's rules.
+	private void DriveCircle()
+	{
+		if (FindNodeOfType<Player>(GetTree().Root) is not Player walker)
+			return;
+		if (!walkCircleCentred || walker.GlobalPosition.DistanceTo(walkCircleCentre) > walkCircle * 3f)
+		{
+			// First step, or far off it (a --teleport): the circle is laid with him on it.
+			walkCircleCentre = walker.GlobalPosition + Vector2.Left * walkCircle;
+			walkCircleCentred = true;
+			walkCircleCheckAt = frames + 60;
+			walkCircleCheckFrom = walker.GlobalPosition;
+			GD.Print($"_UiShot: walking a circle of radius {walkCircle:0} round {walkCircleCentre}");
+		}
+		// A circle that runs into a wall holds him against it: under a body's width walked in a second, it is laid again
+		// with him on its far side (_BalanceHarness.DriveCircle's rule).
+		if (frames >= walkCircleCheckAt)
+		{
+			if (walker.GlobalPosition.DistanceTo(walkCircleCheckFrom) < 24f)
+			{
+				walkCircleCentre = walker.GlobalPosition + (walker.GlobalPosition - walkCircleCentre).Normalized().Rotated(Mathf.Pi * 0.5f) * walkCircle;
+				GD.Print($"_UiShot: the circle ran into something; laid again round {walkCircleCentre}");
+			}
+			walkCircleCheckAt = frames + 60;
+			walkCircleCheckFrom = walker.GlobalPosition;
+		}
+		Vector2 offset = walker.GlobalPosition - walkCircleCentre;
+		float distance = offset.Length();
+		Vector2 radial = distance > 1f ? offset / distance : Vector2.Right;
+		Vector2 tangent = new Vector2(-radial.Y, radial.X);
+		Vector2 to = (tangent + radial * ((walkCircle - distance) / walkCircle) * 2f).Normalized();
+		Press("move_right", "move_left", to.X);
+		Press("move_down", "move_up", to.Y);
+		if (stageCount > 0)
+			KeepStage();
+	}
+
+	// --shutter-on-ring: true once an Ink Ring has closed since the stage was placed (or, with no stage, since the hold
+	// began) and N frames have passed; after RingShutterGiveUp frames of waiting, true anyway.
+	private bool LanceShutterReady()
+	{
+		lanceHeld++;
+		if (lancesAtHold < 0)
+			lancesAtHold = Lancet.StatOutright;
+		if (lanceSeenAt < 0 && Lancet.StatOutright > lancesAtHold)
+		{
+			lanceSeenAt = lanceHeld;
+			GD.Print($"_UiShot: a needle killed outright ({Lancet.StatOutright} so far, {Lancet.StatStrikes} strikes); shooting in {shutterOnLance} frames");
+		}
+		if (lanceSeenAt >= 0)
+			return lanceHeld - lanceSeenAt >= shutterOnLance;
+		if (lanceHeld < RingShutterGiveUp)
+			return false;
+		GD.Print($"_UiShot: no needle killed outright in {RingShutterGiveUp} frames; shooting anyway");
+		return true;
+	}
+
+	private bool HarvestShutterReady()
+	{
+		harvestHeld++;
+		if (shakesAtHold < 0)
+			shakesAtHold = Windfall.StatShakes;
+		if (harvestSeenAt < 0 && Windfall.StatShakes > shakesAtHold)
+		{
+			harvestSeenAt = harvestHeld;
+			GD.Print($"_UiShot: a tree was shaken ({Windfall.StatShakes} so far, the largest crop {Windfall.StatLargestShake}); shooting in {shutterOnHarvest} frames");
+		}
+		if (harvestSeenAt >= 0)
+			return harvestHeld - harvestSeenAt >= shutterOnHarvest;
+		if (harvestHeld < RingShutterGiveUp)
+			return false;
+		GD.Print($"_UiShot: no tree was shaken in {RingShutterGiveUp} frames; shooting anyway");
+		return true;
+	}
+
+	private bool RingShutterReady()
+	{
+		ringHeld++;
+		if (ringsAtStage < 0 && (stagePlaced || stageCount == 0))
+			ringsAtStage = InkRing.StatRings;
+		if (ringSeenAt < 0 && ringsAtStage >= 0 && InkRing.StatRings > ringsAtStage)
+		{
+			ringSeenAt = ringHeld;
+			GD.Print($"_UiShot: a ring closed ({InkRing.StatRings} so far, {InkRing.StatStruck} struck, largest {InkRing.StatLargestArea:0}); shooting in {shutterOnRing} frames");
+		}
+		if (ringSeenAt >= 0)
+			return ringHeld - ringSeenAt >= shutterOnRing;
+		if (ringHeld < RingShutterGiveUp)
+			return false;
+		GD.Print($"_UiShot: no ring closed in {RingShutterGiveUp} frames; shooting anyway");
+		return true;
+	}
+
 	// The stage's rules without the standing still: the player cannot die, nothing but the placed
 	// crowd is left on the field, and the crowd's health is topped up as it always was here.
 	private void KeepStage()
@@ -4720,7 +4883,8 @@ public partial class _UiShot : Node
 			return;
 		var scene = GD.Load<PackedScene>("res://scenes/enemy.tscn");
 		var rng = new RandomNumberGenerator { Seed = 7 };
-		Vector2 centre = p.GlobalPosition + stageOffset;
+		// --walk-circle: the knot stands in the middle of the circle he walks, so the ring closes round it.
+		Vector2 centre = walkCircle > 0f && walkCircleCentred ? walkCircleCentre : p.GlobalPosition + stageOffset;
 		for (int i = 0; i < stageCount; i++)
 		{
 			if (scene?.Instantiate() is not Enemy e)
@@ -4736,6 +4900,27 @@ public partial class _UiShot : Node
 				e.Health = stageHealth;
 			p.GetParent().AddChild(e);
 			stageCrowd.Add(e);
+		}
+		// --stage-wounds: each body left at its share, evenly spread from LO to HI and dealt round the knot by the same rng,
+		// so the most hurt are not all in its middle.
+		if (stageWoundLow >= 0f && stageCrowd.Count > 0)
+		{
+			int count = stageCrowd.Count;
+			var order = new int[count];
+			for (int i = 0; i < count; i++)
+				order[i] = i;
+			for (int i = count - 1; i > 0; i--)
+			{
+				int j = rng.RandiRange(0, i);
+				(order[i], order[j]) = (order[j], order[i]);
+			}
+			for (int i = 0; i < count; i++)
+			{
+				Enemy e = stageCrowd[order[i]];
+				float share = count > 1 ? Mathf.Lerp(stageWoundLow, stageWoundHigh, i / (float)(count - 1)) : stageWoundLow;
+				e.Health = System.Math.Max(1, Mathf.RoundToInt(e.MaxHealth * Mathf.Clamp(share, 0.01f, 1f)));
+			}
+			GD.Print($"_UiShot: the stage left at {stageWoundLow:P0} to {stageWoundHigh:P0} of its health");
 		}
 		stagePlaced = true;
 		if (castOnStage)

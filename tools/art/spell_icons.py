@@ -35,6 +35,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import bonelight as bl
 import raster
+# The world's tree painter (tools/art/trees.py), for Windfall's crown. Imported here, never inside a painter:
+# evolution_icons.paint() swaps raster.Canvas while a painter runs, and trees subclasses it at import.
+import trees as T
 
 OCC = bl.OCC
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -589,6 +592,318 @@ def folio():
     # Occlusion under the book, one row, so it sits on the card.
     c.hline(3, 28, 30, OCC)
     return c
+
+
+def corposant(sky=True):
+    """Corposant, St Elmo's fire (scripts/Corposant.cs): a ball of pale storm-fire coming off the edge of the view.
+
+    Three things, in the order the eye takes them: the ball low and left of the middle - an amber rim, a pale shell and a
+    white-hot heart a step ahead of its middle, three tongues of storm-fire streaming back the way it came (it burns like
+    a flame, not a lamp, which is what keeps it apart from Stormsweep's Ball Lightning); the crack up on the right where
+    it turned, on a dashed upright that is the edge of the screen; and a dotted path into that crack from the upper left,
+    the way it went before it turned. Two crackling spurs off the ball. Lightning is pale yellow and vanishes on the
+    card's cream page (Starfall's and Stormsweep's lesson), so it is drawn on a night - the sea's, lichen's deep teal, a
+    different sky from Stormsweep's violet. `sky=False` leaves the night off (tools/art/evolution_icons.py lays its own).
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    core, hot, mid, edge = bl.ELEMENTS["lightning"]
+    if sky:
+        c.disc(15.5, 15.5, 15.0, 15.0, bl.tone("lichen", "shade"))
+        c.disc(15.5, 15.5, 14.0, 14.0, bl.tone("lichen", "deep"))
+
+    # The edge of the view: a dashed upright on the right, the colour of the sea's lit swell.
+    frame = bl.tone("lichen", "lit")
+    for y in range(4, 27):
+        if y % 3 != 2:
+            c.set(27, y, frame)
+    bx, by = 26.0, 9.0          # where it turned
+    cx, cy = 13.0, 20.0         # the ball now
+
+    # The way it went before it turned: dots in from the upper left, dimmest farthest back.
+    for (x, y, t) in ((8, 4, edge), (12, 5, edge), (16, 6, mid), (20, 7, mid), (23, 8, hot)):
+        c.set(x, y, t)
+
+    # The tongues: three streaming back toward the crack, tapering from the shell to the ramp's edge.
+    ux, uy = (bx - cx), (by - cy)
+    n = math.hypot(ux, uy)
+    ux, uy = ux / n, uy / n
+    px, py = -uy, ux
+    # Each a wedge, wide at the shell and licking to a point, with a waver along it so it reads as flame, not a ray.
+    for (spread, length, wave) in ((0.0, 10.0, 0.9), (0.6, 6.5, -0.7), (-0.6, 6.5, 0.7)):
+        dx, dy = ux + px * spread, uy + py * spread
+        m = math.hypot(dx, dy)
+        dx, dy = dx / m, dy / m
+        qx, qy = -dy, dx
+        steps = int(length)
+        for s in range(steps):
+            t = (s + 1.0) / steps
+            sway = math.sin(t * math.pi * 1.5) * wave
+            x = cx + dx * (3.0 + length * t) + qx * sway
+            y = cy + dy * (3.0 + length * t) + qy * sway
+            half = 1.6 * (1.0 - t)
+            tone = hot if t < 0.35 else (mid if t < 0.7 else edge)
+            k = -half
+            while k <= half + 0.01:
+                c.set(x + qx * k, y + qy * k, tone if abs(k) < 0.6 else (mid if t < 0.5 else edge))
+                k += 0.8
+
+    # The ball: rim, shell, body, and the heart a step ahead of its middle (down and left, the way it flies).
+    c.disc(cx, cy, 5.2, 5.2, edge)
+    c.disc(cx, cy, 4.2, 4.2, mid)
+    c.disc(cx + 0.3, cy - 0.3, 3.1, 3.1, hot)
+    c.disc(cx - 0.6, cy + 0.6, 1.7, 1.7, core)
+
+    # Two crackling spurs off the shell, down and to the left.
+    for (a, b, d) in (((8, 22), (5, 23), (4, 26)), ((12, 25), (13, 27), (11, 29))):
+        c.line(a[0], a[1], b[0], b[1], hot)
+        c.line(b[0], b[1], d[0], d[1], mid)
+
+    # The crack where it turned: a white heart, four arms, the diagonals short.
+    tx, ty = int(bx), int(by)
+    for d in range(1, 3):
+        t_ = core if d == 1 else hot
+        for (dx, dy) in ((d, 0), (-d, 0), (0, d), (0, -d)):
+            c.set(tx + dx, ty + dy, t_)
+    for (dx, dy) in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
+        c.set(tx + dx, ty + dy, mid)
+    c.set(tx, ty, core)
+    return c
+
+
+def ink_ring(opaque=False, seal=True, flood=True, sweep=330.0, r=10.5, width=(4.2, 1.6), cx=15.5, cy=16.0, seed=0,
+             ink=0.62, pool=None, drips=False, second=False, hard=False):
+    """Ink Ring (scripts/InkRing.cs): an enso - one stroke of the brush round a ring - closing on itself, the pale wash it
+    floods with inside it, and the painter's seal. PAINTED IN INK, not drawn in the contract: Ma Liang's ink is the one
+    sanctioned departure from Bonelight (.ai/art-direction.md section 3a), so this is ink_wash.paint's and ink_wash.audit
+    is its check (write(), INK_ICONS) - the spell's own icon is ink on paper as the spell is ink on the ground.
+
+    The stroke starts loaded and wide low on the left, runs clockwise round and thins to a dry tail that crosses its own
+    start - the crossing is where the ring closed, and a drop of ink pooled there. Its middle is paler than its tide
+    lines, so it reads on the card's cream page by its rims and on a dark plate by its wash and its middle. The seal is
+    one small square of vermilion (the ember row, as on Ma Liang's crow's hat): the painter's chop, crisp and opaque.
+
+    `opaque` lays the ink whole (ink_wash.opaque) for tools/art/evolution_icons.py, which sets it on a milestone's night,
+    and the rest let those cards paint their own ring: `ink` the stroke's density, `pool` a flood that stands dark inside
+    it (Inkwell), `drips` wet ink running off its foot (Wet Ink), `second` a second stroke round inside the first (Second
+    Stroke), `hard` a stroke dried hard all round with no wet edge (Ink Prison).
+    """
+    import ink_wash as W
+    layers = {}
+    a0 = math.radians(200.0)
+    span = math.radians(sweep)
+    w0, w1 = width
+    rings = [(r, a0, span, w0, w1, "ring")]
+    if second:
+        rings.append((r * 0.6, math.radians(20.0), math.radians(300.0), w0 * 0.85, w1, "ring2"))
+    for y in range(CELL):
+        for x in range(CELL):
+            dx, dy = x + 0.5 - cx, y + 0.5 - cy
+            d = math.hypot(dx, dy)
+            stack = []
+            if pool is not None and d <= r - 1.4:
+                stack.append(W.Layer(pool + 0.08 * (d / r), "flood", "flood", x, y, True))
+            elif flood and d <= r - 2.2:
+                stack.append(W.Layer(0.1 + 0.06 * (d / r), "flood", "flood", x, y, True))
+            for (rr, start, arc, a, b, group) in rings:
+                # Where round the stroke this pixel lies: clockwise from its start, so a dry tail comes back past it.
+                ang = (math.atan2(dy, dx) - start) % (2 * math.pi)
+                for turn in (ang, ang + 2 * math.pi):
+                    if turn > arc:
+                        continue
+                    t = turn / arc
+                    half = (a + (b - a) * t) / 2.0
+                    if abs(d - rr) > half:
+                        continue
+                    # The tail runs dry: the brush skips where the paper's tooth caught it.
+                    if not hard and t > 0.82 and W.hsh(x, y, 913 + seed) < (t - 0.82) * 2.6:
+                        continue
+                    stack.append(W.Layer(ink - 0.12 * t, group, group, turn * rr, d - rr, False))
+                    break
+            if drips and dy > 0 and abs(d - r) <= 2.5 + dy * 0.35 and dy > r * 0.55 and W.hsh(x, 0, 377 + seed) < 0.3:
+                # Wet ink running down off the foot of the ring.
+                stack.append(W.Layer(ink, "drip", "drip", x, y, False))
+            if stack:
+                layers[(x, y)] = stack
+    # The drop that pooled where the ring closed, and the splatter the brush threw lifting off.
+    ex, ey = cx + math.cos(a0) * r, cy + math.sin(a0) * r
+    drops = [(ex + 0.5, ey + 0.5, 2.4)]
+    splats = [(ex - 3.0, ey + 3.5, 2), (ex - 1.0, ey + 6.0, 1), (cx + r + 2.5, cy - 3.0, 1)]
+    if drips:
+        splats += [(cx - 4.0, cy + r + 4.0, 2), (cx + 3.0, cy + r + 4.5, 1)]
+    blooms = [(cx + 3.0, cy - 2.5, 2.6)] if flood or pool is not None else []
+    details = {}
+    if seal:
+        # The chop, low on the right: vermilion in the ember row, the paste darker where it sat thick.
+        for (sx, sy) in ((26, 26), (27, 26), (26, 27), (27, 27)):
+            details[(sx, sy)] = ("light", bl.MATERIALS["ember"][2] if (sx + sy) % 3 else bl.MATERIALS["ember"][3])
+    c = W.paint(CELL, layers, details, blooms=blooms, drops=drops, splats=splats, seed=W.salt_of("ink-ring-icon") + seed,
+                hard_groups=("ring", "ring2") if hard else ())
+    return W.opaque(c) if opaque else c
+
+
+def windfall_fruit(c, x, y, r=2.2, rot=False):
+    """One iron apple at (x, y): steel lit from the upper left, a plane of steel's hi on that side (never a point - "Matte, not
+    wet"), its dark side down and right, a stalk. `rot` spots it with Poison's green (Cider Rot)."""
+    st = bl.MATERIALS["steel"]
+    for yy in range(int(y - r) - 1, int(y + r) + 2):
+        for xx in range(int(x - r) - 1, int(x + r) + 2):
+            nx = (xx + 0.5 - x) / r
+            ny = (yy + 0.5 - y) / r
+            d = nx * nx + ny * ny
+            if d > 1.0:
+                continue
+            v = -(nx * -0.62 + ny * -0.78)
+            c.set(xx, yy, st[1] if v > 0.35 else (st[2] if v > -0.25 else (st[3] if d < 0.8 else st[4])))
+    c.set(int(x - r * 0.45), int(y - r * 0.5), st[0])
+    c.set(int(x - r * 0.45) + 1, int(y - r * 0.5), st[0])
+    c.set(int(x), int(y - r) - 1, bl.tone("stone", "lit"))
+    if rot:
+        po = bl.ELEMENTS["poison"]
+        for (dx, dy, col) in ((1, 1, po[3]), (0, 1, po[2]), (1, 0, po[2])):
+            c.set(int(x) + dx, int(y) + dy, col)
+
+
+def windfall(fruit=((11.5, 13.5), (19.5, 15.0), (15.5, 9.5)), falling=True, rot=False):
+    """Windfall (scripts/Windfall.cs): the small iron-fruited tree, and one apple coming down off it.
+
+    The tree as the game draws it (tools/art/windfall.py), cut down to the card: an iron trunk lit on its left, a verdant
+    crown of leaf clusters lit from the upper left, and steel apples hanging in it - the brightest things on the card, as they
+    are on the tree. Low on the right one apple falls, two dashes over it the way it came down, onto a scuff of grit where
+    it will land. Grass above, Metal hanging in it and below: the two tags in one shape. No night: the crown is dark enough
+    to hold on the card's cream page, and the apples hold on the crown.
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    st = bl.MATERIALS["steel"]
+    iron = [st[1], st[2], st[3], st[4], OCC]
+    # The ground and the trunk's foot.
+    for x in range(8, 25):
+        c.set(x, 29, OCC)
+    T.trunk(c, 15, 28, 18, 4, 2.5, iron, 7, flare=1.6)
+    rnd = T.Rng(7)
+    clusters = T.fill_clusters(rnd, 15.5, 12.0, 9.5, 6.0, 20, 3.2, 5.0)
+    T.crown(c, clusters, T.VE[1:5], 15.5, 12.0, 13.0, 8.5, 7, ragged=0.25)
+    for (x, y) in fruit:
+        windfall_fruit(c, x, y, rot=rot)
+    if falling:
+        windfall_fruit(c, 25.5, 23.0, rot=rot)
+        c.set(25, 18, st[2])
+        c.set(25, 19, st[3])
+        c.set(26, 16, st[3])
+        # The grit it lands on.
+        for (x, col) in ((23, bl.tone("stone", "lit")), (28, bl.tone("stone", "base")), (24, OCC), (27, OCC)):
+            c.set(x, 28, col)
+    return c
+
+
+def lancet_needle(c, ax, ay, bx, by, bead=True, bodkin=False):
+    """One of Lancet's needles (scripts/Lancet.cs), from its eye at (ax, ay) to its point at (bx, by): the shaft in steel lit
+    over a flank of steel's base on its lower side, the eye a slot of occlusion, the last of it white-hot - metal's core, as
+    the game draws the point - and, `bead`, a drop of poison hanging under the shaft just behind the point. `bodkin` widens
+    the point into a bodkin's square-shouldered head."""
+    st = bl.MATERIALS["steel"]
+    core, hot, mid, edge = bl.ELEMENTS["metal"]
+    length = math.hypot(bx - ax, by - ay)
+    ux, uy = (bx - ax) / length, (by - ay) / length
+    # The side away from the key light (upper left): the flank of shade.
+    sx, sy = -uy, ux
+    if sx + sy < 0:
+        sx, sy = -sx, -sy
+    steps = int(length * 2) + 1
+    for i in range(steps + 1):
+        t = i / float(steps)
+        x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+        k = t * length
+        if 1.5 < k < length - 1.5:
+            c.set(int(round(x + sx)), int(round(y + sy)), st[2])
+    for i in range(steps + 1):
+        t = i / float(steps)
+        x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+        k = t * length
+        tone = core if k > length - 2.5 else (hot if k > length * 0.55 else st[1])
+        c.set(int(round(x)), int(round(y)), tone)
+    # The eye: a slot of occlusion in the shaft's tail.
+    c.set(int(round(ax + ux * 1.0)), int(round(ay + uy * 1.0)), OCC)
+    if bodkin:
+        # The bodkin's head: shoulders of steel either side of the point, lit on the upper one.
+        for (side, tone) in ((1.0, st[0]), (-1.0, st[2])):
+            for back in (1.5, 2.5):
+                c.set(int(round(bx - ux * back + sx * side)), int(round(by - uy * back + sy * side)), tone)
+        c.set(int(round(bx - ux * 3.5 + sx)), int(round(by - uy * 3.5 + sy)), edge)
+    if bead:
+        po = bl.ELEMENTS["poison"]
+        hx, hy = int(round(bx - ux * 3.0 + sx * 1.6)), int(round(by - uy * 3.0 + sy * 1.6))
+        c.set(hx, hy, po[1])
+        c.set(hx + 1, hy, po[2])
+        c.set(hx, hy + 1, po[2])
+        c.set(hx + 1, hy + 1, po[3])
+
+
+def lancet_skull(c, x, y, s=1.0, cracked=True, dead=False, withered=False):
+    """One of the swarm, the most hurt of it: a bone skull lit upper left, two dark eyes, and `cracked` a split across its
+    crown - the wound the needle is drawn to. `dead` crosses its eyes (an outright kill); `withered` takes a bite out of its
+    lower right, gone to the dark (Bodkin's Wither, health taken for good)."""
+    b = bl.MATERIALS["skin"]
+    c.disc(x, y, 3.6 * s, 3.9 * s, b[3])
+    c.disc(x - 0.5, y - 0.5, 2.8 * s, 3.0 * s, b[2])
+    c.set(int(x - 1.5 * s), int(y - 1.8 * s), b[1])
+    c.set(int(x - 0.5 * s), int(y - 2.2 * s), b[1])
+    if withered:
+        c.disc(x + 2.4 * s, y + 2.2 * s, 2.2 * s, 2.0 * s, b[4])
+        c.set(int(x + 1.0 * s), int(y + 2.6 * s), bl.ELEMENTS["metal"][3])
+        c.set(int(x + 2.6 * s), int(y + 0.6 * s), bl.ELEMENTS["metal"][3])
+    ex, ey = int(round(x - 1.4 * s)), int(round(y + 0.4 * s))
+    fx = int(round(x + 1.2 * s))
+    if dead:
+        # Eyes struck through, a slash each the other way: gone.
+        c.set(ex, ey, OCC)
+        c.set(ex + 1, ey + 1, OCC)
+        c.set(fx, ey + 1, OCC)
+        c.set(fx + 1, ey, OCC)
+    else:
+        c.set(ex, ey, OCC)
+        c.set(ex + 1, ey, OCC)
+        c.set(fx, ey, OCC)
+        c.set(fx + 1, ey, OCC)
+    if cracked:
+        # A zigzag split down from the crown, dark against the bone.
+        cx_, cy_ = int(round(x + 0.6 * s)), int(round(y - 3.6 * s))
+        for (dx, dy) in ((0, 0), (0, 1), (1, 2), (0, 3)):
+            c.set(cx_ + dx, cy_ + dy, OCC)
+
+
+def lancet(sky=True, bead=True, drop=True):
+    """Lancet (scripts/Lancet.cs): a thin steel needle going into the most wounded of the swarm.
+
+    The needle crosses the card from its eye up on the left to its point low on the right, where it goes into a skull with
+    a crack across its crown - the most hurt, the one it chose. Its shaft is steel lit over a flank of steel's base, its last
+    pixels white-hot, and a bead of poison hangs under it just behind the point, one drop falling from it. Steel is pale and
+    vanishes on the card's cream page (Starfall's lesson), so it is drawn on a night: the deep of a wound, red's shade and
+    deep, a night no other spell's card uses. `sky=False` leaves the night off (tools/art/evolution_icons.py lays its own).
+    """
+    c = raster.Canvas(CELL, CELL, None)
+    if sky:
+        c.disc(15.5, 15.5, 15.0, 15.0, bl.tone("red", "shade"))
+        c.disc(15.5, 15.5, 14.0, 14.0, bl.tone("red", "deep"))
+    lancet_skull(c, 21.5, 21.0, 1.3)
+    lancet_needle(c, 6.0, 6.0, 17.0, 17.0, bead=bead)
+    lancet_glint(c, 17, 17)
+    if drop:
+        po = bl.ELEMENTS["poison"]
+        c.set(13, 21, po[1])
+        c.set(13, 22, po[2])
+        c.set(14, 22, po[3])
+    return c
+
+
+def lancet_glint(c, x, y, arm=2):
+    """Where a needle went in: a white-hot heart and four short arms of metal's hot, on the diagonals."""
+    core, hot, mid, edge = bl.ELEMENTS["metal"]
+    c.set(x, y, core)
+    for d in range(1, arm + 1):
+        tone = hot if d == 1 else mid
+        for (dx, dy) in ((d, -d), (-d, d), (d, d), (-d, -d)):
+            if (dx, dy) != (-d, -d):
+                c.set(x + dx, y + dy, tone)
 
 
 def the_taking():
@@ -1334,6 +1649,10 @@ ICONS = [
     ("riptide-water", riptide, CELL),
     ("hollow-star-dark", hollow_star, CELL),
     ("folio-arcane", folio, CELL),
+    ("corposant-lightning", corposant, CELL),
+    ("ink-ring-dark", ink_ring, CELL),
+    ("windfall-grass", windfall, CELL),
+    ("lancet-metal", lancet, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
     ("contagion-poison", contagion, CELL),
     ("bramble-seed-grass", bramble_seed, CELL),
@@ -1356,8 +1675,17 @@ FX = [
 ]
 
 
+# Painted in Ma Liang's ink, the one sanctioned departure (.ai/art-direction.md section 3a): held to ink_wash.audit - an ink
+# stop at an allowed alpha, or any contract colour opaque - in place of the contract's check. Nothing else is let off it.
+INK_ICONS = ("ink-ring-dark",)
+
+
 def write(canvas, name, cell):
-    bad = canvas.audit()
+    if name in INK_ICONS:
+        import ink_wash
+        bad = [(h, n) for (h, a, n) in ink_wash.audit(canvas.img)]
+    else:
+        bad = canvas.audit()
     if bad:
         print("OFF-CONTRACT COLOURS in %s (art-direction.md section 3):" % name)
         for h, n in bad[:10]:

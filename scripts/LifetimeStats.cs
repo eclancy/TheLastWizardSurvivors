@@ -38,6 +38,14 @@ public sealed class LifetimeStats
 	public int BestLaelapsHaresCoursed { get; set; }
 	/// <summary>The most chests opened in one run: what the Magpie feat measures (it pays Folio, John Dee's opener).</summary>
 	public int BestChestsInRun { get; set; }
+	/// <summary>The most kills numbered in Lightning's ink in one run: what the Storm Petrel feat measures (it pays Corposant).</summary>
+	public int BestLightningKillsInRun { get; set; }
+	/// <summary>The most kills numbered in Water's or Darkness's ink in one run: what the Cormorant feat measures (it pays Ink Ring).</summary>
+	public int BestInkKillsInRun { get; set; }
+	/// <summary>The most kills numbered in Grass's or Metal's ink in one run: what the Fieldfare feat measures (it pays Windfall).</summary>
+	public int BestGrassMetalKillsInRun { get; set; }
+	/// <summary>The most enemies that died poisoned in one run: what the Shrike feat measures (it pays Lancet).</summary>
+	public int BestPoisonedKillsInRun { get; set; }
 
 	public Dictionary<string, float> BestTimeByStage { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 	/// <summary>Highest instance count ever held, per element. Feeds the "adept" achievements.</summary>
@@ -97,6 +105,10 @@ public sealed class LifetimeStats
 		BestUndamagedSeconds = Math.Max(BestUndamagedSeconds, run.UndamagedSeconds);
 		BestHaresCoursed = Math.Max(BestHaresCoursed, run.HaresCoursed);
 		BestChestsInRun = Math.Max(BestChestsInRun, run.ChestsOpened);
+		BestLightningKillsInRun = Math.Max(BestLightningKillsInRun, run.LightningKills);
+		BestInkKillsInRun = Math.Max(BestInkKillsInRun, run.InkKills);
+		BestGrassMetalKillsInRun = Math.Max(BestGrassMetalKillsInRun, run.GrassMetalKills);
+		BestPoisonedKillsInRun = Math.Max(BestPoisonedKillsInRun, run.PoisonedKills);
 		if (run.CharacterId == "laelaps" && run.StageId == "stage_10")
 			BestLaelapsHaresCoursed = Math.Max(BestLaelapsHaresCoursed, run.HaresCoursed);
 		BestSpellSlotsFilled = Math.Max(BestSpellSlotsFilled, run.EquippedSpells?.Count ?? 0);
@@ -165,6 +177,10 @@ public sealed class LifetimeStats
 			["BestHaresCoursed"] = BestHaresCoursed,
 			["BestLaelapsHaresCoursed"] = BestLaelapsHaresCoursed,
 			["BestChestsInRun"] = BestChestsInRun,
+			["BestLightningKillsInRun"] = BestLightningKillsInRun,
+			["BestInkKillsInRun"] = BestInkKillsInRun,
+			["BestGrassMetalKillsInRun"] = BestGrassMetalKillsInRun,
+			["BestPoisonedKillsInRun"] = BestPoisonedKillsInRun,
 			["BestTimeByStage"] = ToFloatMap(BestTimeByStage),
 			["BestElementCount"] = ToIntMap(BestElementCount),
 			["KillsByEnemyType"] = ToIntMap(KillsByEnemyType),
@@ -197,6 +213,18 @@ public sealed class LifetimeStats
 		// Added 2026-11-09 with no schema bump, as the hares were: it only adds, and a save without the key reads as no
 		// run with a chest in it - the Magpie feat is then done by the next run that opens ten.
 		if (dict.ContainsKey("BestChestsInRun")) result.BestChestsInRun = dict["BestChestsInRun"].AsInt32();
+		// Added 2026-11-09 with no schema bump, as the chests were: a save without the key reads as no Lightning kill in any
+		// run, and the Storm Petrel feat is then done by the next run that makes the count.
+		if (dict.ContainsKey("BestLightningKillsInRun")) result.BestLightningKillsInRun = dict["BestLightningKillsInRun"].AsInt32();
+		// Added 2026-11-09 with no schema bump, as the Lightning kills were: a save without the key reads as no Water or
+		// Darkness kill in any run, and the Cormorant feat is then done by the next run that makes the count.
+		if (dict.ContainsKey("BestInkKillsInRun")) result.BestInkKillsInRun = dict["BestInkKillsInRun"].AsInt32();
+		// Added 2026-11-09 with no schema bump, as the ink kills were: a save without the key reads as no Grass or Metal kill
+		// in any run, and the Fieldfare feat is then done by the next run that makes the count.
+		if (dict.ContainsKey("BestGrassMetalKillsInRun")) result.BestGrassMetalKillsInRun = dict["BestGrassMetalKillsInRun"].AsInt32();
+		// Added 2026-11-09 with no schema bump, as the Grass and Metal kills were: a save without the key reads as no enemy
+		// that ever died poisoned, and the Shrike feat is then done by the next run that makes the count.
+		if (dict.ContainsKey("BestPoisonedKillsInRun")) result.BestPoisonedKillsInRun = dict["BestPoisonedKillsInRun"].AsInt32();
 		if (dict.ContainsKey("BestTimeByStage")) result.BestTimeByStage = FromFloatMap(dict["BestTimeByStage"].AsGodotDictionary());
 		if (dict.ContainsKey("BestElementCount")) result.BestElementCount = FromIntMap(dict["BestElementCount"].AsGodotDictionary());
 		if (dict.ContainsKey("KillsByEnemyType")) result.KillsByEnemyType = FromIntMap(dict["KillsByEnemyType"].AsGodotDictionary());

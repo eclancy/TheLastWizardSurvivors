@@ -1655,6 +1655,42 @@ public partial class _BalanceHarness : Node
 		// Paint What Is Needed (his passive): when it painted its flask, once it has.
 		if (player.FlaskPaintedAtSeconds >= 0f)
 			GD.Print($"HARNESS PAINTED FLASK m={row.Minute} at={player.FlaskPaintedAtSeconds:0.0}s");
+		// Corposant: balls loosed, edges turned off, strikes, twins split, wake zaps, lantern hangs
+		// and crowns - once it has loosed one.
+		if (Corposant.StatLaunched > 0)
+			GD.Print($"HARNESS CORPOSANT m={row.Minute} launched={Corposant.StatLaunched} bounces={Corposant.StatBounces}"
+				+ $" strikes={Corposant.StatStrikes} twins={Corposant.StatTwins} wake={Corposant.StatWakeStrikes} hangs={Corposant.StatHangs} crowns={Corposant.StatCrowns}");
+		// The Storm Petrel feat's count (RunEvents.RecordLightningKill): kills numbered in Lightning's ink so far this run.
+		if (RunEvents.LightningKills > 0)
+			GD.Print($"HARNESS LIGHTNING KILLS m={row.Minute} kills={RunEvents.LightningKills}");
+		// Ink Ring: rings closed, bodies struck, loops turned down for their size, the largest closed, Wet Ink's stings,
+		// Inkwell's slows, prisons raised and second strokes - once it has closed or turned one down.
+		if (InkRing.StatRings > 0 || InkRing.StatTooSmall > 0)
+			GD.Print($"HARNESS INK RING m={row.Minute} rings={InkRing.StatRings} struck={InkRing.StatStruck} tooSmall={InkRing.StatTooSmall}"
+				+ $" largest={InkRing.StatLargestArea:0} stings={InkRing.StatStings} poolSlows={InkRing.StatPoolSlows} prisons={InkRing.StatPrisons} second={InkRing.StatSecondStrokes}");
+		// The Cormorant feat's count (RunEvents.RecordInkKill): kills numbered in Water's or Darkness's ink so far this run.
+		if (RunEvents.InkKills > 0)
+			GD.Print($"HARNESS INK KILLS m={row.Minute} kills={RunEvents.InkKills}");
+		// Windfall: trees planted and uprooted, fruit ripened, bumps, his shakes (and the largest), harvest moons, fruit
+		// landed, bodies thudded, thorn and lash strikes and rot ticks - once it has planted one.
+		if (Windfall.StatPlanted > 0)
+			GD.Print($"HARNESS WINDFALL m={row.Minute} planted={Windfall.StatPlanted} uprooted={Windfall.StatUprooted} ripened={Windfall.StatRipened}"
+				+ $" bumps={Windfall.StatBumps} shakes={Windfall.StatShakes} largestShake={Windfall.StatLargestShake} moons={Windfall.StatMoons}"
+				+ $" landed={Windfall.StatLanded} thudHits={Windfall.StatThudHits} thornHits={Windfall.StatThornHits} lashes={Windfall.StatLashes} rotTicks={Windfall.StatRotTicks}");
+		// Lancet: casts and needles thrown, strikes (and how many found a hurt body, and the mean share of health those bodies had
+		// lost), kills and outright kills, Bloodletting's releases and what they let out, Triage's hops, re-aims and needles that
+		// fell with nothing to strike - once it has thrown one.
+		if (Lancet.StatThrown > 0)
+			GD.Print($"HARNESS LANCET m={row.Minute} casts={Lancet.StatCasts} thrown={Lancet.StatThrown} strikes={Lancet.StatStrikes}"
+				+ $" wounded={Lancet.StatWoundedStrikes} meanWound={(Lancet.StatStrikes > 0 ? Lancet.StatWoundSum / Lancet.StatStrikes : 0.0):0.00}"
+				+ $" kills={Lancet.StatKills} outright={Lancet.StatOutright} releases={Lancet.StatReleases} released={Lancet.StatReleased}"
+				+ $" triage={Lancet.StatTriage} retargets={Lancet.StatRetargets} fizzles={Lancet.StatFizzles}");
+		// The Fieldfare feat's count (RunEvents.RecordGrassMetalKill): kills numbered in Grass's or Metal's ink so far this run.
+		if (RunEvents.GrassMetalKills > 0)
+			GD.Print($"HARNESS GRASS METAL KILLS m={row.Minute} kills={RunEvents.GrassMetalKills}");
+		// The Shrike feat's count (RunEvents.RecordPoisonedKill): enemies that died with a poison ticking on them so far.
+		if (RunEvents.PoisonedKills > 0)
+			GD.Print($"HARNESS POISONED KILLS m={row.Minute} kills={RunEvents.PoisonedKills}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

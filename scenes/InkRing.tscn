@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/InkRing.cs" id="1"]
+
+; Ink Ring's ink: one node in the arena that carries the line the wizard trails, every ring it closes, their floods,
+; splats and prison walls, in fixed pools, and draws them itself from tools/art/ink_ring.py's sheet of watercolour
+; stamps (scripts/InkRing.cs). No collision shape of its own - a ring strikes what lies inside the loop it closed, and
+; Ink Prison's walls are StaticBody2Ds it makes on the enemy-only layer the first time one is needed.
+[node name="InkRing" type="Node2D"]
+script = ExtResource("1")

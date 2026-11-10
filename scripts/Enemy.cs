@@ -2079,6 +2079,42 @@ public partial class Enemy : CharacterBody2D
 		if (poisonTimeRemaining > 0f)
 			OnStatusApplied();
 	}
+
+	/// <summary>
+	/// All the poison still to come on this enemy, as the ticks would deal it: the ticks its clock has left, each at the
+	/// strongest tick laid and the run's dose (Sola Dosis, <see cref="PlayerPoisonScale"/>). Lancet's Bloodletting lets it
+	/// out at once (scripts/Lancet.cs). A tick lands every PoisonTickInterval of the tick clock while the poison runs, and
+	/// the frame that runs the clock out still ticks if the tick clock fills on it, so the ticks left are the whole
+	/// intervals in what has run of the tick clock plus what is left of the poison. 0 for no poison, and for the harness's
+	/// zero-damage one.
+	/// </summary>
+	public int RemainingPoisonDamage
+	{
+		get
+		{
+			if (poisonTimeRemaining <= 0f || poisonDamagePerTick <= 0 || isDying)
+				return 0;
+			int ticks = Mathf.FloorToInt((poisonTimeRemaining + poisonTickTimer) / PoisonTickInterval + 0.0001f);
+			if (ticks <= 0)
+				return 0;
+			return Math.Max(1, Mathf.RoundToInt(ticks * poisonDamagePerTick * PlayerPoisonScale));
+		}
+	}
+
+	/// <summary>
+	/// Ends the poison now, with nothing more to tick: the other half of letting it out (Lancet's Bloodletting reads
+	/// <see cref="RemainingPoisonDamage"/>, deals it, then calls this). The same three fields the poison's own expiry
+	/// clears, and the look put back the same way, so a cured body is exactly one whose poison ran out.
+	/// </summary>
+	public void EndPoison()
+	{
+		if (poisonTimeRemaining <= 0f && poisonDamagePerTick == 0)
+			return;
+		poisonTimeRemaining = 0f;
+		poisonDamagePerTick = 0;
+		poisonTickTimer = 0f;
+		RefreshStatusLook();
+	}
 	// 	var rng = new RandomNumberGenerator();
 	// 	rng.Randomize();
 	// 					var angle = rng.Randf() * (Mathf.Pi * 2.0f);
@@ -2285,6 +2321,10 @@ public partial class Enemy : CharacterBody2D
 		EndTurn();
 		var perfStart = FrameProfiler.Begin();
 		RunEvents.RecordKill(EnemyType, IsMiniBoss);
+		// Died with a poison still ticking on it, whatever dealt the last blow: what the Shrike feat counts (it pays Lancet).
+		// Read before anything below clears the status, and every poison on an enemy is the player's (PlayerPoisonScale).
+		if (IsPoisoned)
+			RunEvents.RecordPoisonedKill();
 
 		// Before the group leave and the collision zeroing below, while GlobalPosition still
 		// means something. The sound is allowed to outlast the corpse - it gates nothing.
