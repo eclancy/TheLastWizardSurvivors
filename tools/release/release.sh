@@ -10,10 +10,10 @@
 # starting with "Download **": that page strips the paragraph that starts that way.
 #
 # Commits the version bump, tags it, exports the Windows and Linux builds and the Android APK,
-# and makes a GitHub Release with the installer (TheOneHeMissed-Setup.exe, built with Inno Setup
+# and makes a GitHub Release with the installer (TheLastWizardSurvivors-Setup.exe, built with Inno Setup
 # from installer.iss), the full zip (the portable version), the small patch zip, the Linux download
-# (TheOneHeMissed-linux.tar.gz, with an install.sh) and its patch, the two bridges for copies from
-# before the rename (package.py, BRIDGE), the release-signed APK (TheOneHeMissed-android.apk) and
+# (TheLastWizardSurvivors-linux.tar.gz, with an install.sh) and its patch, the two bridges for copies from
+# before the rename (package.py, BRIDGE), the release-signed APK (TheLastWizardSurvivors-android.apk) and
 # version.json. ecec.dev/the-last-wizard-survivors/version.json - and the game's two old addresses,
 # which copies from before the renames ask - redirects to the newest release's version.json, so nothing on
 # ecec.dev needs deploying. See .ai/releasing.md. Ported from DrawFight's tools/release/release.sh.
@@ -31,7 +31,10 @@ for arg in "$@"; do
 done
 VERSION="${ARGS[0]:-}"
 CHANGES="${ARGS[1]:-}"
-HOW_TO="Download **TheOneHeMissed-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? TheOneHeMissed-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download TheOneHeMissed-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **TheOneHeMissed-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-last-wizard-survivors/download"
+# The downloads' prefix (in-flight 65): package.py's DOWNLOAD and installer.iss's OutputBaseFilename say the same.
+# The program inside them keeps its name, TheOneHeMissed (package.py's NAME), so the portable zip still runs it.
+DL=TheLastWizardSurvivors
+HOW_TO="Download **$DL-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? $DL-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download $DL-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **$DL-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-last-wizard-survivors/download"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 	echo "usage: bash tools/release/release.sh [--dry-run] X.Y.Z [\"what changed\"]" >&2
 	exit 1
@@ -222,12 +225,12 @@ export_desktop "Linux" build/linux/TheOneHeMissed.x86_64 build/export-linux.log
 python tools/release/package.py "$VERSION" "--progress-epoch=$EPOCH"
 grep -qE "\"progressEpoch\": $EPOCH([^0-9]|\$)" build/release/version.json \
 	|| { echo "build/release/version.json does not carry progressEpoch $EPOCH" >&2; exit 1; }
-# The installer: build/release/TheOneHeMissed-Setup.exe, from the same export. The MSYS
+# The installer: build/release/$DL-Setup.exe, from the same export. The MSYS
 # variables stop Git Bash rewriting ISCC's /Q and /D switches into Windows paths (ISCC would
 # then see extra script names). DrawFight and Wizard Wars call it the same way.
 MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' "$ISCC" /Q "/DAppVersion=$VERSION" tools/release/installer.iss \
 	|| { echo "installer compile failed" >&2; exit 1; }
-[ -f build/release/TheOneHeMissed-Setup.exe ] || { echo "ISCC produced no TheOneHeMissed-Setup.exe" >&2; exit 1; }
+[ -f "build/release/$DL-Setup.exe" ] || { echo "ISCC produced no $DL-Setup.exe - installer.iss's OutputBaseFilename must match DL" >&2; exit 1; }
 
 # --- The Android APK ------------------------------------------------------------------------
 if [ ! -f android/build/libs/release/godot-lib.template_release.aar ]; then
@@ -308,10 +311,27 @@ echo "$BADGING" | grep -q "versionCode='$VERSION_CODE' versionName='$VERSION'" \
 # without the comment that says so - this check is the part that cannot be lost.
 echo "$BADGING" | grep -q "^package: name='com.ecec.wizardsurvivors' " \
 	|| { echo "$APK is not package com.ecec.wizardsurvivors: $BADGING - see .ai/releasing.md, The rename" >&2; exit 1; }
-cp "$APK" build/release/TheOneHeMissed-android.apk
-printf '%-30s %6.1f MB  (versionCode %s, signer SHA-256 %s)\n' TheOneHeMissed-android.apk \
+cp "$APK" "build/release/$DL-android.apk"
+printf '%-30s %6.1f MB  (versionCode %s, signer SHA-256 %s)\n' "$DL-android.apk" \
 	"$(awk "BEGIN { print $(stat -c %s "$APK") / 1048576 }")" "$VERSION_CODE" "$APK_CERT"
 
+# Every file the release carries, by the downloads' name (in-flight 65), and version.json pointing at those names
+# and no other: a package.py and a release.sh that disagreed on the prefix would publish addresses that 404.
+RELEASE_FILES=(
+	"build/release/$DL-Setup.exe" "build/release/$DL-windows.zip"
+	"build/release/$DL-patch.zip" "build/release/$DL-android.apk"
+	"build/release/$DL-linux.tar.gz" "build/release/$DL-linux-patch.zip"
+	"build/release/$DL-windows-bridge.zip" "build/release/$DL-linux-bridge.tar.gz"
+	build/release/version.json
+)
+for f in "${RELEASE_FILES[@]}"; do
+	[ -f "$f" ] || { echo "missing $f - package.py's DOWNLOAD must match DL" >&2; exit 1; }
+done
+grep -q "/releases/download/v$VERSION/$DL-" build/release/version.json \
+	|| { echo "build/release/version.json carries no $DL-* address for v$VERSION" >&2; exit 1; }
+if grep -o "/releases/download/v$VERSION/[^\"]*" build/release/version.json | grep -qv "/v$VERSION/$DL-"; then
+	echo "build/release/version.json names a download that is not $DL-*" >&2; exit 1
+fi
 echo "build/release/version.json:"
 sed 's/^/    /' build/release/version.json
 if $STORY_RESET; then story_reset_banner; fi
@@ -334,11 +354,7 @@ $CHANGES}"
 fi
 
 gh release create "v$VERSION" --repo eclancy/TheLastWizardSurvivors \
-	build/release/TheOneHeMissed-Setup.exe build/release/TheOneHeMissed-windows.zip \
-	build/release/TheOneHeMissed-patch.zip build/release/TheOneHeMissed-android.apk \
-	build/release/TheOneHeMissed-linux.tar.gz build/release/TheOneHeMissed-linux-patch.zip \
-	build/release/TheOneHeMissed-windows-bridge.zip build/release/TheOneHeMissed-linux-bridge.tar.gz \
-	build/release/version.json \
+	"${RELEASE_FILES[@]}" \
 	--title "The Last Wizard: Survivors $VERSION" \
 	--notes "${CHANGES:+$CHANGES
 

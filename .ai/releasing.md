@@ -32,20 +32,20 @@ nor ecec.dev needs a deploy for a release**.
 Nine files: six made from the export in `build/windows/`, three from the export in
 `build/linux/` (see "Linux" below), and the Android APK.
 
-- **`TheOneHeMissed-Setup.exe`**: the installer, and the file a new player downloads. Compiled
+- **`TheLastWizardSurvivors-Setup.exe`**: the installer, and the file a new player downloads. Compiled
   by `release.sh` with Inno Setup from `tools/release/installer.iss`. See "The installer" below.
-- **`TheOneHeMissed-windows.zip`** (about 89 MB): the **portable version**, for anyone who would
+- **`TheLastWizardSurvivors-windows.zip`** (about 89 MB): the **portable version**, for anyone who would
   rather not run an installer. Everything, in a `TheOneHeMissed/` folder, with a
   `How to play.txt` (SmartScreen, where to keep the folder, the controls). The controls in it are
   written from the input map in `project.godot`; change one and change the other.
-- **`TheOneHeMissed-patch.zip`** (about 19 MB): `TheOneHeMissed.pck` (every image, sound,
+- **`TheLastWizardSurvivors-patch.zip`** (about 19 MB): `TheOneHeMissed.pck` (every image, sound,
   setting and scene) and `TheOneHeMissed.dll` with its two JSON files (all the C#). These are the
   only files that change when the game changes and Godot does not. The rest of the full zip is
   the Godot engine and the .NET runtime.
-- **`TheOneHeMissed-windows-bridge.zip`** and **`TheOneHeMissed-linux-bridge.tar.gz`** (about the
+- **`TheLastWizardSurvivors-windows-bridge.zip`** and **`TheLastWizardSurvivors-linux-bridge.tar.gz`** (about the
   size of the full downloads): the whole game again, under the file names a copy from before the
   rename looks for. Only those copies ever fetch them. See "The rename".
-- **`TheOneHeMissed-android.apk`** (about 110 MB): the Android game, release-signed. See
+- **`TheLastWizardSurvivors-android.apk`** (about 110 MB): the Android game, release-signed. See
   "Android" below.
 - **`version.json`**: the version, the Godot version it was built with, under `"builds"` the
   Windows and Linux pairs (`"patch"` and `"full"` each) that every copy since the rename reads, the
@@ -66,7 +66,7 @@ excluded. Everything under `build/` is gitignored.
 ## The installer
 
 `tools/release/installer.iss`, Inno Setup 6. `release.sh` compiles it after `package.py` with
-`/DAppVersion=X.Y.Z`, into `build/release/TheOneHeMissed-Setup.exe`.
+`/DAppVersion=X.Y.Z`, into `build/release/TheLastWizardSurvivors-Setup.exe`.
 
 - **It installs per user, to `%LOCALAPPDATA%\Programs\TheOneHeMissed`**, with no admin
   prompt (`PrivilegesRequired=lowest`). Two reasons. The self-updater copies new files into the
@@ -135,14 +135,14 @@ Added 2026-10-26, on Eric's call, for every game on ecec.dev (DrawFight did it f
 way). `release.sh` exports the `Linux` preset (x86_64, `.pck` beside the binary) to `build/linux/`,
 and `package.py` makes three more files from it:
 
-- **`TheOneHeMissed-linux.tar.gz`** (about 80 MB): the game in a `TheOneHeMissed/` folder - the
+- **`TheLastWizardSurvivors-linux.tar.gz`** (about 80 MB): the game in a `TheOneHeMissed/` folder - the
   `TheOneHeMissed.x86_64` binary, the `.pck`, and `data_TheOneHeMissed_linuxbsd_x86_64/` with
   the .NET runtime, so nothing has to be installed first - plus `install.sh`, `icon.png` and
   `How to play.txt`. A tarball rather than a zip, because a tarball carries the "can be run"
   permission on the binary and the script; `package.py` sets it, which it can do from Windows.
-- **`TheOneHeMissed-linux-patch.zip`** (about 19 MB): the Linux export's `.pck` and the game's
+- **`TheLastWizardSurvivors-linux-patch.zip`** (about 19 MB): the Linux export's `.pck` and the game's
   DLL with its two JSON files.
-- **`TheOneHeMissed-linux-bridge.tar.gz`**: for Linux copies from before the rename; see "The
+- **`TheLastWizardSurvivors-linux-bridge.tar.gz`**: for Linux copies from before the rename; see "The
   rename".
 
 **`install.sh`** (`tools/release/install.sh`) is the Linux installer. It copies the game to
@@ -166,7 +166,7 @@ yet run on Linux - Eric is testing it on a Linux machine.
 
 ## Android
 
-Added 2026-10-21. Every release carries `TheOneHeMissed-android.apk`, a **release-signed** APK
+Added 2026-10-21. Every release carries `TheLastWizardSurvivors-android.apk`, a **release-signed** APK
 made from the `Android` preset in `export_presets.cfg` (arm64, portrait, a Gradle build for the
 GL surface watchdog - see CLAUDE.md). It is not on the Play Store; players sideload it from the
 download page.
@@ -190,7 +190,7 @@ download page.
    (`Android Debug` or Godot's `Godot Engine`), and `aapt dump badging` must show this release's
    versionCode and versionName and the package id `com.ecec.wizardsurvivors` (the game's old name,
    kept on purpose - see "The rename"). Any failure stops the release before anything is committed.
-5. Copies it to `build/release/TheOneHeMissed-android.apk`.
+5. Copies it to `build/release/TheLastWizardSurvivors-android.apk`.
 
 apksigner, aapt and keytool are found where the Godot editor settings point
 (`export/android/android_sdk_path`, `export/android/java_sdk_path`), or through `ANDROID_SDK_ROOT`
@@ -240,7 +240,7 @@ what was published, it is what the monotonic check compares against, and
 ### How players install it
 
 On the phone: open `ecec.dev/the-last-wizard-survivors/download`, tap **Download for Android**, open the
-downloaded `TheOneHeMissed-android.apk`, and when Android asks, allow the browser to install
+downloaded `TheLastWizardSurvivors-android.apk`, and when Android asks, allow the browser to install
 unknown apps (Settings > *Allow from this source*), then **Install**. Play Protect may warn that
 it does not recognise the app, because it is not from the Play Store: *More details*, *Install
 anyway*. The download page says all of this.
@@ -576,13 +576,29 @@ still holds, and these join it, kept as **The One He Missed / TheOneHeMissed** o
 | What | Why it cannot change |
 |---|---|
 | `config/name` | it names the desktop `user://` folder, so changing it moves every save - and Windows forbids the new name's ":" in a folder name. `use_custom_user_dir` is no way round: Godot puts that folder straight under `%APPDATA%` |
-| The release file names (`TheOneHeMissed.exe`, `.pck`, `-Setup.exe`, `-windows.zip`, `-linux.tar.gz`, `-android.apk`) and the install folders | what every copy's updater looks for in a download and restarts, and what ecec.dev's download page links |
+| The program's file names (`TheOneHeMissed.exe`, `.x86_64`, `.pck`, the `data_TheOneHeMissed_*` .NET folder) and the install folders | what every copy's updater keeps (it keeps an install's own program name) and restarts. The DOWNLOADS left this row on 2026-11-10 (below) |
 | `ecec.dev/the-one-he-missed/version.json` and `/download` | baked into every copy from 0.12.0 to 0.20.0; the website answers them directly, forever, as it does the `/wizard-survivors/` pair |
 | The bug report's `game` field | the intake's allowlist key (`REPORT_GAMES`); the confirmation text a player reads says the new name |
 | The `.desktop` file's name, `theonehemissed.desktop` | so an update replaces the entry rather than adding a second |
 | The shortcuts' old names | `installer.iss` `[InstallDelete]` removes "The One He Missed.lnk" so an upgrade in place leaves only the new pair, named "The Last Wizard - Survivors" because ":" cannot be in a file name |
 
 No bridge is needed: the program keeps its file name, so the next release updates every copy the ordinary way.
+
+**The downloads took the new name on 2026-11-10** (in-flight 65, first half; Eric: *"the downloaded file is still
+created as 'the one he missed-android'"*). Every file a release carries is `TheLastWizardSurvivors-*` (`-Setup.exe`,
+`-windows.zip`, `-patch.zip`, `-android.apk`, `-linux.tar.gz`, `-linux-patch.zip`, `-windows-bridge.zip`,
+`-linux-bridge.tar.gz`): `package.py` names them from `DOWNLOAD`, apart from `NAME`, which is still the program, its
+`.pck`, the .NET folder and the folder inside each archive; `installer.iss`'s `OutputBaseFilename` and `release.sh`'s
+`DL` say the same prefix, and `release.sh` refuses a release whose files or `version.json` addresses do not. Safe for
+every installed copy because every updater follows `version.json`'s addresses and never looks for a download by name
+(only `.tar.gz` at the end of the Linux address matters, `UpdateScreen`). ecec.dev finds each download by how its
+name ends (`-Setup.exe`, `-windows.zip`, `-android.apk`, `-linux.tar.gz` on the download page; the first two in
+`src/lib/releases.ts`), so it still finds them. **One thing on the website does not follow:** its download page reads
+the part of a download's name before the last "-" as the program's name ("run `<that>.exe`" for the portable zip) and
+the Linux install folder (`~/.local/share/<that>/install.sh`) - its `data-base` spans - so from the first release
+with the new names it says `TheLastWizardSurvivors` for both, where the program and folder are still `TheOneHeMissed`.
+That page needs those two spans to say `TheOneHeMissed` (or the program's own rename, the second half, to land).
+`install.sh`'s `APP` stays equal to `NAME`, not to the downloads.
 
 **The repo and the website moved too, the same day** (Eric: *"Yes, change the GitHub repo and the website"*). The
 repo is `eclancy/TheLastWizardSurvivors`; GitHub redirects both old slugs, release downloads and the API included

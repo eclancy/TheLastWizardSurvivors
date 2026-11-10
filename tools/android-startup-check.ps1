@@ -1,6 +1,6 @@
 #requires -Version 7.0
 param(
-    [string]$Apk = "build/release/TheOneHeMissed-android.apk",
+    [string]$Apk = "build/release/TheLastWizardSurvivors-android.apk",
     [switch]$SkipExport
 )
 # Runs Windows release-engine UI checks against the real APK assets.

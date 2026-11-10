@@ -9,8 +9,8 @@
 # home. The save lives in ~/.local/share/godot/app_userdata/The One He Missed and is never touched.
 set -e
 
-# The same as the start of every release file's name (TheOneHeMissed-linux.tar.gz): ecec.dev's
-# download page tells people the game installs itself to ~/.local/share/<that name>.
+# The program's name, package.py's NAME - not the download's, which is TheLastWizardSurvivors-linux.tar.gz since
+# in-flight 65. Kept: an installed copy updates in place under this folder.
 APP=TheOneHeMissed
 TITLE="The Last Wizard: Survivors"
 # KEPT ON PURPOSE: the save folder is named after project.godot's config/name, which stayed The One

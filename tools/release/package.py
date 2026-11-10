@@ -6,24 +6,25 @@
 --progress-epoch is the story epoch version.json carries as "progressEpoch" (release.sh passes
 SaveData.CurrentProgressEpoch); left out, it is read from scripts/SaveData.cs the same way.
 
-Writes build/release/:
+Writes build/release/ (the downloads named TheLastWizardSurvivors-*, DOWNLOAD below; the program inside
+them is still TheOneHeMissed, NAME):
 
-  TheOneHeMissed-windows.zip   everything, in a TheOneHeMissed/ folder - the portable
+  TheLastWizardSurvivors-windows.zip   everything, in a TheOneHeMissed/ folder - the portable
                                version (the installer is what a new player downloads)
-  TheOneHeMissed-patch.zip     just the game: the .pck and the game's own assembly. A fraction
+  TheLastWizardSurvivors-patch.zip     just the game: the .pck and the game's own assembly. A fraction
                                of the full zip, because the engine and the .NET runtime only
                                change when Godot is upgraded.
-  TheOneHeMissed-linux.tar.gz  the Linux version, in a TheOneHeMissed/ folder with install.sh
+  TheLastWizardSurvivors-linux.tar.gz  the Linux version, in a TheOneHeMissed/ folder with install.sh
                                (which puts it in ~/.local/share and on the app menu) - from
                                build/linux/
-  TheOneHeMissed-linux-patch.zip  the Linux patch: its .pck and the game's assembly
-  TheOneHeMissed-windows-bridge.zip    the bridge: the whole game again, under the file names a
-  TheOneHeMissed-linux-bridge.tar.gz   copy from before the rename looks for (see BRIDGE below)
+  TheLastWizardSurvivors-linux-patch.zip  the Linux patch: its .pck and the game's assembly
+  TheLastWizardSurvivors-windows-bridge.zip    the bridge: the whole game again, under the file names a
+  TheLastWizardSurvivors-linux-bridge.tar.gz   copy from before the rename looks for (see BRIDGE below)
   version.json                 what the game's update check reads (see scripts/UpdateScreen.cs)
 
-The installer, TheOneHeMissed-Setup.exe, is compiled from the same export by release.sh
+The installer, TheLastWizardSurvivors-Setup.exe, is compiled from the same export by release.sh
 (tools/release/installer.iss); version.json carries its URL. The full zip is the portable version.
-The Android APK, TheOneHeMissed-android.apk, is exported and signature-checked by release.sh too;
+The Android APK, TheLastWizardSurvivors-android.apk, is exported and signature-checked by release.sh too;
 version.json carries its URL as "android".
 
 Normally run by tools/release/release.sh rather than by hand. See .ai/releasing.md.
@@ -45,19 +46,24 @@ EXPORT = os.path.join(ROOT, "build", "windows")
 LINUX = os.path.join(ROOT, "build", "linux")
 OUT = os.path.join(ROOT, "build", "release")
 REPO = "eclancy/TheLastWizardSurvivors"
-# Every file a release carries starts with this, and so do the program, its .pck and the .NET
-# folder (the assembly is named the same). ecec.dev's download page reads the part before the last
-# "-" of the files' names as the program's name and the Linux install folder, so install.sh's APP
-# must stay equal to it.
+# The program, its .pck and the .NET folder (the assembly is named the same), inside every download, and the
+# Linux install folder, so install.sh's APP must stay equal to it. An installed copy's updater keeps its own
+# program name, so changing this is the harder half of in-flight 65 and is not done.
 NAME = "TheOneHeMissed"
+# What the DOWNLOADS are called (in-flight 65, Eric 2026-11-10: "the downloaded file is still created as 'the one
+# he missed-android'"): the game's name since 2026-11-08, with no colon, which Windows forbids. Safe apart from
+# NAME because every updater follows version.json's addresses rather than looking for a file name, and ecec.dev
+# finds each download by how its name ends ("-Setup.exe", "-windows.zip", "-android.apk", "-linux.tar.gz"),
+# which is unchanged. release.sh's list and installer.iss's OutputBaseFilename say the same prefix.
+DOWNLOAD = "TheLastWizardSurvivors"
 DATA = "data_%s_windows_x86_64" % NAME
-FULL_ZIP = NAME + "-windows.zip"
-PATCH_ZIP = NAME + "-patch.zip"
-INSTALLER = NAME + "-Setup.exe"
-APK = NAME + "-android.apk"
+FULL_ZIP = DOWNLOAD + "-windows.zip"
+PATCH_ZIP = DOWNLOAD + "-patch.zip"
+INSTALLER = DOWNLOAD + "-Setup.exe"
+APK = DOWNLOAD + "-android.apk"
 LINUX_DATA = "data_%s_linuxbsd_x86_64" % NAME
-LINUX_TAR = NAME + "-linux.tar.gz"
-LINUX_PATCH = NAME + "-linux-patch.zip"
+LINUX_TAR = DOWNLOAD + "-linux.tar.gz"
+LINUX_PATCH = DOWNLOAD + "-linux-patch.zip"
 
 # BRIDGE. The game was called Wizard Survivors until 0.12.0, and every copy installed before then
 # runs a build whose updater is fixed in it: it reads version.json's top-level "patch" and "full"
@@ -75,8 +81,8 @@ LINUX_PATCH = NAME + "-linux-patch.zip"
 # "-bridge.tar.gz") are chosen so ecec.dev's download page, which finds files by how their names end
 # ("-windows.zip", "-linux.tar.gz"), never offers one. See .ai/releasing.md, "The rename".
 OLD_NAME = "WizardSurvivors"
-BRIDGE_ZIP = NAME + "-windows-bridge.zip"
-BRIDGE_TAR = NAME + "-linux-bridge.tar.gz"
+BRIDGE_ZIP = DOWNLOAD + "-windows-bridge.zip"
+BRIDGE_TAR = DOWNLOAD + "-linux-bridge.tar.gz"
 
 # The engine the export was made with. A patch is only offered to a copy on the same engine;
 # anything else downloads the full zip. Read from the editor binary's name rather than

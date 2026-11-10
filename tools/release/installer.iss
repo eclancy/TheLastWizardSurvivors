@@ -2,7 +2,7 @@
 ;
 ;   ISCC.exe -DAppVersion=0.2.1 tools\release\installer.iss
 ;
-; Packs the export in build\windows\ into build\release\TheOneHeMissed-Setup.exe.
+; Packs the export in build\windows\ into build\release\TheLastWizardSurvivors-Setup.exe.
 ;
 ; Per-user, no admin prompt: it installs to %LOCALAPPDATA%\Programs\TheOneHeMissed, which the
 ; player can write to - and must, because the game updates itself by robocopying new files into
@@ -39,7 +39,8 @@ WizardStyle=modern
 SetupIconFile=icon.ico
 UninstallDisplayIcon={app}\TheOneHeMissed.exe
 OutputDir=build\release
-OutputBaseFilename=TheOneHeMissed-Setup
+; The download's name (in-flight 65), package.py's DOWNLOAD; the program it installs is still TheOneHeMissed.exe.
+OutputBaseFilename=TheLastWizardSurvivors-Setup
 Compression=lzma2/max
 SolidCompression=yes
 CloseApplications=yes
