@@ -58,6 +58,9 @@ public partial class Player : CharacterBody2D
 	[Export] public PackedScene FolioScene { get; set; }
 	// St Elmo's fire (scripts/Corposant.cs, Player.Corposant.cs): one node in the arena carrying every ball loosed.
 	[Export] public PackedScene CorposantScene { get; set; }
+	// Ma Liang's brush, walked (scripts/InkRing.cs, Player.InkRing.cs): one node in the arena carrying the line, its rings
+	// and their prison walls.
+	[Export] public PackedScene InkRingScene { get; set; }
 	// The three found spells (.ai/side-events.md): each is a Discovery unlock from a side event.
 	[Export] public PackedScene IronPalisadeScene { get; set; }
 	[Export] public PackedScene ContagionScene { get; set; }
@@ -1312,6 +1315,8 @@ public partial class Player : CharacterBody2D
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Folio.tres"));
 		if (!spellCatalog.ContainsKey(Corposant.SpellId))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_Corposant.tres"));
+		if (!spellCatalog.ContainsKey(InkRing.SpellId))
+			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_InkRing.tres"));
 		if (!spellCatalog.ContainsKey("iron_palisade"))
 			AddSpellToCatalog(ResourceLoader.Load<SpellData>("res://SpellData_IronPalisade.tres"));
 		if (!spellCatalog.ContainsKey("contagion"))
@@ -2760,6 +2765,10 @@ public partial class Player : CharacterBody2D
 			// tier's chain - is a Lightning kill: what the Storm Petrel feat counts (it pays Corposant).
 			if (inked == Element.Lightning)
 				RunEvents.RecordLightningKill();
+			// One numbered in Water's ink or Darkness's - the two halves of Ma Liang's ink - is what the Cormorant feat
+			// counts (it pays Ink Ring).
+			else if (inked == Element.Water || inked == Element.Darkness)
+				RunEvents.RecordInkKill();
 		}
 		// Spells deliberately do not knock enemies back. This used to push every enemy on every
 		// spell hit, which shoved the swarm around constantly and made positioning unreadable.
@@ -4878,6 +4887,8 @@ public partial class Player : CharacterBody2D
 		else if (spell.Id.Equals(OrbOfAges.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireOrbOfAges(spell, OrbOfAgesScene);
 		else if (spell.Id.Equals(Folio.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireFolio(spell, FolioScene);
 		else if (spell.Id.Equals(Corposant.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireCorposant(spell, CorposantScene);
+		// No timer: a ring closes when his path crosses its own line, and the ripe cooldown only arms it (Player.InkRing.cs).
+		else if (spell.Id.Equals(InkRing.SpellId, StringComparison.OrdinalIgnoreCase)) outcome = FireInkRing(spell, InkRingScene);
 		else if (spell.Id.Equals("gravewell", StringComparison.OrdinalIgnoreCase)) outcome = FireGravewellTrap(spell, GravewellScene);
 		else if (spell.Id.Equals("hollow_star", StringComparison.OrdinalIgnoreCase)) outcome = FireHollowStar(spell, HollowStarScene);
 		else if (spell.Id.Equals("iron_palisade", StringComparison.OrdinalIgnoreCase)) outcome = FireIronPalisade(spell, IronPalisadeScene);
@@ -8135,6 +8146,8 @@ public partial class Player : CharacterBody2D
 		ReleaseFolio(spell);
 		// And Corposant's node, with every ball in flight (Player.Corposant.cs).
 		ReleaseCorposant(spell);
+		// And Ink Ring's, with its line, its rings and their walls (Player.InkRing.cs).
+		ReleaseInkRing(spell);
 	}
 
 	// --- Level-up charges ---
@@ -9213,6 +9226,10 @@ public partial class Player : CharacterBody2D
 				// player's words, never seconds, and never "zone" for a ball (Corposant.LifeAt).
 				if (upgrade.Effect == SpellEffect.ZoneDuration && spell.Id.Equals(Corposant.SpellId, StringComparison.OrdinalIgnoreCase))
 					parts.Add($"Duration {PercentDelta(Corposant.LifeAt(spell, nextLevel - 1), Corposant.LifeAt(spell, nextLevel))}");
+				// Ink Ring's ZoneDuration is how long the ink lasts before it dries away, and so how big a ring can be
+				// walked: a share of the life it had, never seconds (InkRing.InkSecondsAt).
+				else if (upgrade.Effect == SpellEffect.ZoneDuration && spell.Id.Equals(InkRing.SpellId, StringComparison.OrdinalIgnoreCase))
+					parts.Add($"Ink duration {PercentDelta(InkRing.InkSecondsAt(spell, nextLevel - 1), InkRing.InkSecondsAt(spell, nextLevel))}");
 				else
 					parts.Add(FormatSpellEffectUpgrade(upgrade.Effect, upgrade.EffectValue));
 			}

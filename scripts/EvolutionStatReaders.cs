@@ -336,6 +336,13 @@ public static class EvolutionStatReaders
 		[Corposant.SpellId] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Rider | EvolutionStat.Amount,
 			"Corposant.Refresh and Player.FireCorposant (balls a cast looses plus Amount; ZoneDuration is a ball's life; Twin Fires, Static Wake, Spindrift's repaint, Storm Lantern and Saint's Crown by id)",
 			SpellEffect.ZoneDuration, SpellEffect.CritDamage),
+		// Ma Liang's brush, walked (scripts/InkRing.cs): InkRing.Refresh reads the ring's damage and the ink's life, the fire
+		// loop its cooldown (the recharge between rings). ZoneDuration is how long the ink lasts (InkRing.InkSecondsAt), and
+		// so how wide a ring can be walked. Every strike and sting passes the spell as its source, so a per-spell crit reaches
+		// it. No Range, Area, Speed, Scale or count: the wizard's walk is all of those.
+		[InkRing.SpellId] = R(Core,
+			"InkRing.Refresh, InkRing.Strike and the fire loop's recharge (ZoneDuration is the ink's life; Long Stroke, Wet Ink, Inkwell, Ink Prison and Second Stroke by id)",
+			SpellEffect.ZoneDuration, SpellEffect.CritDamage),
 		["glacial_spike"] = R(Core | EvolutionStat.Projectiles | EvolutionStat.Range | EvolutionStat.Area | EvolutionStat.Speed
 				| EvolutionStat.Rider | EvolutionStat.Amount,
 			"IceSpike.RefreshComputedStats and Player.FireIceSpikes (Amount is more spikes; Shatter, Spike Run, Rimefoot, Glacier Crown and Frozen Spire by id, through ThrownShards, FrostPatch and GlacierCrown)",

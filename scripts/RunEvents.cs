@@ -39,6 +39,9 @@ public static class RunEvents
 	// Kills numbered in Lightning's ink (Player.DealDamageToEnemy): a Lightning spell's, one branched into Lightning, the
 	// Lightning tier's chain. The Storm Petrel feat asks for them in one run, and it pays Corposant.
 	private static int lightningKills;
+	// Kills numbered in Water's ink or Darkness's (Player.DealDamageToEnemy): the two halves of Ma Liang's ink. The
+	// Cormorant feat asks for them in one run, and it pays Ink Ring.
+	private static int inkKills;
 	// Seconds into the run the player first took damage, or -1 if they never did. Kept as a time
 	// rather than a bool so "survive N minutes untouched" works for any N instead of only the one
 	// hardcoded five-minute question the old flag could answer.
@@ -58,6 +61,7 @@ public static class RunEvents
 		revivesUsed = 0;
 		haresCoursed = 0;
 		lightningKills = 0;
+		inkKills = 0;
 		firstDamageAtSeconds = -1f;
 	}
 
@@ -114,6 +118,11 @@ public static class RunEvents
 	/// <summary>This run's Lightning kills so far, for the harness.</summary>
 	public static int LightningKills => lightningKills;
 
+	public static void RecordInkKill() => inkKills++;
+
+	/// <summary>This run's Water and Darkness kills so far (the Cormorant feat's count), for the harness.</summary>
+	public static int InkKills => inkKills;
+
 	public static void RecordFirstDamage(float atSeconds)
 	{
 		if (firstDamageAtSeconds < 0f)
@@ -154,6 +163,7 @@ public static class RunEvents
 		result.RevivesUsed = revivesUsed;
 		result.HaresCoursed = haresCoursed;
 		result.LightningKills = lightningKills;
+		result.InkKills = inkKills;
 		// Never hit means the whole run counts as untouched.
 		result.UndamagedSeconds = firstDamageAtSeconds < 0f ? timeSurvived : firstDamageAtSeconds;
 	}

@@ -72,6 +72,7 @@ import obsidian_glass as glass
 import spell_icons_core as sc
 import spore_mushrooms as spores
 import spirit_weapons as sw
+import ink_wash
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 CATALOG = os.path.join(HERE, "evolution_catalog.json")
@@ -1211,6 +1212,11 @@ SPELLS = {
     # St Elmo's fire (scripts/Corposant.cs): the ball coming off the edge of the view, its heart leading (the tip). Drawn
     # without its night, as Stormsweep is; the frame lays the milestone's.
     "corposant":         dict(paint=lambda: si.corposant(sky=False), travel=(-0.7, 0.7), tip=(9, 24), rows=("lightning",)),
+    # Ma Liang's brush, walked (scripts/InkRing.cs): the enso closing on itself, painted in INK (spell_icons.ink_ring) and
+    # laid opaque - a translucent wash over the milestone's night would blend into a colour that is neither. Not lifted
+    # by the rim's light as a dark subject is: a line of the element's light round it made it a lit thing, and the ink's
+    # pale middle carries it on the night. No rows to re-light (ink is never re-lit).
+    "ink_ring":          dict(paint=None, travel=None, tip=(16, 16), rows=()),
     # The dark wizard's own (.ai/dark-wizard-playable.md): the hand closing on the mote he takes.
     "the_taking":        dict(paint=si.the_taking, travel=(1, -1), tip=(20, 10), rows=("darkness", "light")),
     # Merlin's own (tools/art/player_merlin.py): his staff's quartz with the light in it (the tip), inside the
@@ -1262,6 +1268,7 @@ BASE = {
     "starfall": si.starfall, "familiar": si.familiar_icon, "stormsweep": si.stormsweep,
     "familiar_dog": si.familiar_dog_icon, "familiar_crow": si.familiar_crow_icon, "familiar_cat": si.familiar_cat_icon,
     "sleet_runes": si.sleet_runes, "orb_of_ages": si.orb_of_ages, "corposant": si.corposant,
+    "ink_ring": si.ink_ring,
 }
 
 
@@ -4354,6 +4361,66 @@ def _(sp, c):
     sp.subject = saints_crown
 
 
+# --- Ink Ring --------------------------------------------------------------------------------------
+
+# Ma Liang's brush, walked (scripts/InkRing.cs). Every card is something more the INK does, and every icon paints the enso
+# doing it, in ink (spell_icons.ink_ring, the one sanctioned departure - .ai/art-direction.md section 3a): a longer stroke
+# with its tail coming round past its start, the stroke still wet and running onto a skull crossing it, the ring standing
+# full of ink, the ring dried black and hard round the swarm it caught, and the brush gone round a second time. Held to
+# ink_wash.audit (main, INK_SUBJECTS) in place of the contract's check: its ink stops opaque, the frame's colours as ever.
+# Paler than the spell's own icon (`ink`), since a milestone's night is dark where the card's page is cream.
+
+INK_SUBJECTS = ("ink_ring",)
+
+
+def _ink(**kw):
+    """A subject painted by spell_icons.ink_ring, laid opaque on the card's night."""
+    kw.setdefault("opaque", True)
+    kw.setdefault("seal", False)
+    kw.setdefault("ink", 0.44)
+    return image(lambda: si.ink_ring(**kw))
+
+
+SPELLS["ink_ring"]["paint"] = _ink()
+
+
+@card("ink_ring_long_stroke")
+def _(sp, c):
+    """Long Stroke: a wider ring, the stroke running on past where it closed in a long dry tail."""
+    reset(sp)
+    sp.subject = _ink(sweep=440.0, r=12.6, width=(4.6, 1.2), flood=False, seed=3)
+
+
+@card("ink_ring_wet_ink")
+def _(sp, c):
+    """Wet Ink: the stroke still wet, ink running off its foot, and a skull crossing it stung."""
+    reset(sp)
+    sp.subject = _ink(width=(4.8, 3.6), flood=False, drips=True, ink=0.5, r=9.6, cy=14.5, seed=5)
+    O(sp, lambda cv, x: foe(cv, 24.0, 18.5, 0.95))
+
+
+@card("ink_ring_inkwell")
+def _(sp, c):
+    """Inkwell: the ring standing full of ink, a pool of it to the rim."""
+    reset(sp)
+    sp.subject = _ink(pool=0.34, flood=False, r=11.0, seed=7)
+
+
+@card("ink_ring_ink_prison")
+def _(sp, c):
+    """Ink Prison: the ring dried black and hard all round, and the swarm it caught inside it."""
+    reset(sp)
+    sp.subject = _ink(sweep=360.0, width=(4.4, 4.4), flood=False, hard=True, ink=0.5, r=11.6, seed=9)
+    O(sp, lambda cv, x: (foe(cv, 12.5, 13.5, 0.9), foe(cv, 19.5, 15.0, 0.9), foe(cv, 15.5, 20.5, 0.9)))
+
+
+@card("ink_ring_second_stroke")
+def _(sp, c):
+    """Second Stroke: the brush gone round again, a second ring inside the first."""
+    reset(sp)
+    sp.subject = _ink(second=True, flood=False, r=12.0, width=(4.2, 2.0), seed=11)
+
+
 # --- Hunter's Draw ---------------------------------------------------------------------------------
 
 # Every card is the bow doing something a bow does (.ai/spell-roster.md 2e, 2026-10-29), and every icon
@@ -6752,7 +6819,8 @@ def main(argv):
         if only and c["id"] not in only and c["spell"] not in only and subject_of(c) not in only:
             continue
         cv = compose(c, spec_for(c))
-        bad = cv.audit()
+        # Ma Liang's ink is the named exception to the contract (.ai/art-direction.md section 3a): its own check.
+        bad = [(h, n) for (h, a, n) in ink_wash.audit(cv.img)] if subject_of(c) in INK_SUBJECTS else cv.audit()
         if bad:
             problems.append("%s: off-contract colours %s" % (c["id"], ", ".join(h for h, _ in bad[:5])))
         made[c["id"]] = (c, cv)

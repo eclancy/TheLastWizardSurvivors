@@ -1663,6 +1663,14 @@ public partial class _BalanceHarness : Node
 		// The Storm Petrel feat's count (RunEvents.RecordLightningKill): kills numbered in Lightning's ink so far this run.
 		if (RunEvents.LightningKills > 0)
 			GD.Print($"HARNESS LIGHTNING KILLS m={row.Minute} kills={RunEvents.LightningKills}");
+		// Ink Ring: rings closed, bodies struck, loops turned down for their size, the largest closed, Wet Ink's stings,
+		// Inkwell's slows, prisons raised and second strokes - once it has closed or turned one down.
+		if (InkRing.StatRings > 0 || InkRing.StatTooSmall > 0)
+			GD.Print($"HARNESS INK RING m={row.Minute} rings={InkRing.StatRings} struck={InkRing.StatStruck} tooSmall={InkRing.StatTooSmall}"
+				+ $" largest={InkRing.StatLargestArea:0} stings={InkRing.StatStings} poolSlows={InkRing.StatPoolSlows} prisons={InkRing.StatPrisons} second={InkRing.StatSecondStrokes}");
+		// The Cormorant feat's count (RunEvents.RecordInkKill): kills numbered in Water's or Darkness's ink so far this run.
+		if (RunEvents.InkKills > 0)
+			GD.Print($"HARNESS INK KILLS m={row.Minute} kills={RunEvents.InkKills}");
 	}
 
 	// THE SHADOW HEALTH LEDGER, for --survivor --immortal: the bot plays the whole run, and the ledger

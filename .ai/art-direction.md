@@ -437,15 +437,16 @@ blots"*. So what Ma Liang's brush makes is not lit by the room and not drawn in 
 ink on wet paper, in one ink of its own, with real alpha. **This is the only art in the game allowed off
 the contract.** It covers Ma Liang's ink and nothing else: today the seven ink looks of his crow
 (`crow-ink`, `stormcrow-ink`, `raven-ink`, `morrigan-ink`, `morrigan-storm-ink`, `griffin-ink`,
-`griffin-storm-ink`), next **Ink Ring**. His other paint (the dotted door's trace, the painted flask, The
-Painted Door, the crow's motes and pecks) is still his *light* and still on the contract.
+`griffin-storm-ink`), and **Ink Ring** - its line, its rings, its spell icon and its five card icons ("Ink
+Ring: a line drawn live", below). His other paint (the dotted door's trace, the painted flask, The Painted
+Door, the crow's motes and pecks) is still his *light* and still on the contract.
 
 **One painter, so every ink thing is one hand.** `tools/art/ink_wash.py` holds the palette, the painter
 (`paint`) and the check (`audit`). A generator lays its figure as **layers**: for every pixel, each wash
 laid on it from first to last, as a pigment **density** (0 bare paper, 1 ink pooled as deep as it goes),
 with the **group** (one brush stroke) it belongs to and stroke-local coordinates. `familiar.ink_frame` is
 the worked example: `crow()` and `griffin()` lay the same parts as the crow of light, and `Fig.group` names
-the strokes. Ink Ring should paint through `ink_wash.paint`, not imitate it.
+the strokes. Ink Ring paints through `ink_wash.paint` too (`tools/art/ink_ring.py`), never imitating it.
 
 **The palette.** Twelve stops, `ink_wash.INK_TONES`; stop = `round(density x 11)`:
 `#E6E0D4 #D2CDC3 #BCB8B1 #A4A19E #8C8A8B #757479 #5F5E66 #4B4A54 #393843 #282733 #191823 #0D0C15`.
@@ -499,6 +500,42 @@ material (`IsInkLook`), and its blink is a translucent fade of the ink rather th
 likewise be drawn without the dither materials. If any part of it is drawn in code, it uses these twelve
 stops at these alphas.
 
+**Ink Ring: a line drawn live** (2026-11-09, `scripts/InkRing.cs`, `tools/art/ink_ring.py`). The crow is a
+sprite sheet; Ink Ring's line is wherever the wizard walked, so it cannot be one picture. It is **stamps**, one
+sheet (`assets/bonelight/effects/ink-ring.png`, authored 1:1, drawn at x2 like every effect), laid one per point
+of his path. What that took, beyond the crow's rules:
+
+- **A dab is a window, never a stroke.** Each line stamp is cut out of the middle of a much longer stroke
+  `ink_wash.paint` laid, so it has no ends and no tide line across it, and dabs laid 6 art pixels apart run
+  together into one line instead of a string of beads. Eight headings over half a turn (a stroke has no
+  direction), three windows along the long stroke (each its own grain) and two boils of each.
+- **It ages in the sheet, not in a modulate.** Five rows: wet from the brush (wide, 78% of its edge still
+  bleeding), setting, dried (hard tide lines and a paler middle - the stage a held ring keeps), a pale wash
+  one alpha step down, a ghost three down. `ink_wash.paint`'s `soft_share` is how much of an edge is still
+  wet, and `ink_wash.faded` steps alpha down in eighths, so a fading line is still ink at an allowed alpha;
+  nothing is ever modulated, tinted or dithered on the way to the screen. Each dab is drawn at its own
+  point's age, so the line dries from its tail toward his feet. Wet Ink keeps it wet for half its life.
+- **The flood is a wash, not cobbles.** A closing ring floods inward: blots with wet cauliflower edges
+  (`soft_share` 0.8-0.96, so they merge), each appearing by how deep inside the ring it lies, the rim
+  first and the middle last, and drying back through a backrun to a pale wash and a ghost. A backrun is
+  painted in one shape of the two and only while the flood is wet: a backrun in every blot read as a
+  field of eyes. Inkwell holds the dried wash for its pool; Ink Prison holds the ring's line at its hard
+  tide lines; then both dry away as any ink does.
+- **What it struck is seen struck.** A splat under every body inside (on the floor) and a splash of ink on
+  it for a third of a second (`DrawLayers.Air`, the only part not on `DrawLayers.Ground`).
+- **The ink is never re-lit.** No element path recolours it: Wet Ink and Ink Prison deepen the Water and
+  Darkness it already is, and it is the same black on every floor.
+- **Readable**: the middle of a stroke is never darker than stop 6 and its tide lines are stops 9-10, so
+  the middle carries it on the Cursed Dungeon's black and the rims on snow (`ink_ring.py --preview` lays it
+  over the five floors `ink_wash.swatch` uses).
+
+Its **icons** are ink too. The spell's own (`spell_icons.ink_ring`, `ink-ring-dark`) is an enso on paper with
+real alpha and the vermilion seal, held to `ink_wash.audit` (`spell_icons.INK_ICONS`). Its five card icons
+(`evolution_icons`, `INK_SUBJECTS`) set the ink on their milestone's night, so it is laid **opaque**
+(`ink_wash.opaque`): a translucent wash over the night would blend into a colour that is neither an ink stop
+nor the night's. Held to `ink_wash.audit` too - its ink stops opaque, the frame's contract colours as ever -
+and painted a little paler than the spell's icon, since a night is dark where the card's page is cream.
+
 **What still binds ink**, because it is still an actor or an effect in this game:
 
 - **The grid and the import.** The cells, sizes and render scale of section 1 (x2, nearest), the import
@@ -511,7 +548,11 @@ stops at these alphas.
   middles of the strokes carry it. On a pale floor the tide lines and pooled blacks do. Both are always
   there. The crow was photographed with `_UiShot` (Ma Liang, `--character=22`) in the Cursed Dungeon
   (`--stage=1`) and the Sunken Cave (`--stage=2`) among a placed crowd. It is the palest thing in that crowd
-  and reads at a glance. Do the same for Ink Ring before it ships.
+  and reads at a glance. Ink Ring was photographed the same way (`--walk-circle`, `--shutter-on-ring`, a placed
+  crowd at its middle): a ring closing in the Forest, the Sunken Cave (PC and phone), the Cursed Dungeon, the Frozen
+  Waste, the Scorched Sands and the Fallow Fields. On every one the line and the ring are a pale brush stroke under the
+  crowd and the splash a dark blot on what was struck. No chapter at the game's camera has a floor as pale as the
+  swatch's last, so the pale-floor read rests on `ink_ring.py --preview`.
 - **Section 4's attachment rule.** The hat stays, hard-edged, so the bird filled black is still the wizard's.
 
 ## 4. Silhouette taxonomy

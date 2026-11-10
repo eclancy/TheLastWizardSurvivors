@@ -14,7 +14,10 @@ public enum SpellTargetingMode
 	Facing = 6,
 	// Nothing at all: loosed in a random direction and left to wander (Corposant, which caroms off the edges of the
 	// view - .ai/spell-variety.md section 2, the Runetracer row). The one spell that picks no target, spot or direction.
-	Unaimed = 7
+	Unaimed = 7,
+	// Wherever the player walks a ring round them (Ink Ring): the spell picks nothing; his path draws the area it strikes,
+	// and it strikes when the path closes on itself.
+	Drawn = 8
 }
 
 // The primary way a spell applies damage.
@@ -70,6 +73,7 @@ public static class SpellClassificationText
 		SpellTargetingMode.DirectionalCone => "in a cone in front of you",
 		SpellTargetingMode.Facing => "the way you are facing, never at an enemy",
 		SpellTargetingMode.Unaimed => "at nothing: it sets off any which way",
+		SpellTargetingMode.Drawn => "inside a ring you walk round them",
 		_ => null,
 	};
 

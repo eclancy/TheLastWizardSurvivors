@@ -40,6 +40,8 @@ public sealed class LifetimeStats
 	public int BestChestsInRun { get; set; }
 	/// <summary>The most kills numbered in Lightning's ink in one run: what the Storm Petrel feat measures (it pays Corposant).</summary>
 	public int BestLightningKillsInRun { get; set; }
+	/// <summary>The most kills numbered in Water's or Darkness's ink in one run: what the Cormorant feat measures (it pays Ink Ring).</summary>
+	public int BestInkKillsInRun { get; set; }
 
 	public Dictionary<string, float> BestTimeByStage { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 	/// <summary>Highest instance count ever held, per element. Feeds the "adept" achievements.</summary>
@@ -100,6 +102,7 @@ public sealed class LifetimeStats
 		BestHaresCoursed = Math.Max(BestHaresCoursed, run.HaresCoursed);
 		BestChestsInRun = Math.Max(BestChestsInRun, run.ChestsOpened);
 		BestLightningKillsInRun = Math.Max(BestLightningKillsInRun, run.LightningKills);
+		BestInkKillsInRun = Math.Max(BestInkKillsInRun, run.InkKills);
 		if (run.CharacterId == "laelaps" && run.StageId == "stage_10")
 			BestLaelapsHaresCoursed = Math.Max(BestLaelapsHaresCoursed, run.HaresCoursed);
 		BestSpellSlotsFilled = Math.Max(BestSpellSlotsFilled, run.EquippedSpells?.Count ?? 0);
@@ -169,6 +172,7 @@ public sealed class LifetimeStats
 			["BestLaelapsHaresCoursed"] = BestLaelapsHaresCoursed,
 			["BestChestsInRun"] = BestChestsInRun,
 			["BestLightningKillsInRun"] = BestLightningKillsInRun,
+			["BestInkKillsInRun"] = BestInkKillsInRun,
 			["BestTimeByStage"] = ToFloatMap(BestTimeByStage),
 			["BestElementCount"] = ToIntMap(BestElementCount),
 			["KillsByEnemyType"] = ToIntMap(KillsByEnemyType),
@@ -204,6 +208,9 @@ public sealed class LifetimeStats
 		// Added 2026-11-09 with no schema bump, as the chests were: a save without the key reads as no Lightning kill in any
 		// run, and the Storm Petrel feat is then done by the next run that makes the count.
 		if (dict.ContainsKey("BestLightningKillsInRun")) result.BestLightningKillsInRun = dict["BestLightningKillsInRun"].AsInt32();
+		// Added 2026-11-09 with no schema bump, as the Lightning kills were: a save without the key reads as no Water or
+		// Darkness kill in any run, and the Cormorant feat is then done by the next run that makes the count.
+		if (dict.ContainsKey("BestInkKillsInRun")) result.BestInkKillsInRun = dict["BestInkKillsInRun"].AsInt32();
 		if (dict.ContainsKey("BestTimeByStage")) result.BestTimeByStage = FromFloatMap(dict["BestTimeByStage"].AsGodotDictionary());
 		if (dict.ContainsKey("BestElementCount")) result.BestElementCount = FromIntMap(dict["BestElementCount"].AsGodotDictionary());
 		if (dict.ContainsKey("KillsByEnemyType")) result.KillsByEnemyType = FromIntMap(dict["KillsByEnemyType"].AsGodotDictionary());

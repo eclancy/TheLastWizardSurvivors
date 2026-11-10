@@ -667,6 +667,77 @@ def corposant(sky=True):
     return c
 
 
+def ink_ring(opaque=False, seal=True, flood=True, sweep=330.0, r=10.5, width=(4.2, 1.6), cx=15.5, cy=16.0, seed=0,
+             ink=0.62, pool=None, drips=False, second=False, hard=False):
+    """Ink Ring (scripts/InkRing.cs): an enso - one stroke of the brush round a ring - closing on itself, the pale wash it
+    floods with inside it, and the painter's seal. PAINTED IN INK, not drawn in the contract: Ma Liang's ink is the one
+    sanctioned departure from Bonelight (.ai/art-direction.md section 3a), so this is ink_wash.paint's and ink_wash.audit
+    is its check (write(), INK_ICONS) - the spell's own icon is ink on paper as the spell is ink on the ground.
+
+    The stroke starts loaded and wide low on the left, runs clockwise round and thins to a dry tail that crosses its own
+    start - the crossing is where the ring closed, and a drop of ink pooled there. Its middle is paler than its tide
+    lines, so it reads on the card's cream page by its rims and on a dark plate by its wash and its middle. The seal is
+    one small square of vermilion (the ember row, as on Ma Liang's crow's hat): the painter's chop, crisp and opaque.
+
+    `opaque` lays the ink whole (ink_wash.opaque) for tools/art/evolution_icons.py, which sets it on a milestone's night,
+    and the rest let those cards paint their own ring: `ink` the stroke's density, `pool` a flood that stands dark inside
+    it (Inkwell), `drips` wet ink running off its foot (Wet Ink), `second` a second stroke round inside the first (Second
+    Stroke), `hard` a stroke dried hard all round with no wet edge (Ink Prison).
+    """
+    import ink_wash as W
+    layers = {}
+    a0 = math.radians(200.0)
+    span = math.radians(sweep)
+    w0, w1 = width
+    rings = [(r, a0, span, w0, w1, "ring")]
+    if second:
+        rings.append((r * 0.6, math.radians(20.0), math.radians(300.0), w0 * 0.85, w1, "ring2"))
+    for y in range(CELL):
+        for x in range(CELL):
+            dx, dy = x + 0.5 - cx, y + 0.5 - cy
+            d = math.hypot(dx, dy)
+            stack = []
+            if pool is not None and d <= r - 1.4:
+                stack.append(W.Layer(pool + 0.08 * (d / r), "flood", "flood", x, y, True))
+            elif flood and d <= r - 2.2:
+                stack.append(W.Layer(0.1 + 0.06 * (d / r), "flood", "flood", x, y, True))
+            for (rr, start, arc, a, b, group) in rings:
+                # Where round the stroke this pixel lies: clockwise from its start, so a dry tail comes back past it.
+                ang = (math.atan2(dy, dx) - start) % (2 * math.pi)
+                for turn in (ang, ang + 2 * math.pi):
+                    if turn > arc:
+                        continue
+                    t = turn / arc
+                    half = (a + (b - a) * t) / 2.0
+                    if abs(d - rr) > half:
+                        continue
+                    # The tail runs dry: the brush skips where the paper's tooth caught it.
+                    if not hard and t > 0.82 and W.hsh(x, y, 913 + seed) < (t - 0.82) * 2.6:
+                        continue
+                    stack.append(W.Layer(ink - 0.12 * t, group, group, turn * rr, d - rr, False))
+                    break
+            if drips and dy > 0 and abs(d - r) <= 2.5 + dy * 0.35 and dy > r * 0.55 and W.hsh(x, 0, 377 + seed) < 0.3:
+                # Wet ink running down off the foot of the ring.
+                stack.append(W.Layer(ink, "drip", "drip", x, y, False))
+            if stack:
+                layers[(x, y)] = stack
+    # The drop that pooled where the ring closed, and the splatter the brush threw lifting off.
+    ex, ey = cx + math.cos(a0) * r, cy + math.sin(a0) * r
+    drops = [(ex + 0.5, ey + 0.5, 2.4)]
+    splats = [(ex - 3.0, ey + 3.5, 2), (ex - 1.0, ey + 6.0, 1), (cx + r + 2.5, cy - 3.0, 1)]
+    if drips:
+        splats += [(cx - 4.0, cy + r + 4.0, 2), (cx + 3.0, cy + r + 4.5, 1)]
+    blooms = [(cx + 3.0, cy - 2.5, 2.6)] if flood or pool is not None else []
+    details = {}
+    if seal:
+        # The chop, low on the right: vermilion in the ember row, the paste darker where it sat thick.
+        for (sx, sy) in ((26, 26), (27, 26), (26, 27), (27, 27)):
+            details[(sx, sy)] = ("light", bl.MATERIALS["ember"][2] if (sx + sy) % 3 else bl.MATERIALS["ember"][3])
+    c = W.paint(CELL, layers, details, blooms=blooms, drops=drops, splats=splats, seed=W.salt_of("ink-ring-icon") + seed,
+                hard_groups=("ring", "ring2") if hard else ())
+    return W.opaque(c) if opaque else c
+
+
 def the_taking():
     """The dark wizard's own (.ai/dark-wizard-playable.md): a hand of his dark light closing on a warm mote.
 
@@ -1411,6 +1482,7 @@ ICONS = [
     ("hollow-star-dark", hollow_star, CELL),
     ("folio-arcane", folio, CELL),
     ("corposant-lightning", corposant, CELL),
+    ("ink-ring-dark", ink_ring, CELL),
     ("iron-palisade-metal", iron_palisade, CELL),
     ("contagion-poison", contagion, CELL),
     ("bramble-seed-grass", bramble_seed, CELL),
@@ -1433,8 +1505,17 @@ FX = [
 ]
 
 
+# Painted in Ma Liang's ink, the one sanctioned departure (.ai/art-direction.md section 3a): held to ink_wash.audit - an ink
+# stop at an allowed alpha, or any contract colour opaque - in place of the contract's check. Nothing else is let off it.
+INK_ICONS = ("ink-ring-dark",)
+
+
 def write(canvas, name, cell):
-    bad = canvas.audit()
+    if name in INK_ICONS:
+        import ink_wash
+        bad = [(h, n) for (h, a, n) in ink_wash.audit(canvas.img)]
+    else:
+        bad = canvas.audit()
     if bad:
         print("OFF-CONTRACT COLOURS in %s (art-direction.md section 3):" % name)
         for h, n in bad[:10]:

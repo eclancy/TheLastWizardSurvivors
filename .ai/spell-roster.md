@@ -179,6 +179,64 @@ Earned through the **Storm Petrel** Feat (defeat 500 enemies with Lightning in a
 canvases and every card exercised once; `_BalanceHarness --minutes=3 --spell=corposant --character=1` fired and killed
 (22 kills in minute 1, 65% of the bot's damage by minute 3). Not played, not heard, not seen on a phone.
 
+### Ink Ring - the spell paid for by closing a loop (2026-11-09)
+
+Ma Liang's brush, walked. Eric approved it from `.ai/character-fit.md`'s queue: a thin line of ink trails the walker;
+crossing it closes the loop and strikes everything inside, then slows it a moment; a short recharge between rings; the
+ink fades fast at level 1 and lasts longer as it levels. **The first spell no timer fires**: it goes off when the
+wizard's path closes on itself. Drawn as watercolour, the one sanctioned departure from Bonelight
+(`.ai/art-direction.md` 3a, "Ink Ring: a line drawn live"). Nobody's opener.
+
+| # | spell | element | aim | cadence | demand | payload | band |
+|---|---|---|---|---|---|---|---|
+| 38 | **Ink Ring** (`scripts/InkRing.cs`, `Player.InkRing.cs`) | Water+Darkness | **inside a ring he walks round them** (`SpellTargetingMode.Drawn`, new) | **a loop closing**; the cooldown (2.0 s to 1.6 s) is only the recharge between rings | **walk a loop round the crowd** | a strike on everything inside, then a 40% slow for 1.2 s | as wide as the ink lasts: about 140 across at level 1, 250 at level 8 |
+
+- **The cadence sits in the one fire loop.** While the cooldown is ripe, `Player.FireInkRing` arms the node every
+  frame and answers NoTarget, so the timer stays ripe (Hunter's Draw's pattern). The node lays the line in its own
+  physics tick whatever the cooldown is doing, and only an armed node closes a ring; the next call answers Fired -
+  the Water or Darkness cast cue is the ring closing, the cast is tallied and charges the Canticle - and the recharge
+  starts. What silences the fire loop lifts the brush (`InkRingMayCast`). No timer of its own.
+- **The loop.** His feet (`Player.FootPosition`) every 12 units into a ring buffer (`InkPath`), each point dated and
+  gone when the ink's life runs out. Each new segment is tested against the older live ones, skipping the newest
+  three; a crossing whose loop - the crossing, then every point walked since - holds at least 2,400 square units
+  (`InkRing.MinRingArea`, about a body's width across) closes a ring, and everything before it is then inert, so a
+  line closes one ring once. A jump (a door, a teleport) starts a new stroke. Every `EnemyRegistry.Snapshot` body whose
+  ground point lies inside (crossing number) is struck once. One walk of the swarm a ring, one a tick for Wet Ink and
+  Inkwell, nothing allocated per frame (fixed pools; a stung body remembered by reference).
+- **Numbers, first guesses, untuned:** 14 a strike at level 1 to 30 at 8; the recharge 2.0 s to 1.6 s; the ink 2 s,
+  +0.4 s at levels 3, 5, 7 and 8 (3.6 s; the card says "Ink duration +20%", never seconds). At his walk (220 a second)
+  that is a ring about 140 units across at level 1 and 250 at 8; Long Stroke and his own Duration widen it again.
+- **Against Mirefoot** (Water+Grass, row 25), the other spell that trails him: Mirefoot pays for distance with pools
+  you kite the crowd onto; Ink Ring's line is thin and pays nothing until it closes. The one pool it has, Inkwell,
+  stands inside a ring already closed.
+
+Cards (`SpellEvolutionCatalog.SetupInkRingEvolutions`), all within 130 characters, three at level 4 and two at 8 as the
+house has them: **Long Stroke** (L4: the ink lasts 50% longer, so wider rings close), **Wet Ink** (L4, +Water at the
+hybrid's 12% cooldown price: the line stays wet and stings whatever crosses it for 25% of a strike, a body at most every
+0.6 s), **Inkwell** (L4: the flood stands in the ring as a pool for 3 s, slowing whatever wades it 50% - Eric's "Ink
+Pool", renamed to keep clear of Folio's **Inkblot**), **Ink Prison** (L8, +Darkness at the 12% price: the ring dries
+into a wall for 3 s on the enemy-only collision layer 7, Ma Liang's inked door lines' layer, so what it caught cannot get
+out and the wizard walks through it; +40% damage; a boss shoulders through, by a collision exception, as the crowd-
+control rule says), **Second Stroke** (L8: half a second later the brush goes round again and everything inside is
+struck a second time). Water deepens at 4 and Darkness at 8, never both at one milestone
+(`ValidateEvolutionElementCeiling`). Nothing pens with stakes or cuts what leans on a wall (Iron Palisade's Iron Ring),
+and no card claims a Conjunction's verb. Earned through the **Cormorant** Feat (`.ai/achievements-and-secrets.md`).
+
+Seen in `_UiShot` with two flags new for it - `--walk-circle=R` (the wizard walks a circle, a `--spell-stage` crowd
+stood at its middle) and `--shutter-on-ring=N` (the shutter held until a ring closes over the crowd) - at level 8
+(`--character=1 --start-spell=ink_ring --demo-spell-level=8 --spell-stage=26 --walk-circle=100`), 1280x720, in the
+Enchanted Forest, the Sunken Cave, the Frozen Waste (with Wet Ink and Ink Prison), the Scorched Sands, the Fallow Fields
+and the Cursed Dungeon (a 62 circle after `--teleport` into a corridor: the start room's altar and the maze stop a wider
+one), and at 540x1212 `--portrait --safe-area` in the Sunken Cave. The ring closes as a brush stroke round what it
+struck, ink splashes on every struck body, and the flood runs inward and dries; on every floor the ink is the palest
+thing under the crowd. The flood first read as one flat grey disc, then as pebbles, and was spaced out and shortened
+until it read as wet blots. Not photographed closing: the Dungeon on the phone canvas (the circle was pinned in a
+corridor). `_BalanceHarness --minutes=3 --spell=ink_ring --character=1`: the kiting bot never walks a loop - no ring,
+58 crossings turned down as too small, dead at 1.6 min with no kill, as expected of a spell that asks for a loop. With
+`--immortal --circle=60` (the harness's existing circle walk) it closed 31 rings a minute and struck 32 bodies by minute
+3, 9% of the bot's damage: a swarm chasing a wizard round a circle trails him along it rather than gathering inside,
+so that is a floor, not a measure. Not played, not heard, not seen on a phone.
+
 ### Hollow Star - the spell that moves the swarm (issue #64)
 
 Every other spell takes the enemies where it finds them. Hollow Star opens a well on the densest pack

@@ -194,6 +194,10 @@ public static class SpellEvolutionCatalog
 			case Corposant.SpellId:
 				SetupCorposantEvolutions(spell);
 				break;
+			// Ma Liang's brush, walked: a ring of ink closed round them.
+			case InkRing.SpellId:
+				SetupInkRingEvolutions(spell);
+				break;
 			default:
 				SetupDefaultArchetypeEvolutions(spell);
 				break;
@@ -4021,6 +4025,86 @@ public static class SpellEvolutionCatalog
 			VisualTag = "SaintsCrown",
 			SynergyTag = "Ascension / Guard",
 			SynergyDescription = "Ascension: no new element. Surrounded, the storm-fire stays with you."
+		});
+	}
+
+	// Ink Ring (scripts/InkRing.cs): Ma Liang's brush, walked - a line of ink that trails the wizard and strikes everything
+	// inside when his path closes on itself. Every card is something more the INK does, which is this spell's and no
+	// other's: it lasts longer, it stays wet, it stands in the ring, it dries into a wall, the brush goes round again.
+	// Water + Darkness, a hybrid, so its element path is deepening either half at the hybrid's price, never both at one
+	// milestone (ValidateEvolutionElementCeiling): level 4 deepens Water (Wet Ink, the line kept wet) and level 8 Darkness
+	// (Ink Prison, the ring dried black and hard). Nothing here pens with stakes or cuts what leans on a wall - that is
+	// Iron Palisade's Iron Ring - and nothing pools behind him as he kites (Mirefoot's): the line pays only by closing,
+	// apart from Inkwell, whose pool stands inside a ring already closed. No card claims a Conjunction's verb (ComboCatalog).
+	// Every number is one InkRing reads: damage through InkRing.Refresh, the cooldown through the fire loop; the shares
+	// (Long Stroke's ink, Wet Ink's sting, Inkwell's slow) are the node's own constants and RegressionChecks.InkRing holds
+	// the words to them; the behaviours by id.
+	private static void SetupInkRingEvolutions(SpellData spell)
+	{
+		const float prisonDamage = 1.4f;
+
+		// Level 4 (3 choices)
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.LongStrokeId,
+			DisplayName = "Long Stroke",
+			Description = $"The ink lasts {(InkRing.LongStrokeShare - 1f) * 100f:0}% longer before it dries away, so the rings you can close grow wider.",
+			MilestoneLevel = 4,
+			VisualTag = "LongStroke",
+			SynergyTag = "Reach",
+			SynergyDescription = "No new element. A wider walk, a wider ring, and more of the crowd inside it."
+		});
+
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.WetInkId,
+			DisplayName = "Wet Ink",
+			Description = $"The line stays wet and stings whatever crosses it for {InkRing.WetShare * 100f:0}% of a ring's strike.",
+			MilestoneLevel = 4,
+			BonusElementWeights = new() { { "Water", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "WetInk",
+			SynergyTag = "Water / Sting",
+			SynergyDescription = "Deepens Water. Whatever follows your trail pays for every step across it."
+		});
+
+		// Eric's working name was Ink Pool; Inkwell keeps it clear of Folio's Inkblot, a stain that slows.
+		spell.Level4Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.InkwellId,
+			DisplayName = "Inkwell",
+			Description = $"The ink that floods a closed ring stands there as a pool for a few seconds, slowing whatever wades it by {InkRing.PoolSlowShare * 100f:0}%.",
+			MilestoneLevel = 4,
+			VisualTag = "Inkwell",
+			SynergyTag = "Slow",
+			SynergyDescription = "No new element. The ground you circled stays yours for a while."
+		});
+
+		// Level 8 (2 choices)
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.InkPrisonId,
+			DisplayName = "Ink Prison",
+			Description = "The closed ring dries into a wall: what it caught cannot get out for a few seconds. "
+				+ $"+{(prisonDamage - 1f) * 100f:0}% damage.",
+			MilestoneLevel = 8,
+			DamageMultiplier = prisonDamage,
+			BonusElementWeights = new() { { "Darkness", 1 } },
+			CooldownMultiplier = AttunementGainCooldownCost,
+			VisualTag = "InkPrison",
+			SynergyTag = "Ascension / Darkness",
+			SynergyDescription = "Ascension: deepens Darkness. Ring them, and they wait inside for the next ring."
+		});
+
+		spell.Level8Options.Add(new SpellEvolutionOption
+		{
+			Id = InkRing.SecondStrokeId,
+			DisplayName = "Second Stroke",
+			Description = "A moment after a ring closes the brush goes round it again, and everything inside is struck a second time.",
+			MilestoneLevel = 8,
+			VisualTag = "SecondStroke",
+			SynergyTag = "Ascension / Strike",
+			SynergyDescription = "Ascension: no new element. Every ring you close strikes twice."
 		});
 	}
 }

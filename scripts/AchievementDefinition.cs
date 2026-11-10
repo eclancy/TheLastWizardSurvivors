@@ -255,6 +255,18 @@ public static partial class AchievementDefinitions
 	public const int StormPetrelLightningKills = 500;
 
 	/// <summary>
+	/// Kills numbered in Water's ink or Darkness's in ONE run that pay Ink Ring (the Cormorant feat): the two halves of Ma
+	/// Liang's ink, each counted where its number is chosen (RunEvents.RecordInkKill). Tituba opens on Riptide (Water), and
+	/// Hollow Star (Darkness) is the Survivor feat's, so a save reaches it without the spell it pays. Measured 2026-11-09
+	/// (_BalanceHarness --minutes=15 --character=5, seed 1234, the real save read-only; the bot kept Riptide at level 2 to
+	/// 6 among four or five spells): the kiting bot died at minute 7 with 168, the --survivor bot at minute 7.3 with 233
+	/// (119 by minute 5), and the --immortal bot made 195 by minute 5, 638 by minute 10 and 1,235 in the run. Five hundred
+	/// is Storm Petrel's number and the same ask: most of a run with Water or Darkness in it, or the first half of one built
+	/// round them.
+	/// </summary>
+	public const int CormorantInkKills = 500;
+
+	/// <summary>
 	/// A side event's deed is "event_" and its site id; a secret's is "secret_" and the secret's id. Made
 	/// from the id rather than written by hand, so a deed can never drift from what it mirrors, and
 	/// prefixed so neither can ever collide with a hand-written deed. Constants, so UnlockCatalog can
@@ -512,6 +524,18 @@ public static partial class AchievementDefinitions
 			RewardText = "Unlocks Corposant", SpellUnlockId = "corposant",
 			Category = AchievementCategory.Challenge,
 			Measure = c => c.Lifetime.BestLightningKillsInRun, Target = StormPetrelLightningKills,
+		},
+		// INK RING'S FEAT (2026-11-09): the cormorant is the black diving bird the river fishermen of Ma Liang's China work
+		// with - ink-black, and at home in the water - and a bird beside Magpie and Storm Petrel. Earned by fighting with
+		// the two halves of his ink: kills numbered in Water's ink or Darkness's in a single run. Measured off the best run
+		// kept in the lifetime stats (LifetimeStats.BestInkKillsInRun), as Storm Petrel is.
+		new()
+		{
+			Id = "cormorant", DisplayName = "Cormorant",
+			Description = $"Defeat {CormorantInkKills} enemies with Water or Darkness in a single run.",
+			RewardText = "Unlocks Ink Ring", SpellUnlockId = InkRing.SpellId,
+			Category = AchievementCategory.Challenge,
+			Measure = c => c.Lifetime.BestInkKillsInRun, Target = CormorantInkKills,
 		},
 		new()
 		{

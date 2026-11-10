@@ -61,6 +61,8 @@ public static partial class RegressionChecks
 		ValidateFolio(warnings);
 		// St Elmo's fire: the view it turns at, the bounce, the one-ball start, the cards and its feat (RegressionChecks.Corposant.cs).
 		ValidateCorposant(warnings);
+		// Ma Liang's brush, walked: the closing loop, the cards and its feat (RegressionChecks.InkRing.cs).
+		ValidateInkRing(warnings);
 		// Wayland's Wings: every floor trap and the wade ask its one flag (RegressionChecks.Wings.cs).
 		ValidateWings(warnings);
 		ValidateSpawnFormations(warnings);

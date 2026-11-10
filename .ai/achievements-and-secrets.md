@@ -85,6 +85,7 @@ Read from `scripts/UnlockCatalog.cs`, `scripts/AchievementDefinition.cs`, `scrip
 | Hollow Star | Darkness | Purchase | 160; nobody opens on it since 2026-11-09 (John Dee opens on Folio, `.ai/character-fit.md`) |
 | Folio | Arcane, Darkness | Feat | **Magpie**: open 10 chests in a single run (2026-11-09); John Dee opens on it |
 | Corposant | Lightning | Feat | **Storm Petrel**: defeat 500 enemies with Lightning in a single run (2026-11-09); nobody opens on it |
+| Ink Ring | Water, Darkness | Feat | **Cormorant**: defeat 500 enemies with Water or Darkness in a single run (2026-11-09); nobody opens on it |
 | Stormsweep | Lightning | Purchase | 160 |
 | Kindled Ward | Light | Purchase | 170 |
 | Familiar | Arcane | Purchase | 170; the Coursing (Laelaps) needs it |
@@ -192,7 +193,7 @@ earned (2.3).
 | **Sleet Runes** | **The Buried Runes** | Secret | stand still in a drift field until the snow settles, then dig up the rune-stones it shows (Frozen Waste) | walking aims the runes; stopping is what finds them |
 | **Stormsweep** | **The Fulgurite** | Secret | stand by a glass tree in the dunes when the dry storm comes round and draws its lightning (Scorched Sands) | lightning that strikes sand leaves glass; a sweep of lightning, from where it struck |
 
-**Added 2026-11-09, after this table:** two Feats for two new spells, each measured off a best-run field in
+**Added 2026-11-09, after this table:** three Feats for three new spells, each measured off a best-run field in
 `LifetimeStats` added without a schema step (a save without the key reads as no run yet). **Magpie** pays Folio
 (10 chests in one run, `BestChestsInRun`). **Storm Petrel** pays Corposant (`.ai/spell-roster.md`, "Corposant"):
 *defeat 500 enemies with Lightning in a single run* (`BestLightningKillsInRun`). A Lightning kill is one numbered in
@@ -203,6 +204,18 @@ saw before a storm, as St Elmo's fire is the light they saw in one, and a bird b
 (`_BalanceHarness --minutes=15 --character=3`, seed 1234): the Stormcaller bot spread its picks over five spells and
 never took Chain Lightning past level 3, and made 310 by minute 5, 492 by minute 10 and 672 in the run - so 500 is
 most of a run with Lightning in it, or the first half of one built round it.
+
+**Cormorant**, a third, pays Ink Ring (`.ai/spell-roster.md`, "Ink Ring"): *defeat 500 enemies with Water or Darkness
+in a single run* (`BestInkKillsInRun`, also added without a schema step). A kill counts when it is numbered in Water's
+ink or Darkness's - the two halves of Ma Liang's ink - counted where Storm Petrel's is (`Player.DealDamageToEnemy` ->
+`RunEvents.RecordInkKill`). Earnable without Ink Ring: Tituba opens on Riptide (Water), and Hollow Star (pure Darkness)
+is the Survivor feat's. The cormorant is the black diving bird the river fishermen of Ma Liang's China work with -
+ink-black and at home in the water - and a bird beside Magpie and Storm Petrel. Measured
+(`_BalanceHarness --minutes=15 --character=5`, seed 1234, Tituba, the bot keeping Riptide at level 2 to 6 among four or
+five spells): the kiting bot died at minute 7 with 168, the `--survivor` bot at minute 7.3 with 233 (119 by minute 5),
+and the `--immortal` bot made 195 by minute 5, 638 by minute 10 and 1,235 in the run. Five hundred is Storm Petrel's
+number and the same ask: most of a run with Water or Darkness in it, or the first half of one built round them. Both
+mortal bots died before it, so a player who keeps a Water opener alive past minute 9 or so is who earns it.
 
 Totals: **11 Feats, 9 Road deeds, 9 secrets** - one spell vault in each campaign chapter but the
 Emberdeep: eight on the road before the gate, and the Cursed Dungeon's, which moves past it into the

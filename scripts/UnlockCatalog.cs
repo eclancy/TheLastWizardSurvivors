@@ -222,6 +222,9 @@ public static class UnlockCatalog
 		// St Elmo's fire, aimed at nothing (scripts/Corposant.cs): earned by fighting with Lightning, the Storm Petrel feat.
 		FromAchievement("corposant", "storm_petrel",
 			$"Defeat {AchievementDefinitions.StormPetrelLightningKills} enemies with Lightning in a single run."),
+		// Ma Liang's brush, walked (scripts/InkRing.cs): earned by fighting with Water and Darkness, the Cormorant feat.
+		FromAchievement("ink_ring", "cormorant",
+			$"Defeat {AchievementDefinitions.CormorantInkKills} enemies with Water or Darkness in a single run."),
 		FromAchievement("meteor_swarm", "veteran", "Clear a chapter without falling."),
 		FromAchievement("solar_flare", "max_level", "Reach level 20 in a single run."),
 		FromAchievement("cyclone_slash", "elementalist", "Reach 4 instances of any element."),

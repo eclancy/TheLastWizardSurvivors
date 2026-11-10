@@ -166,7 +166,8 @@ class Layer(object):
         self.wash = wash
 
 
-def paint(cell, layers, details=None, blooms=(), drops=(), splats=(), shadow=(), seed=0, hard_groups=(), margin=1):
+def paint(cell, layers, details=None, blooms=(), drops=(), splats=(), shadow=(), seed=0, hard_groups=(), margin=1,
+          soft_share=None):
     """One frame of ink, as a raster.Canvas (RGBA, off the Bonelight contract by design - audit() below is its check).
 
     layers   {(x, y): [Layer, ...]}, first laid to last
@@ -178,8 +179,11 @@ def paint(cell, layers, details=None, blooms=(), drops=(), splats=(), shadow=(),
     seed     the frame's boil: which edges bled and which dried hard
     hard_groups  strokes whose edges never bleed (the hat, the beak: the read that must stay crisp)
     margin   the clear border the bleed and the splatter keep inside the cell
+    soft_share  the share of the edge still wet (SOFT_SHARE when None). Ink Ring's line (tools/art/ink_ring.py) dries
+             as it ages: fresh from the brush most of its edge is wet and bleeds; dried, most of it is a tide line.
     """
     details = details or {}
+    share = SOFT_SHARE if soft_share is None else soft_share
     canvas = raster.Canvas(cell, cell)
     px = canvas.img.load()
 
@@ -196,7 +200,7 @@ def paint(cell, layers, details=None, blooms=(), drops=(), splats=(), shadow=(),
     hard = set(hard_groups)
 
     def soft(x, y):
-        return vnoise(x + 0.5, y + 0.5, seed * 7 + 3, BOIL_SCALE) < SOFT_SHARE
+        return vnoise(x + 0.5, y + 0.5, seed * 7 + 3, BOIL_SCALE) < share
 
     # --- every pixel inside the figure: the washes laid on it, glazed --------------------------------------------------
     top_of = dict((p, ls[-1]) for p, ls in layers.items())
@@ -318,7 +322,7 @@ def paint(cell, layers, details=None, blooms=(), drops=(), splats=(), shadow=(),
                 continue
             if not (lo <= r2[0] <= hi and lo <= r2[1] <= hi):
                 continue
-            if vnoise(r2[0] + 0.5, r2[1] + 0.5, seed * 7 + 3, BOIL_SCALE) < SOFT_SHARE * 0.55:
+            if vnoise(r2[0] + 0.5, r2[1] + 0.5, seed * 7 + 3, BOIL_SCALE) < share * 0.55:
                 ring2[r2] = d
     for q, d in ring2.items():
         out[q] = (tone(d * 0.45), 64)
@@ -365,6 +369,37 @@ def paint(cell, layers, details=None, blooms=(), drops=(), splats=(), shadow=(),
         else:
             r, g, b = _rgb(v[1])
         px[x, y] = (r, g, b, 255)
+    return canvas
+
+
+def faded(canvas, steps):
+    """The same ink `steps` alpha steps thinner: a wash drying away to a ghost of itself (Ink Ring's old ink). Every pixel
+    stays an ink stop at an allowed alpha, and one that falls under the first step is gone - so a fade is still ink."""
+    if steps <= 0:
+        return canvas
+    px = canvas.img.load()
+    for y in range(canvas.h):
+        for x in range(canvas.w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            k = ALPHA_STEPS.index(a) if a in ALPHA_STEPS else len(ALPHA_STEPS) - 1
+            k -= steps
+            px[x, y] = (r, g, b, ALPHA_STEPS[k]) if k >= 0 else (0, 0, 0, 0)
+    return canvas
+
+
+def opaque(canvas, floor=160):
+    """The ink laid opaque: a pixel at `floor` alpha or more kept whole, any thinner one dropped. For ink laid OVER an
+    opaque picture (Ink Ring's card icons, on their milestone's night): a translucent wash there would blend into a colour
+    that is neither an ink stop nor the night's, so the bleed is let go and the stroke kept."""
+    px = canvas.img.load()
+    for y in range(canvas.h):
+        for x in range(canvas.w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            px[x, y] = (r, g, b, 255) if a >= floor else (0, 0, 0, 0)
     return canvas
 
 
