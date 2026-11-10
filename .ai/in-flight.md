@@ -22,41 +22,41 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
 | 65 | Download files renamed in the next release (decided); the program's own rename later | release tooling + updater | S, then M |
 | 66 | First Blood pays Lancet (decided); Canticle gets a harmony Feat; review every reward | achievements | S-M |
-| 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
-| 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
-| 69 | Remove the Twinstar Sigil from the shop (decided); that release resets progress (epoch 5) | shop | S |
+| 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | done |
+| 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | done |
+| 69 | Remove the Twinstar Sigil from the shop (decided); that release resets progress (epoch 5) | shop | done |
 | 70 | The chapter note (the stage intro with its hints) is huge on a phone and covers the wizard: condense, move clear, shorter | UI | S-M |
-| 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
-| 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
+| 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | done |
+| 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | done |
 | 73 | Chalice Cup: heals 3 HP every 20 s, waiting until you are hurt - **built** | item rework | done |
 | 74 | The wizard's feet sink when he wades; Baba Yaga and Nimue neither sink nor slow in water (decided) | visual + trait | S-M |
 | 75 | The Fenced Bloom's garden heal wears off after 20 HP - **built** | secret | done |
 | 76 | Show Aegis Ward recharging on the spell bar; fix its wrong tagline | HUD | S-M |
 | 77 | Balance pass on every spell (Aegis Ward's recharge looks too fast; Twinstar folded in) | balance | L |
 | 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
-| 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | S-M |
-| 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | S |
-| 81 | Buckler Boss gives its own small shield (decided) | item rework | S |
-| 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
+| 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | done |
+| 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | done |
+| 81 | Buckler Boss gives its own small shield (decided) | item rework | done |
+| 82 | The hut kneels only in the middle of the bone yard | puzzle | done |
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
-| 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks | M |
-| 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | S |
-| 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | S |
-| 87 | Wayland's Wings also gives movement speed (about +10%) | character | S |
+| 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks | done |
+| 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | done |
+| 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | done |
+| 87 | Wayland's Wings also gives movement speed (about +10%) | character | done |
 | 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | M |
-| 89 | The Archmage's passive card: "Avoids death once per run." | text | S |
+| 89 | The Archmage's passive card: "Avoids death once per run." | text | done |
 | 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | S |
 | 91 | Backdraft: two flames on different enemies; Fire Fan reworked into a wide sweeping arc (decided) | spell | M |
 | 92 | The level-up Codex button sits off the heading's line (raised before, item 55) | UI | S |
-| 93 | Aegis Ward: a more detailed icon; a smaller, quieter animation (decided) | art + VFX | S-M |
+| 93 | Aegis Ward: a more detailed icon; a smaller, quieter animation (decided) | art + VFX | done |
 | 94 | Ink Ring becomes Ma Liang's starting spell; The Painted Door moves onto it | character | M |
-| 95 | An enemy's attack circles (and their hits) vanish the moment it dies | bug | S |
-| 96 | The Scythe set's card: "...kills it outright (except bosses)." in place of "...kills it outright. Not bosses." (`ChestItemCatalog.cs` 413; Eric, 2026-11-10) | text | trivial |
+| 95 | An enemy's attack circles (and their hits) vanish the moment it dies | bug | done |
+| 96 | The Scythe set's card: "...kills it outright (except bosses)." in place of "...kills it outright. Not bosses." (`ChestItemCatalog.cs` 413; Eric, 2026-11-10) | text | done |
 | 97 | Remove attunement altogether - its damage bonus for pure spells, its cooldown price, every word of it (decided; rebalance in 77) | mechanic | M |
-| 98 | A full build's level-up offers 10 Arcane Energy beside Marginalia (decided) | level-up | S |
-| 99 | Elderbark's slam and roots much bigger in area (not the other bosses) | boss tuning | S |
-| 100 | Thorn Vine's shove always away from the player (today along the swing, sometimes toward him) | spell | trivial |
-| 101 | The Pinfold's guards stay by the gate, glow and are marked; the latch lights once they fall | event | S |
+| 98 | A full build's level-up offers 10 Arcane Energy beside Marginalia (decided) | level-up | done |
+| 99 | Elderbark's slam and roots much bigger in area (not the other bosses) | boss tuning | done |
+| 100 | Thorn Vine's shove always away from the player (today along the swing, sometimes toward him) | spell | done |
+| 101 | The Pinfold's guards stay by the gate, glow and are marked; the latch lights once they fall | event | done |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
