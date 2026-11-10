@@ -466,6 +466,11 @@ public partial class _UiShot : Node
 	// Give it a few hundred --frames: the streamer paints one step per frame, nearest chunk first.
 	private Vector2? teleportTo;
 	private float cameraZoom;
+	// --break-shield=F (in-flight 76): at frame F of the warmup his whole shield pool is spent, as the hit that breaks it
+	// would - so the spell bar can be photographed with Aegis Ward down and coming back (pair with
+	// --start-spell=aegis_ward). Once; the frame is a count, not a share, so the sweep's progress at the shutter is
+	// the frames between it and the end.
+	private int breakShieldAt = -1;
 	private bool teleported;
 	private int teleportedAtFrame = -1;
 	// Frames the light probe waits after a teleport, so the chunks round the new spot are painted
@@ -2020,6 +2025,8 @@ public partial class _UiShot : Node
 			// of ground - the maze's trap pattern, say. Applied at a quarter of the warmup.
 			else if (arg.StartsWith("--zoom="))
 				cameraZoom = float.Parse(arg.Substring("--zoom=".Length), System.Globalization.CultureInfo.InvariantCulture);
+			else if (arg.StartsWith("--break-shield="))
+				breakShieldAt = int.Parse(arg.Substring("--break-shield=".Length));
 			else if (arg.StartsWith("--teleport="))
 			{
 				string[] xy = arg.Substring("--teleport=".Length).Split(',');
@@ -3595,6 +3602,12 @@ public partial class _UiShot : Node
 			// of the rush, so he is kept whole while it steps (until --force-death means otherwise).
 			if (cameraZoom > 0f && frames >= WarmupFrames / 4 && FindNodeOfType<Camera2D>(GetTree().Root) is Camera2D runCamera)
 				runCamera.Zoom = new Vector2(cameraZoom, cameraZoom);
+			if (breakShieldAt >= 0 && frames >= breakShieldAt && FindNodeOfType<Player>(GetTree().Root) is Player shielded)
+			{
+				int spent = shielded.SpendShield(int.MaxValue);
+				GD.Print($"_UiShot: broke the shield at frame {frames} ({spent} points spent)");
+				breakShieldAt = -1;
+			}
 			if (rushSteps > 0 && !deathForced && FindNodeOfType<Player>(GetTree().Root) is Player rushPlayer && !rushPlayer.IsDead)
 				rushPlayer.CurrentHP = rushPlayer.MaxHP;
 			if (bossDeathOffset is Vector2 bossAt && FindNodeOfType<Player>(GetTree().Root) is Player bossWitness)

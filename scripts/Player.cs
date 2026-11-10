@@ -4298,6 +4298,49 @@ public partial class Player : CharacterBody2D
 		!string.IsNullOrWhiteSpace(spellId) && equippedSpells.Any(
 			s => s != null && s.Id.Equals(spellId, StringComparison.OrdinalIgnoreCase));
 
+	// One spell's seconds between casts, as the firing loop runs it - and as the spell bar's ward gauge reads it, so
+	// the two can never disagree about when the shield is back.
+	private float SpellCastInterval(SpellData spell)
+	{
+		float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
+		// The Garnet Bezel: the pair recharges faster (Player.ItemRules.cs).
+		return MathF.Max(0.05f, interval / PairRechargeScale(spell));
+	}
+
+	/// <summary>Whether this spell is one the spell bar shows a ward gauge for (<see cref="TryGetWardGauge"/>).</summary>
+	public static bool IsWardSpell(SpellData? spell) =>
+		spell != null && (spell.Id.Equals("aegis_ward", StringComparison.OrdinalIgnoreCase)
+			|| spell.Id.Equals(Stormguard.SpellId, StringComparison.OrdinalIgnoreCase)
+			|| spell.Id.Equals(GloamVeil.SpellId, StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>
+	/// The spell bar's ward gauge (in-flight 76, LoadoutHud; Eric 2026-11-09: "Show aegis ward recharging on the spell
+	/// bar"): for a spell that guards him and comes back once broken - the three on Aegis Ward's rules - whether it is up
+	/// now, and how far the next one has come, 0..1. Aegis Ward is up while any shield holds and Stormguard while its storm
+	/// is gathered, each coming back on its cast clock (the timer against <see cref="SpellCastInterval"/>: Aegis's cast tops
+	/// the pool up every cooldown, broken or not). Gloam Veil is up while woven, and comes back by the walk
+	/// (GloamVeil.WeaveProgress) - its clock only until its first cast makes it. False for every other spell. Read every
+	/// frame for the slots that hold one: nothing here allocates.
+	/// </summary>
+	public bool TryGetWardGauge(SpellData? spell, out bool up, out float recharge)
+	{
+		up = false;
+		recharge = 0f;
+		if (!IsWardSpell(spell))
+			return false;
+		if (spell!.Id.Equals(GloamVeil.SpellId, StringComparison.OrdinalIgnoreCase) && gloamVeil != null && IsInstanceValid(gloamVeil))
+		{
+			up = gloamVeil.IsWoven;
+			recharge = gloamVeil.WeaveProgress;
+			return true;
+		}
+		up = spell.Id.Equals("aegis_ward", StringComparison.OrdinalIgnoreCase)
+			? shieldPoints > 0
+			: spell.Id.Equals(Stormguard.SpellId, StringComparison.OrdinalIgnoreCase) && stormguard != null && IsInstanceValid(stormguard) && stormguard.Gathered;
+		recharge = spellFireTimers.TryGetValue(spell.Id, out float timer) ? Mathf.Clamp(timer / SpellCastInterval(spell), 0f, 1f) : 0f;
+		return true;
+	}
+
 	// Stormguard and Gloam Veil follow Aegis Ward's shape exactly: no scene, one code-made node in
 	// the arena that runs and draws the spell (in-flight item 9). Their damage/area multipliers are
 	// refreshed on every cast tick, so a chest pickup reaches them within one cooldown.
@@ -4674,9 +4717,7 @@ public partial class Player : CharacterBody2D
 			if (seals.Count > 0 && IsSealed(spell))
 				continue;
 
-			float interval = (spell.GetCooldownAtLevel(spell.CurrentLevel) * cooldownMultiplier * GetWaterCooldownMultiplier()) / EffectiveAttackSpeed;
-			// The Garnet Bezel: the pair recharges faster (Player.ItemRules.cs).
-			interval = MathF.Max(0.05f, interval / PairRechargeScale(spell));
+			float interval = SpellCastInterval(spell);
 			spellFireTimers[spell.Id] += (float)delta;
 			if (interval > longestInterval)
 			{
