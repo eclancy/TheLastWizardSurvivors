@@ -176,6 +176,12 @@ public static class AchievementManager
 		// In a run: a wizard's opener deed done beside this one counts if the run is played as him (in-flight 84).
 		List<RunUnlockEntry> granted = Complete(saveManager.Data, achievementId, RunCharacterId);
 		saveManager.SaveGame();
+		// A wizard it freed steps out beside the player, when the screen is free (in-flight 83, WizardAppearance).
+		foreach (RunUnlockEntry entry in granted)
+		{
+			if (entry.Kind == RunUnlockKind.Wizard)
+				WizardAppearance.Freed(entry.Id, achievementId);
+		}
 		return Named(granted);
 	}
 

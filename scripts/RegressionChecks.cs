@@ -102,6 +102,8 @@ public static partial class RegressionChecks
 		ValidatePinnedRecipeMigration(warnings);
 		ValidatePrologueReel(warnings);
 		ValidateFreeings(warnings);
+		// A wizard freed in the run steps out beside him (RegressionChecks.WizardAppearance.cs, in-flight 83).
+		ValidateWizardAppearance(warnings);
 		ValidateCinematicRules(warnings);
 		ValidateSlowStartMigration(warnings);
 		ValidateShadowBoltMigration(warnings);

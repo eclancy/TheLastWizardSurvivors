@@ -7498,6 +7498,26 @@ public partial class Node2DGame : Node2D
 		}
 	}
 
+	// --- A wizard freed in the run steps out beside him (in-flight 83, WizardAppearance) ------------------
+	// Once a run per wizard: a deed frees a wizard only once a save, and this keeps a second path to the same
+	// unlock (a deed completed twice in a frame, a tool) from playing him twice.
+	private readonly HashSet<string> wizardsAppeared = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Plays <paramref name="wizardId"/>'s appearance when the screen is free (WizardAppearance.Freed decides whether his
+	/// deed's own event already shows him). Nothing once the run is over, and nothing for a wizard with no roster entry.
+	/// </summary>
+	public void ShowWizardAppearance(string wizardId)
+	{
+		if (runFinished || string.IsNullOrWhiteSpace(wizardId) || player == null || !IsInstanceValid(player))
+			return;
+		CharacterData wizard = CharacterRoster.GetAll().FirstOrDefault(c => c != null && c.Id.Equals(wizardId, StringComparison.OrdinalIgnoreCase));
+		if (wizard == null || !wizardsAppeared.Add(wizardId))
+			return;
+		AddChild(new WizardAppearance { Name = "WizardAppearance", Target = player, Wizard = wizard });
+		GD.Print($"Node2DGame: {wizard.Name} freed at {FormatTime(timeElapsed)}; his appearance waits its turn");
+	}
+
 	private void OnPlayerDamageTaken(int amount)
 	{
 		GameStats.RecordDamageTaken(amount);
