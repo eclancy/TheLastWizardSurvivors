@@ -66,8 +66,8 @@ public static class StatIcons
 			return "freeze";
 		if (t.Contains("root"))
 			return "root";
-		// Wayland's Wings, "Floor traps can't touch you, and water doesn't slow you": his feet off the ground, so the
-		// boot with the air streaming off it - not the slow glyph its last words would otherwise claim.
+		// Wayland's Wings, "+10% move speed. Floor traps can't touch you, and water doesn't slow you": his feet off the
+		// ground, so the boot with the air streaming off it - not the slow glyph its last words would otherwise claim.
 		if (t.Contains("floor trap"))
 			return "speed";
 		if (t.Contains("slow"))

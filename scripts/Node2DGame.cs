@@ -2660,15 +2660,26 @@ public partial class Node2DGame : Node2D
 			CreateFlowerPen(chunk, parent, cells);
 	}
 
-	// Stages a flower pen belongs on: the green ones. A pen of flowers in the ash of the Emberdeep or
-	// on the Frozen Waste would be a joke the world has not earned.
-	// Which ones say so on their profile (StageEnvironmentProfile.HasLandmarks): today the Forest, the
-	// Swamp, the Ruins, the Cave and the Fallow Fields.
+	// Stages a flower pen belongs on, as their profile says (StageEnvironmentProfile.HasLandmarks): the
+	// Enchanted Forest alone, whose Fenced Bloom secret the pen carries (in-flight 72, Eric 2026-11-09:
+	// "Dandelion Grove should be only shown in one chapter"). The Swamp, the Ruins and the Fallow Fields had
+	// empty pens until then, and the Cave was already off.
 	private bool StageHasLandmarks => StageEnvironmentCatalog.Get(terrainKind).HasLandmarks;
 
-	// About one chunk in four rolls for one; some fail for want of open ground. A chunk is 1536 px,
-	// so that is one every few screens of walking - rare enough to be a find.
-	private const float LandmarkChance = 0.25f;
+	// Where the pens stand (in-flight 72: "much too common" - at one chunk in four and 24 tries, nearly every
+	// roll placed one, about eighteen within four chunks of the start). Now one or two a run:
+	//   - THE ANCHOR: exactly one pen in the ring of twelve chunks just past the start's four (LandmarkRing 1,
+	//     about 2000-3000 px out, ten to fifteen seconds' walk), at a chunk hashed from the seed. It is what
+	//     keeps a bloom - and the moonflower's seed the First Tree waits for - in reach of every run, the
+	//     guarantee .ai/stage-secrets.md section 12 used to get from sheer numbers.
+	//   - THE SCATTER: past that ring, one chunk in twenty-five rolls for one more, and a chunk that rolled
+	//     gives way to any of its eight neighbours that rolled lower (or holds the anchor), so no two pens
+	//     ever stand in adjacent chunks.
+	// The start sits on the corner of four chunks, so ring 0 is those four and holds none.
+	private const float LandmarkChance = 0.04f;
+	private const int LandmarkScatterMinRing = 2;
+	// The anchor tries harder for open ground than a scattered roll: it is the one a run may not lose.
+	private const int LandmarkAnchorAttempts = 96;
 	// Never inside the start: the player should walk to one, not spawn beside it.
 	private const float LandmarkMinDistance = 1400f;
 	// How far the pen keeps from its chunk's border, in cells, so the open-ground test, the fence's
@@ -2679,6 +2690,7 @@ public partial class Node2DGame : Node2D
 	// cover enough of a chunk that eight tries found one in under half the chunks that rolled for it.
 	private const int LandmarkAttempts = 24;
 	private const int SaltLandmark = 0x1A4D;
+	private const int SaltLandmarkAnchor = 0x1A4E;
 	private const int SaltSpawnRolls = 0x5A3B;
 
 	/// <summary>
@@ -2720,13 +2732,18 @@ public partial class Node2DGame : Node2D
 			return null;
 
 		var rng = new LevelGenerator.Rng(LevelGenerator.Hash(terrainSeed, chunk.Coord.X, chunk.Coord.Y, SaltLandmark));
-		if (rng.NextDouble() >= LandmarkChance)
+		// Drawn first whatever the chunk is, so the placement rolls after it never shift.
+		double roll = rng.NextDouble();
+		bool anchor = chunk.Coord == LandmarkAnchorChunk();
+		if (!anchor && (LandmarkRing(chunk.Coord) < LandmarkScatterMinRing || roll >= LandmarkChance
+			|| LandmarkOutrankedByNeighbour(chunk.Coord, roll)))
 			return null;
 
 		const int n = TerrainStreamer.ChunkTiles;
 		const int w = FlowerPenLayout.CellsW, h = FlowerPenLayout.CellsH;
 		int span = n - 2 * LandmarkBorder;
-		for (int attempt = 0; attempt < LandmarkAttempts; attempt++)
+		int attempts = anchor ? LandmarkAnchorAttempts : LandmarkAttempts;
+		for (int attempt = 0; attempt < attempts; attempt++)
 		{
 			int x0 = LandmarkBorder + rng.Next(span - w);
 			int y0 = LandmarkBorder + rng.Next(span - h);
@@ -2749,6 +2766,68 @@ public partial class Node2DGame : Node2D
 			return cells;
 		}
 		return null;
+	}
+
+	// How many chunks out from the start a chunk lies (Chebyshev). The start is the corner where chunks 0
+	// and -1 meet on both axes, so both count as ring 0.
+	private static int LandmarkRing(Vector2I coord)
+	{
+		int rx = coord.X >= 0 ? coord.X : -coord.X - 1;
+		int ry = coord.Y >= 0 ? coord.Y : -coord.Y - 1;
+		return Math.Max(rx, ry);
+	}
+
+	private Vector2I? landmarkAnchor;
+	private ulong landmarkAnchorSeed;
+
+	/// <summary>The one chunk of ring 1 that always holds a pen this run (in-flight 72), from the seed alone.</summary>
+	private Vector2I LandmarkAnchorChunk()
+	{
+		if (landmarkAnchor is Vector2I known && landmarkAnchorSeed == terrainSeed)
+			return known;
+		// Ring 1 is the twelve chunks of the 4 x 4 block round the start that are not its middle four.
+		var rng = new LevelGenerator.Rng(LevelGenerator.Hash(terrainSeed, 0, 0, SaltLandmarkAnchor));
+		int pick = rng.Next(12), seen = 0;
+		Vector2I chosen = new(1, 0);
+		for (int y = -2; y <= 1; y++)
+		{
+			for (int x = -2; x <= 1; x++)
+			{
+				var c = new Vector2I(x, y);
+				if (LandmarkRing(c) != 1)
+					continue;
+				if (seen++ == pick)
+					chosen = c;
+			}
+		}
+		landmarkAnchor = chosen;
+		landmarkAnchorSeed = terrainSeed;
+		return chosen;
+	}
+
+	// The scatter's spacing: true when a neighbour holds the anchor, or rolled for a pen lower than this
+	// chunk did (ties to the lower coordinate). Reads only the neighbours' first rolls, never their ground,
+	// so it is the same whichever chunk streams in first and asks no other chunk's data.
+	private bool LandmarkOutrankedByNeighbour(Vector2I coord, double roll)
+	{
+		Vector2I anchor = LandmarkAnchorChunk();
+		for (int dy = -1; dy <= 1; dy++)
+		{
+			for (int dx = -1; dx <= 1; dx++)
+			{
+				if (dx == 0 && dy == 0)
+					continue;
+				var other = new Vector2I(coord.X + dx, coord.Y + dy);
+				if (other == anchor)
+					return true;
+				if (LandmarkRing(other) < LandmarkScatterMinRing)
+					continue;
+				double theirs = new LevelGenerator.Rng(LevelGenerator.Hash(terrainSeed, other.X, other.Y, SaltLandmark)).NextDouble();
+				if (theirs < LandmarkChance && (theirs < roll || (theirs == roll && (other.Y < coord.Y || (other.Y == coord.Y && other.X < coord.X)))))
+					return true;
+			}
+		}
+		return false;
 	}
 
 	/// <summary>
@@ -4788,11 +4867,12 @@ public partial class Node2DGame : Node2D
 				box.AddChild(BuildDetailLabel(player.IsStanceRooted
 					? $"Rooted: +{BoonCatalog.MagnitudeAt(boon, boonLevel):0.0} HP per second now."
 					: $"Not rooted - stand still {BoonCatalog.StanceSeconds:0.#}\u00A0s.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
-			// The walking boon winds one spell, and which one changes as the timers do: say which it was.
+			// The walking boon speeds one spell, the one with the longest cooldown: say which it is (in-flight
+			// 68 - player words, never "winding").
 			if (boon.Effect == BoonEffect.WalkingRecharge && player != null)
 				box.AddChild(BuildDetailLabel(player.WaywiserWindingSpellName is string winding
-					? $"Winding: {winding}."
-					: "Not winding - walk to wind the spell furthest from ready.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
+					? $"Recharging faster: {winding}."
+					: "Walk, and the spell with the longest cooldown recharges faster.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			// The element tags it adds to the run, as the same chips the level-up card showed when it
 			// was taken - "why is my Water at 3" was a question the pause screen could not answer.
 			if (BuildPauseTagChips(boon.ElementWeights) is Control chips)

@@ -58,7 +58,7 @@ public enum BoonEffect
 	// --- The first wave of .ai/new-items.md (section 7) ------------------------------------
 
 	/// <summary>
-	/// While the player walks, whichever spell is furthest from ready recharges faster - Taproot's mirror:
+	/// While the player walks, the spell with the longest cooldown recharges faster - Taproot's mirror:
 	/// a stand pays one, a kite pays the other. Magnitude is the extra rate (0.5 = 50% faster).
 	/// </summary>
 	WalkingRecharge,
@@ -299,13 +299,16 @@ public static class BoonCatalog
 		// --- Wind: the walk -----------------------------------------------------------
 		//
 		// Walking is the one condition nothing paid (.ai/new-items.md section 7): Taproot pays a stand, this
-		// pays a kite, and holding both means whichever you are doing pays. It winds ONE spell - the one
-		// furthest from ready - so it suits a build with one big slow spell (Meteor Swarm, Starfall). A
+		// pays a kite, and holding both means whichever you are doing pays. It speeds ONE spell - the one
+		// with the longest cooldown - so it suits a build with one big slow spell (Meteor Swarm, Starfall). A
 		// starter because Lightning had the thinnest floor in the game. Wind-tagged: its light is the wheel's.
+		// Every line says "the spell with the longest cooldown" and the firing loop compares cooldowns, not
+		// seconds left, so the words are exactly true (in-flight 68, Eric 2026-11-09: the old riddle and
+		// "furthest from ready" were "very confusing").
 		new()
 		{
 			Id = "waywiser", Name = "Waywiser",
-			Description = "A wheel that counts the road, and pays out for every turn.",
+			Description = "A road-wheel: walk, and the spell with the longest cooldown recharges faster.",
 			ElementWeights = new[] { ("Wind", 1) },
 			Effect = BoonEffect.WalkingRecharge, Magnitude = 0.4f, MagnitudePerLevel = 0.1f,
 		},
@@ -403,7 +406,7 @@ public static class BoonCatalog
 			BoonEffect.Retaliate => $"When you are hit, every enemy close around you takes {m:0} damage (at most {once}).",
 			BoonEffect.Chill => $"When you are hit, every enemy close around you is slowed to {m * 100f:0}% speed for {Player.BoonChillDurationSeconds:0.#} s (at most {once}).",
 			BoonEffect.StanceRegen => $"Stand still and you heal {m:0.0} health every second until you move.",
-			BoonEffect.WalkingRecharge => $"While you walk, whichever of your spells is furthest from ready recharges {m * 100f:0}% faster.",
+			BoonEffect.WalkingRecharge => $"While you walk, the spell with the longest cooldown recharges {m * 100f:0}% faster.",
 			BoonEffect.Frighten => $"When you are struck, every enemy close around you is frightened (at most {once}).",
 			_ => string.Empty,
 		};
@@ -440,8 +443,9 @@ public static class BoonCatalog
 			// the part that makes this a different card from Tidewater Flask.
 			BoonEffect.StanceRegen => $"Stand still: +{m:0.0} HP per second",
 			// "cooldown" picks the cooldown glyph (StatIcons.KeyFor); the condition leads, as Taproot's does.
-			// "Slowest spell" read as a riddle (Eric, 2026-11-06): name the real rule, furthest from ready.
-			BoonEffect.WalkingRecharge => $"Walking: the spell furthest from ready winds {m * 100f:0}% faster",
+			// "Slowest spell" read as a riddle (Eric, 2026-11-06), and "furthest from ready ... winds" was no
+			// better (in-flight 68): his words, the longest cooldown.
+			BoonEffect.WalkingRecharge => $"Walking: the spell with the longest cooldown recharges {m * 100f:0}% faster",
 			// "when struck" picks the reactions' glyph, as Saltbound Chain's and Rimebriar's lines do.
 			BoonEffect.Frighten => "Frightens nearby enemies when struck",
 			_ => string.Empty,
@@ -476,7 +480,7 @@ public static class BoonCatalog
 			// The multiplier's whole value is the effect, so the card says where it lands.
 			BoonEffect.Chill => $"Slows nearby enemies to {next * 100f:0}% when struck",
 			BoonEffect.StanceRegen => $"Stand still: +{next:0.0} HP per second",
-			BoonEffect.WalkingRecharge => $"Walking: winds the spell furthest from ready {next * 100f:0}% faster",
+			BoonEffect.WalkingRecharge => $"Walking: the spell with the longest cooldown recharges {next * 100f:0}% faster",
 			BoonEffect.Frighten => $"Fright lasts {next:0.0} s",
 			_ => string.Empty,
 		};

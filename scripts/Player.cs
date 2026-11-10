@@ -697,8 +697,10 @@ public partial class Player : CharacterBody2D
 	// as they resist every shove. Protection by holding them off - no heal, no armour.
 	public const float CharacterWardingHandThrow = 220f;
 	private float characterWardingHandThrow = 0f;
-	// Wings (Wayland the Smith): floor traps never touch him and water never slows him (Player.Wings.cs, Winged). It was
-	// +10% walking speed until 2026-11-09.
+	// Wings (Wayland the Smith): floor traps never touch him and water never slows him (Player.Wings.cs, Winged), and
+	// since in-flight 87 he moves this much faster as well - he flies when he moves (Eric, 2026-11-09: "Wayland can also
+	// have a movement speed buff"). Lost on 2026-11-09 with the old "move_speed_10" and given back the same day.
+	public const float CharacterWingsSpeedBonus = 0.10f;
 	// Overlooked (The Archmage, .ai/protagonist.md): once a run, the blow that would end him misses (TakeDamage). The
 	// ten-second escape window is independent of post-menu grace. He is drawn white through it:
 	// the crowd that landed the blow is still on him, so he needs time to get clear.
@@ -999,9 +1001,10 @@ public partial class Player : CharacterBody2D
 		// passive, an axis no other wizard owns: not armour (the Geomancer), not a heal (.ai/difficulty-curve.md).
 		"repel_on_hit",
 		// Wayland the Smith (.ai/chapter-wizards.md 4.7): Wings - he flies when he moves, so floor traps never touch him and
-		// water never slows him (Player.Wings.cs). Still the only passive about his feet: not his speed, the ground under
-		// them. It was "move_speed_10", +10% move speed, until 2026-11-09 (Eric: "instead of extra speed, make him immune
-		// to floor traps / water slowing", .ai/character-fit.md).
+		// water never slows him (Player.Wings.cs). Still the only passive about his feet: the ground under them, and his
+		// speed over it. It was "move_speed_10", +10% move speed, until 2026-11-09 (Eric: "instead of extra speed, make him
+		// immune to floor traps / water slowing", .ai/character-fit.md); the speed came back the same day on top (in-flight
+		// 87, "Wayland can also have a movement speed buff"), under the same id.
 		"over_traps_and_water",
 		// The Cumaean Sibyl (.ai/chapter-wizards.md 4.3): Prophecy - she sees what is coming, so she may ask
 		// the cards again. Three more rerolls in the run's pool, on top of Fate Fracture's. An axis no other
@@ -1103,6 +1106,8 @@ public partial class Player : CharacterBody2D
 				return true;
 			case "over_traps_and_water":
 				Winged = true;
+				// He flies when he moves, so the flight is faster than a walk (in-flight 87).
+				Speed *= 1f + CharacterWingsSpeedBonus;
 				return true;
 			case "rerolls_3":
 				// ApplyArcaneUpgrades has already filled the pool from the shop; this goes on top, once.
@@ -4583,9 +4588,12 @@ public partial class Player : CharacterBody2D
 		}
 
 		var spellsStart = FrameProfiler.Begin();
-		// The Waywiser's spell: whichever is furthest from ready this frame (TickWaywiser, after the loop).
-		SpellData furthestFromReady = null;
-		float furthestRemaining = float.MinValue;
+		// The Waywiser's spell: the one with the longest cooldown (TickWaywiser, after the loop). The
+		// interval, not the seconds left (in-flight 68, Eric 2026-11-09: "the spell with the longest
+		// cooldown"): by seconds left a fast spell that had just fired took the boon whenever the slow one
+		// was nearly ready, and the pause screen's line flickered between them. Ties keep the first equipped.
+		SpellData longestCooldownSpell = null;
+		float longestInterval = float.MinValue;
 		foreach (var spell in equippedSpells)
 		{
 			if (spell == null || string.IsNullOrWhiteSpace(spell.Id))
@@ -4612,11 +4620,10 @@ public partial class Player : CharacterBody2D
 			// The Garnet Bezel: the pair recharges faster (Player.ItemRules.cs).
 			interval = MathF.Max(0.05f, interval / PairRechargeScale(spell));
 			spellFireTimers[spell.Id] += (float)delta;
-			float remaining = interval - spellFireTimers[spell.Id];
-			if (remaining > furthestRemaining)
+			if (interval > longestInterval)
 			{
-				furthestRemaining = remaining;
-				furthestFromReady = spell;
+				longestInterval = interval;
+				longestCooldownSpell = spell;
 			}
 			if (spellFireTimers[spell.Id] >= interval)
 			{
@@ -4645,7 +4652,7 @@ public partial class Player : CharacterBody2D
 				NotifyArcaneCharge(spell);
 			}
 		}
-		TickWaywiser(furthestFromReady, delta);
+		TickWaywiser(longestCooldownSpell, delta);
 		// The Hundred Mouths' echoes, a few a frame (Player.Echo.cs): after the loop, so an echo never lands
 		// inside the cast that asked for it.
 		TickEchoes((float)delta);

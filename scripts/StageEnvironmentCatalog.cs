@@ -159,7 +159,7 @@ public sealed class StageEnvironmentProfile
 	/// </summary>
 	public float HazardFlameChance { get; init; }
 
-	/// <summary>Whether the rare flower-pen landmark may appear: green chapters only.</summary>
+	/// <summary>Whether the rare flower-pen landmark may appear: the Enchanted Forest only, whose secret it carries (in-flight 72).</summary>
 	public bool HasLandmarks { get; init; }
 
 	/// <summary>
@@ -227,6 +227,7 @@ public static class StageEnvironmentCatalog
 			WeatherOffset = new Vector2(-160f, -120f),
 			IntroTint = new Color(0.90f, 0.98f, 0.86f, 1.0f),
 			WaterStyle = "forest",
+			// The one chapter with flower pens: its Fenced Bloom secret lives in them (in-flight 72).
 			HasLandmarks = true,
 		}
 		,
@@ -295,9 +296,9 @@ public static class StageEnvironmentCatalog
 			// fire under the open sky does not (Eric, 2026-10-28: "there shouldn't be fire vents outside").
 			// On the broken walls they stand where the Dungeon's do, in hallway rows (Node2DGame.HazardPlanFor).
 			HazardSpikes = true,
-			// The flower pen fits where the ruin opens into a court (thirty tiles of floor inside a broken
-			// wall), and a walled garden among old walls is the right place for one.
-			HasLandmarks = true,
+			// No flower pen since in-flight 72 (Eric, 2026-11-09: "Dandelion Grove should be only shown in one
+			// chapter"): the pen carries the Forest's secret, and here it was an empty one.
+			HasLandmarks = false,
 			// Its own broken walls (tools/art/ruin_walls.py), drawn on the Ruin topology's wall cells.
 			WallSet = "ruin_wall",
 		}
@@ -421,7 +422,8 @@ public static class StageEnvironmentCatalog
 			WeatherOffset = new Vector2(-120f, -90f),
 			IntroTint = new Color(0.86f, 0.96f, 0.84f, 1.0f),
 			WaterStyle = "swamp",
-			HasLandmarks = true,
+			// The Forest's alone (in-flight 72).
+			HasLandmarks = false,
 		}
 		,
 		// Placeholder art (issue #30): the dungeon floor set, darkened hard and given a cold cast,
@@ -502,7 +504,8 @@ public static class StageEnvironmentCatalog
 			WeatherOffset = new Vector2(-120f, -60f),
 			IntroTint = new Color(0.98f, 0.94f, 0.82f, 1.0f),
 			WaterStyle = "forest",
-			HasLandmarks = true,
+			// The Forest's alone (in-flight 72).
+			HasLandmarks = false,
 		}
 		,
 		// THE BROKEN CIRCLE (stage_10, .ai/campaign.md section 6): heather on peat, granite, standing

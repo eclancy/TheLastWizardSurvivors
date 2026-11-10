@@ -257,8 +257,12 @@ public partial class StatusEffectLayer : Node2D
 				RemoveAt(i);
 				continue;
 			}
-			// Burrowed: still debuffed, not drawn.
-			if (!e.IsTargetable)
+			// Burrowed: still debuffed, not drawn. And hidden for a boss's arrival (in-flight 85, Eric
+			// 2026-11-09: "When enemies derender for the boss spawning animation, the animations for the cc
+			// effects on them should also derender"): HoldOrdinaryBodies holds and hides every ordinary body
+			// but leaves it targetable. IsHeld first, so the Visible read (an interop call) is paid only by a
+			// held body; a body sealed where it stands (KindledWard) is held but seen, and keeps its marks.
+			if (!e.IsTargetable || (e.IsHeld && !e.Visible))
 				continue;
 			Collect(e, active, toLocal);
 		}

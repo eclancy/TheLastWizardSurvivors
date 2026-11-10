@@ -917,6 +917,11 @@ Tree (5). The Fairy Ring, the Buried Cart and everything after are still the pla
   start: "every run has one in reach" (rule 6) holds without placing one. Each bloom heals half and
   drops a seed once a run; only the first a run shows the toast. Whether that much healing on the map
   is too much is the sanctuary question in section 11, sharper now.
+  **Changed 2026-11-10 (in-flight 72, Eric: the pen was "much too common", and "should be only shown in
+  one chapter"):** pens are the Forest's alone (`HasLandmarks`), and there IS an anchor now: exactly one
+  pen in the ring of twelve chunks just past the start's four (`Node2DGame.LandmarkAnchorChunk`, about
+  2000-3000 px out), then one chunk in twenty-five past that (`LandmarkChance` 0.04), never two in
+  adjacent chunks. One or two a run, and the bloom and its seed are still always in reach.
 - **The keepsake's far tell is the seed, not a decor gradient.** The gradient (section 2) is unbuilt,
   and without a tell a keepsake twelve chunks out on a seeded bearing is the coin flip rule 7
   forbids. So the seed knows where it belongs: carried, it puts out a shoot that leans toward the

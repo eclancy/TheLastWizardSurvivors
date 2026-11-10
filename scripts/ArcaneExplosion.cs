@@ -452,7 +452,10 @@ namespace TheOneHeMissed.scripts
 		{
 			if (moteCanvas != null && IsInstanceValid(moteCanvas))
 				return;
-			moteCanvas = new Node2D { Name = "ChordMotes", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.Air };
+			// ForemostAir, not Air (in-flight 67, Eric 2026-11-09: "Canticle song notes should render on a layer
+			// above the player"): the wizard's body is on Foremost since 2026-11-01, so on Air the chord's notes
+			// slipped under him. The blast itself stays on Air; the notes still sit under AttackIcon and the numbers.
+			moteCanvas = new Node2D { Name = "ChordMotes", TopLevel = true, ZAsRelative = false, ZIndex = DrawLayers.ForemostAir };
 			moteCanvas.Draw += DrawMotes;
 			AddChild(moteCanvas);
 			moteCanvas.GlobalPosition = Vector2.Zero;

@@ -273,19 +273,20 @@ public partial class Player
 
 	/// <summary>
 	/// The Waywiser, after the firing loop: while the player walks (IsStandingStill is intent, the
-	/// Brazier's definition), whichever spell is furthest from ready ticks <see cref="boonWalkingRecharge"/>
-	/// faster. The loop hands over the spell it measured furthest; a max over at most seven floats.
+	/// Brazier's definition), the spell with the longest cooldown ticks <see cref="boonWalkingRecharge"/>
+	/// faster. The loop hands over the spell whose interval it measured longest (in-flight 68); a max over
+	/// at most seven floats.
 	/// </summary>
-	private void TickWaywiser(SpellData furthest, double delta)
+	private void TickWaywiser(SpellData longest, double delta)
 	{
-		if (boonWalkingRecharge <= 0f || furthest == null || IsStandingStill || HeldForBossEntrance)
+		if (boonWalkingRecharge <= 0f || longest == null || IsStandingStill || HeldForBossEntrance)
 		{
 			WaywiserWindingSpellName = null;
 			return;
 		}
-		if (spellFireTimers.TryGetValue(furthest.Id, out float timer))
-			spellFireTimers[furthest.Id] = timer + boonWalkingRecharge * (float)delta;
-		WaywiserWindingSpellName = furthest.Name;
+		if (spellFireTimers.TryGetValue(longest.Id, out float timer))
+			spellFireTimers[longest.Id] = timer + boonWalkingRecharge * (float)delta;
+		WaywiserWindingSpellName = longest.Name;
 	}
 
 	// --- the chest's charges ----------------------------------------------------------------------

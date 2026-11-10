@@ -4,7 +4,9 @@ using Godot;
 // himself wings to get off the king's island, and since 2026-11-09 he flies when he moves (roster.wayland's flight
 // frames, anim_sets.flight). Eric: "I like A, but instead of extra speed, make him immune to floor traps / water
 // slowing." So Wings stopped being +10% move speed ("move_speed_10") and became what the wings would really give a
-// man who skims the ground: FLOOR TRAPS NEVER TOUCH HIM, AND WATER NEVER SLOWS HIM.
+// man who skims the ground: FLOOR TRAPS NEVER TOUCH HIM, AND WATER NEVER SLOWS HIM. The same day the speed came back on
+// top (in-flight 87, Eric: "Wayland can also have a movement speed buff"): +10% move speed, CharacterWingsSpeedBonus,
+// applied with the flag in ApplyCharacterPassiveBonus - the flight is faster than a walk.
 //
 // WHERE. One flag, Winged, and every site asks it rather than asking who he is:
 //   - StageHazard (the spike plates and fire vents)           - FliesOverTrap, no bite

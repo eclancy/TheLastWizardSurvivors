@@ -341,7 +341,9 @@ public partial class MireSurface : Node2D
 
 		public void Visit(Enemy enemy, Vector2 position)
 		{
-			if (Count >= Bodies.Length || enemy.IsDying || position.DistanceSquaredTo(Centre) > RadiusSquared)
+			// A body hidden for a boss's arrival rolls no rings over the empty spot (in-flight 85).
+			if (Count >= Bodies.Length || enemy.IsDying || (enemy.IsHeld && !enemy.Visible)
+				|| position.DistanceSquaredTo(Centre) > RadiusSquared)
 				return;
 			for (int i = 0; i < Count; i++)
 			{
