@@ -53,6 +53,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 95 | An enemy's attack circles (and their hits) vanish the moment it dies | bug | S |
 | 96 | The Scythe set's card: "...kills it outright (except bosses)." in place of "...kills it outright. Not bosses." (`ChestItemCatalog.cs` 413; Eric, 2026-11-10) | text | trivial |
 | 97 | Remove attunement altogether - its damage bonus for pure spells, its cooldown price, every word of it (decided; rebalance in 77) | mechanic | M |
+| 98 | A full build's level-up offers a small Arcane Energy card beside Marginalia | level-up | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1286,6 +1287,15 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     80% of their damage at tier 6 and hybrid branches get 12% faster, so runs will shift until the balance pass
     (item 77) - Eric knows ("we will rebalance around that later"). Measure a pure and a hybrid build with
     `_BalanceHarness` before and after so the pass starts from numbers. Element tags themselves are unchanged.
+98. **A full build's level-up offers Arcane Energy beside Marginalia** (Eric, 2026-11-10: *"when levelled to full and
+    offered marginalia, offer a second choice for arcane energy if they decide not to take the marginalia"*). Today a
+    level-up with nothing left to deal holds one card, Marginalia (`Player.BuildMarginaliaOption`, ~8789: heal 30% of
+    max HP and +2% spell damage, repeatable). Add a second card, a small Arcane Energy payment, so the hand is a
+    choice. **Note:** Marginalia's own comment (~8912) records why AE was rejected here - the run's AE is paid at its
+    end from how it went, and a per-level-up drip could make late levels a currency farm. Eric has now asked for it,
+    so size it small and flat (counted into the run's end-of-run total, `ArcaneRewardScale` applies), and check it
+    against Endless, where a night can deal many of these (`.ai/endless-mode.md`: only the first night reaches the
+    save, which limits it). Card in player words; routed like Marginalia (`Node2DGame` handles the option id).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
