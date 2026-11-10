@@ -27,7 +27,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
 | 70 | The chapter note covers the wizard at a run's start on a phone: condense, move clear, shorter | UI | S-M |
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
-| 72 | The "Dandelion Grove" (flower pen) is far too common: the Forest only, one or two a run | world gen | S |
+| 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
+| 73 | Chalice Cup: confusing text, useless after 15 kills - heal on a timer instead (about 3 HP / 20 s) | item rework | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1162,6 +1163,22 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     chance with a minimum spacing between pens, or one pen at a seeded anchor ring as `.ai/stage-secrets.md` places
     secrets. Keep at least one reachable: the First Tree's dead clearing waits for the moonflower's seed. Check with
     `_ExploreProbe` on the Forest that the secret still opens, and that `ValidateSecrets` / the decor margins hold.
+    **Decided (Eric, 2026-11-09): *"Dandelion Grove should be only shown in one chapter"*** - the Forest, whose secret
+    it carries: `HasLandmarks` off for the Swamp, the Ruins, the Cave and the Fallow Fields. And far rarer there, per
+    his first line today.
+73. **The Chalice Cup's description is confusing, and the cup goes useless** (Eric, 2026-11-09: *"Chalice cup
+    description is confusing. Maybe it can heal you every period of time so it doesn't just become useless?"*). The
+    Rare chest relic (`essence_chalice`, Water; `ChestItemCatalog.cs` 602, 702) heals 1 HP for each of the first 15
+    kills after it is taken (`Player.EssenceChaliceKillHeals`, `Player.cs` 4149) - spent within seconds of the pickup,
+    after which it is only a piece of the Tithe Chalice set (with the Heart of Renewal and Wormwood Tithe; the set heals
+    1 HP every 15th kill). Its card says *"Each of the run's first 15 kills heals 1 HP. After them, it serves its set."*,
+    which is wrong as well as unclear (the 15 count from the pickup, not the run's start) and "serves its set" is not a
+    player's phrase. Eric's direction: **a heal on a timer**. Size it inside the healing budget (`.ai/difficulty-curve.md`
+    5.1 - every relic or boon heal there sits near 9 HP a minute, the Heart of Renewal at 0.15 a second): e.g. *"Every
+    20 seconds the cup fills and heals you 3 HP."* - a sip, which also keeps it apart from the Heart of Renewal's steady
+    trickle in the same set (the Familiar's Purr is the same shape, 3 every 20 s). Show it filling (a small HUD or
+    relic-icon fill) so the wait reads. Add its line to the healing ledger (`GameStats.TrackHealing`) and re-run the
+    5.1 measurement; reword the set's card to match. A changed relic needs no save step - nothing a save holds moves.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
