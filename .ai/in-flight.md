@@ -24,7 +24,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 66 | First Blood pays Lancet (decided); Canticle gets a harmony Feat; review every reward | achievements | S-M |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
-| 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
+| 69 | Remove the Twinstar Sigil from the shop (decided); that release resets progress (epoch 5) | shop | S |
 | 70 | The chapter note (the stage intro with its hints) is huge on a phone and covers the wizard: condense, move clear, shorter | UI | S-M |
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
 | 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
@@ -36,7 +36,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
 | 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | S-M |
 | 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | S |
-| 81 | Rework Buckler Boss to do something that makes sense (e.g. its own small shield) | item rework | S |
+| 81 | Buckler Boss gives its own small shield (decided) | item rework | S |
 | 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
 | 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks | M |
@@ -46,19 +46,21 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | M |
 | 89 | The Archmage's passive card: "Avoids death once per run." | text | S |
 | 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | S |
-| 91 | Cinderbreath's Backdraft: two flames on different enemies and directions, damage rebalanced (Fire Fan overlap) | spell | S-M |
+| 91 | Backdraft: two flames on different enemies; Fire Fan reworked into a wide sweeping arc (decided) | spell | M |
 | 92 | The level-up Codex button sits off the heading's line (raised before, item 55) | UI | S |
-| 93 | Aegis Ward: a more detailed icon, and a less heavy-handed animation at its new size | art + VFX | S-M |
+| 93 | Aegis Ward: a more detailed icon; a smaller, quieter animation (decided) | art + VFX | S-M |
 | 94 | Ink Ring becomes Ma Liang's starting spell; The Painted Door moves onto it | character | M |
 | 95 | An enemy's attack circles (and their hits) vanish the moment it dies | bug | S |
 | 96 | The Scythe set's card: "...kills it outright (except bosses)." in place of "...kills it outright. Not bosses." (`ChestItemCatalog.cs` 413; Eric, 2026-11-10) | text | trivial |
 | 97 | Remove attunement altogether - its damage bonus for pure spells, its cooldown price, every word of it (decided; rebalance in 77) | mechanic | M |
-| 98 | A full build's level-up offers a small Arcane Energy card beside Marginalia | level-up | S |
+| 98 | A full build's level-up offers 10 Arcane Energy beside Marginalia (decided) | level-up | S |
 | 99 | Elderbark's slam and roots much bigger in area (not the other bosses) | boss tuning | S |
 | 100 | Thorn Vine's shove always away from the player (today along the swing, sometimes toward him) | spell | trivial |
 | 101 | The Pinfold's guards stay by the gate, glow and are marked; the latch lights once they fall | event | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
+
+**The next release resets progress again (epoch 5)** - Eric, 2026-11-10, choosing a reset over a refund when the Twinstar Sigil is removed (item 69).
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1182,6 +1184,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     deed of its own, done as its wizard; Spiritual Weapon stays the Ruins boss's, as Thorn Vine stays the Forest's. The
     exceptions are therefore the Familiar, Thorn Vine and Spiritual Weapon. Name each new deed in the house style (the
     Feats are birds; a chapter's are its own) and write its card with the wizard's name.
+    **Decided (Eric, 2026-11-10):** the three secret-vault opener deeds **name the secret** ("Find the Buried Runes as Morgan"), not just the chapter as built.
 85. **Status effects stay drawn on enemies hidden for a boss's arrival** (Eric, 2026-11-09: *"When enemies derender for
     the boss spawning animation, the animations for the cc effects on them should also derender"*). During a boss's
     entrance every ordinary enemy is held and hidden (`Node2DGame.BossEntrance.HoldOrdinaryBodies`: `SetHeld(true)`,
@@ -1238,6 +1241,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     turned on its own enemy" (`Flamethrower.SpreadAims`, reuse it for the second jet). Decide what Backdraft then Fire
     Fan gives (three jets in all? Fire Fan reworked?) so the two do not collide (the spell-collision rule in memory).
     Reword the card in player words.
+    **Decided (Eric, 2026-11-10):** Fire Fan is reworked into a **wide sweeping arc** - one broad flame sweeping back and forth across a wide cone in front of him - so it never reads as Backdraft's second flame.
 92. **The level-up screen's Codex button is not level with the heading** (Eric, 2026-11-10: *"codex button on level up
     is not vertically aligned with the header"*; first raised 2026-11-06 in item 55 and never marked done). The button
     (`LevelUpMenu.EnsureAscensionButton`, ~2355) is pinned to the panel's top-right with a first-guess offset, and
@@ -1253,6 +1257,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     shards, the reflect's shaft; pixel-art pass e5e07bee) reads as heavy-handed at its new size - make its motion
     lighter and more legible: a quieter idle, a brief clean flash on a hit, a clear break. Ask Eric what "obtuse"
     points at first if a shot of it does not make it obvious. Edit the generators, never the PNGs.
+    **Decided (Eric, 2026-11-10):** "obtuse" means **too big and bulky, and too flashy or noisy** - a smaller, lighter dome, and quieter flashes, shards and shafts.
 94. **Ink Ring becomes Ma Liang's starting spell** (Eric, 2026-11-10: *"would it make sense for ink ring to be his
     starting spell instead?"* - then *"Yes, add it"*; asked after he earned Ink Ring without Ma Liang freed, since it
     was nobody's opener). His brush, walked: drawing a line that becomes real is his legend, and it makes the
@@ -1299,6 +1304,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     so size it small and flat (counted into the run's end-of-run total, `ArcaneRewardScale` applies), and check it
     against Endless, where a night can deal many of these (`.ai/endless-mode.md`: only the first night reaches the
     save, which limits it). Card in player words; routed like Marginalia (`Node2DGame` handles the option id).
+    **Decided (Eric, 2026-11-10):** the Arcane Energy card pays **10**.
 99. **Elderbark's attacks much bigger** (Eric, 2026-11-10: *"Elderbark's attacks can be much bigger in area"*). The
     chapter-one boss is `BossEnemy` used bare: its slam (`SlamRadius` 150, `BossEnemy.cs` 43) and the roots it sends
     up under the player (`RootRadius` 54, ~60, placed by `TelegraphedGroundHit`). Grow both - the roots most, at 54
@@ -1354,6 +1360,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     and Emberheart, schema 20); or keep 4 levels with each extra projectile weaker; or make it the last unlock on the
     Power page. Measure before and after with `_BalanceHarness --all-unlocked` on a projectile wizard (the Archmage's
     Magic Missile, the Frostweaver's Frost Shard) - a save change, so check `CurrentSchemaVersion` on main (28) first.
+    **Decided (Eric, 2026-11-10):** *remove the Twinstar Sigil* from the shop altogether (the "amount" Power: `MainMenu.cs` RegisterUpgrade, `MainMenu.Shop.cs` Power section, `Player.ApplyArcaneUpgrades` amountLevel; the Split Lens relic's +1 stays), and the release that removes it **resets progress again** (epoch 5) rather than refunding.
 70. **The chapter note covers the player at the start of a run on a phone** (Eric, 2026-11-09: *"the stage description
     that shows up on the screen on mobile still covers the player right at the beginning which is annoying. We need to
     condense that and get it out of the way more"*). `ChapterNoteCard` (layer 7): on a phone it spans the width less 40
@@ -1501,6 +1508,7 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     check those); (c) **a punch** - enemies that touch him are shoved back hard (the set's Iron Fang already cuts
     them). (a) is the plainest and never dead; Basalt Carapace's "ignores one hit every 10 s" is the one to keep it
     clear of. Size it against the healing budget's shield lines (`.ai/difficulty-curve.md` 5).
+    **Decided (Eric, 2026-11-10):** (a) - Buckler Boss gives its own small shield, a few points rebuilt every so often, so it is a shield source by itself; reword its card to say so.
 82. **The hut kneels only in the middle of the bone yard** (Eric, 2026-11-09: *"Baba Yaga's hut should only kneel
     down once it's in the center of the bone yard"*). Today it is cornered, stops and kneels as soon as it is inside
     `CorneredRadius` - 96 of the yard's 130 px (`WalkingHutEvent.cs` 53, 561) - which is just past the gap. Make it
