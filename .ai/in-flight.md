@@ -56,6 +56,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 98 | A full build's level-up offers a small Arcane Energy card beside Marginalia | level-up | S |
 | 99 | Elderbark's slam and roots much bigger in area (not the other bosses) | boss tuning | S |
 | 100 | Thorn Vine's shove always away from the player (today along the swing, sometimes toward him) | spell | trivial |
+| 101 | The Pinfold's guards stay by the gate, glow and are marked; the latch lights once they fall | event | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1311,6 +1312,13 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     throws enemies toward him. Make it the direction from the player to the enemy, keep the speed and the
     `ApplyKnockback` route (Baba Yaga's Bone Fence adds to it), and leave Entangle, which roots instead. Update the
     comment and the Baba Yaga line in `.ai/character-fit.md` section 5 ("thrown aside along the stroke").
+101. **The Pinfold's guards stay by the gate, glowing and marked** (Eric, 2026-11-10: *"the guards should stay near the
+    gate, and be glowing and marked so you notice them"*, after asking how to get into the pen). `Pinfold.Wake`
+    (~156) spawns two guards (`SpawnEventEnemy`, 10x health) 300 px either side when he comes within 520 px; they
+    then wander off with the swarm and are easy to lose, and the gate opens only once both are down and he touches
+    the latch at its right end (`LatchReach` 64). Leash them to the gate (they hold a post beside it and return if
+    drawn away), give them a glow and a mark over the head so they read as the gate's keepers (reuse the elite or
+    event-enemy marking if there is one), and light the latch once both are down so the last step is seen.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
