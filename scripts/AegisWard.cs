@@ -22,6 +22,12 @@ namespace TheOneHeMissed.scripts;
 //               him to the enemy that takes it back.
 //
 // Thorn Crystal Shell's burst and Sun Aegis's flash on a break stay in Player (TryCrystalShellBurst).
+//
+// QUIETER (in-flight 93, Eric 2026-11-10: "too big and bulky, and too flashy or noisy"). The dome is nearer him
+// (RampartRadius 52 -> 44), a bolt's flash is a shorter, narrower, cooler stretch of it, Reforged sends six
+// smaller shards rather than eight (each cutting a third harder, so a ward rebuilt still cuts about as much), and
+// Reflective Plating's shaft is one hot cell in a thin glow, gone sooner, with a smaller sparkle. Still clearly
+// up (the aura, tools/art/props_fx.py), struck (the flash) and back (the shards).
 public partial class AegisWard : Node2D
 {
 	public const string RampartId = "aegis_ward_quick_bastion";
@@ -31,17 +37,18 @@ public partial class AegisWard : Node2D
 	// --- Rampart -------------------------------------------------------------------------------------
 	// The dome's radius from his centre: two bodies out, past his own body and the HurtBox, so a bolt is
 	// seen to break on something that is not him.
-	public const float RampartRadius = 52f;
+	public const float RampartRadius = 44f;
 	// What a bolt broken on the dome costs the shield, as a share of the bolt's damage.
 	public const float RampartCost = 0.5f;
-	private const float DomeFlashSeconds = 0.28f;
+	private const float DomeFlashSeconds = 0.2f;
 	// The arc of the dome lit by one bolt, either side of where it broke (radians).
-	private const float DomeFlashHalfArc = 0.55f;
+	private const float DomeFlashHalfArc = 0.4f;
 
 	// --- Reforged ------------------------------------------------------------------------------------
-	public const int ReforgeShards = 8;
+	public const int ReforgeShards = 6;
 	public const float ReforgeReach = 140f;
-	public const float ReforgeShare = 0.6f;
+	// 0.6 of the shield a shard while there were eight; six at 0.8 cut about what eight at 0.6 did.
+	public const float ReforgeShare = 0.8f;
 	private const float ReforgeSeconds = 0.32f;
 	// A shard's half-width as a hit, before the body it meets.
 	private const float ShardHalfWidth = 4f;
@@ -53,12 +60,12 @@ public partial class AegisWard : Node2D
 	public const int ShardDirections = 32;
 
 	// --- Reflective Plating ---------------------------------------------------------------------------
-	private const float ShaftSeconds = 0.14f;
+	private const float ShaftSeconds = 0.1f;
 	// How the shaft is drawn (visual only - the strike is dealt the frame it is shown): shot out from him
 	// over ShaftShootSeconds, held whole to ShaftHoldSeconds, dissolving to ShaftSeconds; leaving him
 	// ShaftLeaves out from his centre, at the edge of his body.
 	private const float ShaftShootSeconds = 0.035f;
-	private const float ShaftHoldSeconds = 0.05f;
+	private const float ShaftHoldSeconds = 0.04f;
 	private const float ShaftLeaves = 14f;
 	private const int MaxShafts = 8;
 	private const int MaxFlashes = 12;
@@ -172,8 +179,8 @@ public partial class AegisWard : Node2D
 	// Plating's shaft, a band of light out to the enemy it strikes with a flash where it lands. Reforged's shards are
 	// iron and light nothing. Pushed from _Process, every frame they show: this node's clocks run in _PhysicsProcess,
 	// and a light asked for only there would drop out on every frame without a physics step and flicker.
-	private const float DomeLightReach = 64f;
-	private const float ShaftLightReach = 48f;
+	private const float DomeLightReach = 48f;
+	private const float ShaftLightReach = 36f;
 
 	public override void _Process(double delta)
 	{
@@ -185,7 +192,7 @@ public partial class AegisWard : Node2D
 			if (!flashes[i].Live)
 				continue;
 			float fade = 1f - flashes[i].Age / DomeFlashSeconds;
-			LightPool.Light(centre + Vector2.FromAngle(flashes[i].Angle) * RampartRadius, DomeLightReach, 0.7f * fade);
+			LightPool.Light(centre + Vector2.FromAngle(flashes[i].Angle) * RampartRadius, DomeLightReach, 0.5f * fade);
 		}
 		for (int i = 0; i < MaxShafts; i++)
 		{
@@ -194,8 +201,8 @@ public partial class AegisWard : Node2D
 			Shaft s = shafts[i];
 			float cover = s.Age < ShaftHoldSeconds ? 1f : 1f - (s.Age - ShaftHoldSeconds) / (ShaftSeconds - ShaftHoldSeconds);
 			Vector2 head = s.From.Lerp(s.To, Mathf.Clamp(s.Age / ShaftShootSeconds, 0f, 1f));
-			LightPool.LightAlong(s.From, head, ShaftLightReach, 0.6f * cover);
-			LightPool.Light(head, ShaftLightReach * 1.3f, 0.75f * cover);
+			LightPool.LightAlong(s.From, head, ShaftLightReach, 0.45f * cover);
+			LightPool.Light(head, ShaftLightReach * 1.2f, 0.55f * cover);
 		}
 	}
 
@@ -422,19 +429,18 @@ public partial class AegisWard : Node2D
 				float cover = u <= from ? 1f : 1f - (u - from) / (1f - from);
 				if (cover <= 0f)
 					continue;
-				Color c = heat > 0.75f ? light.Core : heat > 0.45f ? light.Hot : heat > 0.2f ? light.Mid : light.Edge;
-				if (heat > 0.2f)
-					PixelInk.Cell(this, centre + dir * (RampartRadius + g), light.Edge, cover);
+				// One step cooler than it was all along (in-flight 93): white only at the very break.
+				Color c = heat > 0.85f ? light.Core : heat > 0.55f ? light.Hot : heat > 0.25f ? light.Mid : light.Edge;
+				if (heat > 0.6f)
+					PixelInk.Cell(this, centre + dir * (RampartRadius + g), light.Edge, cover * 0.8f);
 				PixelInk.Cell(this, centre + dir * RampartRadius, c, cover);
-				if (heat > 0.7f)
-					PixelInk.Cell(this, centre + dir * (RampartRadius - g), light.Hot, cover);
-				// The plates: a band three cells in, broken at a seam every 0.4 of the arc.
+				// The plates: a band three cells in, broken at a seam every 0.4 of the arc, only near the break.
 				float seam = MathF.Abs(t * 2.5f - MathF.Round(t * 2.5f));
-				if (MathF.Abs(t) < 0.85f && seam > 0.12f)
+				if (MathF.Abs(t) < 0.6f && seam > 0.12f)
 				{
 					// Lit where the dome's surface faces the key (upper left).
 					bool lit = dir.X + dir.Y < 0f;
-					PixelInk.Cell(this, centre + dir * (RampartRadius - 3f * g), lit ? metal.Hot : metal.Mid, cover * 0.95f);
+					PixelInk.Cell(this, centre + dir * (RampartRadius - 3f * g), lit ? metal.Hot : metal.Mid, cover * 0.7f);
 				}
 			}
 		}
@@ -488,22 +494,18 @@ public partial class AegisWard : Node2D
 			float reach = Mathf.Clamp(s.Age / ShaftShootSeconds, 0f, 1f);
 			Vector2 head = a + (b - a) * reach;
 			float cover = s.Age < ShaftHoldSeconds ? 1f : 1f - (s.Age - ShaftHoldSeconds) / (ShaftSeconds - ShaftHoldSeconds);
-			PixelInk.Line(this, a, head, light.Edge, 5, cover * 0.45f);
-			PixelInk.Line(this, a, head, light.Hot, 3, cover);
-			PixelInk.Line(this, a, head, light.Core, 1, cover * 1.6f);
+			// Thin (in-flight 93): a hot spine one cell wide in a three-cell glow of the gold edge, no white.
+			PixelInk.Line(this, a, head, light.Edge, 3, cover * 0.35f);
+			PixelInk.Line(this, a, head, light.Hot, 1, cover);
 			if (reach < 1f)
 				continue;
-			// The sparkle where it lands: a white heart, hot arms two cells long, mid at the tips.
-			PixelInk.Cell(this, b, light.Core, MathF.Min(1f, cover * 1.6f));
-			for (int d = 1; d <= 2; d++)
-			{
-				Color c = d == 2 ? light.Mid : light.Hot;
-				float cd = Mathf.Clamp(cover * (1.5f - 0.25f * d), 0f, 1f);
-				PixelInk.Cell(this, b + new Vector2(d * g, 0f), c, cd);
-				PixelInk.Cell(this, b - new Vector2(d * g, 0f), c, cd);
-				PixelInk.Cell(this, b + new Vector2(0f, d * g), c, cd);
-				PixelInk.Cell(this, b - new Vector2(0f, d * g), c, cd);
-			}
+			// The sparkle where it lands: a hot heart and mid arms one cell long.
+			float cd = Mathf.Clamp(cover * 1.25f, 0f, 1f);
+			PixelInk.Cell(this, b, light.Hot, cd);
+			PixelInk.Cell(this, b + new Vector2(g, 0f), light.Mid, cd);
+			PixelInk.Cell(this, b - new Vector2(g, 0f), light.Mid, cd);
+			PixelInk.Cell(this, b + new Vector2(0f, g), light.Mid, cd);
+			PixelInk.Cell(this, b - new Vector2(0f, g), light.Mid, cd);
 		}
 	}
 }

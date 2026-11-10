@@ -681,22 +681,72 @@ def spiritual_weapon():
 
 
 def aegis_ward():
-    """A shield of light over a plate of steel - the one spell that is also an object."""
+    """A shield of light over a plate of steel - the one spell that is also an object.
+
+    Redrawn at the newer icons' density (in-flight 93, Eric 2026-11-10: "increase the fidelity of its icon"; the
+    sprite-detail rule). In the order the eye takes them: the boss at its heart, a dome of the ward's Light with a
+    white glint up the key side, seated in a dark steel collar (evolution_icons.py's `tip`, (16, 15), is its
+    middle); the heater shield round it, its face turned by a dithered steel ramp from the key at the upper left,
+    a bevelled rim lit on the key side and shaded on the far one; the two straps that hold the boss, each with a
+    lit edge, ending in gold rivets at the rim; and over the shield's head the ward it raises - a thin arc of the
+    light's edge stop with a spark at its crown and either shoulder. An occlusion seam holds it on any page.
+    It was a flat steel plate with three discs on it.
+    """
     c = raster.Canvas(CELL, CELL, None)
     l = E("light")
-    steel = bl.tone("steel", "base")
-    steel_lit = bl.tone("steel", "hi")
-    steel_dark = bl.tone("steel", "deep")
-    body = [(16, 3), (27, 8), (26, 19), (16, 29), (6, 19), (5, 8), (16, 3)]
-    c.poly(body, steel)
-    c.line(16, 3, 6, 8, steel_lit)
-    c.line(6, 8, 6, 19, steel_lit)
-    c.line(27, 8, 26, 19, steel_dark)
-    c.line(26, 19, 16, 29, steel_dark)
-    # The ward itself, burning on the face rather than behind it.
-    c.disc(16, 15, 5.0, 5.5, l[3])
-    c.disc(16, 15, 3.2, 3.6, l[2])
-    c.disc(16, 15, 1.6, 1.8, l[0])
+    steel = bl.MATERIALS["steel"]   # hi, lit, base, shade, deep
+    gold = bl.MATERIALS["gold"]
+    cx, cy = 16, 15
+
+    # The ward it raises: an arc over the shield's head, the light's edge stop, sparks at its crown and shoulders.
+    r = 14.6
+    for d in range(200, 341):
+        a = math.radians(d)
+        c.set(int(round(15.5 + math.cos(a) * r)), int(round(16.0 + math.sin(a) * r)), l[3])
+    for d, tone in ((270, l[0]), (225, l[1]), (315, l[2])):
+        a = math.radians(d)
+        x, y = int(round(15.5 + math.cos(a) * r)), int(round(16.0 + math.sin(a) * r))
+        c.set(x, y, tone)
+        if tone == l[0]:
+            for (dx, dy) in ((-1, 0), (1, 0), (0, -1)):
+                c.set(x + dx, y + dy, l[2])
+
+    # The shield: a heater, its seam of occlusion first so it stands off the arc and any page.
+    body = [(16, 5), (26, 8), (25.5, 18), (16, 29), (6.5, 18), (6, 8)]
+    seam = [(16, 3.6), (27.4, 7.0), (27.0, 18.6), (16, 30.6), (5.0, 18.6), (4.6, 7.0)]
+    c.poly(seam, OCC)
+    c.poly_shade(body, [steel[0], steel[1], steel[2], steel[3]], gamma=0.85)
+    # The rim: dark all round, then lit along the edges the key reaches and shaded along the far ones.
+    for i in range(len(body)):
+        (x0, y0), (x1, y1) = body[i], body[(i + 1) % len(body)]
+        c.line(int(round(x0)), int(round(y0)), int(round(x1)), int(round(y1)), steel[4])
+    c.line(16, 6, 7, 8, steel[0])
+    c.line(7, 9, 7, 17, steel[1])
+    c.line(25, 9, 24, 18, steel[3])
+    c.line(23, 20, 17, 27, steel[3])
+    c.line(9, 20, 15, 27, steel[2])
+
+    # The straps that hold the boss: across and down, each a shade band with a lit edge, gold rivets at the rim.
+    c.hline(8, 24, cy + 1, steel[3])
+    c.hline(8, 24, cy, steel[1])
+    c.vline(cx, cy + 6, 26, steel[3])
+    c.vline(cx - 1, cy + 6, 26, steel[1])
+    for (x, y) in ((8, cy), (24, cy), (cx - 1, 26), (11, 9), (21, 9)):
+        c.set(x, y, gold[1])
+        c.set(x + 1, y + 1, gold[3])
+    c.set(8, cy - 1, gold[0])
+    c.set(11, 8, gold[0])
+
+    # The boss: a dark collar, then the dome of light, hot to the key's side, a white glint up its shoulder.
+    c.disc(cx, cy, 5.6, 5.6, steel[4])
+    c.disc(cx, cy, 4.7, 4.7, l[3])
+    c.disc(cx - 0.4, cy - 0.4, 3.6, 3.6, l[2])
+    c.disc(cx - 0.8, cy - 0.8, 2.3, 2.3, l[1])
+    c.set(cx - 2, cy - 2, l[0])
+    c.set(cx - 1, cy - 2, l[0])
+    c.set(cx - 2, cy - 1, l[0])
+    c.set(cx + 2, cy + 3, steel[3])
+    c.set(cx + 3, cy + 2, steel[3])
     return c
 
 

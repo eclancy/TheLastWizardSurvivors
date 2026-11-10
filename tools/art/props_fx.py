@@ -505,32 +505,35 @@ def shield_aura(i, n):
     gold over Metal plates. It was Arcane, which no shield source carries; once the pixel pass made
     the ring opaque it read as a violet halo on every robe (Eric, 2026-11-01: recolour). Protective
     Ward and Vaultguard share it: the ring means "shielded", whoever granted it.
+
+    Smaller and lighter since in-flight 93 (Eric, 2026-11-10, of Aegis Ward: "too big and bulky, and too flashy
+    or noisy"): radius 16 rather than 20 (32 world px at x2, just clear of his body), one pixel thick with more
+    gap between its arcs, and three motes of the light's mid stop with a hot point, not six with a white heart.
     """
     c = raster.Canvas(AURA_CELL, AURA_CELL, None)
     a = bl.ELEMENTS["metal"]
     glow = bl.ELEMENTS["light"]
     cx = cy = AURA_CELL / 2.0 - 0.5
     spin = i / float(n) * TAU
-    r = 20.0 + math.sin(spin * 2.0) * 1.2
+    r = 16.0 + math.sin(spin * 2.0) * 0.8
 
     # the ring itself, thin and broken into arcs so it reads as turning
     for d in range(0, 360, 2):
         ang = math.radians(d)
         phase = (math.sin(ang * 3.0 + spin) + 1.0) * 0.5
-        if phase < 0.35:
+        if phase < 0.45:
             continue
-        tone = a[1] if phase > 0.86 else (a[2] if phase > 0.6 else a[3])
+        tone = a[1] if phase > 0.9 else (a[2] if phase > 0.66 else a[3])
         c.set(cx + math.cos(ang) * r, cy + math.sin(ang) * r * 0.9, tone)
-        if phase > 0.7:
-            c.set(cx + math.cos(ang) * (r - 1), cy + math.sin(ang) * (r - 1) * 0.9, a[3])
 
-    # six motes going round it, the fastest-moving thing so the eye reads direction
-    for k in range(6):
-        ang = spin * 1.6 + k * TAU / 6.0
+    # three motes going round it, the fastest-moving thing so the eye reads direction
+    for k in range(3):
+        ang = spin * 1.6 + k * TAU / 3.0
         mx = cx + math.cos(ang) * r
         my = cy + math.sin(ang) * r * 0.9
-        c.disc(mx, my, 1.8, 1.8, glow[3])
-        c.set(mx, my, glow[0])
+        for (dx, dy) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            c.set(mx + dx, my + dy, glow[2])
+        c.set(mx, my, glow[1])
     return c
 
 

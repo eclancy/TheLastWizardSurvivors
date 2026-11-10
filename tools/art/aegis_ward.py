@@ -49,14 +49,17 @@ KEY = (-1.0 / math.sqrt(2.0), -1.0 / math.sqrt(2.0))
 
 # Shard space: u along the flight (it flies toward +u, in to him), v across it. The node's position is
 # the middle of the shard.
-TIP_U = 5.0                  # the point
-SHOULDER_U, SHOULDER_HALF = 1.0, 1.7
-TAIL_U, TAIL_HALF = -4.0, 0.6
-POINT_FROM = 3.4             # past this, the white-hot point
-RIDGE_HALF = 0.45            # the ridge down the middle
+# Smaller and quieter since in-flight 93 (Eric, 2026-11-10: "too big and bulky, and too flashy or noisy"): 14 world
+# px long and 5 wide rather than 18 by 7, the white point a pixel shorter, and the streak behind it one short run of
+# the light's edge stop rather than a mid stretch and an edge stretch eleven pixels back.
+TIP_U = 4.0                  # the point
+SHOULDER_U, SHOULDER_HALF = 0.8, 1.25
+TAIL_U, TAIL_HALF = -3.0, 0.5
+POINT_FROM = 3.0             # past this, the white-hot point
+RIDGE_HALF = 0.4             # the ridge down the middle
 
 # The streak of light behind it: (u from, u to, colour), each walked as a one-pixel line.
-STREAK = ((-5.5, -7.5, LIGHT_MID), (-8.5, -11.0, LIGHT_EDGE))
+STREAK = ((-4.0, -6.5, LIGHT_EDGE),)
 
 SUB = 4                      # 4x4 samples a pixel
 COVER = 0.45                 # a pixel is in if this much of it is
