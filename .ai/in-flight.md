@@ -21,7 +21,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 63 | A historical gallery: each unlocked character's real history | new screen, needs design | M-L |
 | 64 | Plan the far shore as a DLC (one of six gods built; Artemis free today - keep as taster?) | plan, no code | - |
 | 65 | The executable and download files still named "TheOneHeMissed" | release tooling + updater | M |
-| 66 | Canticle should not come from First Blood (proposal: First Blood pays Lancet); review every reward | achievements | S-M |
+| 66 | First Blood pays Lancet (decided); Canticle gets a harmony Feat; review every reward | achievements | S-M |
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | S |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | S |
 | 69 | Twinstar Sigil's +4 projectiles look overpowered: cap or weaken, refund, measure | balance + save | S-M |
@@ -39,6 +39,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 81 | Rework Buckler Boss to do something that makes sense (e.g. its own small shield) | item rework | S |
 | 82 | The hut kneels only in the middle of the bone yard | puzzle | S |
 | 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
+| 84 | A wizard's opener unlocks only once that wizard is (not the Familiar); mind the first boss's reward | unlocks + save | M |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1118,6 +1119,28 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     spells are earned). **Canticle moves to a new harmony Feat** - e.g. carry spells of four different elements at once
     (the chord it sings is gathered from its casters' elements). That leaves Shrike (500 poisoned enemies killed) with
     no spell: retire it or give it another. A spell a save already owns is never taken back.
+    **Decided (Eric, 2026-11-09): *"I like first blood unlocking lancet"*.** Canticle is the Sibyl's opener, so under
+    item 84 it waits for her anyway; its new deed (the harmony Feat) and Shrike's fate are still open.
+84. **A wizard's opener is unlockable only once that wizard is** (Eric, 2026-11-09: *"I also want spells that are
+    another wizard's default spell to only be unlockable once that wizard is unlocked"* - *"Except for familiar - since
+    you need that to unlock Laelaps"*). The openers and how each is earned today (`CharacterData_*.tres`
+    `StartingSpellResource` against `UnlockCatalog`): Baba Yaga - Thorn Vine (the Forest's boss); Imhotep - Scorching
+    Ray (Fire Adept); John Dee - Folio (Magpie); Laelaps - Cyclone Slash (Elementalist); Medea - Solar Flare (level 20);
+    Morgan - Sleet Runes (the Frozen Waste's secret); Nimue - Spiritual Weapon (the Ruins' boss); Nostradamus - Starfall
+    (the Broken Circle's secret); Paracelsus - Contagion (the bog lanterns); Seimei - Kindled Ward (the Ruins' secret);
+    the Sibyl - Canticle (First Blood, moving - item 66); Tituba - Riptide (the Cave's boss); Väinämöinen - Bramble Seed
+    (the grove); Wayland - Iron Palisade (the caravan master); Ma Liang - the Familiar (**exempt**). Not affected: the
+    starters' openers (Cinderbreath, Cone of Cold, Obsidian Spike, Chain Lightning, Magic Missile - every save has
+    them), and the Conjunction openers (Artemis's Sagittarius, the Dark Wizard's The Taking, Merlin's Orb of Ages - made
+    in a run, not unlocked; check Merlin's). **Decide while building:** if the deed is done first, is the spell held
+    and granted the moment the wizard is freed (the gentler reading, and nothing done is wasted), or can the deed not
+    be done? The deed's card should say "after <wizard> is freed" either way. **Watch the slow start:** Thorn Vine is
+    the FIRST boss's reward and Baba Yaga comes late (`finalGateOnly`), so the first boss would pay nothing visible for
+    a long time - give the Forest's boss another spell, or accept it (`.ai/slow-start.md`, `ValidateGateReachability`).
+    Build it in `UnlockCatalog` (a rule read from the roster, so a new wizard's opener is covered by itself) and
+    `GlobalStatsManager`; `RegressionChecks.ValidateUnlockCatalog` should hold it (every non-starter opener but the
+    Familiar requires its wizard). A save that already owns such a spell keeps it - this narrows what a save is
+    granted, so it needs a schema step (29 if nothing else takes it first).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
