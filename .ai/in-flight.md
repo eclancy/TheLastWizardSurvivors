@@ -34,6 +34,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 76 | Show Aegis Ward recharging on the spell bar; fix its wrong tagline | HUD | S-M |
 | 77 | Balance pass on every spell (Aegis Ward's recharge looks too fast; Twinstar folded in) | balance | L |
 | 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
+| 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | S-M |
+| 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | S |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1247,6 +1249,22 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     its cast and boss (L), plus the closing reel with F10. Built on F1's plumbing, as Artemis was (F2/F3); gods are
     appended to `CharacterRoster` in the order they merge. Keep it separable for the DLC (item 64). Large: five
     slices, best as parallel worktrees, one per god.
+79. **Baba Yaga's hut is too hard to herd** (Eric, 2026-11-09: *"Baba Yaga's hut should head toward the yard if you're
+    near it at all, it's too hard to herd it"*). Today (`FleeingMover`, `WalkingHutEvent`) it flees straight AWAY from
+    the wizard - a bolt within `StartleRadius` (420), a stride after it, an unhurried turn-off out to `LoseRadius`
+    (1100) - so the player must get round its far side and press it, through a yard whose one gap faces away from its
+    circle (`.ai/unlock-puzzles.md` 3.3, Eric's choice of 2026-11-03). Change: whenever he is near at all (it is
+    `Fleeing`), its way is TOWARD THE YARD - the gap's mouth first, then the middle - with "away from him" only a
+    small push so it never walks through him; it still bolts, tires and is cornered as now. The validator encodes the
+    old rule and must change with it: `RegressionChecks.WalkingHut` warns if a straight chase drives it in ("only
+    herding should") - that becomes the expected case. Update 3.3 in `unlock-puzzles.md` with Eric's words.
+80. **The hut changes facing too often** (Eric, 2026-11-09: *"it freaks out and changes facing too often"*). Its wall
+    (back, front, side) is chosen every frame from the mover's raw `Heading` with only a 1.15 ratio of hysteresis, and
+    `FlipH` follows the sign of the heading's x whenever it is past 0.2 (`WalkingHutEvent.cs` 664-682); the heading
+    itself snaps to whichever probe direction is open (`FleeingMover`'s `Turns`) and to "away from him" as he moves. So
+    every dodge round a tree or turn away from him shows as a flip. Fix: face a smoothed heading (low-pass it for the
+    drawing only, never for the movement), hold a wall for at least about half a second before changing it, and give
+    the flip the same hold and a wider dead band. Item 79's steady heading for the yard will calm it as well.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 
