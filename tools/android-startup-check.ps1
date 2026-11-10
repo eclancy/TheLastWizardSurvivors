@@ -37,7 +37,9 @@ function Invoke-CheckProcess([string]$Exe, [string[]]$Arguments, [string]$Log, [
     & $bash -c $launcher -- $Exe $TimeoutSeconds @Arguments *> ($Log + ".process.txt")
     if ($LASTEXITCODE -ne 0) { throw "Startup check failed ($LASTEXITCODE): $Log" }
 }
-$exe = Join-Path $work "TheOneHeMissed.exe"
+# The program's name since 0.24.0 (package.py's NAME); Godot loads the .pck named after it. A fixture
+# exported before then is TheOneHeMissed.exe, which -SkipExport does not find: run once without it.
+$exe = Join-Path $work "TheLastWizardSurvivors.exe"
 if (-not $SkipExport) {
     Invoke-CheckProcess $godot @("--headless", "--path", $repo, "--export-release", "Windows Desktop", $exe, "--", "--no-save-writes") (Join-Path $work "export.log") 900
 }

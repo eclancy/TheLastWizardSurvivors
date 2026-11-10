@@ -7,14 +7,14 @@
 SaveData.CurrentProgressEpoch); left out, it is read from scripts/SaveData.cs the same way.
 
 Writes build/release/ (the downloads named TheLastWizardSurvivors-*, DOWNLOAD below; the program inside
-them is still TheOneHeMissed, NAME):
+them is TheLastWizardSurvivors.exe / .x86_64 since 0.24.0, NAME):
 
-  TheLastWizardSurvivors-windows.zip   everything, in a TheOneHeMissed/ folder - the portable
+  TheLastWizardSurvivors-windows.zip   everything, in a TheLastWizardSurvivors/ folder - the portable
                                version (the installer is what a new player downloads)
   TheLastWizardSurvivors-patch.zip     just the game: the .pck and the game's own assembly. A fraction
                                of the full zip, because the engine and the .NET runtime only
                                change when Godot is upgraded.
-  TheLastWizardSurvivors-linux.tar.gz  the Linux version, in a TheOneHeMissed/ folder with install.sh
+  TheLastWizardSurvivors-linux.tar.gz  the Linux version, in a TheLastWizardSurvivors/ folder with install.sh
                                (which puts it in ~/.local/share and on the app menu) - from
                                build/linux/
   TheLastWizardSurvivors-linux-patch.zip  the Linux patch: its .pck and the game's assembly
@@ -46,22 +46,44 @@ EXPORT = os.path.join(ROOT, "build", "windows")
 LINUX = os.path.join(ROOT, "build", "linux")
 OUT = os.path.join(ROOT, "build", "release")
 REPO = "eclancy/TheLastWizardSurvivors"
-# The program, its .pck and the .NET folder (the assembly is named the same), inside every download, and the
-# Linux install folder, so install.sh's APP must stay equal to it. An installed copy's updater keeps its own
-# program name, so changing this is the harder half of in-flight 65 and is not done.
-NAME = "TheOneHeMissed"
+# The program and its .pck (Godot loads the .pck named after the program), the folder inside every download,
+# and the Linux install folder, so install.sh's APP must stay equal to it; version.json carries it as "program"
+# for ecec.dev's download page. TheOneHeMissed until 0.23.x; renamed from 0.24.0 (in-flight 65, second half,
+# Eric 2026-11-10: "let's fix the name of the executable"). Safe for every installed copy without a new
+# bridge: an updater since 0.12.0 takes whatever .pck a download holds and installs it under the name of the
+# program it is running as (UpdateScreen.InstallAs), so an install of TheOneHeMissed.exe stays that, its
+# shortcuts with it; an updater from before 0.12.0 is given the bridge (BRIDGE below), as it always was.
+# See .ai/releasing.md, "The third rename".
+NAME = "TheLastWizardSurvivors"
 # What the DOWNLOADS are called (in-flight 65, Eric 2026-11-10: "the downloaded file is still created as 'the one
-# he missed-android'"): the game's name since 2026-11-08, with no colon, which Windows forbids. Safe apart from
-# NAME because every updater follows version.json's addresses rather than looking for a file name, and ecec.dev
-# finds each download by how its name ends ("-Setup.exe", "-windows.zip", "-android.apk", "-linux.tar.gz"),
-# which is unchanged. release.sh's list and installer.iss's OutputBaseFilename say the same prefix.
+# he missed-android'"): the game's name since 2026-11-08, with no colon, which Windows forbids. The same word as
+# NAME since 0.24.0, but a different thing: every updater follows version.json's addresses rather than looking
+# for a file name, and ecec.dev finds each download by how its name ends ("-Setup.exe", "-windows.zip",
+# "-android.apk", "-linux.tar.gz"). release.sh's list and installer.iss's OutputBaseFilename say the same prefix.
 DOWNLOAD = "TheLastWizardSurvivors"
-DATA = "data_%s_windows_x86_64" % NAME
+
+
+def assembly_name():
+    """The C# assembly, project.godot's dotnet/project/assembly_name: TheOneHeMissed, KEPT ON PURPOSE. Godot
+    names the .NET folder (data_<assembly>_<platform>_<arch>) and the DLL after it, not after the program, and
+    a .pck asks for the assembly it was built with - which is what lets a program of any name (the bridge's
+    WizardSurvivors.exe, an old install's TheOneHeMissed.exe) run this release's game. Read rather than
+    written down, so the two cannot disagree."""
+    with io.open(os.path.join(ROOT, "project.godot"), encoding="utf-8") as f:
+        for line in f:
+            m = re.match(r'project/assembly_name="([^"]+)"\s*$', line)
+            if m:
+                return m.group(1)
+    raise SystemExit("project.godot has no dotnet project/assembly_name")
+
+
+ASSEMBLY = assembly_name()
+DATA = "data_%s_windows_x86_64" % ASSEMBLY
 FULL_ZIP = DOWNLOAD + "-windows.zip"
 PATCH_ZIP = DOWNLOAD + "-patch.zip"
 INSTALLER = DOWNLOAD + "-Setup.exe"
 APK = DOWNLOAD + "-android.apk"
-LINUX_DATA = "data_%s_linuxbsd_x86_64" % NAME
+LINUX_DATA = "data_%s_linuxbsd_x86_64" % ASSEMBLY
 LINUX_TAR = DOWNLOAD + "-linux.tar.gz"
 LINUX_PATCH = DOWNLOAD + "-linux-patch.zip"
 
@@ -72,8 +94,12 @@ LINUX_PATCH = DOWNLOAD + "-linux-patch.zip"
 # .x86_64) again. Given the normal downloads it would find no such .pck and quietly stay on its
 # version for good; given the patch alone, the renamed assembly's .NET folder would have no runtime
 # in it. So those fields point at a bridge instead: the whole export, flat, with the program and the
-# .pck renamed to OLD_NAME. The old program then starts the new game, and from then on the new
-# updater (which reads "builds" and keeps an install's own program name) takes over.
+# .pck renamed to OLD_NAME (from NAME, whatever NAME is - TheLastWizardSurvivors since 0.24.0) and the
+# .NET folder under the assembly's name (ASSEMBLY). The old program then starts the new game, and from
+# then on the new updater (which reads "builds" and keeps an install's own program name) takes over.
+#
+# The program's own rename at 0.24.0 needed no second bridge: an updater since 0.12.0 finds the .pck
+# in a download by its extension, not its name, and renames it to its own program's (see NAME).
 #
 # Kept on purpose, and in every release: a copy from before the rename may not be started again for
 # months, and whichever release is newest when it is must still have a bridge for it. Without one it
@@ -90,9 +116,10 @@ BRIDGE_TAR = DOWNLOAD + "-linux-bridge.tar.gz"
 GODOT = os.environ.get("GODOT_BIN", "")
 
 # What the patch carries: everything that changes when the game changes and the engine does
-# not. The .pck is every scene, image, sound and setting; the TheOneHeMissed.* files are the C#.
-PATCH = [NAME + ".pck", DATA + "/" + NAME + ".dll", DATA + "/" + NAME + ".deps.json",
-         DATA + "/" + NAME + ".runtimeconfig.json"]
+# not. The .pck is every scene, image, sound and setting; the TheOneHeMissed.* files (ASSEMBLY)
+# are the C#.
+PATCH = [NAME + ".pck", DATA + "/" + ASSEMBLY + ".dll", DATA + "/" + ASSEMBLY + ".deps.json",
+         DATA + "/" + ASSEMBLY + ".runtimeconfig.json"]
 
 # The controls are the input map in project.godot (move_*, ui_*, pause). The README has no
 # controls section, so this is the one place they are written down for a player.
@@ -103,7 +130,7 @@ You are a lone wizard in a haunted wood, and the dead keep coming. You only move
 cast themselves. Gather what the fallen leave behind to level up, choose new spells and
 upgrades, and survive each chapter long enough to face the boss at its end.
 
-1. Double-click TheOneHeMissed.exe.
+1. Double-click TheLastWizardSurvivors.exe.
 
 2. The first time, Windows may say "Windows protected your PC". That is because this game
    is not from a big company that paid for a signature. Click "More info", then "Run anyway".
@@ -131,8 +158,8 @@ cast themselves. Gather what the fallen leave behind to level up, choose new spe
 upgrades, and survive each chapter long enough to face the boss at its end.
 
 1. Open a terminal in this folder and run:  ./install.sh
-   That puts the game in ~/.local/share/TheOneHeMissed and adds it to your app menu.
-   (Or just run ./TheOneHeMissed.x86_64 from here - keep the folder somewhere you can write to.)
+   That puts the game in ~/.local/share/TheLastWizardSurvivors and adds it to your app menu.
+   (Or just run ./TheLastWizardSurvivors.x86_64 from here - keep the folder somewhere you can write to.)
 
 2. Controls (keyboard or an Xbox controller):
 
@@ -143,7 +170,7 @@ upgrades, and survive each chapter long enough to face the boss at its end.
      Pause           Esc, or Start on a controller
 
 The game updates itself: every time it starts, it checks for a new version and installs it.
-To remove it: ~/.local/share/TheOneHeMissed/install.sh --uninstall  (your save is kept)
+To remove it: ~/.local/share/TheLastWizardSurvivors/install.sh --uninstall  (your save is kept)
 
 Made at https://ecec.dev - download page: https://ecec.dev/the-last-wizard-survivors/download
 """
@@ -170,7 +197,7 @@ def export_files(src):
 def as_old_name(rel):
     """A bridge's name for an export file: the program and the .pck - the top-level files named
     NAME, whatever their extension - take OLD_NAME; everything else, the .NET folder included
-    (it is named for the assembly, which the new .pck asks for), keeps its own."""
+    (it is named for the assembly, ASSEMBLY, which the new .pck asks for), keeps its own."""
     if "/" not in rel:
         stem, ext = os.path.splitext(rel)
         if stem == NAME:
@@ -183,12 +210,69 @@ def read_install_sh():
         return fh.read().replace(b"\r\n", b"\n")
 
 
+def check_install_sh():
+    """install.sh's APP is the Linux install folder and the program it looks for first, so it must
+    say NAME - the folder every Linux download unpacks to, and what version.json's "program" says."""
+    m = re.search(br"^APP=(\S+)$", read_install_sh(), re.M)
+    if not m or m.group(1).decode("ascii") != NAME:
+        raise SystemExit("tools/release/install.sh's APP is not %s (package.py's NAME)" % NAME)
+
+
+def check_archives(linux):
+    """Reads back what was written, because the bridge is only right while three names stay apart:
+    the program and .pck (NAME) inside the downloads, the old program's (OLD_NAME) in the bridges, and
+    the .NET folder's (ASSEMBLY) in all of them. A bridge with no OLD_NAME.pck at its top strands every
+    copy from before the first rename; a download whose .NET folder is named for the program starts no C#."""
+    def need(names, wanted, what):
+        missing = [w for w in wanted if w not in names]
+        if missing:
+            raise SystemExit("%s has no %s" % (what, ", ".join(missing)))
+
+    def top_level_named(names, stem):
+        return [n for n in names if "/" not in n and os.path.splitext(n)[0] == stem]
+
+    z = zipfile.ZipFile(os.path.join(OUT, FULL_ZIP))
+    need(set(z.namelist()), [NAME + "/" + NAME + ".exe", NAME + "/" + NAME + ".pck",
+                             NAME + "/" + DATA + "/" + ASSEMBLY + ".dll"], FULL_ZIP)
+    z.close()
+    z = zipfile.ZipFile(os.path.join(OUT, PATCH_ZIP))
+    if sorted(z.namelist()) != sorted(PATCH):
+        raise SystemExit("%s holds %s, not %s" % (PATCH_ZIP, sorted(z.namelist()), sorted(PATCH)))
+    z.close()
+    z = zipfile.ZipFile(os.path.join(OUT, BRIDGE_ZIP))
+    names = set(z.namelist())
+    z.close()
+    need(names, [OLD_NAME + ".exe", OLD_NAME + ".pck", DATA + "/" + ASSEMBLY + ".dll"], BRIDGE_ZIP)
+    if top_level_named(names, NAME) or len([n for n in names if n.endswith(".pck")]) != 1:
+        raise SystemExit("%s must hold one .pck, %s.pck, and nothing named %s" % (BRIDGE_ZIP, OLD_NAME, NAME))
+    if not linux:
+        return
+
+    def modes(path):
+        t = tarfile.open(path, "r:gz")
+        found = dict((m.name, m.mode) for m in t.getmembers())
+        t.close()
+        return found
+
+    found = modes(os.path.join(OUT, LINUX_TAR))
+    need(found, [NAME + "/" + NAME + ".x86_64", NAME + "/" + NAME + ".pck", NAME + "/install.sh",
+                 NAME + "/" + LINUX_DATA + "/" + ASSEMBLY + ".dll"], LINUX_TAR)
+    for rel in (NAME + "/" + NAME + ".x86_64", NAME + "/install.sh"):
+        if found[rel] & 0o111 != 0o111:
+            raise SystemExit("%s: %s is not executable" % (LINUX_TAR, rel))
+    found = modes(os.path.join(OUT, BRIDGE_TAR))
+    need(found, [OLD_NAME + ".x86_64", OLD_NAME + ".pck", "install.sh",
+                 LINUX_DATA + "/" + ASSEMBLY + ".dll"], BRIDGE_TAR)
+    if top_level_named(found, NAME) or found[OLD_NAME + ".x86_64"] & 0o111 != 0o111:
+        raise SystemExit("%s must hold an executable %s.x86_64 and nothing named %s" % (BRIDGE_TAR, OLD_NAME, NAME))
+
+
 def linux_package():
     """The Linux download, its patch and its bridge. Every file gets its permissions set here, on
     Windows: the game binary and install.sh executable, the rest readable. Tarballs rather than
     zips, so those permissions travel with them."""
-    patch_files = [NAME + ".pck", LINUX_DATA + "/" + NAME + ".dll", LINUX_DATA + "/" + NAME + ".deps.json",
-                   LINUX_DATA + "/" + NAME + ".runtimeconfig.json"]
+    patch_files = [NAME + ".pck", LINUX_DATA + "/" + ASSEMBLY + ".dll", LINUX_DATA + "/" + ASSEMBLY + ".deps.json",
+                   LINUX_DATA + "/" + ASSEMBLY + ".runtimeconfig.json"]
     for rel in patch_files:
         if not os.path.isfile(os.path.join(LINUX, rel.replace("/", os.sep))):
             raise SystemExit("the Linux export has no %s" % rel)
@@ -258,6 +342,7 @@ def main(argv):
         epoch = progress_epoch()
     # Before writing anything, so a missing GODOT_BIN cannot leave half a release behind.
     engine = engine_version()
+    check_install_sh()
     if not os.path.isfile(os.path.join(EXPORT, NAME + ".pck")):
         raise SystemExit("no export in build/windows - run the Godot export first")
     for rel in PATCH + [NAME + ".exe"]:
@@ -298,6 +383,11 @@ def main(argv):
     info = {
         "version": version,
         "engine": engine,
+        # The program's name without its extension: TheLastWizardSurvivors.exe in the portable zip and
+        # the installer, .x86_64 in the Linux download, and the Linux install folder
+        # (~/.local/share/<program>). For ecec.dev's download page, which says both; no copy of the
+        # game reads it - an updater installs under the name of the program it runs as (NAME).
+        "program": NAME,
         # What every copy since the rename updates from (UpdateScreen): its platform's patch, on the
         # same engine, or its full download. A copy from before Linux existed never looks for one.
         "builds": builds,
@@ -323,6 +413,7 @@ def main(argv):
         info["linux"] = {"patch": base + BRIDGE_TAR, "full": base + BRIDGE_TAR}
     with io.open(os.path.join(OUT, "version.json"), "w", encoding="utf-8") as f:
         f.write(unicode(json.dumps(info, indent=2, sort_keys=True)) + u"\n")
+    check_archives(linux)
 
     names = [FULL_ZIP, PATCH_ZIP, BRIDGE_ZIP, "version.json"]
     if linux:

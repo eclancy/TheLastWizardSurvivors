@@ -35,11 +35,13 @@ Nine files: six made from the export in `build/windows/`, three from the export 
 - **`TheLastWizardSurvivors-Setup.exe`**: the installer, and the file a new player downloads. Compiled
   by `release.sh` with Inno Setup from `tools/release/installer.iss`. See "The installer" below.
 - **`TheLastWizardSurvivors-windows.zip`** (about 89 MB): the **portable version**, for anyone who would
-  rather not run an installer. Everything, in a `TheOneHeMissed/` folder, with a
+  rather not run an installer. Everything, in a `TheLastWizardSurvivors/` folder - the program is
+  `TheLastWizardSurvivors.exe` since 0.24.0 (`TheOneHeMissed.exe` before; "The third rename") - with a
   `How to play.txt` (SmartScreen, where to keep the folder, the controls). The controls in it are
   written from the input map in `project.godot`; change one and change the other.
-- **`TheLastWizardSurvivors-patch.zip`** (about 19 MB): `TheOneHeMissed.pck` (every image, sound,
-  setting and scene) and `TheOneHeMissed.dll` with its two JSON files (all the C#). These are the
+- **`TheLastWizardSurvivors-patch.zip`** (about 19 MB): `TheLastWizardSurvivors.pck` (every image, sound,
+  setting and scene) and, in `data_TheOneHeMissed_windows_x86_64/`, `TheOneHeMissed.dll` with its two
+  JSON files (all the C#; the assembly kept the name). These are the
   only files that change when the game changes and Godot does not. The rest of the full zip is
   the Godot engine and the .NET runtime.
 - **`TheLastWizardSurvivors-windows-bridge.zip`** and **`TheLastWizardSurvivors-linux-bridge.tar.gz`** (about the
@@ -47,7 +49,9 @@ Nine files: six made from the export in `build/windows/`, three from the export 
   rename looks for. Only those copies ever fetch them. See "The rename".
 - **`TheLastWizardSurvivors-android.apk`** (about 110 MB): the Android game, release-signed. See
   "Android" below.
-- **`version.json`**: the version, the Godot version it was built with, under `"builds"` the
+- **`version.json`**: the version, the Godot version it was built with, `"program"` (the program's
+  name without its extension, `TheLastWizardSurvivors` since 0.24.0, for the download page; no copy
+  of the game reads it), under `"builds"` the
   Windows and Linux pairs (`"patch"` and `"full"` each) that every copy since the rename reads, the
   installer (`"installer"`; the game itself does not read that one), the APK (`"android"`, read
   only by the Android copy), `"progressEpoch"`, the story epoch the release was built at (see
@@ -68,7 +72,8 @@ excluded. Everything under `build/` is gitignored.
 `tools/release/installer.iss`, Inno Setup 6. `release.sh` compiles it after `package.py` with
 `/DAppVersion=X.Y.Z`, into `build/release/TheLastWizardSurvivors-Setup.exe`.
 
-- **It installs per user, to `%LOCALAPPDATA%\Programs\TheOneHeMissed`**, with no admin
+- **It installs per user, to `%LOCALAPPDATA%\Programs\TheLastWizardSurvivors`** (`...\TheOneHeMissed`
+  before 0.24.0; an upgrade keeps the folder it has), with no admin
   prompt (`PrivilegesRequired=lowest`). Two reasons. The self-updater copies new files into the
   game's own folder, so that folder has to stay writable by the player - Program Files would
   leave every installed copy stuck on its first version. And no UAC prompt means one less
@@ -112,10 +117,11 @@ not check again.
    `user://update/`.
 3. It installs the new files **under the running program's name**, not the release's: the
    release's `.pck` (and in a full download its program) is renamed to match the exe this copy
-   was started as (`UpdateScreen.ProgramName`). Every install since the rename already agrees, so
-   nothing happens; a copy from before the rename that crossed on the bridge is still
-   `WizardSurvivors.exe`, its shortcuts name that file, and Godot loads the `.pck` named after the
-   program. See "The rename".
+   was started as (`UpdateScreen.ProgramName`). An install made since 0.24.0 already agrees, so
+   nothing happens; one made from 0.12.0 to 0.23.x is still `TheOneHeMissed.exe`, and a copy from
+   before the first rename that crossed on the bridge is still `WizardSurvivors.exe` - their
+   shortcuts name that file, and Godot loads the `.pck` named after the program. See "The rename"
+   and "The third rename".
 4. Windows will not let a running program overwrite its own files. So the game writes
    `apply.cmd`, starts it, and quits. The script waits for the game to close, `robocopy`s the new
    files over the old ones, and starts the game again.
@@ -135,8 +141,8 @@ Added 2026-10-26, on Eric's call, for every game on ecec.dev (DrawFight did it f
 way). `release.sh` exports the `Linux` preset (x86_64, `.pck` beside the binary) to `build/linux/`,
 and `package.py` makes three more files from it:
 
-- **`TheLastWizardSurvivors-linux.tar.gz`** (about 80 MB): the game in a `TheOneHeMissed/` folder - the
-  `TheOneHeMissed.x86_64` binary, the `.pck`, and `data_TheOneHeMissed_linuxbsd_x86_64/` with
+- **`TheLastWizardSurvivors-linux.tar.gz`** (about 80 MB): the game in a `TheLastWizardSurvivors/` folder - the
+  `TheLastWizardSurvivors.x86_64` binary, the `.pck`, and `data_TheOneHeMissed_linuxbsd_x86_64/` with
   the .NET runtime, so nothing has to be installed first - plus `install.sh`, `icon.png` and
   `How to play.txt`. A tarball rather than a zip, because a tarball carries the "can be run"
   permission on the binary and the script; `package.py` sets it, which it can do from Windows.
@@ -146,14 +152,16 @@ and `package.py` makes three more files from it:
   rename".
 
 **`install.sh`** (`tools/release/install.sh`) is the Linux installer. It copies the game to
-`~/.local/share/TheOneHeMissed` and writes `theonehemissed.desktop` into
+`~/.local/share/TheLastWizardSurvivors` (`~/.local/share/TheOneHeMissed` before 0.24.0, which it
+retires; "The third rename") and writes `theonehemissed.desktop` into
 `~/.local/share/applications`, so it is on the app menu. No sudo and nothing outside the home
 folder, for the same reason the Windows installer installs per user: the game updates itself, so
 its folder must stay writable. `./install.sh --uninstall` takes it out again; the save (in
 `~/.local/share/godot/app_userdata/The One He Missed`) is never touched. Running
-`./TheOneHeMissed.x86_64` straight from the unpacked folder works too. **The folder's name must
-stay the name the release files start with** (`APP` in `install.sh`, `NAME` in `package.py`):
-ecec.dev's download page reads it off the files and tells people that is where the game goes.
+`./TheLastWizardSurvivors.x86_64` straight from the unpacked folder works too. **The folder's name
+is the program's** (`APP` in `install.sh`, `NAME` in `package.py`, which refuses an `install.sh`
+that says otherwise): ecec.dev's download page tells people that is where the game goes, and
+`version.json` carries it as `"program"` for the page to read.
 
 **Updating** works as on Windows, from `version.json`'s `"builds"."linux"` pair: the patch on the
 same engine, the tarball otherwise (unpacked with `System.Formats.Tar`, so the binary stays
@@ -389,7 +397,8 @@ template found" until they are there.
    export: an `override.cfg` beside an exported exe with `[application]` `config/version="0.11.9"`
    makes it report that version - put the file back as soon as the first run exits, or the
    restarted copy updates again.)
-4. Run `build/test/TheOneHeMissed.exe` with `THEONEHEMISSED_UPDATE_URL` set to the local
+4. Run `build/test/TheLastWizardSurvivors.exe` (or an older copy's own program - "The third rename",
+   "How it was tested", did it with the published 0.23.0 zip) with `THEONEHEMISSED_UPDATE_URL` set to the local
    `version.json` (`WIZARDSURVIVORS_UPDATE_URL` for a copy from before the rename). It should
    update, restart, and on the next launch say it is up to date. The relaunched copy inherits the
    variable.
@@ -576,13 +585,14 @@ still holds, and these join it, kept as **The One He Missed / TheOneHeMissed** o
 | What | Why it cannot change |
 |---|---|
 | `config/name` | it names the desktop `user://` folder, so changing it moves every save - and Windows forbids the new name's ":" in a folder name. `use_custom_user_dir` is no way round: Godot puts that folder straight under `%APPDATA%` |
-| The program's file names (`TheOneHeMissed.exe`, `.x86_64`, `.pck`, the `data_TheOneHeMissed_*` .NET folder) and the install folders | what every copy's updater keeps (it keeps an install's own program name) and restarts. The DOWNLOADS left this row on 2026-11-10 (below) |
+| The program's file names (`TheOneHeMissed.exe`, `.x86_64`, `.pck`, the `data_TheOneHeMissed_*` .NET folder) and the install folders | what every copy's updater keeps (it keeps an install's own program name) and restarts. The DOWNLOADS left this row on 2026-11-10 (below), and the PROGRAM, its `.pck` and the install folders left it for 0.24.0 ("The third rename"); the .NET folder stays, named for the assembly |
 | `ecec.dev/the-one-he-missed/version.json` and `/download` | baked into every copy from 0.12.0 to 0.20.0; the website answers them directly, forever, as it does the `/wizard-survivors/` pair |
 | The bug report's `game` field | the intake's allowlist key (`REPORT_GAMES`); the confirmation text a player reads says the new name |
 | The `.desktop` file's name, `theonehemissed.desktop` | so an update replaces the entry rather than adding a second |
 | The shortcuts' old names | `installer.iss` `[InstallDelete]` removes "The One He Missed.lnk" so an upgrade in place leaves only the new pair, named "The Last Wizard - Survivors" because ":" cannot be in a file name |
 
 No bridge is needed: the program keeps its file name, so the next release updates every copy the ordinary way.
+(When the program did change its name, for 0.24.0, it needed none either - "The third rename".)
 
 **The downloads took the new name on 2026-11-10** (in-flight 65, first half; Eric: *"the downloaded file is still
 created as 'the one he missed-android'"*). Every file a release carries is `TheLastWizardSurvivors-*` (`-Setup.exe`,
@@ -596,8 +606,9 @@ name ends (`-Setup.exe`, `-windows.zip`, `-android.apk`, `-linux.tar.gz` on the 
 `src/lib/releases.ts`), so it still finds them. **One thing on the website does not follow:** its download page reads
 the part of a download's name before the last "-" as the program's name ("run `<that>.exe`" for the portable zip) and
 the Linux install folder (`~/.local/share/<that>/install.sh`) - its `data-base` spans - so from the first release
-with the new names it says `TheLastWizardSurvivors` for both, where the program and folder are still `TheOneHeMissed`.
-That page needs those two spans to say `TheOneHeMissed` (or the program's own rename, the second half, to land).
+with the new names it says `TheLastWizardSurvivors` for both. **The program's own rename landed in the same
+release, 0.24.0** ("The third rename"), so that is now right; the page should still read `version.json`'s
+`"program"` for those two spans rather than the download names, so the two can never drift apart again.
 `install.sh`'s `APP` stays equal to `NAME`, not to the downloads.
 
 **The repo and the website moved too, the same day** (Eric: *"Yes, change the GitHub repo and the website"*). The
@@ -609,6 +620,111 @@ the two pairs copies have baked in, which answer directly. **The game asks the n
 (`UpdateScreen.VersionUrl`), so **the website must be deployed before 0.21.0 is released** - a copy asking an
 address the site does not answer yet finds no update and goes to its title, and stays on its version until it
 does. `package.py`'s `REPO` and `release.sh`'s `gh release create --repo` name the new slug.
+
+### The third rename (2026-11-10): the program, from 0.24.0
+
+Eric, 2026-11-09 and 2026-11-10 (in-flight 65, second half): *"The file was called 'the one he missed' still,
+let's fix the name of the executable."* From **0.24.0** the program inside every download is
+`TheLastWizardSurvivors.exe` (Windows) and `TheLastWizardSurvivors.x86_64` (Linux), with
+`TheLastWizardSurvivors.pck` beside it - Godot loads the `.pck` named after the program, so the `.pck` follows
+it. So are the folder inside the portable zip and the Linux tarball, the installer's default folder
+(`%LOCALAPPDATA%\Programs\TheLastWizardSurvivors`), the Linux install folder
+(`~/.local/share/TheLastWizardSurvivors`), the shortcuts' and menu entry's target, and `version.json`'s new
+`"program"` field. `package.py` `NAME`, `install.sh` `APP`, `installer.iss` and `release.sh` `PROGRAM` say it,
+and `package.py` refuses an `install.sh` that disagrees; `release.sh` refuses a `version.json` whose
+`"program"` does not match.
+
+**What keeps `TheOneHeMissed`, on purpose:**
+
+| What | Why |
+|---|---|
+| The C# assembly, `TheOneHeMissed.dll`, and so the .NET folder `data_TheOneHeMissed_windows_x86_64\` (`_linuxbsd_` on Linux) | Godot names the folder after `dotnet/project/assembly_name`, never after the program, and a `.pck` asks for the assembly it was built with. The patch carries only the DLL into that folder: a renamed assembly would land in a new folder with no .NET runtime in it, so every copy since 0.12.0 would need a whole-game bridge. Kept, nothing needs one. `package.py` reads it from `project.godot` (`ASSEMBLY`) rather than writing it down |
+| The namespace, solution, project, `config/name` (the save folder), the env vars, the User-Agent, the bug report's `game` | as in the second rename's table |
+| The Linux menu entry's file, `theonehemissed.desktop` | so a new install replaces an old install's entry rather than adding a second |
+| An installed copy's own program name | see "Why an install keeps its name" below |
+| Android: the package id, the APK, and the intermediate `build/android/TheOneHeMissed.apk` | an APK is not a program file a player sees; `release.sh` copies it to `TheLastWizardSurvivors-android.apk`. Nothing Android-side names the `.exe` |
+
+**No new bridge.** What each kind of copy does with 0.24.0, read from each updater's own code (`git show
+v0.12.0:scripts/UpdateScreen.cs` to `v0.23.0` carry the same `FindPck`/`InstallAs`):
+
+1. **A copy from 0.12.0 to 0.23.x running `TheOneHeMissed.exe`** (installed, portable or Linux). It asks its baked
+   address, follows the 302 to this `version.json`, and reads `"builds"."windows"` (or `"linux"`). Same engine,
+   so the patch: `TheLastWizardSurvivors.pck` and `data_TheOneHeMissed_windows_x86_64\TheOneHeMissed.dll`, `.deps.json`,
+   `.runtimeconfig.json`. `FindPck` takes the one `*.pck` it finds - by extension, not name - and `InstallAs`
+   renames every file called `TheLastWizardSurvivors` to the running program's name, logging
+   "TheLastWizardSurvivors.pck installs as TheOneHeMissed.pck". `apply.cmd` (or `apply.sh`) copies them over and
+   starts `TheOneHeMissed.exe`, which loads `TheOneHeMissed.pck` - the 0.24.0 game - and the unchanged-name
+   assembly. On another engine it takes the full download instead, and `TheLastWizardSurvivors.exe` installs as
+   `TheOneHeMissed.exe` too. Nothing of the new name is left in its folder; its shortcuts keep working.
+2. **A copy that crossed the first bridge and runs `WizardSurvivors.exe` with an updater since 0.12.0:** the same,
+   installed as `WizardSurvivors.pck`.
+3. **A copy of 0.11.0 or earlier:** its updater reads the top-level `"patch"`/`"full"` (or `"linux"`), which are
+   the bridges, as since the first rename. The bridge holds the 0.24.0 program and `.pck` renamed to
+   `WizardSurvivors.exe`/`.pck` (`as_old_name` maps whatever `NAME` is to `OLD_NAME`) and the .NET folder under the
+   assembly's name, flat. It restarts `WizardSurvivors.exe` on the new game, and from then on is case 2.
+   `package.py` reads every archive back after writing it (`check_archives`) so the three names - program,
+   old program, assembly - cannot silently collapse: one `.pck` in a bridge, named `WizardSurvivors.pck`,
+   nothing named `TheLastWizardSurvivors` at its top, the DLL in the assembly's folder.
+4. **Android:** untouched.
+
+**Why an install keeps its name.** The updater could be taught to install under `version.json`'s `"program"`
+instead of its own, but the program file is what every shortcut to the game names: the installer's Start menu
+and desktop shortcuts, the uninstall entry's icon, any shortcut or taskbar pin the player made, the Linux menu
+entry. An update that renamed the program would break each of them, with nothing that could repair a
+player's own shortcut. A setup or `install.sh` rewrites the ones it made, so that is where an install moves:
+
+- **Windows:** running the 0.24.0 setup over an older install upgrades it in place (same `AppId`, same
+  folder): `[InstallDelete]` removes `TheOneHeMissed.exe` and `.pck` - **not** `data_TheOneHeMissed_windows_x86_64\`,
+  which is the live .NET folder - and the "The Last Wizard - Survivors" shortcuts, which `[Icons]` then makes
+  again pointing at `TheLastWizardSurvivors.exe` (deleted first so an unticked desktop icon cannot be left
+  pointing at the program just removed). A taskbar pin of the old program breaks there, as it did at the first
+  rename.
+- **Linux:** `install.sh` from a new download installs to `~/.local/share/TheLastWizardSurvivors` and retires
+  `~/.local/share/TheOneHeMissed` (and `WizardSurvivors`) if it holds an `install.sh`, rewriting the menu entry;
+  run from inside either older folder it refreshes that install where it is, under the program name it has;
+  `--uninstall` takes out all three.
+
+And an updater that only learned it in 0.24.0 could not rename anything before 0.25.0: a 0.23.0 copy updates
+into 0.24.0 with 0.23.0's updater. Not built; if Eric wants installs to move by themselves, it is that plus
+rewriting the installer's two `.lnk` files and the `.desktop` entry, and a player's own shortcuts still break.
+
+**The website.** Its download page derives "run `<that>.exe`" and the Linux folder from the part of a download's
+name before the last "-"; from 0.24.0 that is `TheLastWizardSurvivors`, which is now right for both. It should
+read `version.json`'s `"program"` instead (EricClancyEngineeringAndCrafts), so a later rename of either cannot
+make the page wrong again.
+
+**How it was tested (2026-11-10, Windows, scratch folders only).** `release.sh --dry-run 0.24.0` built all nine files in about
+15 minutes, the installer compiled and the APK release-signed (versionCode 2400, certificate `8052adfc...bddd47`), and
+left `project.godot`, `export_presets.cfg` and `android/` as committed. The export wrote `TheLastWizardSurvivors.exe` and `.pck` beside `data_TheOneHeMissed_windows_x86_64\`
+(Linux the same with `.x86_64`), so Godot does name the .NET folder for the assembly; `check_archives` passed and the
+archives were read back by hand: the portable zip 191 entries in `TheLastWizardSurvivors/` (the 0.23.0 one has 191 in
+`TheOneHeMissed/`), the patch four, the Windows bridge flat and name for name the 190 a bridge built by 0.23.0's
+`package.py` would hold, the Linux tarball's binary and `install.sh` 755 and its bridge's `WizardSurvivors.x86_64` 755.
+Then the **published v0.23.0 `TheOneHeMissed-windows.zip`**, unpacked three times, each with a headless
+`override.cfg`, `APPDATA` pointed at a scratch folder and `THEONEHEMISSED_UPDATE_URL` at the dry run's files on a
+127.0.0.1-only server:
+
+- as `TheOneHeMissed.exe`, same engine: took the patch, logged "TheLastWizardSurvivors.pck installs as
+  TheOneHeMissed.pck", restarted; the restarted copy said "0.24.0 is up to date", its `.pck` and `TheOneHeMissed.dll`
+  byte-identical to the export's, its program untouched, nothing named `TheLastWizardSurvivors` in the folder;
+- the same with `version.json`'s `"engine"` made to differ: took the portable zip, renamed the program and the
+  `.pck`, and its program, `.pck` and whole .NET folder came out byte-identical to the export's;
+- renamed to `WizardSurvivors.exe`/`.pck` first (a copy that crossed the first bridge): installed as
+  `WizardSurvivors.pck`, restarted on 0.24.0;
+- the 0.24.0 bridge unpacked flat and started as `WizardSurvivors.exe` (what a 0.11.0 copy restarts): the title
+  came up, C# and all;
+- the 0.24.0 portable zip made to report 0.23.9: updated with no rename and restarted as
+  `TheLastWizardSurvivors.exe` on 0.24.0.
+
+`install.sh` was run in Git Bash against a scratch `XDG_DATA_HOME`: from a new download it installed to
+`TheLastWizardSurvivors/`, retired a `TheOneHeMissed/` install and pointed `theonehemissed.desktop` at the new
+program; from inside a `TheOneHeMissed/` or `WizardSurvivors/` install it refreshed that one in place under its own
+program; `--uninstall` removed all of them. **Not tested:** a 0.11.0 copy itself (its updater was read, not run -
+every one from 0.2.1 to 0.11.0 looks only for `WizardSurvivors.pck`, which the bridge has); anything on Linux
+itself; the setup run over an existing install (it would rewrite this machine's real uninstall entry - the
+`[InstallDelete]` lines were compiled, not run); the APK on a phone. A full download also lands the new
+`How to play.txt` in an old install, which then names `TheLastWizardSurvivors.exe` beside a `TheOneHeMissed.exe` -
+only on an engine upgrade, and harmless.
 
 ### Saves: copied once, the old folder left alone
 

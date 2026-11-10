@@ -32,9 +32,12 @@ done
 VERSION="${ARGS[0]:-}"
 CHANGES="${ARGS[1]:-}"
 # The downloads' prefix (in-flight 65): package.py's DOWNLOAD and installer.iss's OutputBaseFilename say the same.
-# The program inside them keeps its name, TheOneHeMissed (package.py's NAME), so the portable zip still runs it.
 DL=TheLastWizardSurvivors
-HOW_TO="Download **$DL-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? $DL-windows.zip is the portable version: unzip it anywhere you can write to and run TheOneHeMissed.exe. On an Android phone, download $DL-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **$DL-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-last-wizard-survivors/download"
+# The program inside them, its .pck and the folder each download unpacks to: package.py's NAME, install.sh's APP
+# and installer.iss's program say the same, and version.json carries it as "program". TheOneHeMissed until
+# 0.23.x; an install of that name keeps it when it updates (.ai/releasing.md, "The third rename").
+PROGRAM=TheLastWizardSurvivors
+HOW_TO="Download **$DL-Setup.exe** and run it, then play from the Start menu or the desktop. It keeps itself up to date from then on. No installer? $DL-windows.zip is the portable version: unzip it anywhere you can write to and run $PROGRAM.exe. On an Android phone, download $DL-android.apk on the phone and open it (allow your browser to install apps when Android asks); the game says on its title screen when a newer version is out. On Linux, download **$DL-linux.tar.gz**, unpack it and run **./install.sh** - it adds The Last Wizard: Survivors to your app menu and keeps itself up to date too. (The two -bridge files are for copies installed before the game was renamed, which fetch them by themselves.) Download page: https://ecec.dev/the-last-wizard-survivors/download"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 	echo "usage: bash tools/release/release.sh [--dry-run] X.Y.Z [\"what changed\"]" >&2
 	exit 1
@@ -216,15 +219,19 @@ export_desktop() { # preset, output file, log
 		fi
 	fi
 }
-export_desktop "Windows Desktop" build/windows/TheOneHeMissed.exe build/export.log
-[ -f build/windows/TheOneHeMissed.pck ] || { echo "export produced no .pck - see build/export.log" >&2; exit 1; }
+# The program's name is the file named here: Godot names the .pck after it, and the .NET folder after the C#
+# assembly (data_TheOneHeMissed_*), whatever the program is called.
+export_desktop "Windows Desktop" "build/windows/$PROGRAM.exe" build/export.log
+[ -f "build/windows/$PROGRAM.pck" ] || { echo "export produced no $PROGRAM.pck - see build/export.log" >&2; exit 1; }
 # The same game for Linux. Needs the linux_* export templates (see .ai/releasing.md).
-export_desktop "Linux" build/linux/TheOneHeMissed.x86_64 build/export-linux.log
-[ -f build/linux/TheOneHeMissed.pck ] || { echo "Linux export produced no .pck - see build/export-linux.log" >&2; exit 1; }
+export_desktop "Linux" "build/linux/$PROGRAM.x86_64" build/export-linux.log
+[ -f "build/linux/$PROGRAM.pck" ] || { echo "Linux export produced no $PROGRAM.pck - see build/export-linux.log" >&2; exit 1; }
 
 python tools/release/package.py "$VERSION" "--progress-epoch=$EPOCH"
 grep -qE "\"progressEpoch\": $EPOCH([^0-9]|\$)" build/release/version.json \
 	|| { echo "build/release/version.json does not carry progressEpoch $EPOCH" >&2; exit 1; }
+grep -q "\"program\": \"$PROGRAM\"" build/release/version.json \
+	|| { echo "build/release/version.json does not say program $PROGRAM - package.py's NAME must match PROGRAM" >&2; exit 1; }
 # The installer: build/release/$DL-Setup.exe, from the same export. The MSYS
 # variables stop Git Bash rewriting ISCC's /Q and /D switches into Windows paths (ISCC would
 # then see extra script names). DrawFight and Wizard Wars call it the same way.
