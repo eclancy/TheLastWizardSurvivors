@@ -25,34 +25,34 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 67 | Canticle's notes draw under the wizard (one line: `Air` -> `ForemostAir`) | bug | done |
 | 68 | Waywiser: reword to "the spell with the longest cooldown" (decided), and make the code pick exactly that | text + one line | done |
 | 69 | Remove the Twinstar Sigil from the shop (decided); that release resets progress (epoch 5) | shop | done |
-| 70 | The chapter note (the stage intro with its hints) is huge on a phone and covers the wizard: condense, move clear, shorter | UI | S-M |
+| 70 | The chapter note (the stage intro with its hints) is huge on a phone and covers the wizard: condense, move clear, shorter | UI | done |
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | done |
 | 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | done |
 | 73 | Chalice Cup: heals 3 HP every 20 s, waiting until you are hurt - **built** | item rework | done |
-| 74 | The wizard's feet sink when he wades; Baba Yaga and Nimue neither sink nor slow in water (decided) | visual + trait | S-M |
+| 74 | The wizard's feet sink when he wades; Baba Yaga and Nimue neither sink nor slow in water (decided) | visual + trait | done |
 | 75 | The Fenced Bloom's garden heal wears off after 20 HP - **built** | secret | done |
-| 76 | Show Aegis Ward recharging on the spell bar; fix its wrong tagline | HUD | S-M |
+| 76 | Show Aegis Ward recharging on the spell bar; fix its wrong tagline | HUD | done |
 | 77 | Balance pass on every spell (Aegis Ward's recharge looks too fast; Twinstar folded in) | balance | L |
 | 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
 | 79 | Baba Yaga's hut heads for its yard whenever you are near (too hard to herd) | puzzle | done |
 | 80 | The hut flips facing too often: smooth its heading for drawing, hold each facing | visual | done |
 | 81 | Buckler Boss gives its own small shield (decided) | item rework | done |
 | 82 | The hut kneels only in the middle of the bone yard | puzzle | done |
-| 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | M |
+| 83 | Every unlocked character appears on screen for a moment (as Baba Yaga leaves her hut) | presentation | done |
 | 84 | Each wizard's opener gets a new deed, sealed until the wizard is freed and done as them (not the Familiar, Thorn Vine or Spiritual Weapon) | unlocks | done |
 | 85 | Status-effect marks still draw on enemies hidden for a boss's arrival (one line) | bug | done |
 | 86 | The stage card's Start button is still off the bottom of the phone: grow the card up, scroll its body | UI bug | done |
 | 87 | Wayland's Wings also gives movement speed (about +10%) | character | done |
 | 88 | The opening's town attack seen from inside the town, looking up at burning houses | prologue art | done |
 | 89 | The Archmage's passive card: "Avoids death once per run." | text | done |
-| 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | S |
-| 91 | Backdraft: two flames on different enemies; Fire Fan reworked into a wide sweeping arc (decided) | spell | M |
-| 92 | The level-up Codex button sits off the heading's line (raised before, item 55) | UI | S |
+| 90 | Lancet's icon looks like a tool, not magic: give the needle a spell's light | icon art | done |
+| 91 | Backdraft: two flames on different enemies; Fire Fan reworked into a wide sweeping arc (decided) | spell | done |
+| 92 | The level-up Codex button sits off the heading's line (raised before, item 55) | UI | done |
 | 93 | Aegis Ward: a more detailed icon; a smaller, quieter animation (decided) | art + VFX | done |
-| 94 | Ink Ring becomes Ma Liang's starting spell; The Painted Door moves onto it | character | M |
+| 94 | Ink Ring becomes Ma Liang's starting spell; The Painted Door moves onto it | character | done |
 | 95 | An enemy's attack circles (and their hits) vanish the moment it dies | bug | done |
 | 96 | The Scythe set's card: "...kills it outright (except bosses)." in place of "...kills it outright. Not bosses." (`ChestItemCatalog.cs` 413; Eric, 2026-11-10) | text | done |
-| 97 | Remove attunement altogether - its damage bonus for pure spells, its cooldown price, every word of it (decided; rebalance in 77) | mechanic | M |
+| 97 | Remove attunement altogether - its damage bonus for pure spells, its cooldown price, every word of it (decided; rebalance in 77) | mechanic | done |
 | 98 | A full build's level-up offers 10 Arcane Energy beside Marginalia (decided) | level-up | done |
 | 99 | Elderbark's slam and roots much bigger in area (not the other bosses) | boss tuning | done |
 | 100 | Thorn Vine's shove always away from the player (today along the swing, sometimes toward him) | spell | done |
@@ -65,6 +65,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 **Built 2026-11-10, second batch, on `main-ff86ni`, not released** (cd074d7c, ef9a8fb3, d713c382, 434858e1, ef5d4b12, 925d41e1, 5593144c): 65 first half (downloads named `TheLastWizardSurvivors-*`, the program keeps `TheOneHeMissed`), 69 (Twinstar Sigil removed), 71 (three Powers sections, cards spread evenly; 8 pages on the Pixel 9, 11 on desktop), 76a (Aegis Ward's text), 81 (Buckler Boss: a 4-point shield every 25 s, keeps +15% defense while a shield holds), 84 (the vault deeds name their secret), 86 (the phone's stage card grows up and scrolls; Start always on screen), 89, 93 (Aegis icon redrawn; ring 64 px across, thinner, quieter; dome 52 -> 44; Reforged 6 shards at 0.8), 95 (every boss passes its owner; corpses drop their warnings), 96, 98 (+10 Arcane Energy card beside Marginalia), 99 (Elderbark: slam 210 -> 280 with a 1.3 s tell, roots 66 -> 120), 100, 101 (Pinfold guards leashed to posts by the gate, blue glow and seal mark, the latch lights). Build 0 errors, validator clean, boss probe and function probe pass, release dry run names all eight downloads. **Not played yet.** **Before the next release:** ecec.dev's download page takes the program name and the Linux folder from the download's file name (its `data-base` spans), so it would say TheLastWizardSurvivors.exe - **fixed and live 2026-11-10** (eclancy/EricClancyEngineeringAndCrafts#55: the program's name is written in the page, no longer read from the file names). That release resets progress (epoch 5, item 69).
 
 **Built 2026-11-10, third batch, on `main-ff86ni`, not released:** 66's five reward fixes and the Quarry boon (ab544d52); 88, the town attack from inside the town (d52799a1); 65's second half, the program renamed `TheLastWizardSurvivors.exe` from 0.24 with every installed copy still updating (merge 867fbe96, tested from a real 0.23.0 copy; existing installs keep `TheOneHeMissed.exe` until the setup is run over them); and a latent validator race fixed (1a82089c: `ValidateSpellData` discarded each loaded spell, the `gchandle.is_released()` crash the tide's timing exposed). The site's PR 55 was reverted (PR 56, live): program and downloads share a name again from 0.24. Open: the Quarry adds about 1% damage in a swarm (strong only on elites and bosses) and may want a stronger rule - renamed **Hare's Foot** (Eric, 2026-11-10).
+
+**Built 2026-11-10, fourth batch, merged on `main-ff86ni` (5bcfffe4), not released:** 97 attunement removed (bonus, cooldown price and every word; the set_collector deed renamed "Fully Enchanted"; Gloam Veil's walk price gone too); 91 Backdraft two flames at 60% at least 90 degrees apart, Fire Fan one flame sweeping 60 degrees each way (+140%); 92 the Codex button centred by its real height; 74 feet sink 8 rows in water with rings, `CharacterData.RidesOverWater` for Baba Yaga and Nimue (not slowed, not sunk), the Swallow-Hole's mud too; 76b ward gauges on the spell bar (Aegis, Stormguard, Gloam Veil); 70 the phone's chapter note shows the heading, one line and a count of the clues, held 4 s; 94 Ink Ring is Ma Liang's opener, The Painted Door on it (Water), Cormorant his deed, ink 2.0 -> 2.5 s; 83 a freed wizard steps out beside the player (John Dee, Laelaps, Tituba, Artemis and later ones; the twelve event scenes keep their own); 90 Lancet's icon a needle of light. Build 0 errors, validator 2 of 2 clean. **Not played.** Open for Eric: the phone note's clues as a count only (or first clue + count); Water for The Painted Door; Ma Liang's weaker first minute; the door still the crow's violet sprite; Backdraft + Fire Fan both sweeping; stale Backdraft/Fire Fan evolution icons and `tools/art/evolution_catalog.json` card text; Wings' card still says water does not slow.
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
