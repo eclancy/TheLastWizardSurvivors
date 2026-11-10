@@ -494,6 +494,10 @@ public partial class _UiShot : Node
 	// water (TerrainStreamer.FlagFence), from outside or from inside the garden - whichever is
 	// nearer. The fence is on the ground's layer like water, so the same probe measures it.
 	private bool shoreFence;
+	// --shore-wade=N (in-flight 74): with --shore on water, he keeps walking N frames once the wade has taken hold, so
+	// the photograph has him standing IN the water - sunk to the shins, the rings round him - not at its lip.
+	private int shoreWadeFrames;
+	private bool shoreWadeBegun;
 	private Vector2I shoreCell;
 	private bool shorePlaced;
 
@@ -1640,6 +1644,8 @@ public partial class _UiShot : Node
 			// "before" half of a photograph of enemies going round a lake (.ai/terrain.md, section 9).
 			else if (arg == "--shore-fence")
 				shoreFence = true;
+			else if (arg.StartsWith("--shore-wade="))
+				shoreWadeFrames = System.Math.Max(0, int.Parse(arg.Substring("--shore-wade=".Length)));
 			else if (arg == "--no-open-routing")
 				MazeNavigation.OpenStageRouting = false;
 			// --demo-curation: two Redactions owned and Fireball set aside, in memory only, so the
@@ -3183,8 +3189,12 @@ public partial class _UiShot : Node
 				// Wadeable water no longer stops him (in-flight 59), so there the walk stops itself
 				// the moment wading begins: the report then measures where the boots stood as the
 				// wade took hold, against the drawn shore - the alignment this probe exists for.
-				bool walk = shorePlaced
-					&& !(FindNodeOfType<Player>(GetTree().Root) is Player wader && wader.IsWading);
+				// Once begun, the walk ends for good when the wade frames are spent - a narrow strip of water is not
+				// walked straight out of and on across the land beyond it.
+				shoreWadeBegun |= FindNodeOfType<Player>(GetTree().Root) is Player wader && wader.IsWading;
+				if (shoreWadeBegun && shoreWadeFrames > 0)
+					shoreWadeFrames--;
+				bool walk = shorePlaced && !(shoreWadeBegun && shoreWadeFrames <= 0);
 				Press("move_right", "move_left", walk ? push.X : 0f);
 				Press("move_down", "move_up", walk ? push.Y : 0f);
 			}

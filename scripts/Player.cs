@@ -914,6 +914,8 @@ public partial class Player : CharacterBody2D
 		MaxHP = Math.Max(1, Mathf.RoundToInt(MaxHP * selectedCharacter.HealthModifier));
 		CurrentHP = MaxHP;
 		Speed *= selectedCharacter.SpeedModifier;
+		// Baba Yaga and Nimue stay on top of the water (in-flight 74): a trait of hers, beside her passive.
+		RidesOverWater = selectedCharacter.RidesOverWater;
 
 		// In his own form, for a spell taken in one (CharacterData.StartingSelection: Nimue's Sword); the spell alone
 		// for every other wizard, whose spell has no forms.
@@ -3028,7 +3030,12 @@ public partial class Player : CharacterBody2D
 			if (InvincibilityShader == null)
 				return;
 
-			invincibilityMaterial ??= new ShaderMaterial { Shader = InvincibilityShader };
+			if (invincibilityMaterial == null)
+			{
+				invincibilityMaterial = new ShaderMaterial { Shader = InvincibilityShader };
+				// A white figure still standing in the water (Player.Wading.cs).
+				SyncWadeTo(invincibilityMaterial);
+			}
 			invincibilityMaterial.SetShaderParameter("whiten", 1.0f);
 			invincibilityMaterial.SetShaderParameter(ParamOpacity, whiteOpacity);
 			materialBeforeInvincibility = bodySprite.Material;
@@ -4565,6 +4572,8 @@ public partial class Player : CharacterBody2D
 
 		MovePlayer(delta);
 		UpdateBodyAnimation();
+		// His feet in the water, seen (Player.Wading.cs): after MovePlayer has said whether he is wading.
+		TickWading((float)delta);
 
 		// enemy damage cooldown logic
 		// Update cooldown timers
@@ -7855,7 +7864,8 @@ public partial class Player : CharacterBody2D
 		wadeQuery.Position = FootPosition;
 		IsWading = GetWorld2D().DirectSpaceState.IntersectPoint(wadeQuery, 1).Count > 0;
 		// Wings (Player.Wings.cs): water never slows him. He is still wading - his boots are over it - at full speed.
-		float wadeSpeedMultiplier = IsWading && !Winged ? WaterWadeSpeedMultiplier : 1.0f;
+		// Nor her who rides over it (RidesOverWater, Player.Wading.cs: Baba Yaga's mortar, Nimue on the lake).
+		float wadeSpeedMultiplier = IsWading && !Winged && !RidesOverWater ? WaterWadeSpeedMultiplier : 1.0f;
 
 		_velocity = input * Speed * GetWindSpeedMultiplier() * GetStormboundSpeedMultiplier() * crowdSpeedMultiplier * wadeSpeedMultiplier * boonMoveSpeedMultiplier;
 		Velocity = _velocity;

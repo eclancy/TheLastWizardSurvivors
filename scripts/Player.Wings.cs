@@ -17,6 +17,9 @@ using Godot;
 // NOT the Last Bridge's collapse front (BridgeCollapseFront): that is the chapter's chase, not a trap. And nothing
 // about collision changes: his Feet still meet walls and blocking ground, and IsWading still says when his boots are in
 // water - it just costs him nothing. RegressionChecks.ValidateWings checks each site still asks.
+// Since in-flight 74 the water's half is not his alone: Baba Yaga and Nimue ride over it by a trait (RidesOverWater,
+// Player.Wading.cs), unslowed and unsunk; what is his alone is the traps and the flight. He never sinks either - his
+// wings hold him over the water and the mud, so the wade's sink and rings skip him.
 //
 // HOW IT LOOKS. Standing he stands, wings folded. Over water or a trap he keeps his flight even standing still
 // (UpdateBodyAnimation reads HoldsFlight): a trap that spared him this frame says so through FliesOverTrap, which is

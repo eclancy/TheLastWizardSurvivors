@@ -87,7 +87,8 @@ public partial class StanceGlow : Node2D
 		heat = PlayerRef.BrazierHeat;
 		stance = PlayerRef.StanceProgress;
 		rooted = PlayerRef.IsStanceRooted;
-		bool want = !PlayerRef.IsDead && (heat > 0.001f || stance > 0f);
+		// Hidden while he stands sunk in the water (Player.Wading.cs, in-flight 74): the ground it is drawn on is under it.
+		bool want = !PlayerRef.IsDead && PlayerRef.WadeSink <= 0f && (heat > 0.001f || stance > 0f);
 		if (!want)
 		{
 			if (showing)

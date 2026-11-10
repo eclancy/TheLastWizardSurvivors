@@ -54,5 +54,40 @@ public static partial class RegressionChecks
 		string front = Godot.FileAccess.GetFileAsString("res://scripts/BridgeCollapseFront.cs");
 		if (!string.IsNullOrEmpty(front) && (front.Contains("FliesOverTrap", StringComparison.Ordinal) || front.Contains("Winged", StringComparison.Ordinal)))
 			warnings.Add("Wings: BridgeCollapseFront asks the Wings flag; the bridge's collapse is the chapter's chase, not a floor trap.");
+		ValidateWaterRiders(warnings);
+	}
+
+	// RIDING OVER WATER (in-flight 74, Eric 2026-11-09): Baba Yaga and Nimue are neither slowed nor sunk by the water, by
+	// a trait on their CharacterData rather than a passive. Exactly the two carry it, and each site still asks it: a lost
+	// flag in a .tres, or a site that stops asking, slows the mortar silently.
+	private static readonly string[] WaterRiderIds = { "baba_yaga", "nimue" };
+
+	private static readonly (string File, string Site, string Asks)[] WaterRiderSites =
+	{
+		("Player.cs", "the wade's slow (MovePlayer)", "!Winged && !RidesOverWater"),
+		("Player.Wading.cs", "the wade's sink", "!RidesOverWater"),
+		("SwallowHole.cs", "the Swallow-Hole's crawl", "!player.RidesOverWater"),
+	};
+
+	private static void ValidateWaterRiders(List<string> warnings)
+	{
+		foreach (CharacterData character in CharacterRoster.GetAll())
+		{
+			if (character == null)
+				continue;
+			bool should = WaterRiderIds.Contains(character.Id);
+			if (character.RidesOverWater != should)
+				warnings.Add(should
+					? $"Water riders: {character.Name} does not set RidesOverWater, so the water slows and sinks her."
+					: $"Water riders: {character.Name} sets RidesOverWater, which only Baba Yaga and Nimue were given (in-flight 74).");
+		}
+		foreach (var (file, site, asks) in WaterRiderSites)
+		{
+			string text = Godot.FileAccess.GetFileAsString("res://scripts/" + file);
+			if (string.IsNullOrEmpty(text))
+				warnings.Add($"Water riders: res://scripts/{file} could not be read to check {site}.");
+			else if (!text.Contains(asks, StringComparison.Ordinal))
+				warnings.Add($"Water riders: {site} ({file}) no longer asks RidesOverWater ('{asks}').");
+		}
 	}
 }
