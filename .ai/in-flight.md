@@ -1109,6 +1109,11 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     (`TheOneHeMissed.dll`, `data_TheOneHeMissed_*`) need not. ecec.dev finds downloads by how their names end, so a new
     prefix is safe there. Read `.ai/releasing.md`, "The rename" and "The second rename", first, and rehearse with
     `--dry-run` plus an update from an installed 0.22.0.
+    **Raised again 2026-11-10 after 0.23.0** (Eric: *"the downloaded file is still created as 'the one he missed-android'"*).
+    A cheap first half: rename only the DOWNLOADS (`TheLastWizardSurvivors-android.apk`, `-Setup.exe`, `-windows.zip`,
+    the patches, the Linux tar) by giving `package.py` a download prefix apart from `NAME`, which stays the program's
+    and the `.pck`'s name inside them. Safe because every updater follows version.json's addresses, not file names,
+    and ecec.dev finds downloads by their endings. The program's own rename stays the harder second half.
 66. **Rearrange the achievements: Canticle should not come from First Blood** (Eric, 2026-11-09: *"Canticle doesn't
     seem like a spell that sounds be rewarded by 'first blood'. Rearrange some of the achievements"*). Today First
     Blood ("Defeat 1 enemy", `AchievementDefinition.cs` 446) unlocks Canticle (`arcane_explosion`, `UnlockCatalog.cs`
