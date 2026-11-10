@@ -696,10 +696,11 @@ public static class ChestItemCatalog
 			VialOfVitality => OverhealDescription,
 			HeartOfRenewal => $"+{Player.HeartOfRenewalRegenPerSecond * 60f:0} health regeneration a minute.",
 			Phylactery => "One revive per stage, at 25% health.",
-			// It said "+1 maximum health per kill, up to +50", and has only ever healed (Player.OnChestEnemyKilled).
-			// Says plainly that it is spent after the first kills (Eric, 2026-11-06: "is it even
-			// useful after 15 kills?" - no, beyond its set; the healing budget keeps it early-only).
-			EssenceChalice => $"Each of the run's first {Player.EssenceChaliceKillHeals} kills heals 1 HP. After them, it serves its set.",
+			// It said "+1 maximum health per kill, up to +50", then "Each of the run's first 15 kills heals 1 HP. After
+			// them, it serves its set." - spent in seconds (Eric, 2026-11-06: "is it even useful after 15 kills?"). Since
+			// 2026-11-09 it fills on a clock and waits, full, until he is hurt (Player.TickEssenceChalice): "Maybe it can
+			// heal you every period of time so it doesn't just become useless?"
+			EssenceChalice => $"Fills every {Player.EssenceChaliceSeconds:0} seconds, then heals {Player.EssenceChaliceHeal} HP the next time you are hurt.",
 			QuicksilverPendant => "+15% movement speed.",
 			HasteRune => "+12% attack speed.",
 			CompassRose => "+15% XP.",

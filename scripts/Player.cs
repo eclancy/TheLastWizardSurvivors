@@ -211,8 +211,16 @@ public partial class Player : CharacterBody2D
 	public const int LightHealPerSecondCap = 1;
 	/// <summary>The Heart of Renewal relic, HP a second (it was 0.8).</summary>
 	public const float HeartOfRenewalRegenPerSecond = 0.15f;
-	/// <summary>The Essence Chalice heals 1 for each of this run's first N kills (it was 50).</summary>
-	public const int EssenceChaliceKillHeals = 15;
+	/// <summary>
+	/// The Chalice Cup (Essence Chalice) fills over this many seconds, then heals <see cref="EssenceChaliceHeal"/> the next
+	/// moment he is hurt (TickEssenceChalice). It healed 1 for each of the first 15 kills after it was taken (50 before
+	/// that) - spent within seconds, and only a set piece from then on (Eric, 2026-11-09: "heal you every period of time
+	/// so it doesn't just become useless"). 3 every 20 s is 9 a minute at most, the relics' row in the healing budget
+	/// (.ai/difficulty-curve.md 5.1) and the same shape as the Familiar's Purr.
+	/// </summary>
+	public const float EssenceChaliceSeconds = 20f;
+	/// <summary>What one full cup heals, before the healing bonus.</summary>
+	public const int EssenceChaliceHeal = 3;
 	/// <summary>The Tithe Chalice set heals 1 HP every Nth kill (it was every kill).</summary>
 	public const int LifeDrainKillsPerHeal = 15;
 	private Dictionary<Node, float> enemyDamageCooldowns = new Dictionary<Node, float>();
@@ -724,7 +732,11 @@ public partial class Player : CharacterBody2D
 	private bool characterSalve = false;
 	private bool incomingIsBolt = false;
 	private bool chestPhylacteryActive = false;
-	private int chestEssenceChaliceKills = 0;
+	// The Chalice Cup: seconds it has filled since it was last drunk, up to EssenceChaliceSeconds (TickEssenceChalice).
+	private float chestChaliceFill = 0f;
+	// The cup's "+3", in the floating numbers' scene and the cup's Water ink (loaded on the first sip).
+	private static PackedScene chaliceSipTextScene;
+	private static readonly Color ChaliceSipInk = DamageNumberInk.For(Element.Water, false);
 
 	public override void _Ready()
 	{
@@ -3730,7 +3742,7 @@ public partial class Player : CharacterBody2D
 				chestPhylacteryActive = true;
 				break;
 			case ChestItemCatalog.EssenceChalice:
-				break; // Bonus applied on enemy death
+				break; // Fills on a clock, in the physics frame (TickEssenceChalice)
 
 			// Utility items
 			case ChestItemCatalog.QuicksilverPendant:
@@ -4142,16 +4154,40 @@ public partial class Player : CharacterBody2D
 	public float GetChestLightningChainRadiusBonus() => chestLightningChainRadiusBonus;
 	public int GetChestLightningChainCountBonus() => chestLightningChainCountBonus;
 	public bool IsChestPhylacteryActive() => chestPhylacteryActive;
-	public int GetChestEssenceChaliceKills() => chestEssenceChaliceKills;
+	/// <summary>How full the Chalice Cup is, 0 to 1 (1 = waiting for him to be hurt). 0 when not held.</summary>
+	public float ChestChaliceFillShare => ownedChestItems.Contains(ChestItemCatalog.EssenceChalice)
+		? Mathf.Clamp(chestChaliceFill / EssenceChaliceSeconds, 0f, 1f) : 0f;
+
+	// The Chalice Cup (in-flight 73): it fills over EssenceChaliceSeconds and, once full, is drunk the first moment he
+	// is below full health - EssenceChaliceHeal at once, a "+3" in the cup's Water over his head. A full cup WAITS
+	// rather than spilling at full health, so a sip is never wasted (and never feeds the Vial of Vitality's overheal
+	// shield), and it can never pay more than one sip each EssenceChaliceSeconds. The clock stands still while the
+	// boss arrives, as his spells' timers do. On the healing ledger as "Player.TickEssenceChalice".
+	private void TickEssenceChalice(float delta)
+	{
+		if (CurrentHP <= 0 || HeldForBossEntrance || !ownedChestItems.Contains(ChestItemCatalog.EssenceChalice))
+			return;
+		if (chestChaliceFill < EssenceChaliceSeconds)
+		{
+			chestChaliceFill += delta;
+			return;
+		}
+		if (CurrentHP >= MaxHP)
+			return;
+		chestChaliceFill = 0f;
+		int before = CurrentHP;
+		Heal(EssenceChaliceHeal);
+		int gained = CurrentHP - before;
+		if (gained <= 0 || GetParent() is not Node parent)
+			return;
+		// Shown whether or not damage numbers are on: it is the cup's only tell, once every twenty seconds at most.
+		chaliceSipTextScene ??= ResourceLoader.Load<PackedScene>("res://scenes/FloatingText.tscn");
+		if (chaliceSipTextScene != null)
+			FloatingText.Show(parent, chaliceSipTextScene, $"+{gained}", ChaliceSipInk, GlobalPosition + new Vector2(0f, -40f), 1.2f);
+	}
 
 	private void OnChestEnemyKilled()
 	{
-		if (ownedChestItems.Contains(ChestItemCatalog.EssenceChalice) && chestEssenceChaliceKills < EssenceChaliceKillHeals)
-		{
-			chestEssenceChaliceKills++;
-			Heal(1);
-		}
-
 		// Every kill used to heal: 80 HP a minute in the one measured run that assembled it.
 		if (completedChestSets.Contains(ChestItemCatalog.LifeDrainSetId) && ++lifeDrainKills % LifeDrainKillsPerHeal == 0)
 			Heal(1);
@@ -4524,6 +4560,7 @@ public partial class Player : CharacterBody2D
 				recoveryAccumulator -= 1.0f;
 			}
 		}
+		TickEssenceChalice((float)delta);
 
 		if (buffTimeRemaining > 0f)
 		{

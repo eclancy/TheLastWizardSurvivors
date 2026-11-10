@@ -628,9 +628,10 @@ would grow without bound.
 1. **It is spent first.** The shield absorbs after armour and before health (`TakeDamage` step 6),
    so it is a buffer in front of the bar, not more bar.
 2. **It only fills from healing you would otherwise waste.** Max HP is there from the moment you take
-   it; this is empty until you heal at full health, so it rewards sustain - the Tithe Chalice and
-   the Chalice Cup's per-kill heals, Light lifesteal, the heal on every chest - and is worth nothing
-   to a build that never heals. (Regeneration does not count: it only ticks below max HP.)
+   it; this is empty until you heal at full health, so it rewards sustain - the Tithe Chalice's
+   per-kill heals, Light lifesteal, the heal on every chest - and is worth nothing
+   to a build that never heals. (Regeneration does not count: it only ticks below max HP. Nor does
+   the Chalice Cup since 2026-11-09: a full cup waits until he is hurt, so it never heals at full.)
 3. **It is what "shielded" means.** The Buckler Boss (Protective Ward, +15% defence while a shield
    holds) reads the shield pool, and overheal keeps it switched on between Aegis Ward casts. (The
    Lightning Rod's +10% move speed read it too, until issue #44 made it unconditional.)

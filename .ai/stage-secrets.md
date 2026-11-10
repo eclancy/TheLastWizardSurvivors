@@ -131,7 +131,7 @@ fragile:
 | reward | limit | why it is safe |
 |---|---|---|
 | **heal** (a share of max HP, or a health flask) | none | survival, not progression |
-| **a sanctuary**: a spot that heals slowly, or shields from hazards, for the rest of the run | one effect per site, small (about +0.5 HP/s; `MaxHP` is 20) | it asks you to stay somewhere, which costs kills and orbs |
+| **a sanctuary**: a spot that heals slowly, or shields from hazards, for the rest of the run | one effect per site, small (about +0.5 HP/s; `MaxHP` is 50 since the difficulty curve); **a healing sanctuary wears off** - the Fenced Bloom's stops after 20 HP and its light goes out (Eric, 2026-11-09: "should wear off after it heals you for a while"), and a planned one (the hearth, the well) takes a budget of its own | it asks you to stay somewhere, which costs kills and orbs |
 | **a timed buff** (move speed, pickup radius, damage) | 60 s at most, never cooldown, Amount or Growth | damage buys little XP: the kill rate is capped by supply, not by damage (`run-pacing.md` 3.3) |
 | **a tactical effect at the site**: a root trap, a ward the horde cannot enter | re-arms on a long timer, or once | it is a place to fight, not a stat |
 | **an ordinary chest** (`Node2DGame.SpawnRewardChestAt`) | **two per run from all secrets together** (`SecretChestBudget`) | about 20 chests drop a run, so two is a 10% bump; a chest can carry a Rare or Relic tag, which is why it is capped |

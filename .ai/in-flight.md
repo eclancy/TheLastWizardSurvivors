@@ -28,8 +28,12 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 70 | The chapter note covers the wizard at a run's start on a phone: condense, move clear, shorter | UI | S-M |
 | 71 | Consolidate the Powers pages (six today, the first holds one card) into about three | UI | S |
 | 72 | The "Dandelion Grove" (flower pen): only in the Forest (decided), and one or two a run there | world gen | S |
-| 73 | Chalice Cup: confusing text, useless after 15 kills - heal on a timer instead (about 3 HP / 20 s) | item rework | S |
-| 74 | The wizard's feet sink when he wades (not Wayland flying; Baba Yaga and Nimue to decide) | visual | S-M |
+| 73 | Chalice Cup: heals 3 HP every 20 s, waiting until you are hurt - **built** | item rework | done |
+| 74 | The wizard's feet sink when he wades (not Wayland flying, Baba Yaga or Nimue - decided) | visual | S-M |
+| 75 | The Fenced Bloom's garden heal wears off after 20 HP - **built** | secret | done |
+| 76 | Show Aegis Ward recharging on the spell bar; fix its wrong tagline | HUD | S-M |
+| 77 | Balance pass on every spell (Aegis Ward's recharge looks too fast; Twinstar folded in) | balance | L |
+| 78 | Finish the far shore's five remaining gods and their chapters (F6-F10) | content | XL |
 
 **A snapshot, not a source of truth:** check `git log` and the branches before acting on it.
 
@@ -1180,6 +1184,17 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     trickle in the same set (the Familiar's Purr is the same shape, 3 every 20 s). Show it filling (a small HUD or
     relic-icon fill) so the wait reads. Add its line to the healing ledger (`GameStats.TrackHealing`) and re-run the
     5.1 measurement; reword the set's card to match. A changed relic needs no save step - nothing a save holds moves.
+    **Built 2026-11-09 (Eric: "Make the changes to the cup you suggested"), on `main-ff86ni`:** `Player.TickEssenceChalice`
+    - the cup fills over 20 s (`EssenceChaliceSeconds`) and, once full, heals 3 HP (`EssenceChaliceHeal`) the next
+    moment he is below full health; a full cup waits rather than spilling, so it never feeds the Vial's overheal and
+    never pays more than 9 a minute. A "+3" in the Water ink rises over him when it is drunk (shown even with damage
+    numbers off - it is the cup's only tell), and the pause screen's relic list says "Filling: N% full" or "Full - you
+    drink it the next time you are hurt" (`ChestChaliceFillShare`). Card: *"Fills every 20 seconds, then heals 3 HP the
+    next time you are hurt."* The clock stands still during a boss's arrival. The set's card (every 15th kill) needed no
+    change. Verified: build 0 errors; validator 0 errors, 0 warnings; `_BalanceHarness --minutes=4 --give-relics=
+    essence_chalice` shows `heal: Player.TickEssenceChalice 1.5/min` against 0.7 lost a minute - it drinks only when
+    hurt. Not verified by eye: the "+3" in a real run, the pause line. No sound (once every 20 s at most; the audio
+    contract would want a quiet one if any).
 74. **The wizard's feet should sink when he wades** (Eric, 2026-11-09: *"When walking over water, we should make the
     feet of the wizard sink in (if they walk on the ground)"*). Today wading only slows him (`Player.IsWading`, a point
     query at his boots against water's layer 6 each physics frame, `Player.cs` 7763; `WaterWadeSpeedMultiplier` 0.45)
@@ -1194,6 +1209,40 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     rather than in it - Eric's call. The Swallow-Hole's mud (`SwallowHole.cs`, its own `IsWading`) should sink him
     too. Not the abyss: the Bridge's water is not walkable (`WaterWalkable = false`). Check that it reads under the
     `Foremost` layer's rule that the wizard is never lost under an effect, with `_UiShot` in a chapter with water.
+    **Decided (Eric, 2026-11-09): Baba Yaga and Nimue both stay on top** - her mortar floats, and the Lady of the Lake
+    walks on the water (rings round her feet, no sinking). Wayland, flying, stays on top too.
+75. **The Fenced Bloom's ("Dandelion Grove") heal wears off** (Eric, 2026-11-09: *"the dandelion Grove effect should
+    wear off after it heals you for a while"*). Once its lap was walked, the garden healed 0.5 HP a second to anyone
+    inside it for the rest of the run - 30 a minute, against the budget's 9-a-minute sources, and with a pen in every
+    other chunk. **Built 2026-11-09, on `main-ff86ni`:** `FencedBloom.SanctuaryBudget` = 20 HP a pen (forty seconds of
+    standing), counted in the pen's own `SiteState.Step` so a pen forgotten with its chunk remembers; the open flower's
+    glow shrinks as it is spent and goes out with it. The opening's half-bar heal is unchanged. The secret's reward
+    line now says *"the garden heals you for a while as you stand in it"*; `.ai/stage-secrets.md`'s sanctuary row says a
+    healing sanctuary wears off. Build 0 errors, validator clean. Not verified by eye: the fading light.
+76. **Show Aegis Ward recharging on the spell bar** (Eric, 2026-11-09: *"Show aegis ward recharging on the spell bar at
+    the top of the screen"*). The equipped-spell row (`LoadoutHud`, the 48-pixel slots under the health bar) shows no
+    cooldowns today. Give Aegis Ward's slot a recharge sweep (its `spellFireTimers` against its interval) and a
+    full / broken state, so the player can see when the shield is back; consider the same for the other defensive
+    spells built on its rules (Stormguard, Gloam Veil). The row redraws on `Player.LoadoutChanged` only, so this needs
+    a cheap per-frame redraw of one slot, not the whole row (`.ai/performance.md`). **Also: its tagline is wrong** -
+    *"Soaks hits; recharges once broken."* - the cast branch (`Player.cs` 4793) tops the shield back up to full every
+    cooldown whether it broke or not.
+77. **Is Aegis Ward's recharge too fast? A balance pass on every spell** (Eric, 2026-11-09: *"Is it's recharge too
+    fast? Mark that we need a balance pass on all spells next week"*). Aegis Ward on paper: an 8-point shield refilled
+    every 9 s at level 1 (up to ~53 HP a minute absorbed, against a 50 HP bar), 31 points every 6.5 s at level 8 (~286
+    a minute), and its cooldown also shortens with attack speed (Tempest Rhythm, up to +128% from the shop) - against
+    a healing budget that pays about 9 HP a minute a source, it can erase most chip damage, so probably yes. **The
+    pass, for the week of 2026-11-16:** every active spell's damage, cooldown, count and reach measured the same way
+    (`_BalanceHarness --spell=<id>` on an ordinary wizard, `--all-unlocked`, fixed seeds), against each other and
+    against the spells-start-small rule; the defensive spells against the healing budget (`.ai/difficulty-curve.md`
+    5); fold in item 69 (Twinstar Sigil). `.ai/spell-roster.md` is the roster's design.
+78. **Finish all of the far shore's characters** (Eric, 2026-11-09: *"We should also finish making all the
+    characters for far shores next week"*). F6-F10 in `.ai/second-half.md` section 9: Manannán mac Lir (Maelstrom,
+    the Drowned Shore), Hecate (Dark Lens, the Three Ways), Ra (Orrery, the Twelfth Hour), Ukko (Hailfront, the
+    Thunder Fell) and Hephaestus (Anvil Line, the Bronze Isle) - each a Conjunction (M), a god (M) and a chapter with
+    its cast and boss (L), plus the closing reel with F10. Built on F1's plumbing, as Artemis was (F2/F3); gods are
+    appended to `CharacterRoster` in the order they merge. Keep it separable for the DLC (item 64). Large: five
+    slices, best as parallel worktrees, one per god.
 
 ## 0. Then (2026-11-03, after the 0.12.0 release)
 

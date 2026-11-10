@@ -241,7 +241,7 @@ from the code at a typical holding.
 | Grass tier | `GetGrassRegenPerSecond` | 1 / 2 / 4 a second at tier 2 / 4 / 6 | 60 / 120 / 240 | **0.1 / 0.2 / 0.4** (6 / 12 / 24) |
 | Light tier | `NotifySpellDamageDealt` | 3 / 6 / 10% of every point of spell damage dealt | **402** (a fresh Ruins run), **649** (farmed Cave), **2,957** (farmed Ruins): the bar refilled as fast as it emptied | **0.5 / 1 / 1.5%**, banked, and **at most 1 HP a second** (60) |
 | health flask | `HealthPickup`, `DropTable` | 10 HP, a rare drop | **9-19** | **8 HP**, half as often |
-| Essence Chalice relic | `OnChestEnemyKilled` | 1 HP a kill, first 50 kills | 50 a run | **first 15 kills** |
+| Essence Chalice relic | `OnChestEnemyKilled` | 1 HP a kill, first 50 kills | 50 a run | **first 15 kills**; since 2026-11-09 **3 HP every 20 s**, a full cup waiting until he is hurt (`TickEssenceChalice`; 9 at most) |
 | Life Drain set | `OnChestEnemyKilled` | 1 HP a kill, unlimited | **80** in the Forest run that held it | **1 HP every 15th kill** (about 15) |
 | Heart of Renewal relic | `chestRegenPerSecond` | 0.8 a second | 48 while held (11 averaged over its run) | **0.15** (9) |
 | the Frostweaver's passive (`health_regen_0_5`) | `ApplyCharacterPassiveBonus` | 0.5 a second | 30, every Frostweaver run | **0.15** (9) |

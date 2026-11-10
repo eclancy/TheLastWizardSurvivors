@@ -29,7 +29,8 @@ public static partial class SecretCatalog
 				FoundLine = "A moonflower somebody kept, behind a fence. Walk all the way round it and it opens.",
 				SeenLine = "A walled garden in the wood, and in it one pale flower that turns to follow you.",
 				Verb = SecretVerb.Circle,
-				RunReward = "Healed by half, and the garden heals you while you stand in it",
+				// The garden's heal wears off (FencedBloom.SanctuaryBudget; Eric, 2026-11-09).
+				RunReward = "Healed by half, and the garden heals you for a while as you stand in it",
 				// Every flower pen is one, as it streams in: no forced anchor (.ai/stage-secrets.md 12).
 				Install = director => director.HookLandmarks("flower_pen", "FencedBloom",
 					landmark => new global::FencedBloom { Site = landmark }),

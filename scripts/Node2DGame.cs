@@ -4855,6 +4855,12 @@ public partial class Node2DGame : Node2D
 			box.AddThemeConstantOverride("separation", 3);
 			box.AddChild(BuildDetailLabel(ChestItemCatalog.GetDisplayName(id), PauseInk.Ink, ResponsiveLayout.TextRole.Body));
 			box.AddChild(KeywordText.Wrap(BuildDetailLabel(ChestItemCatalog.GetDescription(id), PauseInk.InkSoft, ResponsiveLayout.TextRole.Label)));
+			// The Chalice Cup fills on a clock and waits, full, for him to be hurt: say where it stood when the game
+			// paused, as the Waywiser's line says which spell it was winding.
+			if (id == ChestItemCatalog.EssenceChalice && player != null)
+				box.AddChild(BuildDetailLabel(player.ChestChaliceFillShare >= 1f
+					? "Full - you drink it the next time you are hurt."
+					: $"Filling: {Mathf.FloorToInt(player.ChestChaliceFillShare * 100f)}% full.", PauseInk.InkSoft, ResponsiveLayout.TextRole.Label));
 			if (BuildPauseTagChips(ChestItemCatalog.GetElementTags(id)) is Control chips)
 				box.AddChild(chips);
 			row.AddChild(box);

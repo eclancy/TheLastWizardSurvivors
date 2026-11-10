@@ -4,7 +4,7 @@ using TheOneHeMissed.scripts;
 
 // F1, the Fenced Bloom (.ai/stage-secrets.md 6.1): a moonflower somebody kept, behind a fence. Walk one
 // full lap round the pen - outside the fence, up to LapBand px out - and it opens: healed by half, a
-// seed for the First Tree, and the garden heals whoever stands in it for the rest of the run.
+// seed for the First Tree, and the garden heals whoever stands in it until its heal is spent (SanctuaryBudget).
 //
 // Attached to a flower pen (Landmark) by the SecretDirector as the pen streams in. It is behaviour on
 // top of the landmark's art and owns none of it: the progress lives in the director's run state, keyed
@@ -32,6 +32,12 @@ public partial class FencedBloom : SecretSite
 	private const float LapBand = 200f;
 	private const float HealShare = 0.5f;
 	private const float SanctuaryPerSecond = 0.5f;
+	// The garden's heal wears off (Eric, 2026-11-09: "the dandelion Grove effect should wear off after it heals you for a
+	// while"): this many points in all, then it is spent and its light goes out. It healed for the rest of the run - 30
+	// HP a minute to anyone who stood in it, against a healing budget whose other sources pay about 9
+	// (.ai/difficulty-curve.md 5.1). Forty seconds of standing in it, on top of the half bar the opening heals. Counted in
+	// the pen's own state (SiteState.Step), so a pen forgotten with its chunk and made again remembers what it gave.
+	private const int SanctuaryBudget = 20;
 	private const int LapMotes = 28;
 
 	private SecretDirector.SiteState state;
@@ -112,10 +118,10 @@ public partial class FencedBloom : SecretSite
 		Director.Found(SecretCatalog.FencedBloomId);
 	}
 
-	// +0.5 HP a second inside the fence, in whole points as they add up.
+	// +0.5 HP a second inside the fence, in whole points as they add up, until SanctuaryBudget is spent.
 	private void Sanctuary(Player player, float dt)
 	{
-		if (player.CurrentHP >= player.MaxHP)
+		if (player.CurrentHP >= player.MaxHP || state.Step >= SanctuaryBudget)
 		{
 			sanctuaryOwed = 0f;
 			return;
@@ -123,10 +129,14 @@ public partial class FencedBloom : SecretSite
 		sanctuaryOwed += SanctuaryPerSecond * dt;
 		if (sanctuaryOwed < 1f)
 			return;
-		int whole = (int)sanctuaryOwed;
+		int whole = Math.Min((int)sanctuaryOwed, SanctuaryBudget - state.Step);
 		sanctuaryOwed -= whole;
+		state.Step += whole;
 		player.Heal(whole);
 	}
+
+	/// <summary>How much of the garden's heal is left, 1 when it opens and 0 once it is spent.</summary>
+	private float SanctuaryLeft => 1f - Math.Clamp(state.Step / (float)SanctuaryBudget, 0f, 1f);
 
 	private static float DistanceOutside(Rect2 rect, Vector2 point)
 	{
@@ -145,8 +155,9 @@ public partial class FencedBloom : SecretSite
 		if (state.Done)
 		{
 			// Open: a steady glow round the flower and a bright core - a small light, held at the top of its
-			// breath. Small - it is a flower, not a spell.
-			DrawLight(this, head, 14f, 0.7f);
+			// breath. Small - it is a flower, not a spell. It shrinks as the garden's heal is spent and is gone
+			// with it (DrawLight draws nothing under one grid step), so a spent garden reads as spent.
+			DrawLight(this, head, 14f * SanctuaryLeft, 0.7f);
 			return;
 		}
 
