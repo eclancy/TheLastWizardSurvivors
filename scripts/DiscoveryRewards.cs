@@ -78,6 +78,13 @@ public static class DiscoveryRewards
 		List<Grant> granted = GrantSite(saveManager.Data, siteId, AchievementManager.RunCharacterId);
 		// Always: the win itself is new to the save (EventsWon, the deed), even when what it pays was owned.
 		saveManager.SaveGame();
+		// A wizard it freed steps out beside the player - unless the event's own scene shows him (in-flight 83,
+		// WizardAppearance.SitesWithOwnBeat): the Gaoler's key opens a cell door and never shows Tituba.
+		foreach (Grant grant in granted)
+		{
+			if (grant.IsWizard)
+				WizardAppearance.Freed(grant.Id, AchievementDefinitions.EventDeedId(siteId));
+		}
 		return granted;
 	}
 

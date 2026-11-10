@@ -54,8 +54,9 @@ namespace TheOneHeMissed.scripts;
 //         visit), Nine Lives (L4 - a life for yours) / Cath Palug (L8, +Arcane - the great cat), Black Cat (L8 -
 //         it casts his spells)
 // After an element path the level 8 looks are drawn in that element.
-//   crow, milestone 9: The Painted Door (Ma Liang's Apotheosis, verb displace) - where it strikes it paints a door, and
-//         what stands on it steps out of a second door far across the field (Familiar.PaintedDoor.cs).
+// No milestone 9: The Painted Door (Ma Liang's Apotheosis) was the crow's until 2026-11-10, when Ink Ring became his
+// opener and the form moved onto it (InkRing.PaintedDoor.cs, .ai/character-fit.md row 21). His crow is still painted
+// in ink whenever he takes the Familiar (PaintsInInk).
 //
 // NO MARKERS (art-direction.md section 3): the bite's reach is the jaws snapping shut on the bite radius
 // and ImpactDebris thrown out to exactly it; a swipe is three claw strokes inside it; the swoop's swath
@@ -548,7 +549,6 @@ public partial class Familiar : Node2D, IPaintsElementPath
 	public override void _Ready()
 	{
 		rng.Randomize();
-		ResetDoorStats();
 		// The creatures are children of this node, and y-sort nests: they sort with the bodies in the arena.
 		YSortEnabled = true;
 		ZIndex = 0;
@@ -610,8 +610,6 @@ public partial class Familiar : Node2D, IPaintsElementPath
 		annwn = kind == Kind.Dog && spell.HasEvolution(AnnwnId);
 		griffin = kind == Kind.Crow && spell.HasEvolution(GriffinId);
 		morrigan = kind == Kind.Crow && spell.HasEvolution(MorriganId);
-		// Ma Liang's Apotheosis on the crow (Familiar.PaintedDoor.cs).
-		SetPaintedDoor(spell);
 		flies = kind == Kind.Crow;
 		ramp = ElementColors.GetRamp(spell.GetBranchElement() ?? Element.Arcane);
 		tint = visualTint;
@@ -921,7 +919,6 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			h.Sprite.Modulate = new Color(1f, 1f, 1f, alpha);
 		}
 
-		TickDoors(dt);
 		TickFx(dt);
 		fx?.QueueRedraw();
 	}
@@ -1505,9 +1502,6 @@ public partial class Familiar : Node2D, IPaintsElementPath
 				BiteAt(third.GlobalPosition, third, h.Facing);
 		}
 		SfxPlayer.Instance?.PlayAt(SfxCatalog.SpellFamiliarBite, centre, 0.08f, SfxCatalog.SpellFamiliarBite, SoundGapMs);
-		// The Painted Door: where the crow's peck lands, a door (Familiar.PaintedDoor.cs).
-		if (kind == Kind.Crow)
-			TryPaintDoor(centre);
 		// The strike done, it lets go of its quarry: a hound comes straight back to heel and a crow rises back
 		// to its ring, and each takes a new quarry with its next strike.
 		h.Target = null;
@@ -1887,9 +1881,6 @@ public partial class Familiar : Node2D, IPaintsElementPath
 			if ((a + ab * u).DistanceSquaredTo(p) > half * half)
 				continue;
 			h.SwoopHits.Add(e);
-			// The griffin's swoop paints its door at the first body it strikes (Familiar.PaintedDoor.cs).
-			if (h.SwoopHits.Count == 1)
-				TryPaintDoor(e.GlobalPosition);
 			Strike(e, damage, quarry: false);
 			StatBites++;
 			if (GetParent() is Node2D arena)

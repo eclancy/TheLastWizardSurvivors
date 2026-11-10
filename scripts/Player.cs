@@ -937,7 +937,7 @@ public partial class Player : CharacterBody2D
 			AddStartingConjunction(opening, selectedCharacter.IsLegendaryStart);
 		// A wizard marked to choose the form of his spell chooses it on the run's first screen (Player.MaLiang.cs): the
 		// spell is owed until then, and Node2DGame opens the page before anything moves. None is marked since Ma Liang
-		// opens on the crow (2026-11-09); every wizard on a spell with forms opens in his Apotheosis's form below.
+		// stopped choosing (2026-11-09); every wizard on a spell with forms opens in his Apotheosis's form below.
 		else if (!toolOpener && ChoosesOpeningForm(selectedCharacter) && string.IsNullOrEmpty(SpellVariants.Split(startingSelection).VariantId))
 			OweOpeningForm(startingSpellId, selectedCharacter.IsLegendaryStart);
 		else if (!string.IsNullOrWhiteSpace(startingSpellId))

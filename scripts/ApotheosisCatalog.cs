@@ -379,23 +379,25 @@ public static class ApotheosisCatalog
 				new Color(0.92f, 0.97f, 1.0f)),
 		},
 		// Ma Liang, freed by tracing the door he sketched in the Court's Gallery (.ai/chapter-wizards.md 4.8). "Displace" was
-		// on the ADR's unclaimed list: the boy of the tale painted a door and walked through it, and his crow paints one where
-		// it strikes - whatever ordinary body stands on it steps out of a second door far across the field
-		// (Familiar.PaintedDoorId, Familiar.PaintedDoor.cs). Nothing is pulled (pull), drowned in a current (flood), held
-		// (hold) or lured (double): the knot is moved, and it deals nothing of its own. Elites, minibosses and bosses are
-		// never moved. ONE FORM'S: only the crow - the tale's painted birds - has a final form, and he opens on the Familiar
-		// as the crow every run (CharacterData.StartingFormId reads this VariantId, as Nimue's Sword does), painted in ink
-		// (Familiar.PaintsInInk). He chose dog, crow or cat until 2026-11-09 (.ai/character-fit.md section 5, row 21).
-		// Arcane, the Familiar's only element; no card on the crow trades it away (Stormcrow adds Lightning beside it).
-		// No visual scale: the doors are drawn at one size.
+		// on the ADR's unclaimed list: the boy of the tale painted a door and walked through it. Here the brush that closes a
+		// ring paints one inside it, and whatever ordinary body the ring holds steps out of a second door far across the field
+		// (InkRing.PaintedDoorId, InkRing.PaintedDoor.cs). Nothing is pulled (pull), drowned in a current (flood), held (hold)
+		// or lured (double): the knot is moved, and it deals nothing of its own. Elites, minibosses and bosses are never moved.
+		// ON INK RING since 2026-11-10 (Eric: "would it make sense for ink ring to be his starting spell instead?" - "Yes, add
+		// it"; .ai/character-fit.md row 21): the form was the crow Familiar's, which he opened on as the crow until then, and
+		// it moved with his opener as the Eye of Ra and the Spirit Mirror moved with theirs; the verb went with it. A save that
+		// saw it on the crow still has it seen (SaveData.MovedAscensions). Water, the one of the ink's two halves the form
+		// deepens - the wet of a watercolour door, and the element no form but Tituba's holds (Darkness has the Spirit Mirror
+		// and The Taking); no card on the ring trades it away (Wet Ink deepens Water, Ink Prison Darkness beside it). No
+		// visual scale: the doors are drawn at one size.
 		new()
 		{
-			CharacterId = "ma_liang", SpellId = "familiar", VariantId = Familiar.CrowId,
-			Element = Element.Arcane, Verb = "displace",
-			Form = Make(Familiar.PaintedDoorId, "The Painted Door", Element.Arcane,
-				"Where the crow strikes it paints a door, and whatever stands on it steps out of a second door far across the field.",
+			CharacterId = "ma_liang", SpellId = InkRing.SpellId,
+			Element = Element.Water, Verb = "displace",
+			Form = Make(InkRing.PaintedDoorId, "The Painted Door", Element.Water,
+				"Closing a ring paints a door inside it, and whatever the ring holds steps out of a second door far across the field.",
 				"Displace: move the knot, not the kill. Elites and bosses never go through a door.",
-				new Color(0.91f, 0.75f, 1.0f), NoVisualScale),
+				new Color(0.66f, 0.84f, 1.0f), NoVisualScale),
 		},
 		// THE GODS' FORMS (.ai/second-half.md 3.2-3.4; plumbing F1). Each god's Apotheosis is the final form of the
 		// Conjunction it opens on (ComboDefinition.StartsFusedFor), so its gate is that spell's max level alone

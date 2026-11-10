@@ -28,8 +28,8 @@ public partial class CharacterData : Resource
     /// Apotheosis is the final form OF (ApotheosisDefinition.VariantId), or empty. Nimue opens on Spiritual Weapon as
     /// the Sword (.ai/endgame-castle.md decision 11) because Excalibur ends the Sword. Read from the catalog rather
     /// than kept here, so the two can never disagree: a form holds for the run, and a wizard opened in another
-    /// would never meet his gate. Ma Liang opens on the Familiar as the crow (The Painted Door) the same way, since
-    /// 2026-11-09. Empty for a spell with no forms, which every other wizard opens on, and for a wizard who chooses his
+    /// would never meet his gate. Ma Liang opened on the Familiar as the crow (The Painted Door) the same way from
+    /// 2026-11-09 until he moved to Ink Ring on 2026-11-10. Empty for a spell with no forms, which every other wizard opens on, and for a wizard who chooses his
     /// form each run (ChoosesStartingForm).
     /// </summary>
     public string StartingFormId =>

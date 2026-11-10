@@ -91,17 +91,25 @@ public static partial class RegressionChecks
 		if (InkRing.PrisonLayerBit != 1u << (LevelTilePainter.EnemyOnlyCollisionLayer - 1))
 			warnings.Add("Ink Ring: the prison wall is not on LevelTilePainter.EnemyOnlyCollisionLayer.");
 
-		// THE CORMORANT pays it: a run one Water-or-Darkness kill short does not, one that makes the count does.
+		// THE CORMORANT pays it, and since Ink Ring became Ma Liang's opener (in-flight 94) only done AS him, once he is free
+		// (in-flight 84; ValidateWizardOpeners holds the rule for every opener): a run one Water-or-Darkness kill short does
+		// not, one that makes the count does, and the same count as anyone else does not.
 		AchievementDefinition cormorant = AchievementDefinitions.GetById("cormorant");
 		if (cormorant == null || cormorant.SpellUnlockId != InkRing.SpellId)
 			warnings.Add("Ink Ring: no Cormorant feat pays Ink Ring, so nobody can ever hold it.");
 		else
 		{
 			int target = AchievementDefinitions.CormorantInkKills;
-			if (cormorant.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { InkKills = target - 1 })))
+			if (!cormorant.IsWizardOpener || cormorant.RequiredCharacterId != "ma_liang")
+				warnings.Add("Ink Ring: Cormorant is not Ma Liang's opener deed (in-flight 84 and 94).");
+			var free = new SaveData();
+			GlobalStatsManager.UnlockCharacter(free, "ma_liang");
+			if (cormorant.IsComplete(AchievementContext.Projected(free, new RunResult { CharacterId = "ma_liang", InkKills = target - 1 })))
 				warnings.Add($"Ink Ring: Cormorant completes on {target - 1} Water and Darkness kills in a run; it asks for {target}.");
-			if (!cormorant.IsComplete(AchievementContext.Projected(new SaveData(), new RunResult { InkKills = target })))
-				warnings.Add($"Ink Ring: a run with {target} Water and Darkness kills does not complete Cormorant (LifetimeStats.BestInkKillsInRun).");
+			if (!cormorant.IsComplete(AchievementContext.Projected(free, new RunResult { CharacterId = "ma_liang", InkKills = target })))
+				warnings.Add($"Ink Ring: a run as Ma Liang with {target} Water and Darkness kills does not complete Cormorant (RunResult.InkKills).");
+			if (cormorant.IsComplete(AchievementContext.Projected(free, new RunResult { CharacterId = "tituba", InkKills = target })))
+				warnings.Add("Ink Ring: Cormorant completes in a run as someone other than Ma Liang.");
 			var save = new SaveData();
 			save.Lifetime.Absorb(new RunResult { InkKills = 42 });
 			if (LifetimeStats.FromDictionary(save.Lifetime.ToGodotDictionary()).BestInkKillsInRun != 42)

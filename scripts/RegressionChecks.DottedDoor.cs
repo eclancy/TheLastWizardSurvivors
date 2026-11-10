@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TheOneHeMissed.scripts;
 
-// Ma Liang (.ai/chapter-wizards.md 4.8): what holds the trace, the Painted Door and his opening crow to their sentences,
+// Ma Liang (.ai/chapter-wizards.md 4.8): what holds the trace, the Painted Door and his opening spell to their sentences,
 // which no build sees and a single run shows once. Every line is a warning, as the rest of RunAll's are.
 public static partial class RegressionChecks
 {
@@ -91,34 +91,46 @@ public static partial class RegressionChecks
 			warnings.Add("Dotted door: Ma Liang is not in CharacterRoster.");
 		else
 		{
-			// He opens on the crow every run, as Nimue opens on the Sword (Eric, 2026-11-09: "he automatically starts with a
-			// crow familiar"): no opening page, the crow's form in his opening hand, his card saying so, and his crow in ink.
+			// He opens on Ink Ring since 2026-11-10 (in-flight 94, Eric: "would it make sense for ink ring to be his starting
+			// spell instead?" - "Yes, add it"): a spell with no forms, so no opening page and no form in his opening hand; his
+			// card reads the spell's name alone. His crow stays painted in ink whenever he takes the Familiar later.
 			if (Player.ChoosesOpeningForm(him))
-				warnings.Add("Ma Liang: he chooses his Familiar's form at the start of a run again; he opens on the crow (ChoosesStartingForm must be off).");
-			if (him.StartingSelection != SpellVariants.Selection("familiar", Familiar.CrowId))
-				warnings.Add($"Ma Liang: he opens on '{him.StartingSelection}', not the Familiar as the crow, so The Painted Door may never be his.");
-			if (him.StartingForm?.ShortName != "Crow" || him.StartingSpellResource?.Name != "Familiar")
-				warnings.Add("Ma Liang: his card would not read \"Familiar - Crow\" (the spell's Name and the crow form's ShortName).");
+				warnings.Add("Ma Liang: he chooses a form at the start of a run again; he opens on Ink Ring, which has none.");
+			if (him.StartingSpellResource?.Id != InkRing.SpellId || him.StartingSelection != InkRing.SpellId)
+				warnings.Add($"Ma Liang: he opens on '{him.StartingSelection}', not Ink Ring, so The Painted Door may never be his.");
+			if (him.StartingForm != null || him.StartingSpellResource?.Name != "Ink Ring")
+				warnings.Add("Ma Liang: his card would not read \"Ink Ring\" alone (the spell's Name, and no form).");
 			if (!Familiar.PaintsInInk(him.Id) || Familiar.PaintsInInk("archmage"))
 				warnings.Add("Ma Liang: his crow must be painted in ink, and nobody else's (Familiar.PaintsInInk).");
 			if (CharacterRoster.GetAll().Any(c => c != null && c.ChoosesStartingForm))
 				warnings.Add("Opening forms: a wizard chooses his form on the run's first screen again; say which in CharacterData.ChoosesStartingForm's note.");
 			ApotheosisDefinition form = ApotheosisCatalog.ForCharacter("ma_liang");
-			if (form == null || form.VariantId != Familiar.CrowId || form.Form?.Id != Familiar.PaintedDoorId)
-				warnings.Add("Ma Liang: his Apotheosis must be The Painted Door, on the crow.");
+			if (form == null || form.SpellId != InkRing.SpellId || !string.IsNullOrEmpty(form.VariantId) || form.Form?.Id != InkRing.PaintedDoorId
+				|| form.Verb != "displace")
+				warnings.Add("Ma Liang: his Apotheosis must be The Painted Door (displace), on Ink Ring.");
+			if (ApotheosisCatalog.All.Any(d => d.SpellId == "familiar"))
+				warnings.Add("Painted Door: a form is left on the Familiar; it moved with Ma Liang's opener to Ink Ring (in-flight 94).");
 		}
 		var ordinary = new Enemy();
 		var elite = new Enemy { IsMiniBoss = true };
 		var boss = new BossEnemy();
-		if (!Familiar.DoorTakes(ordinary) || Familiar.DoorTakes(elite) || Familiar.DoorTakes(boss))
+		if (!InkRing.DoorTakes(ordinary) || InkRing.DoorTakes(elite) || InkRing.DoorTakes(boss))
 			warnings.Add("Painted Door: a door must take an ordinary body and never an elite, a miniboss or a boss.");
 		ordinary.Free();
 		elite.Free();
 		boss.Free();
-		if (Familiar.ExitMinDistance >= Familiar.ExitDistance || Familiar.ExitMinDistance < 500f)
-			warnings.Add($"Painted Door: the second door must stand far across the field (ExitMinDistance {Familiar.ExitMinDistance:0}, ExitDistance {Familiar.ExitDistance:0}).");
-		if (Familiar.DoorEverySeconds <= 0f || Familiar.MaxDoors < 1 || Familiar.DoorCapacity < 1 || Familiar.DisplacedCooldown < Familiar.DoorOpenSeconds)
-			warnings.Add("Painted Door: its cadence must keep a door an event (DoorEverySeconds > 0, MaxDoors and DoorCapacity >= 1, a body not moved again while the door stays open).");
+		if (InkRing.ExitMinDistance >= InkRing.ExitDistance || InkRing.ExitMinDistance < 500f)
+			warnings.Add($"Painted Door: the second door must stand far across the field (ExitMinDistance {InkRing.ExitMinDistance:0}, ExitDistance {InkRing.ExitDistance:0}).");
+		if (InkRing.DoorCapacity < 1 || InkRing.DisplacedCooldown < InkRing.DoorOpenSeconds)
+			warnings.Add("Painted Door: a door must take at least one body, and a body taken must not be taken again while the door stays open.");
+		// The door opens once the ring has struck: after the strike at its close, and after Second Stroke's second strike.
+		if (InkRing.DoorTakesAfter(false) <= 0f || InkRing.DoorTakesAfter(true) <= InkRing.SecondStrokeDelay)
+			warnings.Add("Painted Door: the door takes its ring's crowd before the ring has struck (DoorTakesAfter against SecondStrokeDelay).");
+		// A save that saw the form on the crow still has it seen on Ink Ring (SaveData.MovedAscensions).
+		var sawOnCrow = new SaveData();
+		sawOnCrow.SeenAscensionIds.Add(SaveData.AscensionKey("familiar", InkRing.CrowPaintedDoorId));
+		if (!sawOnCrow.IsAscensionSeen(InkRing.SpellId, InkRing.PaintedDoorId))
+			warnings.Add("Painted Door: a save that saw the form on the crow finds it sealed again on Ink Ring (SaveData.MovedAscensions).");
 		if (Player.PaintFlaskHealthFraction <= 0f || Player.PaintFlaskHealthFraction >= 0.5f)
 			warnings.Add($"Paint What Is Needed: it paints below {Player.PaintFlaskHealthFraction:P0} of his health; the design is a quarter.");
 	}

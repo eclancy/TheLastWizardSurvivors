@@ -795,13 +795,20 @@ def windfall(fruit=((11.5, 13.5), (19.5, 15.0), (15.5, 9.5)), falling=True, rot=
     return c
 
 
-def lancet_needle(c, ax, ay, bx, by, bead=True, bodkin=False):
-    """One of Lancet's needles (scripts/Lancet.cs), from its eye at (ax, ay) to its point at (bx, by): the shaft in steel lit
-    over a flank of steel's base on its lower side, the eye a slot of occlusion, the last of it white-hot - metal's core, as
-    the game draws the point - and, `bead`, a drop of poison hanging under the shaft just behind the point. `bodkin` widens
-    the point into a bodkin's square-shouldered head."""
-    st = bl.MATERIALS["steel"]
+def lancet_needle(c, ax, ay, bx, by, bead=True, bodkin=False, trail=0, clip=None):
+    """One of Lancet's needles (scripts/Lancet.cs), from its eye at (ax, ay) to its point at (bx, by).
+
+    A needle of the spell's light, not a surgeon's steel (Eric, 2026-11-10: "Lancet's icon should look a bit more magical in
+    nature"; in-flight 90). Its shaft is Metal's hot - the light end of Metal's ramp, where it was steel lit and steel's
+    base - over a flank of Metal's mid on its lower side, its last pixels white-hot, and a bloom of Metal's edge either side
+    of its last third, dithered out behind, where the light gathers at the point; the eye a slot of occlusion. `trail`
+    (pixels) draws the streak it flew down behind its eye, cooling down Metal's ramp and two pixels thick where the eye
+    picks it up, as a falling star's is (_falling_star), with motes of poison shed off it. Two tries that read as a
+    syringe, not a spell, were dropped: runes of Poison's hot etched along the shaft, and a ring of Poison's light it was
+    cast through. `clip` (cx, cy, r) keeps the light inside a card's night. `bead` hangs a drop of poison under the shaft
+    just behind the point; `bodkin` widens the point into a bodkin's square-shouldered head."""
     core, hot, mid, edge = bl.ELEMENTS["metal"]
+    po = bl.ELEMENTS["poison"]
     length = math.hypot(bx - ax, by - ay)
     ux, uy = (bx - ax) / length, (by - ay) / length
     # The side away from the key light (upper left): the flank of shade.
@@ -809,33 +816,72 @@ def lancet_needle(c, ax, ay, bx, by, bead=True, bodkin=False):
     if sx + sy < 0:
         sx, sy = -sx, -sy
     steps = int(length * 2) + 1
+
+    def along(t):
+        return ax + (bx - ax) * t, ay + (by - ay) * t
+
+    def put(x, y, tone):
+        # Light lies only on open ground or the card's night, and inside the night's clip.
+        x, y = int(round(x)), int(round(y))
+        if clip is not None and math.hypot(x + 0.5 - clip[0], y + 0.5 - clip[1]) > clip[2]:
+            return
+        if _lancet_open(c.get(x, y)):
+            c.set(x, y, tone)
+
+    if trail:
+        # Behind the eye: the streak it flew down, hot to mid to edge, two pixels thick for its first half.
+        for i in range(1, int(trail) + 1):
+            f = i / float(trail)
+            tone = hot if f < 0.3 else (mid if f < 0.65 else edge)
+            if f > 0.7 and i % 2:
+                continue
+            put(ax - ux * i, ay - uy * i, tone)
+            if f < 0.55:
+                put(ax - ux * i + sx, ay - uy * i + sy, mid if f < 0.3 else edge)
+        put(ax - ux * 2.0 - sx * 1.5, ay - uy * 2.0 - sy * 1.5, po[1])
+        put(ax - ux * (trail - 1.0) + sx * 1.5, ay - uy * (trail - 1.0) + sy * 1.5, po[2])
+    # The bloom at the point: Metal's edge either side of its last third, dithered out behind.
     for i in range(steps + 1):
         t = i / float(steps)
-        x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+        if t < 0.62 or (t < 0.8 and i % 2):
+            continue
+        x, y = along(t)
+        put(x + sx * 2.0, y + sy * 2.0, edge)
+        put(x - sx * 1.0, y - sy * 1.0, edge)
+    for i in range(steps + 1):
+        t = i / float(steps)
+        x, y = along(t)
         k = t * length
         if 1.5 < k < length - 1.5:
-            c.set(int(round(x + sx)), int(round(y + sy)), st[2])
+            c.set(int(round(x + sx)), int(round(y + sy)), mid)
     for i in range(steps + 1):
         t = i / float(steps)
-        x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+        x, y = along(t)
         k = t * length
-        tone = core if k > length - 2.5 else (hot if k > length * 0.55 else st[1])
-        c.set(int(round(x)), int(round(y)), tone)
+        c.set(int(round(x)), int(round(y)), core if k > length - 2.5 else hot)
     # The eye: a slot of occlusion in the shaft's tail.
     c.set(int(round(ax + ux * 1.0)), int(round(ay + uy * 1.0)), OCC)
     if bodkin:
         # The bodkin's head: shoulders of steel either side of the point, lit on the upper one.
+        st = bl.MATERIALS["steel"]
         for (side, tone) in ((1.0, st[0]), (-1.0, st[2])):
             for back in (1.5, 2.5):
                 c.set(int(round(bx - ux * back + sx * side)), int(round(by - uy * back + sy * side)), tone)
         c.set(int(round(bx - ux * 3.5 + sx)), int(round(by - uy * 3.5 + sy)), edge)
     if bead:
-        po = bl.ELEMENTS["poison"]
         hx, hy = int(round(bx - ux * 3.0 + sx * 1.6)), int(round(by - uy * 3.0 + sy * 1.6))
         c.set(hx, hy, po[1])
         c.set(hx + 1, hy, po[2])
         c.set(hx, hy + 1, po[2])
         c.set(hx + 1, hy + 1, po[3])
+
+
+def _lancet_open(px):
+    """True where a needle's glow may lie: nothing there yet, or only the card's night (lancet's sky) - never on the skull."""
+    if not px[3]:
+        return True
+    rgb = "#%02X%02X%02X" % tuple(px[:3])
+    return rgb in (bl.tone("red", "shade"), bl.tone("red", "deep"))
 
 
 def lancet_skull(c, x, y, s=1.0, cracked=True, dead=False, withered=False):
@@ -872,27 +918,50 @@ def lancet_skull(c, x, y, s=1.0, cracked=True, dead=False, withered=False):
 
 
 def lancet(sky=True, bead=True, drop=True):
-    """Lancet (scripts/Lancet.cs): a thin steel needle going into the most wounded of the swarm.
+    """Lancet (scripts/Lancet.cs): a needle of light flying into the most wounded of the swarm.
 
-    The needle crosses the card from its eye up on the left to its point low on the right, where it goes into a skull with
-    a crack across its crown - the most hurt, the one it chose. Its shaft is steel lit over a flank of steel's base, its last
-    pixels white-hot, and a bead of poison hangs under it just behind the point, one drop falling from it. Steel is pale and
-    vanishes on the card's cream page (Starfall's lesson), so it is drawn on a night: the deep of a wound, red's shade and
-    deep, a night no other spell's card uses. `sky=False` leaves the night off (tools/art/evolution_icons.py lays its own).
+    The needle flies down the card from its eye up on the left to its point low on the right, where it goes into a skull
+    with a crack across its crown - the most hurt, the one it chose. Since in-flight 90 (Eric, 2026-11-10: "Lancet's icon
+    should look a bit more magical in nature") it is the spell's light, not a surgeon's steel: a shaft of Metal's hot and
+    white, blooming where it strikes, the streak it flew down behind its eye cooling down Metal's ramp as a falling star's
+    does (lancet_needle's `light` and `trail`), the strike a four-armed star, and twinkles of Metal and Poison shed round
+    it. A bead of poison hangs under it just behind the point, one drop falling from it. The needle is pale and vanishes
+    on the card's cream page (Starfall's lesson), so it is drawn on a night: the deep of a wound, red's shade and deep, a
+    night no other spell's card uses. `sky=False` leaves the night off (tools/art/evolution_icons.py lays its own).
     """
     c = raster.Canvas(CELL, CELL, None)
+    core, hot, mid, edge = bl.ELEMENTS["metal"]
+    po = bl.ELEMENTS["poison"]
     if sky:
         c.disc(15.5, 15.5, 15.0, 15.0, bl.tone("red", "shade"))
         c.disc(15.5, 15.5, 14.0, 14.0, bl.tone("red", "deep"))
     lancet_skull(c, 21.5, 21.0, 1.3)
-    lancet_needle(c, 6.0, 6.0, 17.0, 17.0, bead=bead)
-    lancet_glint(c, 17, 17)
+    lancet_needle(c, 9.0, 9.0, 17.0, 17.0, bead=bead, trail=6, clip=(15.5, 15.5, 13.6) if sky else None)
+    lancet_star(c, 17, 17)
+    # Twinkles shed round its flight: a Metal cross over it, a Poison one under, and single motes.
+    for (x, y, ramp) in ((14, 6, bl.ELEMENTS["metal"]), (6, 16, po)):
+        c.set(x, y, ramp[0])
+        for (dx, dy) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            c.set(x + dx, y + dy, ramp[2])
+    c.set(18, 9, hot)
+    c.set(10, 19, po[2])
     if drop:
-        po = bl.ELEMENTS["poison"]
         c.set(13, 21, po[1])
         c.set(13, 22, po[2])
         c.set(14, 22, po[3])
     return c
+
+
+def lancet_star(c, x, y, arm=3):
+    """Where the needle of light strikes: a white heart and four arms on the square - a star of its light, as a falling
+    star's glint is - over the diagonal glint the needle leaves in what it struck (lancet_glint)."""
+    core, hot, mid, edge = bl.ELEMENTS["metal"]
+    lancet_glint(c, x, y)
+    for d in range(1, arm + 1):
+        tone = core if d == 1 else (hot if d == 2 else mid)
+        for (dx, dy) in ((d, 0), (-d, 0), (0, d), (0, -d)):
+            c.set(x + dx, y + dy, tone)
+    c.set(x, y, core)
 
 
 def lancet_glint(c, x, y, arm=2):

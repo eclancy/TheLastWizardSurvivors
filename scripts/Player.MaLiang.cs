@@ -14,12 +14,11 @@ using TheOneHeMissed.scripts;
 // (after the shield, on the HP that actually left, step 8 of TakeDamage), never a blow that kills: a single hit
 // from above a quarter to nothing paints nothing, as no flask would have saved him.
 //
-// HE OPENS ON THE CROW. He opens on the Familiar, a spell with forms (SpellData.Variants), in the crow's form every run:
-// the form his Apotheosis, The Painted Door, belongs to (CharacterData.StartingFormId, from ApotheosisCatalog), as Nimue
-// opens on the Sword - and his crow is painted in ink (Familiar.PaintsInInk). Until 2026-11-09 he chose dog, crow or cat
-// on the run's first screen, and as the dog or the cat never met his final form (Eric: "lets just not let him choose a
-// different familiar than the crow then - he automatically starts with a crow familiar", .ai/character-fit.md section
-// 5, row 21).
+// HE OPENS ON INK RING (since 2026-11-10, in-flight 94: Eric, "would it make sense for ink ring to be his starting spell
+// instead?" - "Yes, add it"), his brush walked, and his Apotheosis, The Painted Door, is its final form
+// (InkRing.PaintedDoor.cs). Before that he opened on the Familiar in the crow's form, the form the door then belonged to,
+// and until 2026-11-09 chose dog, crow or cat on the run's first screen (.ai/character-fit.md section 5, row 21). Whenever
+// he takes the Familiar, his crow is still painted in ink (Familiar.PaintsInInk).
 //
 // THE OPENING PAGE below (OwesOpeningForm and the rest, and Node2DGame.OpeningForm.cs) was built for that choice and is
 // kept: it still works for any wizard whose CharacterData.ChoosesStartingForm is set, and none is now. The spell is
@@ -40,7 +39,7 @@ public partial class Player
 
 	/// <summary>
 	/// The spell this run's wizard opens on whose form is still to be chosen (a wizard with ChoosesStartingForm; none
-	/// since Ma Liang opens on the crow), or empty once it is held. Node2DGame opens the page while this is set.
+	/// since Ma Liang stopped choosing, 2026-11-09), or empty once it is held. Node2DGame opens the page while this is set.
 	/// </summary>
 	public string OpeningFormSpellId { get; private set; } = string.Empty;
 
