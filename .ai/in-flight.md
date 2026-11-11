@@ -11,6 +11,39 @@
 > Lancet: merge `f0af5110`) and the Sketchbook and Test Wizard removal. Validator 0 errors, 0 warnings at
 > epoch 3. **Not played by hand:** the four new spells' feel and numbers, the reset on a real installed copy.
 
+## Week of 2026-11-16: the plan
+
+Eric, 2026-11-11: *"We were supposed to be planning for next week. Let's finish the work we are doing and then make
+notes for next week."* 0.24.0 is out (a story reset, epoch 5); everything below is open, numbered as in the list
+under it. In order:
+
+1. **Bugs first (small, all seen in play):** 105 level-up cards stay dimmed after the pause; 119 the Codex button off
+   the header (look on the real phone first); 104 exploders vanish without dying; 114 the boss bar under the player's
+   HUD; 112 damage shown as a number (find the screen first).
+2. **Elderbark, the first boss-phase build** (134 with 99/115/116/117/123/132): his three approved phases, and with them
+   the shared pieces every later boss reuses - the phase-transition beat, damage-state sprites, animated wind-ups
+   instead of ground shapes, a falling hazard (the sap), capped adds (the saplings), and the player's rooted state.
+   Answer the design doc's three open questions before starting.
+3. **The Hayward** (129 eight facings, 130 ranged pressure, 131 the shield breaks, 133 wind-ups on his body; his block
+   in `.ai/boss-phases.md`): the breakable part, built once for later bosses.
+4. **The shoreline, together** (103 land over water, 106 no lone-cell ponds, 107 terrain never overlaps, 110 a rocky,
+   irregular edge), then 113 enemies can wade.
+5. **Baba Yaga's hut** (108 bolts only when close, 109 a bigger bone yard).
+6. **Spells and balance:** 77 the balance pass on every spell (now that attunement is gone - measure first), folding in
+   122 Lancet aims at the lowest health share and bosses first, 127 Cinderbreath grows with level, and 124 the Archmage
+   healed while Overlooked holds.
+7. **Sound:** 120 Magic Missile's sound remade, 121 the mix (Chain Lightning softer, Cinderbreath louder).
+8. **Screens and words:** 118 the level-up screen uses the phone's height, 111 no line under the Powers titles, 128
+   Ascension and Apotheosis announced like achievements, 102 Aegis Ward's icon redrawn symmetrical, 126 softer
+   highlights on dark creatures.
+9. **Story:** 125 a captive wizard speaks a hint at their prison; 63 the historical gallery (needs a design first).
+10. **The far shore:** 64 plan it as a DLC (plan only), then 78 its five remaining gods - the largest piece; start
+    only once the above are in, one god per worktree.
+
+The other bosses' phases (`.ai/boss-phases.md` section 3's order) follow Elderbark and the Hayward, each confirmed with
+Eric as it comes up. Release when a group is done and validated; the next release need not reset progress unless a
+change narrows what a save holds.
+
 > **0.24.0 is released (2026-11-10), a story reset:** release commit `85ffc052`, tag `v0.24.0`, epoch 4 -> 5 (`5561a9fb`). All nine downloads are `TheLastWizardSurvivors-*`; the three version.json addresses serve 0.24.0 with `progressEpoch` 5 and `program` "TheLastWizardSurvivors"; the APK reads com.ecec.wizardsurvivors 2400 / 0.24.0. It carries every item built on 2026-11-10 (the four batches, the follow-ups and the icon refresh). Not played yet. Still on the list: 63, 64, 77, 78.
 
 ## The next release: Eric's list of changes (started 2026-11-09)
@@ -1580,6 +1613,10 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     quicken. Design first: `.ai/boss-phases.md` proposes phases for every boss (a part that breaks, a transformation, a
     new attack the player must answer differently), for Eric's review one boss at a time; it folds in items 99, 115-117,
     123 (Elderbark) and 129-133 (the Hayward), and 132 (damage on the sprite).
+    **Written 2026-11-11 (`.ai/boss-phases.md`, c40ab78b); Eric: *"These look great"*** - Elderbark's three phases
+    approved as proposed (old growth, the bark splits at 66%, he takes root at 33%); the other bosses' blocks to confirm
+    as each comes up for building, and the doc's three open questions (does the beat leave the swarm and spells running;
+    can a hit skip a phase; does a breakable part show its own bar) to answer before the first one is built.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
