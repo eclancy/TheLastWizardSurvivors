@@ -67,6 +67,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 107 | Terrain features never stamp on top of each other (decided the same in every chunk) | terrain | M |
 | 108 | Baba Yaga's hut bolts only once you are close (she ran before the phone could see her) | puzzle | S |
 | 109 | Her bone yard is bigger | puzzle + art | S |
+| 110 | Water's edge rocky and irregular, not a smooth bowl's rim (with 103 and 106) | terrain art | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1415,6 +1416,17 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     (with `YardGapWidth` 120, `CorneredRadius` 28 at its middle). Grow the yard - say to about 200-220 - scaling the gap
     and the fence art (`tools/art/walking_hut.py` or wherever the yard's posts and skulls are drawn), keep the kneel at
     its middle, and keep `RegressionChecks.WalkingHut`'s yard checks passing.
+110. **Water's edge rocky and irregular, not a bowl's rim** (Eric, 2026-11-10: *"Edge of water should be rockier and
+    irregular instead of looking like the edge of a bowl"*). Water is drawn from its shape (`WaterShape`,
+    `WaterSurface`; `.ai/terrain.md` section 3): corners cut to straight chords or rounded superellipses and a smooth
+    two-lobe rim wobble, so every pond reads as a clean rounded basin with an even lip. Break the edge up: a rougher,
+    multi-scale outline (small notches and points along it, not just two gentle lobes), and rocks and pebbles set along
+    the bank at irregular spacing - half in the water, varied sizes, drawn in the chapter's own stone. Read
+    `.ai/terrain.md` section 3 first, above all "Three renders that were thrown away": each failed by drawing too much
+    (a repeating motif reads as a pattern instead of a shore), so keep the rocks sparse and unevenly spaced. The
+    water polygon is also the wade and collision authority: if the outline gets rougher, the collision follows it
+    (or stays a smoothed version inside it, so the player never snags on a notch). Do it with 103 (land over water)
+    and 106 (no lone-cell ponds) - all three are the shoreline.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
