@@ -438,8 +438,11 @@ ink on wet paper, in one ink of its own, with real alpha. **This is the only art
 the contract.** It covers Ma Liang's ink and nothing else: today the seven ink looks of his crow
 (`crow-ink`, `stormcrow-ink`, `raven-ink`, `morrigan-ink`, `morrigan-storm-ink`, `griffin-ink`,
 `griffin-storm-ink`), and **Ink Ring** - its line, its rings, its spell icon and its five card icons ("Ink
-Ring: a line drawn live", below). His other paint (the dotted door's trace, the painted flask, The Painted
-Door, the crow's motes and pecks) is still his *light* and still on the contract.
+Ring: a line drawn live", below) - and, since it became Ink Ring's Apotheosis (2026-11-10), **The Painted Door**:
+the small door a closing ring paints and the far door the crowd steps out of (`painted_door.small_door`,
+`effects/painted-door.png`), brushed in ink and held to `ink_wash.audit`, its doorway open on Water's light as an
+opaque accent, and its card icon's two doors with it. His other paint (the dotted door's trace and its inked
+door, the painted flask, the crow's motes and pecks) is still his *light* and still on the contract.
 
 **One painter, so every ink thing is one hand.** `tools/art/ink_wash.py` holds the palette, the painter
 (`paint`) and the check (`audit`). A generator lays its figure as **layers**: for every pixel, each wash

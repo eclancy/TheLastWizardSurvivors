@@ -11,10 +11,11 @@ Run: python tools/art/painted_door.py
     world/door/door-inked.png     the same door when the last dot is reached: inked in his light all round and PAINTED
                                   - a door of red lacquer with gold studs and a ring - then opening onto his light:
                                   shut, ajar, half open, open. 104x172, four frames.
-    effects/painted-door.png      The Painted Door, his Apotheosis (Familiar.PaintedDoorId): the small door the crow
-                                  paints where it strikes, and the second one across the field the struck step out of.
-                                  Drawn in the arcane ramp only, as every spell is light: two frames of it being drawn
-                                  (half, whole), shut, ajar and open. 20x30, five frames.
+    effects/painted-door.png      The Painted Door, his Apotheosis on Ink Ring (InkRing.PaintedDoorId): the small door
+                                  a closing ring paints inside it, and the second one across the field what it held
+                                  steps out of. PAINTED IN INK since 2026-11-10 (ink_wash, art-direction.md 3a), the
+                                  doorway open on Water's light: two frames of it being drawn (half, whole), shut, ajar
+                                  and open. 20x30, five frames.
     ui/poi/poi-door.png           the arrow's pictogram: an arched door in dots
     tools/art/_painted_door_preview.png   (gitignored) for looking at
 
@@ -41,6 +42,7 @@ sys.path.insert(0, HERE)
 from PIL import Image
 
 import bonelight as bl
+import ink_wash
 import raster
 
 OCC = bl.OCC
@@ -269,58 +271,127 @@ def inked(frame):
     return c
 
 
-# --- The Painted Door, the form's small door ----------------------------------------------------------
+# --- The Painted Door, the form's small door: IN INK ----------------------------------------------------
+# Since 2026-11-10 the door is Ink Ring's (Ma Liang's Apotheosis moved onto the ring, in-flight 94), so it is painted
+# in INK, the one sanctioned departure from Bonelight (.ai/art-direction.md section 3a), by the ring's own painter
+# (ink_wash.paint) and held to its check (ink_wash.audit): the brush that closes the ring paints the door in the same
+# hand as the line round it. It was the crow's door of arcane light until then. The doorway it opens on is WATER's
+# light - the form deepens Water - crisp and opaque over the ink, as an element's light is on every ink thing ("the ink
+# is the creature; the element is the spell"). The leaf is a pale wash with its planks' faint tide lines, so on a dark
+# floor the wash and the stroke's paler middle carry it and on a pale one its tide lines do. Same cell, frames and foot
+# as the arcane door (InkRing.PaintedDoor.cs reads them; RegressionChecks.ValidateDottedDoor holds the sheet's size).
 FW, FH = 20, 30
 FCX, FTOP, FFOOT = 10, 3, 27     # its middle column, the top of its arch, the row its foot stands on
 FHW = 7
+FPAD = 5                          # ink_wash.paint's cells are square: the door is painted 5 in on a 30x30, then cut
+WA = bl.ELEMENTS["water"]         # core, hot, mid, edge: the light the door opens on
+
+# The outline's stroke as the brush ages it: (half width, density, the share of its edge still wet). Wet as it is drawn,
+# then dried to hard tide lines round a paler middle - Ink Ring's line's own ages (tools/art/ink_ring.py LINE_AGES 0, 2).
+DOOR_WET = (1.6, 0.46, 0.78)
+DOOR_DRY = (1.5, 0.38, 0.3)
+LEAF_WASH = 0.2
 
 
-def small_inside(x, y):
-    spring = FTOP + FHW
-    if abs(x - FCX) > FHW - 1 or y > FFOOT - 1 or y < FTOP + 1:
+def _door_path(px, py):
+    """For a point in door pixels: its distance from the outline's centre line, and how far along the brush's walk
+    (0..1: up the left jamb from its foot, over the arch, down the right jamb) its nearest point lies."""
+    spring = FTOP + FHW + 0.5
+    lx, rx = FCX - FHW + 0.5, FCX + FHW + 0.5
+    cx = FCX + 0.5
+    jamb = FFOOT + 0.5 - spring
+    arc = math.pi * FHW
+    total = 2 * jamb + arc
+    best = None
+    if py >= spring:
+        for (x0, s0, sign) in ((lx, 0.0, -1.0), (rx, jamb + arc, 1.0)):
+            yy = min(FFOOT + 0.5, py)
+            d = math.hypot(px - x0, py - yy)
+            s = (FFOOT + 0.5 - yy) if sign < 0 else s0 + (yy - spring)
+            if best is None or d < best[0]:
+                best = (d, s)
+    else:
+        a = math.atan2(py - spring, px - cx)          # -pi..0 over the top
+        if a > 0:
+            a = -math.pi if px < cx else 0.0
+        d = abs(math.hypot(px - cx, py - spring) - FHW)
+        best = (d, jamb + (a + math.pi) * FHW)
+    return best[0], best[1] / total
+
+
+def _door_inside(px, py):
+    """True for a door pixel's centre inside the outline's inner edge: where the leaf and the doorway are."""
+    spring = FTOP + FHW + 0.5
+    cx = FCX + 0.5
+    if abs(px - cx) > FHW - 1.4 or py > FFOOT + 0.5:
         return False
-    return y >= spring or math.hypot(x - FCX, y - spring) <= FHW - 1
+    return py >= spring or math.hypot(px - cx, py - spring) <= FHW - 1.4
 
 
 def small_door(frame):
-    """0-1 being drawn (half the outline, then all of it), 2 shut, 3 ajar, 4 open. Light only: the arcane ramp."""
-    c = raster.Canvas(FW, FH)
-    spring = FTOP + FHW
-    pts = []
-    for y in range(FFOOT, spring - 1, -1):
-        pts.append((FCX - FHW, y))
-    for k in range(1, 24):
-        a = math.pi + math.pi * k / 24.0
-        pts.append((FCX + FHW * math.cos(a), spring + FHW * math.sin(a)))
-    for y in range(spring, FFOOT + 1):
-        pts.append((FCX + FHW, y))
-    drawn = len(pts) // 2 if frame == 0 else len(pts)
+    """0-1 being drawn (half the outline, then all of it), 2 shut, 3 ajar, 4 open. In ink (ink_wash), the doorway
+    Water's light."""
+    width, density, wet = DOOR_WET if frame <= 1 else DOOR_DRY
+    reach = 0.5 if frame == 0 else 1.0
     open_frac = {2: 0.0, 3: 0.4, 4: 0.92}.get(frame, 0.0)
-    if frame >= 2:
-        leaf = (2 * FHW - 2) * (1.0 - open_frac)
-        for y in range(FTOP, FFOOT):
-            for x in range(FCX - FHW, FCX + FHW + 1):
-                if not small_inside(x, y):
-                    continue
-                if x - (FCX - FHW + 1) <= leaf:
-                    # The leaf: a door of his light's dark end, its planks' joints a stop up - never dark bars on a
-                    # dark ground, which read as a cage's.
-                    c.set(x, y, AR[2] if (x - FCX + 1) % 5 == 0 else AR[3])
-                else:
-                    d = math.hypot((x - FCX) / float(FHW), (y - FFOOT + 4) / 14.0)
-                    c.set(x, y, AR[0] if d < 0.4 else AR[1] if d < 0.75 else AR[2])
-        if frame == 2:
-            c.set(FCX + 4, FCX + 8, AR[1])       # the ring
-    for i, (x, y) in enumerate(pts[:drawn]):
-        c.set(int(round(x)), int(round(y)), AR[2] if i % 7 else AR[1])
-    if frame >= 1:
-        for x in range(FCX - FHW - 1, FCX + FHW + 2):
-            c.set(x, FFOOT + 1, AR[3])           # the threshold, drawn on the ground
-    # The wet head of the stroke on the frames it is being drawn.
-    if frame <= 1 and drawn:
-        hx, hy = pts[drawn - 1]
-        c.set(int(round(hx)), int(round(hy)), AR[0])
-    return c
+    hinge = FCX - FHW + 1.6
+    leaf = (2 * FHW - 3.2) * (1.0 - open_frac)
+    layers = {}
+    details = {}
+    for y in range(FH):
+        for x in range(FW):
+            px, py = x + 0.5, y + 0.5
+            stack = []
+            inside = _door_inside(px, py)
+            if frame >= 2 and inside and px - hinge <= leaf:
+                # The leaf: a pale wash in three planks, each its own part, so a faint tide line runs down their joints.
+                plank = int(max(0.0, px - hinge) / max(1.0, leaf) * 3)
+                stack.append(ink_wash.Layer(LEAF_WASH + 0.04 * plank, "leaf", "plank%d" % plank, px + FPAD, py, True))
+            elif frame >= 3 and inside:
+                # The doorway, open on Water's light: brightest low in the middle, rippled in rows.
+                d = math.hypot((px - FCX - 0.5) / float(FHW), (py - FFOOT + 3.5) / 15.0)
+                k = 0 if d < 0.36 else 1 if d < 0.7 else 2 if d < 1.05 else 3
+                if k > 0 and (FFOOT - y) % 4 == 1 and ((x // 2) + (FFOOT - y) // 4) % 2 == 0:
+                    k -= 1
+                details[(x + FPAD, y)] = ("light", WA[k])
+            dist, along = _door_path(px, py)
+            # The brush goes round loaded and comes off it thinner, its pressure wandering a little as it goes, and the
+            # last of the stroke runs dry: the paper's tooth catches it, as it does the ring's tail (spell_icons.ink_ring).
+            half = width * (1.2 - 0.4 * along) + 0.35 * (ink_wash.vnoise(along * 60.0, 3.0, 37, 5.0) - 0.5)
+            dry = frame >= 1 and along > 0.86 and ink_wash.hsh(x, y, 913 + frame) < (along - 0.86) * 2.4
+            if dist <= half and along <= reach + 1e-6 and not dry:
+                stack.append(ink_wash.Layer(density, "frame", "frame", along * 60.0, dist, False))
+            if frame >= 1 and abs(py - (FFOOT + 1.5)) <= 0.6 and abs(px - FCX - 0.5) <= FHW + 1.5:
+                # The threshold, laid on the ground under the door.
+                stack.append(ink_wash.Layer(0.4, "sill", "sill", px, py, False))
+            if stack:
+                layers[(x + FPAD, y)] = stack
+    if frame >= 3:
+        # The leaf's free edge where it swings away: the door's thickness, a line of pooled ink.
+        ex = int(round(hinge + leaf))
+        for y in range(FH):
+            if _door_inside(ex + 0.5, y + 0.5):
+                details[(ex + FPAD, y)] = ("ink", 0.82)
+    if frame == 2:
+        details[(FCX + 4 + FPAD, 18)] = ("ink", 0.9)          # the ring
+        details[(FCX + 4 + FPAD, 17)] = ("ink", 0.7)
+    # The wet head of the stroke on the frames it is being drawn: ink loaded into the wet, and a fleck thrown off it.
+    drops, splats = [], []
+    if frame <= 1:
+        head = (FCX + 0.5 + FPAD, FTOP + 1.0) if frame == 0 else (FCX + FHW + 0.5 + FPAD, FFOOT - 0.5)
+        drops.append((head[0], head[1], 1.8))
+        splats.append((head[0] + 2.6, head[1] + 2.4, 1) if frame == 0 else (head[0] + 2.4, head[1] - 4.0, 1))
+    # No backrun in the leaf: at this size its ragged ring read as a padlock on the door.
+    canvas = ink_wash.paint(FH, layers, details, drops=drops, splats=splats,
+                       seed=ink_wash.salt_of("painted-door") + frame * 13, soft_share=wet, margin=1)
+    out = raster.Canvas(FW, FH)
+    out.img.paste(canvas.img.crop((FPAD, 0, FPAD + FW, FH)), (0, 0))
+    out.px = out.img.load()
+    # The clear border (art-direction.md 3a): the bleed keeps a pixel inside the cell's sides too.
+    for y in range(FH):
+        out.px[0, y] = (0, 0, 0, 0)
+        out.px[FW - 1, y] = (0, 0, 0, 0)
+    return out
 
 
 # --- the pictogram -------------------------------------------------------------------------------------
@@ -401,7 +472,13 @@ def main():
     _strip(ink).save(os.path.join(OUT_WORLD, "door-inked.png"))
     small = [small_door(f) for f in range(5)]
     for f, c in enumerate(small):
-        ok = _audit("painted door %d" % f, c) and ok
+        # Ink, the named exception (.ai/art-direction.md 3a): its own check in place of the contract's.
+        bad = ink_wash.audit(c.img)
+        if bad:
+            print("OFF-INK COLOURS in painted door %d:" % f)
+            for h, a, cnt in bad[:6]:
+                print("   %s a=%d  x%d" % (h, a, cnt))
+            ok = False
     _strip(small).save(os.path.join(OUT_FX, "painted-door.png"))
     g = glyph()
     ok = _audit("glyph door", g) and ok

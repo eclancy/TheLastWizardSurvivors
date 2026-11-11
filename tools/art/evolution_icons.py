@@ -4375,19 +4375,15 @@ def _(sp, c):
 
 
 def pd_door(cv, x0, foot, w, h, inside):
-    """One of the Painted Door's doors, as the game draws it (tools/art/painted_door.py's small door): an arched door with
-    an occlusion outline, its frame in the arcane light it is painted in, and inside it the dark (`inside` "dark") or the
-    light it opens on ("light")."""
-    core, hot, mid, edge = E["arcane"]
+    """One of the Painted Door's doors, as the game draws it (tools/art/painted_door.py's small door): an arched door
+    brushed in ink - paler on its left and over its arch, where the stroke went on loaded, a stop darker down its right -
+    and inside it pooled ink (`inside` "dark") or the Water light it opens on ("light"). In ink since 2026-11-10, as the
+    game's door is (it was the crow's, in arcane light); opaque ink stops on the night, as every Ink Ring card lays them."""
+    core, hot, mid, edge = E["water"]
+    t = ink_wash.INK_TONES
     r = w / 2.0
     cx = x0 + r
     spring = foot - h + r
-    for yy in range(int(foot - h) - 1, int(foot) + 2):
-        for xx in range(int(x0) - 1, int(x0 + w) + 2):
-            dx = xx - cx
-            if yy < spring and math.hypot(dx, yy - spring) > r + 1.0:
-                continue
-            cv.set(xx, yy, OCC)
     for yy in range(int(foot - h), int(foot) + 1):
         for xx in range(int(x0), int(x0 + w) + 1):
             dx = xx - cx
@@ -4395,9 +4391,9 @@ def pd_door(cv, x0, foot, w, h, inside):
                 continue
             edge_px = abs(dx) >= r - 0.6 or (yy < spring and math.hypot(dx, yy - spring) > r - 1.1) or yy == int(foot)
             if edge_px:
-                cv.set(xx, yy, hot if dx < 0 or yy < spring else mid)
+                cv.set(xx, yy, t[3] if dx < 0 or yy < spring else t[5])
             elif inside == "dark":
-                cv.set(xx, yy, OCC)
+                cv.set(xx, yy, t[10])
             else:
                 d = math.hypot(dx / r, (yy - foot + 2) / float(h))
                 cv.set(xx, yy, core if d < 0.35 else hot if d < 0.6 else mid if d < 0.85 else edge)
@@ -4408,13 +4404,13 @@ def _(sp, c):
     """The Painted Door (Ma Liang's Apotheosis on Ink Ring since 2026-11-10, displace): the ring of ink closed low on the
     left, and inside it the door the closing painted - dark inside, a skull of the swarm going into it; the far door up
     across the frame open on the light, the same skull stepping out of it; and the dotted way between them, over the top.
-    The knot the ring held, moved, not killed. The doors are the game's (painted_door.py), in the arcane light the crow
-    painted them in."""
+    The knot the ring held, moved, not killed. The doors are the game's (painted_door.py), brushed in ink and open on
+    Water's light, the element the form deepens."""
     reset(sp)
     sp.subject = _ink(r=9.4, cx=11.0, cy=19.5, width=(3.8, 1.4), flood=False, seed=13)
 
     def doors(cv, x):
-        hot, mid = E["arcane"][1], E["arcane"][2]
+        hot, mid = E["water"][1], E["water"][2]
         pd_door(cv, 7, 24, 7, 10, "dark")
         pd_door(cv, 21, 14, 8, 11, "light")
         # The swarm skull half through the near door, and out of the far one.
@@ -4427,7 +4423,7 @@ def _(sp, c):
             py = 11 - math.sin(t * math.pi) * 5
             if i % 2 == 0:
                 cv.set(px, py, mid if t < 0.6 else hot)
-        m_glint(cv, 25, 4, 1, E["arcane"])
+        m_glint(cv, 25, 4, 1, E["water"])
     O(sp, doors)
 
 

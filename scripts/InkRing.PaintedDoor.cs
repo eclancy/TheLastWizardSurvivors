@@ -23,8 +23,10 @@ namespace TheOneHeMissed.scripts;
 // One door a ring, so the recharge between rings is the door's cadence: a door is an event, not a carpet.
 //
 // NO MARKERS (art-direction.md section 3): the door IS the reach - it stands inside the ring it empties. Its art is
-// tools/art/painted_door.py (effects/painted-door.png: drawn in two strokes, shut, ajar, open), the door the crow painted,
-// standing on the ground under the bodies (DrawLayers.GroundTell), so what steps onto it is seen to be taken. Allocation:
+// tools/art/painted_door.py (effects/painted-door.png: drawn in two strokes, shut, ajar, open), brushed in INK since
+// 2026-11-10 by the ring's own painter (ink_wash, art-direction.md 3a) and open on Water's light - the crow's door was
+// arcane light - standing on the ground under the bodies (DrawLayers.GroundTell), so what steps onto it is seen to be
+// taken. Plain blending, as all ink is: the layer has no dither material, so the wash's real alpha is kept. Allocation:
 // fixed arrays, a door per ring slot and a ring of recently moved bodies; one walk of EnemyRegistry.Snapshot a scan.
 public partial class InkRing
 {
