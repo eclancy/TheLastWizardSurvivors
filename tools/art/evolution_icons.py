@@ -2929,27 +2929,41 @@ def _(sp, c):
     O(sp, wall)
 
 
-def m_sweep(c, ramp, pivot, rr, a0, a1):
-    """A sweep back and forth: an arc `rr` from `pivot` between two headings (degrees), two pixels thick, with a head at
-    either end - the flame swings there and back."""
-    core, hot, mid, edge = ramp
+def m_sweep(c, ramp, pivot, rr, a0, a1, half=0.9, length=4.5, wing=2.8):
+    """A sweep back and forth: an arc `rr` from `pivot` between two headings (degrees), two pixels of the ramp's core
+    thick, with a pointed head at either end carrying it on past them - the flame swings there and back - and a pixel of
+    occlusion round the whole mark. The arc it replaced (2026-11-10) was the ramp's hot and mid, a pixel wide each, under
+    the flame: hot and mid are the gold ring's own tones, the flame's tip hid its middle and its ends ran into the ring,
+    so at 32 pixels the card read as a fan of flame with no sweep. The mark is laid as a mask first and outlined after,
+    so the heads and the arc share one outline and never a seam."""
+    core = ramp[0]
     px, py = pivot
-    n = int(abs(a1 - a0) * rr / 12.0) + 8
-    for i in range(n + 1):
-        a = math.radians(a0 + (a1 - a0) * i / float(n))
-        c.set(px + math.cos(a) * (rr + 1), py + math.sin(a) * (rr + 1), mid)
-        c.set(px + math.cos(a) * rr, py + math.sin(a) * rr, hot)
-    for (a, toward) in ((a0, 1.0), (a1, -1.0)):
+    mask = _Real(CELL, CELL, None)
+    # The arc stops where the heads begin, so the two ends keep the headings asked for.
+    da = math.degrees(length * 0.6 / rr)
+    lo, hi = min(a0, a1) + da, max(a0, a1) - da
+    for y in range(CELL):
+        for x in range(CELL):
+            dx, dy = x - px, y - py
+            if lo <= math.degrees(math.atan2(dy, dx)) <= hi and abs(math.hypot(dx, dy) - rr) <= half:
+                mask.set(x, y, core)
+    for (a, toward) in ((lo, -1.0), (hi, 1.0)):
         r = math.radians(a)
-        hx, hy = px + math.cos(r) * (rr + 0.5), py + math.sin(r) * (rr + 0.5)
-        # The head points along the arc, outward from its middle.
-        tx, ty = math.sin(r) * toward, -math.cos(r) * toward
+        bx, by = px + math.cos(r) * rr, py + math.sin(r) * rr
+        # Along the arc, outward from its middle; and across it.
+        tx, ty = -math.sin(r) * toward, math.cos(r) * toward
         nx, ny = math.cos(r), math.sin(r)
-        for k in range(1, 4):
-            for side in (-1.0, 1.0):
-                c.set(hx - tx * k + nx * k * side, hy - ty * k + ny * k * side, hot if k < 3 else mid)
-        c.set(hx, hy, core)
-        c.set(hx + tx, hy + ty, core)
+        mask.poly([(bx + tx * length, by + ty * length), (bx - tx * 0.6 + nx * wing, by - ty * 0.6 + ny * wing),
+                   (bx - tx * 0.6 - nx * wing, by - ty * 0.6 - ny * wing)], core)
+    on = set((x, y) for y in range(CELL) for x in range(CELL) if mask.get(x, y)[3])
+    for (x, y) in on:
+        for oy in (-1, 0, 1):
+            for ox in (-1, 0, 1):
+                q = (x + ox, y + oy)
+                if q not in on and 0 <= q[0] < CELL and 0 <= q[1] < CELL:
+                    c.set(q[0], q[1], OCC)
+    for (x, y) in on:
+        c.set(x, y, core)
 
 
 def cinder_ghost(cv, ramp, nozzle, angle, length, half):
@@ -2977,14 +2991,17 @@ def _(sp, c):
     """Fire Fan (since 2026-11-10, in-flight 91, Eric's decision: "one broad flame sweeping back and forth across a wide
     cone"): the one jet, big, out of the nozzle low on the left; the two ends of its swing left behind it as dim
     afterimages, nearly straight up and nearly straight across; and the arc it sweeps along its reach, headed both ways.
-    One flame moving, never three jets (the card it was until then) and never Backdraft's second flame."""
+    One flame moving, never three jets (the card it was until then) and never Backdraft's second flame.
+    The arc is the card's verb, so it is drawn OVER the flame, white-hot and outlined, just past the flame's tip and
+    clear of the gold (m_sweep); the jet came down from 0.66 to 0.56 to leave it that room. Under the flame, in its hot
+    and mid, it was lost against the ring at 32 pixels."""
     reset(sp)
     anchor = anchor_of(SPELLS["cinderbreath"]["paint"])
     nozzle = (7.5, 24.5)
-    sp.place = cinder_jet(anchor, nozzle, 0.66)
+    sp.place = cinder_jet(anchor, nozzle, 0.56)
     f = E["fire"]
-    U(sp, lambda cv, x: (cinder_ghost(cv, f, nozzle, -84.0, 17.0, 2.6), cinder_ghost(cv, f, nozzle, -6.0, 17.0, 2.6),
-                         m_sweep(cv, f, nozzle, 20.0, -78.0, -12.0)))
+    U(sp, lambda cv, x: (cinder_ghost(cv, f, nozzle, -84.0, 14.0, 2.2), cinder_ghost(cv, f, nozzle, -6.0, 14.0, 2.2)))
+    O(sp, lambda cv, x: m_sweep(cv, f, nozzle, 17.5, -84.0, -6.0))
 
 
 @card("cinderbreath_cataclysm")
