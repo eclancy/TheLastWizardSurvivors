@@ -68,6 +68,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 108 | Baba Yaga's hut bolts only once you are close (she ran before the phone could see her) | puzzle | S |
 | 109 | Her bone yard is bigger | puzzle + art | S |
 | 110 | Water's edge rocky and irregular, not a smooth bowl's rim (with 103 and 106) | terrain art | M |
+| 111 | No description line under the Powers page titles | UI | trivial |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1427,6 +1428,11 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     water polygon is also the wade and collision authority: if the outline gets rougher, the collision follows it
     (or stays a smoothed version inside it, so the player never snags on a notch). Do it with 103 (land over water)
     and 106 (no lone-cell ponds) - all three are the shoreline.
+111. **No description under the Powers page titles** (Eric, 2026-11-10: *"Remove the page descriptions under the power
+    up page titles"*). Each shop section has a title and a one-line note under it (`MainMenu.Shop.cs` `UpgradeSections`
+    - e.g. "Every spell you cast, harder and more often." - and `BoonSectionNote`). Drop the notes from the page (the
+    title alone), and the data field if nothing else reads it; check the page's layout and the pad's focus still sit
+    right without the line, on both canvases.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
