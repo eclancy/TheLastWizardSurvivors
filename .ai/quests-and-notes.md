@@ -92,7 +92,9 @@ one piece of writing about the place, not two. It does not pause the run.
 bold Cinzel. The intro is the engine sans, upright; the clues are the same sans slanted by a fifth with a
 `FontVariation` (italics that stay legible, `.ai/level-up-screen.md` 4a). They are written in letter by letter. On a
 PC it sits in the lower right. On a phone it sits just under the HUD band, because the lower half
-belongs to the thumb. It goes after about ten seconds, or earlier on a click or tap on the paper, or on
+belongs to the thumb, and it is condensed so it never reaches the wizard at the canvas centre (in-flight 70): the
+heading, the place's first line, the first clue as written and how many more ("And two more things are hidden
+here."). It goes after about ten seconds (on a phone, four once it is written), or earlier on a click or tap on the paper, or on
 A, Enter or Space. (In the Sketchbook it was a slate of floor stone, since that ground was paper already;
 the slate went with the chapter on 2026-11-09, and every note is paper now.)
 
