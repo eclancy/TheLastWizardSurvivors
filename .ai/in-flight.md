@@ -73,6 +73,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 113 | Enemies can wade into water (slowed, as he is); water stops being a refuge | enemies + terrain | M |
 | 114 | The boss's health bar below all of the player's HUD | HUD | S |
 | 115 | Elderbark's slam and roots bigger again | boss tuning | S |
+| 116 | Telegraphed attacks animated (Elderbark's roots grow then spike), not flashing shapes | VFX + art | L |
+| 117 | Every Elderbark attack that lands roots the player briefly, so he catches up | boss + player | S-M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1464,6 +1466,26 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     them in 0.24.0: slam 210 -> 280 with a 1.3 s tell, roots 66 -> 120, on `scenes/ForestTreantBoss.tscn` only). Grow
     both again - the roots and the slam - keeping each tell long enough to walk out of at base speed
     (`ValidateBossPatterns`), and look at it (`_BossProbe --stage=0` renders nothing - photograph the fight).
+116. **Telegraphed attacks are animated, not flashing shapes on the ground** (Eric, 2026-11-10: *"When enemies use
+    telegraphed aoe attacks, they should always be an animated attack rather than a flashing aoe symbol on the ground.
+    For example, Elderbark's line of attack should be tree roots growing out and then spiking upwards when they would
+    hurt the player"*). Today a wind-up is drawn as a flashing ring, cone or line (`GroundSlamAttack`'s paint;
+    `TelegraphedGroundHit` for warnings placed away from the attacker). Give each attack its own animation that IS the
+    warning: during the wind-up the thing grows into the exact area (Elderbark's roots creeping along the line, cracks
+    spreading for a slam, frost creeping for the Rime Guard's cone), and on the resolve frame it strikes (roots spike
+    up, the ground bursts). **Rules to keep:** `Contains()` stays the one authority, so the animation is drawn from the
+    same shape the hit is measured against - never a picture of a different size; the area must stay readable in a
+    packed swarm and on the phone (a faint edge of the shape may stay under the animation); the wind-up time is
+    unchanged (`ValidateAttackPatternEnemies` / `ValidateBossPatterns`). Art generated (a generator per family of
+    attack, pixel-art contract). Start with Elderbark's roots as the pattern, then the other bosses, then the
+    ordinary slammers and exploders. Large across the cast; do it chapter by chapter.
+117. **Every Elderbark attack roots the player, so the slow boss catches up** (Eric, 2026-11-11: *"And all of his attacks
+    should root the player so he can catch up"*). There is no rooted state for the player today (no `ApplyRoot` or
+    rooted timer in `Player`). Build one: a short hold (about 0.6-1 s) in which he cannot move but still casts, shown
+    as roots round his boots (in the style of item 116's roots), applied when one of Elderbark's slams or roots LANDS
+    on him (not on a dodge - `TakeDamage` step 2 - and not while held for a boss's arrival). Give it a short immunity
+    after it ends so two overlapping hits cannot chain him in place. Decide with Eric whether Wayland's flight or the
+    water riders escape it (probably not: roots grip anyone standing). Keep it to Elderbark unless Eric widens it.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
