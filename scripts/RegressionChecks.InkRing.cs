@@ -50,6 +50,21 @@ public static partial class RegressionChecks
 			warnings.Add("Ink Ring: a shuffle no wider than a body closed a ring; MinRingArea must turn it down.");
 		if (WalkInk((theta) => new Vector2(12f * theta - 70f * MathF.Sin(theta), -70f * MathF.Cos(theta)), MathF.PI * 3f, 0.5f, out _) != 0)
 			warnings.Add("Ink Ring: a loop whose start had dried away still closed; old ink is gone.");
+		// THE NEAR CLOSE (2026-11-10, when the ring became Ma Liang's opener): a hand-walked loop that comes round 15 units
+		// inside its own start, never crossing it - a spiral, 70 units out to 55 - closes once, about the ~12,000 square
+		// units it holds. Walking back alongside his own line half a body off it (a hairpin, 14 units) closes nothing: the
+		// sliver is never round enough (InkPath.MinRoundness).
+		int nearClosed = WalkInk((theta) => (70f - 15f * theta / MathF.Tau) * new Vector2(MathF.Cos(theta), MathF.Sin(theta)),
+			MathF.Tau + 0.5f, 60f, out float nearArea);
+		if (nearClosed != 1)
+			warnings.Add($"Ink Ring: a loop that came back 15 units inside its start closed {nearClosed} rings; coming back within InkRing.CloseReach ({InkRing.CloseReach:0}) of the line closes one.");
+		else if (nearArea < 9000f || nearArea > 15000f)
+			warnings.Add($"Ink Ring: a near-closed loop of about 12,000 square units closed a ring of {nearArea:0}.");
+		if (WalkInk(Hairpin, 430f, 60f, out _) != 0)
+			warnings.Add("Ink Ring: walking back alongside his own line, 14 units off it, closed a ring; a sliver is not a ring.");
+		float bite = InkRing.LineBite, reach = InkRing.CloseReach;
+		if (bite <= 0f || bite > 32f || reach <= 0f || reach > 32f)
+			warnings.Add($"Ink Ring: the line bites {bite:0} and closes from {reach:0} units away; each is about half a body (12-32).");
 
 		// Inside and outside: a square, and the point-in-polygon test the strike uses.
 		var square = new[] { new Vector2(0f, 0f), new Vector2(100f, 0f), new Vector2(100f, 100f), new Vector2(0f, 100f) };
@@ -117,6 +132,21 @@ public static partial class RegressionChecks
 		}
 	}
 
+	// Out 200 units, round a turn 7 across, and back 14 units off the way he came, by distance walked.
+	private static Vector2 Hairpin(float s)
+	{
+		const float leg = 200f, r = 7f;
+		float turn = MathF.PI * r;
+		if (s <= leg)
+			return new Vector2(s, 0f);
+		if (s <= leg + turn)
+		{
+			float a = -MathF.PI * 0.5f + (s - leg) / r;
+			return new Vector2(leg + r * MathF.Cos(a), r + r * MathF.Sin(a));
+		}
+		return new Vector2(leg - (s - leg - turn), 2f * r);
+	}
+
 	// Walks a path the way InkRing.Lay does - a point every SampleSpacing along it, dated by a walk of 220 units a second
 	// (the wizard's), the ink lasting `life` seconds - and tries to close after every point, as an armed node does. Returns
 	// how many rings closed, and the area of the last.
@@ -139,7 +169,7 @@ public static partial class RegressionChecks
 				float now = travelled / 220f;
 				path.Expire(now, life);
 				path.Add(last, now, (uint)closed + 7u);
-				int count = path.TryClose(loop, InkRing.MinRingArea, out float a, out _);
+				int count = path.TryClose(loop, InkRing.MinRingArea, InkRing.CloseReach, out float a, out _);
 				if (count >= 3)
 				{
 					closed++;

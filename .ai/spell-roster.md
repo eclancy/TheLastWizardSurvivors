@@ -185,7 +185,7 @@ Ma Liang's brush, walked. Eric approved it from `.ai/character-fit.md`'s queue: 
 crossing it closes the loop and strikes everything inside, then slows it a moment; a short recharge between rings; the
 ink fades fast at level 1 and lasts longer as it levels. **The first spell no timer fires**: it goes off when the
 wizard's path closes on itself. Drawn as watercolour, the one sanctioned departure from Bonelight
-(`.ai/art-direction.md` 3a, "Ink Ring: a line drawn live"). Nobody's opener.
+(`.ai/art-direction.md` 3a, "Ink Ring: a line drawn live"). Ma Liang's opener since 2026-11-10 (it was nobody's).
 
 | # | spell | element | aim | cadence | demand | payload | band |
 |---|---|---|---|---|---|---|---|
@@ -203,6 +203,17 @@ wizard's path closes on itself. Drawn as watercolour, the one sanctioned departu
   line closes one ring once. A jump (a door, a teleport) starts a new stroke. Every `EnemyRegistry.Snapshot` body whose
   ground point lies inside (crossing number) is struck once. One walk of the swarm a ring, one a tick for Wet Ink and
   Inkwell, nothing allocated per frame (fixed pools; a stung body remembered by reference).
+- **Forgiving, since it became Ma Liang's opener (2026-11-10).** Coming back within half a body of the line closes the
+  ring without crossing it (`InkRing.CloseReach` 28, the **near close**: against a segment at least a smallest ring's
+  walk back, and only a loop round enough to be a ring, `InkPath.MinRoundness` 0.4, so walking back alongside the line
+  closes nothing), and the strike takes what stands on the line as well as what is inside it (`InkRing.LineBite` 24):
+  the bodies at his heels as he comes round are on the line he closes, half of them outside it, and they were the ones
+  hurting him. Ma Liang alone on it (`--character=22 --immortal --circle=60 --xp-first=100000`, seeds 1-3), first
+  minute: 53-61 kills and 172-188 taken before, 54-63 and 81-113 after, against the crow Familiar's 60-61 and 0-13;
+  second minute 147-152 and 263-350 after, against 114-121 and 527-612 before and the crow's 101-108 and 455-544. The
+  near close alone changed nothing for the bot (its circle already closed every lap); it is for a hand. At level 8
+  (`--solo --force-ascension`, Long Stroke and Second Stroke) 271 a second against 200 without the bite, inside the
+  Ascensions' band below.
 - **Numbers, first guesses, untuned:** 14 a strike at level 1 to 30 at 8; the recharge 2.0 s to 1.6 s; the ink 2 s,
   +0.4 s at levels 3, 5, 7 and 8 (3.6 s; the card says "Ink duration +20%", never seconds). At his walk (220 a second)
   that is a ring about 140 units across at level 1 and 250 at 8; Long Stroke and his own Duration widen it again.

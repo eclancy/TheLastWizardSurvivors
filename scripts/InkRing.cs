@@ -20,11 +20,14 @@ namespace TheOneHeMissed.scripts;
 // THE LINE. The wizard's feet (Player.FootPosition) sampled every SampleSpacing world units into a ring buffer
 // (InkPath), each point dated; a point older than the ink's life is gone. Each new segment is tested against the older
 // live segments, skipping the newest few it touches; a crossing whose loop - the crossing, then the points walked since -
-// holds at least MinRingArea closes a ring. Everything before the crossing is then inert: a line closes one ring once.
-// A jump (a door, a teleport) starts a new stroke rather than drawing a line across the gap.
+// holds at least MinRingArea closes a ring. So does coming back within CloseReach of the line without crossing it (the
+// near close, 2026-11-10: a hand-walked loop rarely lands on its own start), if the loop is round enough to be a ring.
+// Everything before the closing is then inert: a line closes one ring once. A jump (a door, a teleport) starts a new
+// stroke rather than drawing a line across the gap.
 //
 // THE STRIKE. Every EnemyRegistry.Snapshot body whose ground point lies inside the loop (InkPath.Contains, crossing
-// number) is struck once for the ring's damage and slowed SlowShare for SlowSeconds. One walk of the swarm a ring, and
+// number), or stands on its line (within LineBite of it, 2026-11-10), is struck once for the ring's damage and slowed
+// SlowShare for SlowSeconds. One walk of the swarm a ring, and
 // one a tick for Wet Ink's sting and Inkwell's pool, each position read once. Nothing is allocated per frame: the line,
 // the rings, the floods, the splats and the prison walls are fixed pools, and a stung body is remembered by reference.
 //
@@ -82,6 +85,11 @@ public partial class InkRing : Node2D
 	public const float SampleSpacing = 12f;
 	/// <summary>The least area a loop must hold to close: a step back and forth over the line closes nothing.</summary>
 	public const float MinRingArea = 2400f;
+	/// <summary>
+	/// How near his own line the wizard must come back to close a ring without crossing it (InkPath.TryClose's near close):
+	/// about half a body. Since 2026-11-10, when Ink Ring became Ma Liang's opener and a hand-walked loop had to close.
+	/// </summary>
+	public const float CloseReach = 28f;
 	private const int MaxPoints = 640;
 	// A step longer than this is a jump (a door, a teleport): the line starts a new stroke.
 	private const float BreakDistance = 160f;
@@ -91,6 +99,18 @@ public partial class InkRing : Node2D
 	/// <summary>How much a ring slows what it struck, and for how long.</summary>
 	public const float SlowShare = 0.4f;
 	public const float SlowSeconds = 1.2f;
+	/// <summary>
+	/// How far outside its own line a closing ring still strikes: what stands on the ink is in the ring. Since 2026-11-10,
+	/// when Ink Ring became Ma Liang's opener: the bodies at his heels as he comes round stand ON the line he is closing,
+	/// half of them outside it, and they are the ones that hurt him. Measured with the near close (CloseReach) on
+	/// _BalanceHarness --character=22 --immortal --circle=60 --xp-first=100000, seeds 1-3, first minute: 53/57/61 kills and
+	/// 172/176/188 taken before; 56/52/57 and 183/219/176 with the near close alone (the bot's circle already closed);
+	/// 56/54/63 and 98/81/113 with this bite too (32 read 61/51/60 and 81/67/101), against the crow Familiar's 60/60/61 and
+	/// 13/0/5. Second minute 147/152/148 kills and 350/263/338 taken, against 114/121/118 and 612/585/527 before and the
+	/// crow's 104/101/108 and 544/455/514. Level 8 (--solo --force-ascension, Long Stroke and Second Stroke, seed 1): 271 a
+	/// second against 200 without it, inside the 205-517 the other Ascensions read (.ai/spell-roster.md).
+	/// </summary>
+	public const float LineBite = 24f;
 	// A body's ground point: its middle, dropped toward its feet, where the ring is drawn round it.
 	private const float GroundDrop = 12f;
 
@@ -385,7 +405,7 @@ public partial class InkRing : Node2D
 
 	private void TryClose()
 	{
-		int count = path.TryClose(loopScratch, MinRingArea, out float area, out bool tooSmall);
+		int count = path.TryClose(loopScratch, MinRingArea, CloseReach, out float area, out bool tooSmall);
 		if (tooSmall)
 			StatTooSmall++;
 		if (count < 3)
@@ -501,13 +521,17 @@ public partial class InkRing : Node2D
 			return;
 		int off = slot * MaxRingPoints;
 		var drop = new Vector2(0f, GroundDrop);
+		float bite = LineBite, biteSquared = bite * bite;
 		foreach (Enemy enemy in EnemyRegistry.Snapshot)
 		{
 			if (enemy == null || !IsInstanceValid(enemy) || enemy.IsDying)
 				continue;
 			Vector2 e = enemy.GlobalPosition + drop;
-			if (e.X < ring.Lo.X || e.Y < ring.Lo.Y || e.X > ring.Hi.X || e.Y > ring.Hi.Y
-				|| !InkPath.Contains(ringPts, off, ring.Count, e))
+			if (e.X < ring.Lo.X - bite || e.Y < ring.Lo.Y - bite || e.X > ring.Hi.X + bite || e.Y > ring.Hi.Y + bite)
+				continue;
+			// Inside the ring, or standing on its line (LineBite).
+			if (!InkPath.Contains(ringPts, off, ring.Count, e)
+				&& (bite <= 0f || InkPath.DistanceSquaredToEdges(ringPts, off, ring.Count, e) > biteSquared))
 				continue;
 			StatStruck++;
 			AddSplat(e);
@@ -974,10 +998,12 @@ public sealed class InkPath
 	/// The newest segment against every older one that may still be crossed, newest first. On a crossing whose loop holds
 	/// at least <paramref name="minArea"/>, writes the loop into <paramref name="loop"/> - the crossing, then every point
 	/// walked since, thinned evenly to fit - returns its count and makes everything up to the newest point inert, so the
-	/// line closes the loop once. Returns 0 when nothing closes; <paramref name="tooSmall"/> says whether a crossing was
+	/// line closes the loop once. Failing a crossing, a NEAR CLOSE: the newest point come back within
+	/// <paramref name="reach"/> of an older segment closes the loop too, joined across the gap, if it holds minArea and is
+	/// round enough (MinRoundness). Returns 0 when nothing closes; <paramref name="tooSmall"/> says whether a loop was
 	/// turned down for its size.
 	/// </summary>
-	public int TryClose(Vector2[] loop, float minArea, out float area, out bool tooSmall)
+	public int TryClose(Vector2[] loop, float minArea, float reach, out float area, out bool tooSmall)
 	{
 		area = 0f;
 		tooSmall = false;
@@ -992,13 +1018,7 @@ public sealed class InkPath
 				continue;
 			Vector2 x = a + (b - a) * t;
 			// The points walked since the crossed segment: s + 1 to a0.
-			int walked = (int)(a0 - s);
-			int total = walked + 1;
-			int step = Math.Max(1, (int)Math.Ceiling(total / (double)loop.Length));
-			int count = 0;
-			loop[count++] = x;
-			for (int k = step - 1; k < walked && count < loop.Length; k += step)
-				loop[count++] = At(s + 1 + k);
+			int count = WriteLoop(loop, x, s, a0);
 			area = MathF.Abs(SignedArea(loop, 0, count));
 			if (area < minArea)
 			{
@@ -1008,7 +1028,77 @@ public sealed class InkPath
 			crossFloor = head - 1;
 			return count;
 		}
+		if (reach <= 0f)
+			return 0;
+		// THE NEAR CLOSE (2026-11-10, in-flight 94's follow-up: Ink Ring as Ma Liang's opener had to forgive a hand-walked
+		// loop). A ring walked by hand rarely lands exactly on its own start: it comes round a little inside it, or stops a
+		// body short, and an exact crossing asked for a second lap. So coming back within `reach` of the line closes the
+		// ring across the gap. Only against a segment at least a smallest ring's walk back (a circle holding minArea), so
+		// the curve he is walking never closes on itself; and only a loop round enough, so walking back alongside his own
+		// line (a hairpin, a sliver) closes nothing.
+		long tip = head - 1;
+		int skip = Math.Max(SkipNewest + 1, (int)MathF.Ceiling(2f * MathF.Sqrt(MathF.PI * minArea) / InkRing.SampleSpacing));
+		float reachSquared = reach * reach;
+		Vector2 p = At(tip);
+		for (long s = tip - skip; s >= floor; s--)
+		{
+			Vector2 c = At(s), d = At(s + 1);
+			if (DistanceSquaredToSegment(p, c, d) > reachSquared)
+				continue;
+			// The points walked since the near segment: s + 1 to the newest.
+			int count = WriteLoop(loop, ClosestOnSegment(p, c, d), s, tip);
+			area = MathF.Abs(SignedArea(loop, 0, count));
+			if (area < minArea)
+			{
+				tooSmall = true;
+				continue;
+			}
+			float perimeter = Perimeter(loop, 0, count);
+			if (perimeter <= 0f || 4f * MathF.PI * area / (perimeter * perimeter) < MinRoundness)
+				continue;
+			crossFloor = head - 1;
+			return count;
+		}
+		area = 0f;
 		return 0;
+	}
+
+	/// <summary>
+	/// How round a near close's loop must be: 4 pi area over its perimeter squared, 1 for a circle, 0.5 for a 4:1
+	/// rectangle. 0.4 lets any loop a hand walks through and turns down a sliver walked back alongside the line.
+	/// </summary>
+	public const float MinRoundness = 0.4f;
+
+	// The loop: `start`, then the points from `s + 1` to `last`, thinned evenly to fit.
+	private int WriteLoop(Vector2[] loop, Vector2 start, long s, long last)
+	{
+		int walked = (int)(last - s);
+		int total = walked + 1;
+		int step = Math.Max(1, (int)Math.Ceiling(total / (double)loop.Length));
+		int count = 0;
+		loop[count++] = start;
+		for (int k = step - 1; k < walked && count < loop.Length; k += step)
+			loop[count++] = At(s + 1 + k);
+		return count;
+	}
+
+	/// <summary>The length round <paramref name="count"/> points from <paramref name="offset"/>, closing edge included.</summary>
+	public static float Perimeter(Vector2[] poly, int offset, int count)
+	{
+		float sum = 0f;
+		for (int i = 0, j = count - 1; i < count; j = i++)
+			sum += poly[offset + j].DistanceTo(poly[offset + i]);
+		return sum;
+	}
+
+	/// <summary>The point on the segment from <paramref name="a"/> to <paramref name="b"/> nearest <paramref name="p"/>.</summary>
+	public static Vector2 ClosestOnSegment(Vector2 p, Vector2 a, Vector2 b)
+	{
+		Vector2 ab = b - a;
+		float lengthSquared = ab.LengthSquared();
+		if (lengthSquared < 0.0001f)
+			return a;
+		return a + ab * Mathf.Clamp((p - a).Dot(ab) / lengthSquared, 0f, 1f);
 	}
 
 	/// <summary>Whether segment a-b crosses segment c-d, and where along a-b (0 to 1).</summary>

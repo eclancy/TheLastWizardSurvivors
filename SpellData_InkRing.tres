@@ -5,7 +5,8 @@
 [ext_resource type="Texture2D" path="res://assets/bonelight/ui/spells/ink-ring-dark.png" id="3_icon"]
 
 ; Ink Ring (scripts/InkRing.cs), 2026-11-09: Ma Liang's brush, walked. A thin line of ink trails the wizard; when his
-; path crosses its own line the loop closes and everything inside is struck, then slowed for a moment. Water + Darkness,
+; path crosses its own line (or comes back within half a body of it, since 2026-11-10) the loop closes and everything
+; inside it or standing on its line is struck, then slowed for a moment. Water + Darkness,
 ; the two halves of the ink. Ma Liang's opener since 2026-11-10 (in-flight 94), and the spell his Apotheosis, The
 ; Painted Door, ends; everyone else has it once he has done the Cormorant feat as himself (Water and Darkness kills in
 ; one run, in-flight 84). TargetingMode 8 is Drawn - his walk draws the area it strikes - and DamageShape 3 a burst over an area.
@@ -81,7 +82,7 @@ BaseCooldown = 2.0
 BaseProjectileCount = 1
 BaseRange = 0.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_inkring_lvl2"), SubResource("Resource_inkring_lvl3"), SubResource("Resource_inkring_lvl4"), SubResource("Resource_inkring_lvl5"), SubResource("Resource_inkring_lvl6"), SubResource("Resource_inkring_lvl7"), SubResource("Resource_inkring_lvl8")])
-Description = "A thin line of ink trails behind you as you walk. Cross your own line to close a ring: everything inside it is struck, and slowed for a moment."
+Description = "A thin line of ink trails behind you as you walk. Come back round to your own line to close a ring: everything in it, or standing on it, is struck, and slowed for a moment."
 Icon = ExtResource("3_icon")
 TargetingMode = 8
 DamageShape = 3
