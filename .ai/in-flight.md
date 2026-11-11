@@ -69,6 +69,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 109 | Her bone yard is bigger | puzzle + art | S |
 | 110 | Water's edge rocky and irregular, not a smooth bowl's rim (with 103 and 106) | terrain art | M |
 | 111 | No description line under the Powers page titles | UI | trivial |
+| 112 | Damage shown as a number where a percentage belongs (which screen: to confirm) | UI text | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1433,6 +1434,13 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     - e.g. "Every spell you cast, harder and more often." - and `BoonSectionNote`). Drop the notes from the page (the
     title alone), and the data field if nothing else reads it; check the page's layout and the pad's focus still sit
     right without the line, on both canvases.
+112. **Damage shown as a number, not a percentage** (Eric, 2026-11-10: *"Weapons level ups say 'damage #' - they should
+    say a bonus percentage instead"*). Not yet found where: the level-up card's upgrade line already says a
+    percentage since 2026-11-04 (`Player.BuildSpellUpgradeSummary` / `PercentDelta`, ~9341-9462: "Damage +17%"). Flat
+    damage still shows on the pause screen's spell detail (`Node2DGame.cs` ~4763, "Damage 14") and in a debug line
+    (~5339). Find the screen Eric means first (a screenshot, or `_UiShot --force-levelup` and `--open-pause` on both
+    canvases) - possibly a card's stat row, a chest weapon card or a new spell's card - then show the gain as a
+    percentage there (the player-facing-numbers rule), or the current damage as plain words if it is a total.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
