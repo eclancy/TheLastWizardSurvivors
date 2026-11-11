@@ -65,6 +65,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 105 | Level-up cards stay dimmed after the arming pause ends | UI bug | S |
 | 106 | Water always a proper body, never a lone-cell circle | terrain | S-M |
 | 107 | Terrain features never stamp on top of each other (decided the same in every chunk) | terrain | M |
+| 108 | Baba Yaga's hut bolts only once you are close (she ran before the phone could see her) | puzzle | S |
+| 109 | Her bone yard is bigger | puzzle + art | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1402,6 +1404,17 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     the candidates deterministically by chunk and index, and look far enough out that no chunk reaches a different
     answer), or a pond will be cut off at a chunk border. Do 106 and 107 together and check with `_ExploreProbe` /
     `_UiShot` on every terrain style, and that `ValidateGateReachability`-style placement checks still pass.
+108. **Baba Yaga's hut bolts only once you are close** (Eric, 2026-11-10: *"Baba Yaga's hut should start running only
+    once you're closer. I couldn't see it when she was next to me on the phone"*). It starts fleeing at
+    `WalkingHutEvent.StartleRadius` 420 (`FleeingMover` ~135). On a phone the canvas is 720 wide at the camera's 0.85,
+    about 847 world px, so the screen's side edge is only ~424 px from the wizard: she bolts as she reaches the edge, or
+    before she is on it. Startle her nearer - about 250-280 px, well inside the phone's half-width, or only once she is
+    actually on screen and within that distance - so the player sees her before she runs. Re-check the herding
+    validator (`RegressionChecks.WalkingHut`) and a chase on both canvases.
+109. **Her bone yard is bigger** (Eric, 2026-11-10: *"The bone garden she runs to should be bigger"*). `YardRadius` 130
+    (with `YardGapWidth` 120, `CorneredRadius` 28 at its middle). Grow the yard - say to about 200-220 - scaling the gap
+    and the fence art (`tools/art/walking_hut.py` or wherever the yard's posts and skulls are drawn), keep the kneel at
+    its middle, and keep `RegressionChecks.WalkingHut`'s yard checks passing.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
