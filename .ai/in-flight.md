@@ -75,6 +75,21 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 115 | Elderbark's slam and roots bigger again | boss tuning | S |
 | 116 | Telegraphed attacks animated (Elderbark's roots grow then spike), not flashing shapes | VFX + art | L |
 | 117 | Every Elderbark attack that lands roots the player briefly, so he catches up | boss + player | S-M |
+| 118 | Level-up screen on a phone uses the whole height, cards without a scroll | UI | S |
+| 119 | Codex button still off the header (check on the real phone first) | UI | S |
+| 120 | Magic Missile's sound remade, soft and varied | audio | S |
+| 121 | Sound mix: Chain Lightning softer, Cinderbreath louder, continuous sounds rebalanced | audio | S-M |
+| 122 | Lancet aims at the lowest health share, bosses and elites first | spell | S |
+| 123 | Elderbark calls up small forest creatures during his fight | boss + art | M |
+| 124 | The Archmage is healed while Overlooked keeps him alive | character | S |
+| 125 | A held wizard speaks a hint when you find their site | events + text | M |
+| 126 | Less contrast on dark creatures' highlights | art | S-M |
+| 127 | Cinderbreath grows a little with level; rebalance around it | spell | S |
+| 128 | Ascension / Apotheosis announced like an achievement when it opens | UI | S |
+| 129 | The Hayward drawn in eight facings, so his shield's side reads | boss art | M |
+| 130 | The Hayward: a ranged attack and constant pressure | boss | M |
+| 131 | The Hayward's shield cracks and weakens as he is hurt | boss + art | M |
+| 132 | Every boss shows damage on its sprite (damaged states) | boss art | L |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1486,6 +1501,66 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     on him (not on a dodge - `TakeDamage` step 2 - and not while held for a boss's arrival). Give it a short immunity
     after it ends so two overlapping hits cannot chain him in place. Decide with Eric whether Wayland's flight or the
     water riders escape it (probably not: roots grip anyone standing). Keep it to Elderbark unless Eric widens it.
+118. **The level-up screen on a phone: use the whole height** (Eric, 2026-11-11: *"Level up page is not at the top of the screen on
+    mobile, yet still needs scrolling. Use the room we have"*). The plate sits below the top yet its cards scroll. Let it
+    take the full safe-area height so the cards fit without a scroll where they can (`LevelUpMenu`, the viewport-sized
+    cards, `.ai/level-up-screen.md`); photograph `_UiShot --force-levelup` and `--show-mutation` at 540x1212 portrait.
+119. **The Codex button is still not level with the header** (Eric, 2026-11-11; item 92's fix in 0.24.0 centred it by its real
+    height and measured it exactly centred in a headless run, yet on the phone it still reads off). Look at it on the
+    real Pixel 9 (or a screenshot from Eric) before changing the maths again - the dark stripe in the stone above the
+    band, noted then, may be what reads as misalignment.
+120. **Magic Missile's sound remade** (Eric, 2026-11-11: *"Magic missile noise needs to be remade"*; softened once before, see the
+    earlier list's Magic Missile note). Make a new sound in `tools/audio/sfx.py` for its cast and hit - it plays on every
+    dart, so it must be soft, short and varied (`.ai/audio-direction.md`'s loudness-by-frequency table) - and audit it
+    with `python tools/audio/analyse.py --confuse`.
+121. **The sound mix: big continuous spells less loud** (Eric, 2026-11-11: *"Chain lightning is very loud against the other spells,
+    where cinderbreath is very quiet. We can rebalance sound so big continuous noises like chain lightning aren't so
+    annoying"*). Re-level the spells' sounds against each other by how often and how long they sound
+    (`.ai/audio-direction.md`, the loudness table; `SfxCatalog` / `SfxPlayer` volumes, the generators' levels): Chain
+    Lightning down and softened, Cinderbreath up. Measure each spell's loudness over a minute of casting, not one shot.
+122. **Lancet aims at the lowest health share, bosses first** (Eric, 2026-11-11: *"Lancet should target the thing whose health
+    percentage is lowest, and focus bosses of any kind over the horde"*). Pick the target in reach by lowest current
+    health as a share of its maximum, and always prefer any boss, miniboss or elite (`IsMiniBoss`) in reach over
+    ordinary enemies (`Lancet.cs`; its card says so).
+123. **Elderbark calls up small creatures of his own as you fight him** (Eric, 2026-11-11: *"Elderbark should spawn a bunch of small
+    enemies from him as you fight him, thematic to who he is"*). Saplings, twig-creatures or acorn sprouts that rise from
+    the ground round him at his phases or on a timer, in the Forest's cast style (`StageBestiary.EnchantedForest`,
+    `SummonerEnemy`'s pattern; a new small creature generated in the cast's art). Cap how many at once.
+124. **The Archmage is healed while Overlooked holds** (Eric, 2026-11-11: *"When the Archmage uses his passive to not die, he should
+    be healed in the meantime so he's not instantly killed when he comes back"*). Overlooked turns a killing blow aside
+    and makes him invincible for 10 s, but leaves him at the health he had, so the first hit after it kills him. Heal
+    him during those seconds (e.g. back to a third or half of his bar over the 10 s), through `Player.Heal` so the
+    healing ledger sees it; check `.ai/difficulty-curve.md`'s healing budget - it is once a run.
+125. **A held wizard speaks when you find them** (Eric, 2026-11-11: *"When you find where a wizard is held, they should say something
+    to you, a hint for you"*). On arriving at each rescue site, the captive wizard says one line - in their voice, and a
+    hint at what the place asks (the lanterns, the scale, the hut). Reuse the stage-hint and side-event announcement
+    machinery (`StageHintCatalog`, `SideEvent.Announcement`); a locked wizard is never NAMED (`QuestLog.Prisoners`'
+    epithets) until freed.
+126. **Less contrast on dark creatures' highlights** (Eric, 2026-11-11: *"The contrast on the highlight of dark creatures is too much,
+    let's cut down on that contrast"*). Dark-bodied enemies wear a bright rim or highlight that reads too hard. Lower it -
+    in the cast generators' rim light (`.ai/art-direction.md`, the Bonelight light model) or the shader that draws it -
+    keeping silhouettes readable in the dark chapters (`.ai/light-pool.md`).
+127. **Cinderbreath grows as it levels** (Eric, 2026-11-11: *"Cinderbreath needs to grow as it levels up, at least a little. We
+    should rebalance around that"*). Its jet's reach and width climb a little with level (level-up data in
+    `SpellData_Cinderbreath.tres` / its stat readers, inside the spells-start-small rule), with damage rebalanced so its
+    level curve stays in line with the other spells (`_BalanceHarness --spell=cinderbreath`).
+128. **Big upgrades announced like achievements when they open** (Eric, 2026-11-11: *"Big spell upgrades like Ascension should be
+    highlighted as an achievement when you get to the stage that has them"*). When a spell reaches the level where an
+    Ascension (or the Apotheosis) becomes available, show the achievement plate with its name, so the moment is
+    noticed; reuse the plate (`Announcements`) and respect the slow start's one-locked-thing rule (`.ai/slow-start.md`).
+129. **The Hayward faces eight ways** (Eric, 2026-11-11: *"Hayward should have 8 facing sprites so it's clearer where his shield is
+    facing"*). Draw his sheet in eight directions (the Ruins cast generator in `tools/art/`) and pick the facing from
+    where his shield points (`HaywardBoss`), so the guarded side is always readable.
+130. **The Hayward keeps up the pressure: ranged attacks, charges, rushes** (Eric, 2026-11-11: *"He should also have ranged attacks,
+    like he should be constantly charging, rushing, etc."*; item 57 built his swing-charge-spent combo on 2026-11-07).
+    Add a ranged attack and shorten his idle between beats so he is always doing something, keeping the spent window
+    that rewards getting behind him (`ValidateBossPatterns`).
+131. **The Hayward's shield breaks as you hurt him** (Eric, 2026-11-11: *"His shield should also slowly break as you damage him"*).
+    Crack it in stages with his health (art states), and let its damage cut weaken with each stage
+    (`HaywardBoss.AdjustIncomingDamage`).
+132. **Every boss shows its damage on its sprite** (Eric, 2026-11-11: *"Every boss should show their damage through damage to their
+    sprite"*). Two or three damaged states per boss at health thresholds (cracks, missing pieces, glow failing), drawn
+    by each boss's generator and swapped by `BossEnemy` at fixed health shares (its phase thresholds are a natural fit).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
