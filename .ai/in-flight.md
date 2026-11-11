@@ -70,6 +70,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 110 | Water's edge rocky and irregular, not a smooth bowl's rim (with 103 and 106) | terrain art | M |
 | 111 | No description line under the Powers page titles | UI | trivial |
 | 112 | Damage shown as a number where a percentage belongs (which screen: to confirm) | UI text | S |
+| 113 | Enemies can wade into water (slowed, as he is); water stops being a refuge | enemies + terrain | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1441,6 +1442,16 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     (~5339). Find the screen Eric means first (a screenshot, or `_UiShot --force-levelup` and `--open-pause` on both
     canvases) - possibly a card's stat row, a chest weapon card or a new spell's card - then show the gain as a
     percentage there (the player-facing-numbers rule), or the current damage as plain words if it is a total.
+113. **Enemies can go into water** (Eric, 2026-11-10: *"Enemies should be able to go in water"*). Today the swarm stops
+    at water and walks round it: `Enemy.ConfigureEntityCollision` masks water's layer (`LevelTilePainter.WaterCollisionLayer`
+    6, `Enemy.cs` ~947-953), the flow field treats water as unwalkable (`MazeNavigation` ~9, 134, 470-505), and the
+    straight-walk test asks whether the path crosses water (`HasClearWalk`, ~85). So water is a refuge he can wade
+    into and they cannot follow. Let them in: drop layer 6 from enemies' masks, make water walkable for the flow field
+    (keep it costlier than ground so they still prefer the bank), slow them while wading as he is
+    (`Player.WaterWadeSpeedMultiplier` 0.45 - a point query at their feet, cheap, through `EnemyRegistry`, no
+    per-frame allocation, `.ai/performance.md`), and let the sinking and rings of item 74 apply to them too if cheap.
+    Keep out: spawns never placed in water, and the Bridge's abyss (`WaterWalkable = false`, on the walls' layer)
+    stays a wall. `.ai/terrain.md` names the places that must agree about what blocks; update its water section.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
