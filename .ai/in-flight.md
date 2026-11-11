@@ -11,6 +11,8 @@
 > Lancet: merge `f0af5110`) and the Sketchbook and Test Wizard removal. Validator 0 errors, 0 warnings at
 > epoch 3. **Not played by hand:** the four new spells' feel and numbers, the reset on a real installed copy.
 
+> **0.24.0 is released (2026-11-10), a story reset:** release commit `85ffc052`, tag `v0.24.0`, epoch 4 -> 5 (`5561a9fb`). All nine downloads are `TheLastWizardSurvivors-*`; the three version.json addresses serve 0.24.0 with `progressEpoch` 5 and `program` "TheLastWizardSurvivors"; the APK reads com.ecec.wizardsurvivors 2400 / 0.24.0. It carries every item built on 2026-11-10 (the four batches, the follow-ups and the icon refresh). Not played yet. Still on the list: 63, 64, 77, 78.
+
 ## The next release: Eric's list of changes (started 2026-11-09)
 
 Eric, 2026-11-09: *"Let's just start compiling a list of changes and we'll determine another release soon."*
