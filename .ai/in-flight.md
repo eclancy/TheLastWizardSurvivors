@@ -63,6 +63,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 103 | Land still flaps over the water's edge: find where, then make the drawing match the water | terrain | S-M |
 | 104 | Exploders vanish on detonating: play a death animation | enemy | S |
 | 105 | Level-up cards stay dimmed after the arming pause ends | UI bug | S |
+| 106 | Water always a proper body, never a lone-cell circle | terrain | S-M |
+| 107 | Terrain features never stamp on top of each other (decided the same in every chunk) | terrain | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1384,6 +1386,22 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     `CreateTween` on it), or the tween's process mode while the tree is paused. Reproduce with `_UiShot
     --force-levelup` photographed after the pause, and through a mutation swap; the card must reach full brightness
     the moment `IsArmed` is true. (Eric asked earlier whether icons get darker; this is the case that is a bug.)
+106. **Water is always a proper body, never a little circle** (Eric, 2026-11-10: *"make sure water can't be a single
+    little circle and is always a proper body of water"*). Terrain patches are stamped per chunk as jittered circles of
+    a random radius (`LevelGenerator.StampBlobs` / `StampBlob`, ~740-800, `BlobSpec` min and max radius); a small radius,
+    a later patch painted over most of a pond, or the start's safe zone clipping one can leave a cell or two of water,
+    which the shore's corner rounding then draws as a disc (`.ai/terrain.md` ~166: "a lone cell is a disc"). Give water
+    a minimum: raise water's minimum radius, and after stamping drop (back to ground) any water region under a size
+    floor - measured as a connected region, which must be decided the same way by every chunk that sees it (water
+    polygons also drive wading and collision, `LevelTilePainter.WaterCollisionLayer`).
+107. **Two terrain features never stamp on top of each other** (Eric, 2026-11-10: *"two terrain elements never spawn
+    directly on top of each other"*). Today a later blob simply overwrites an earlier one, so water, lava, pits and
+    ground patches can land on each other. Reject (or move) a blob whose footprint would overlap an earlier one, with a
+    small gap between them. **The catch:** blobs are stamped from the 3x3 neighbouring chunks so a chunk sees the edges
+    of its neighbours' blobs; the accept/reject decision must come out the same in every chunk that computes it (order
+    the candidates deterministically by chunk and index, and look far enough out that no chunk reaches a different
+    answer), or a pond will be cut off at a chunk border. Do 106 and 107 together and check with `_ExploreProbe` /
+    `_UiShot` on every terrain style, and that `ValidateGateReachability`-style placement checks still pass.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
