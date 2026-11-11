@@ -2857,19 +2857,31 @@ def _(sp, c):
 
 # --- Cinderbreath ----------------------------------------------------------------------------------
 
+# Where the jet leaves the caster in si.cinderbreath's own picture: the point a card turns its flames about.
+CINDER_NOZZLE = (6.0, 26.0)
+
+
+def cinder_jet(anchor, at, s, mirror=False, darken=0):
+    """Cinderbreath's jet scaled `s` - up and to the right, or mirrored up and to the left - moved so its nozzle stands
+    at `at`. Mirrored, never turned: si.cinderbreath is polygons, and a turned Place re-maps a polygon's scanlines a
+    second time (XCanvas.hline in raw mode), which shreds the flame - the old Fire Fan's two turned jets were smudges."""
+    nx = 2 * anchor[0] - CINDER_NOZZLE[0] if mirror else CINDER_NOZZLE[0]
+    return Place(s, at=(at[0] - (nx - anchor[0]) * s, at[1] - (CINDER_NOZZLE[1] - anchor[1]) * s), mirror=mirror,
+                 darken=darken)
+
+
 @card("cinderbreath_amplified_impact")
 def _(sp, c):
-    """Backdraft (2e): as the burn goes out its fire rolls back into a burst at the jet's tip - the
-    jet drawn back to leave room, and a blast of flame where its reach ends."""
+    """Backdraft (since 2026-11-10, in-flight 91: Eric, "two flames ... they should never face the same direction /
+    target the same enemy"): two jets out of one nozzle low in the middle, a right angle apart - up and to the right, up
+    and to the left - each reaching a skull of its own. Two flames round him at a wide angle, never one burst at a tip
+    (the card it was until then)."""
     reset(sp)
-    sp.place = Place(0.74, dx=-5, dy=5)
-
-    def backdraft(cv, x):
-        f = E["fire"]
-        m_rays(cv, f, (22.5, 9.5), 5.5, 10.5, 10)
-        m_blast(cv, f, 22.5, 9.5, 7.5)
-        m_blast(cv, f, 22.5, 9.5, 4.0)
-    O(sp, backdraft)
+    anchor = anchor_of(SPELLS["cinderbreath"]["paint"])
+    nozzle = (C0 + 0.5, 21.5)
+    sp.place = cinder_jet(anchor, nozzle, 0.46)
+    sp.copies = [cinder_jet(anchor, nozzle, 0.46, mirror=True)]
+    O(sp, lambda cv, x: (foe(cv, 25.0, 9.5, 0.85), foe(cv, 7.0, 9.5, 0.85)))
 
 
 @card("cinderbreath_hyper_acceleration")
@@ -2917,21 +2929,62 @@ def _(sp, c):
     O(sp, wall)
 
 
+def m_sweep(c, ramp, pivot, rr, a0, a1):
+    """A sweep back and forth: an arc `rr` from `pivot` between two headings (degrees), two pixels thick, with a head at
+    either end - the flame swings there and back."""
+    core, hot, mid, edge = ramp
+    px, py = pivot
+    n = int(abs(a1 - a0) * rr / 12.0) + 8
+    for i in range(n + 1):
+        a = math.radians(a0 + (a1 - a0) * i / float(n))
+        c.set(px + math.cos(a) * (rr + 1), py + math.sin(a) * (rr + 1), mid)
+        c.set(px + math.cos(a) * rr, py + math.sin(a) * rr, hot)
+    for (a, toward) in ((a0, 1.0), (a1, -1.0)):
+        r = math.radians(a)
+        hx, hy = px + math.cos(r) * (rr + 0.5), py + math.sin(r) * (rr + 0.5)
+        # The head points along the arc, outward from its middle.
+        tx, ty = math.sin(r) * toward, -math.cos(r) * toward
+        nx, ny = math.cos(r), math.sin(r)
+        for k in range(1, 4):
+            for side in (-1.0, 1.0):
+                c.set(hx - tx * k + nx * k * side, hy - ty * k + ny * k * side, hot if k < 3 else mid)
+        c.set(hx, hy, core)
+        c.set(hx + tx, hy + ty, core)
+
+
+def cinder_ghost(cv, ramp, nozzle, angle, length, half):
+    """Where a swept flame was a moment ago: a dim tongue out of the nozzle along `angle` (degrees) - the ramp's dark end
+    laid in a checker over the night, so it reads as half there, with a thread of its mid down the middle. An
+    afterimage, never a second flame."""
+    core, hot, mid, edge = ramp
+    a = math.radians(angle)
+    ux, uy = math.cos(a), math.sin(a)
+    px, py = -uy, ux
+    x0, y0 = nozzle
+    ghost = _Real(CELL, CELL, None)
+    ghost.poly([(x0 + px * 0.6, y0 + py * 0.6), (x0 + ux * length * 0.7 + px * half, y0 + uy * length * 0.7 + py * half),
+                (x0 + ux * length, y0 + uy * length), (x0 + ux * length * 0.7 - px * half, y0 + uy * length * 0.7 - py * half),
+                (x0 - px * 0.6, y0 - py * 0.6)], edge)
+    for y in range(CELL):
+        for x in range(CELL):
+            if (x + y) % 2 == 0 and ghost.get(x, y)[3]:
+                cv.set(x, y, edge)
+    cv.line(x0 + ux * 3, y0 + uy * 3, x0 + ux * length * 0.75, y0 + uy * length * 0.75, mid)
+
+
 @card("cinderbreath_infinite_horizon")
 def _(sp, c):
-    """Fire Fan (2e): three jets at once, each turned its own way - three tongues breathed out of one
-    nozzle in the middle, a third of a turn apart."""
+    """Fire Fan (since 2026-11-10, in-flight 91, Eric's decision: "one broad flame sweeping back and forth across a wide
+    cone"): the one jet, big, out of the nozzle low on the left; the two ends of its swing left behind it as dim
+    afterimages, nearly straight up and nearly straight across; and the arc it sweeps along its reach, headed both ways.
+    One flame moving, never three jets (the card it was until then) and never Backdraft's second flame."""
     reset(sp)
     anchor = anchor_of(SPELLS["cinderbreath"]["paint"])
-    nozzle = (6.0, 26.0)
-    places = []
-    for k, (angle, s) in enumerate(((0.0, 0.62), (120.0, 0.54), (240.0, 0.54))):
-        ca, sa = math.cos(math.radians(angle)), math.sin(math.radians(angle))
-        ox, oy = (anchor[0] - nozzle[0]) * s, (anchor[1] - nozzle[1]) * s
-        places.append(Place(s, rot=angle, at=(C0 + 1.0 + ox * ca - oy * sa, C0 + 1.0 + ox * sa + oy * ca),
-                            darken=0 if k == 0 else 1))
-    sp.copies = places[1:]
-    sp.place = places[0]
+    nozzle = (7.5, 24.5)
+    sp.place = cinder_jet(anchor, nozzle, 0.66)
+    f = E["fire"]
+    U(sp, lambda cv, x: (cinder_ghost(cv, f, nozzle, -84.0, 17.0, 2.6), cinder_ghost(cv, f, nozzle, -6.0, 17.0, 2.6),
+                         m_sweep(cv, f, nozzle, 20.0, -78.0, -12.0)))
 
 
 @card("cinderbreath_cataclysm")
