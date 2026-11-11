@@ -421,6 +421,7 @@ branch, so no branch run restarted the developer's save before the release did.
 | 2 | 0.12.0 (2026-11-03) | Eric, 2026-11-02: "The next release will reset game progress for everyone" - the rename, the Archmage, the slow start (`.ai/slow-start.md`), the whole road. Copies of 0.10.0 predated the epoch, so their updater fetched it without the warning. |
 | 3 | 0.22.0 (2026-11-09) | Eric, 2026-11-09: "This release should reset the game for players" - the far shore, endless, the Conjunction ladder, the character-fit walk-through and four new spells, and the Sketchbook and Test Wizard removed. Every copy since 0.11 asks first. |
 | 4 | 0.23.0 (2026-11-10) | Eric, 2026-11-10: "assume we will just reset progress after this update" - wizards' openers earned as their wizards, First Blood pays Lancet, the walking hut, the small fixes, the Chalice Cup and the garden's heal. |
+| 5 | 0.24.0 (2026-11-10) | Eric, 2026-11-10, choosing a reset over a refund when the Twinstar Sigil left the shop - with attunement removed, the program renamed TheLastWizardSurvivors, the reward review, Ink Ring as Ma Liang's opener and the day's fixes. |
 
 Decided 2026-11-02 (`.ai/decisions/2026-11-02-story-resets.md`): a release that changes the story
 restarts every player's progress, and they are warned before they download it. The game is in
