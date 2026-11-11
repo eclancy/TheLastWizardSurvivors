@@ -91,6 +91,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 131 | The Hayward's shield cracks and weakens as he is hurt | boss + art | M |
 | 132 | Every boss shows damage on its sprite (damaged states) | boss art | L |
 | 133 | The Hayward's wind-ups shown in his sprite's animation, not ground shapes (with 116, 129) | boss art | M |
+| 134 | Boss phases for every boss (design in `.ai/boss-phases.md`, reviewed one boss at a time) | design, then bosses | L |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1571,6 +1572,14 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     packed swarm makes it unreadable without one; the wind-up times and `Contains()` stay as they are
     (`ValidateBossPatterns`). The same rule as item 116, applied to the body: build 116, 129 and this together, and
     carry the rule to the other bosses as their turn comes.
+134. **Boss phases: every fight changes as it goes, not an HP slog** (Eric, 2026-11-11: *"I also want to introduce the idea
+    of Boss phases. For example, if you do enough damage to the Hayward shield, it is destroyed and he attacks in an
+    entirely different way. Elderbark, bark might start splitting off and dark sap starts spewing out like meteors that
+    the player has to avoid. Let's think about how each boss fight can be made more dynamic and interesting, so it's not
+    just an HP slog"*). `BossEnemy` already has the hooks (`BuildPhaseThresholds`, `OnPhaseEntered`), mostly used to
+    quicken. Design first: `.ai/boss-phases.md` proposes phases for every boss (a part that breaks, a transformation, a
+    new attack the player must answer differently), for Eric's review one boss at a time; it folds in items 99, 115-117,
+    123 (Elderbark) and 129-133 (the Hayward), and 132 (damage on the sprite).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
