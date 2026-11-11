@@ -71,6 +71,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 111 | No description line under the Powers page titles | UI | trivial |
 | 112 | Damage shown as a number where a percentage belongs (which screen: to confirm) | UI text | S |
 | 113 | Enemies can wade into water (slowed, as he is); water stops being a refuge | enemies + terrain | M |
+| 114 | The boss's health bar below all of the player's HUD | HUD | S |
+| 115 | Elderbark's slam and roots bigger again | boss tuning | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1452,6 +1454,16 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     per-frame allocation, `.ai/performance.md`), and let the sinking and rings of item 74 apply to them too if cheap.
     Keep out: spawns never placed in water, and the Bridge's abyss (`WaterWalkable = false`, on the walls' layer)
     stays a wall. `.ai/terrain.md` names the places that must agree about what blocks; update its water section.
+114. **The boss's health bar sits below all of the player's HUD** (Eric, 2026-11-10: *"Boss health should be under all of
+    the player UI"*; item 55 already noted the boss's and the player's bars touching). The boss bar is the first row of
+    the centre band under the timer (`HudBand.Row.BossBar`, resting at y 44; `HudBand.cs` ~30-60 explains why it was
+    NOT put under the spells: on a PC the spell column starts at 84 under its slot). Move it below everything the
+    player owns - health bar, XP bar, spell row, element tags - on both canvases, as its own band, and re-run the
+    band's own validator and `_UiShot`'s band audit; check the side event's objective and the banner still find room.
+115. **Elderbark's attacks even bigger** (Eric, 2026-11-10: *"Elderbark's aoes can be even bigger"*, after item 99 grew
+    them in 0.24.0: slam 210 -> 280 with a 1.3 s tell, roots 66 -> 120, on `scenes/ForestTreantBoss.tscn` only). Grow
+    both again - the roots and the slam - keeping each tell long enough to walk out of at base speed
+    (`ValidateBossPatterns`), and look at it (`_BossProbe --stage=0` renders nothing - photograph the fight).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
