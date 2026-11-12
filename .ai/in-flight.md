@@ -38,8 +38,13 @@ under it. In order:
 8. **Screens and words:** 118 the level-up screen uses the phone's height, 111 no line under the Powers titles, 128
    Ascension and Apotheosis announced like achievements, 102 Aegis Ward's icon redrawn symmetrical, 126 softer
    highlights on dark creatures, 135 Medea's mantle reads as cloth, not hair, 136 Gloam Veil's card said directly.
-9. **Story:** 125 a captive wizard speaks a hint at their prison; 63 the historical gallery (needs a design first).
-10. **The far shore:** 64 plan it as a DLC (plan only), then 78 its five remaining gods - the largest piece; start
+   137 remove the ribcage-looking pieces from the Broken Circle.
+9. **Spell slots matter** (item 9a, Eric 2026-11-04, asked again 2026-11-11): two slot effects exist - the Gimmel Ring
+   relic works on your first two slots, and Canticle's Harmony takes the element of the spell in the slot after it.
+   Design the rest of the family together (first slot, last slot, the slot beside another) and a way to rearrange
+   which spell sits where during a run, shown on the HUD strip with the slot it touches highlighted.
+10. **Story:** 125 a captive wizard speaks a hint at their prison; 63 the historical gallery (needs a design first).
+11. **The far shore:** 64 plan it as a DLC (plan only), then 78 its five remaining gods - the largest piece; start
     only once the above are in, one god per worktree.
 
 The other bosses' phases (`.ai/boss-phases.md` section 3's order) follow Elderbark and the Hayward, each confirmed with
@@ -129,6 +134,8 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 134 | Boss phases for every boss (design in `.ai/boss-phases.md`, reviewed one boss at a time) | design, then bosses | L |
 | 135 | Medea's dark mantle reads as hair: make it plainly red cloth | character art | S |
 | 136 | Gloam Veil's card in plain words ("Blocks one hit; walk to recharge.") | text | trivial |
+| 137 | Remove the "vertical ribcages" from the Broken Circle (find which piece first) | world art | S |
+| 9a | Spells and relics that play off a spell's slot, and a way to rearrange slots (two exist; the family is open) | design + items | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1636,6 +1643,13 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     description *"Blocks the next hit completely. When it breaks, it pushes nearby enemies away and gives you a burst
     of speed. Walk to recharge it."* Check its level-up and evolution cards for the same words (`SpellEvolutionCatalog`,
     its block) and the spell-bar gauge's name for it (item 76b).
+137. **"Vertical ribcages" in the Broken Circle - remove them** (Eric, 2026-11-11: *"there appear to be vertical ribcages
+    in the stone circle map. remove them"*). Not yet found: nothing named rib or bone is placed there. The Circle's
+    foliage (`scripts/Foliage.BrokenCircle.cs`) places only `clitter` (granite litter), `rock_hump`, `heather_tufts`,
+    `bilberry`, `moor_grass`, `lichen_specks`, `granite` and `peat`; the likeliest culprit is a piece among those whose
+    drawing reads as ribs (a row of upright stones, a striped rock), or a ground tile or the chapter's terrain art
+    (`tools/art/tiles.py`). Photograph the Circle (`_UiShot`) or ask Eric for a screenshot, find the piece, then remove
+    it from the Circle's set (or redraw it if it is meant to be stone).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
