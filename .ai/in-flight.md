@@ -40,6 +40,7 @@ under it. In order:
    Ascension and Apotheosis announced like achievements, 102 Aegis Ward's icon redrawn symmetrical, 126 softer
    highlights on dark creatures, 135 Medea's mantle reads as cloth, not hair, 136 Gloam Veil's card said directly.
    137 remove the Broken Circle's bleached dead trees (the "ribcages").
+   140 Merlin's quest line says what to do (and the other captives' lines checked).
 9. **Enemies that read as something** (138): each chapter's own ranged enemy in place of the Hexer stand-in,
    chapter by chapter, then every role still on a stand-in.
 10. **Spell slots matter** (item 9a, Eric 2026-11-04, asked again 2026-11-11): two slot effects exist - the Gimmel Ring
@@ -140,6 +141,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 137 | Remove the Broken Circle's bleached dead trees (they read as ribcages) | world art | S |
 | 138 | Every enemy recognizable: build each chapter's own ranged enemy (the Hexer stands in almost everywhere), then audit all | enemies + art | L |
 | 139 | Falling behind on levels should be lethal, not slow: faster/frailer enemies or time-driven pressure (think it through) | design + balance | M |
+| 140 | Merlin's quest says what to do (reach each lit stone in time, six in a row); check the other captives' lines | text | S |
 | 9a | Spells and relics that play off a spell's slot, and a way to rearrange slots (two exist; the family is open) | design + items | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
@@ -1683,6 +1685,15 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     player is behind; (d) elites and wardens on the clock, not on kills. Measure each with a deliberately lagging bot
     (low `--upgrade-chance`, or skipped picks) against the normal one, on the Forest and the Circle, and pick what makes
     the lagging run die and the normal run live. Ties into item 77 (the balance pass).
+140. **Merlin's quest says what to do** (Eric, 2026-11-11: *"Merlin's quest description is too vague"*). Today the quest
+    log says *"A pale enchanter is bound within the broken council wards."* (`QuestLog.cs` ~112) and the locked hint
+    *"Restore the shattered wards of the Broken Circle."* (`UnlockCatalog.cs` ~440) - neither says how. The moot
+    (`MootFiresEvent`) asks: one stone's rune lights; reach it before it fades (about six seconds) and the next lights,
+    never the stone beside it; six in a row relights the circle. Say that: e.g. *"In the Broken Circle, reach each lit
+    stone before its rune fades - six in a row - to free the keeper bound at its centre."* Keep him unnamed until freed
+    (his epithet, "the keeper of the circle"). While there, read the other captives' quest lines the same way and
+    make any that do not say what to do as direct (the Prisoners table in `QuestLog.cs`, the event hints in
+    `UnlockCatalog`).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
