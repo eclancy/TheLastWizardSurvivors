@@ -31,7 +31,8 @@ under it. In order:
 4. **The shoreline, together** (103 land over water, 106 no lone-cell ponds, 107 terrain never overlaps, 110 a rocky,
    irregular edge), then 113 enemies can wade.
 5. **Baba Yaga's hut** (108 bolts only when close, 109 a bigger bone yard).
-6. **Spells and balance:** 77 the balance pass on every spell (now that attunement is gone - measure first), folding in
+6. **Spells and balance:** first 139, think through why falling behind is not lethal (faster, frailer enemies, or
+   pressure on the clock) - it changes what the pass measures; then 77 the balance pass on every spell (now that attunement is gone - measure first), folding in
    122 Lancet aims at the lowest health share and bosses first, 127 Cinderbreath grows with level, and 124 the Archmage
    healed while Overlooked holds.
 7. **Sound:** 120 Magic Missile's sound remade, 121 the mix (Chain Lightning softer, Cinderbreath louder).
@@ -138,6 +139,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 136 | Gloam Veil's card in plain words ("Blocks one hit; walk to recharge.") | text | trivial |
 | 137 | Remove the Broken Circle's bleached dead trees (they read as ribcages) | world art | S |
 | 138 | Every enemy recognizable: build each chapter's own ranged enemy (the Hexer stands in almost everywhere), then audit all | enemies + art | L |
+| 139 | Falling behind on levels should be lethal, not slow: faster/frailer enemies or time-driven pressure (think it through) | design + balance | M |
 | 9a | Spells and relics that play off a spell's slot, and a way to rearrange slots (two exist; the family is open) | design + items | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
@@ -1668,6 +1670,19 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     stand-in (`RegressionChecks.ValidateBestiary` reports them) and every built enemy for a recognizable silhouette
     and theme. Large; do it chapter by chapter, ranged first since Eric named them, and confirm the Hexer is what he
     meant with a screenshot if the first chapter does not settle it.
+139. **Falling behind on levels should be lethal, not just slow** (Eric, 2026-11-11: *"Currently falling behind on levels
+    doesn't feel lethal, it just feels like it will take longer to kill everything. Should all enemies move faster and
+    die faster to solve this? We should think about that next week"*). A design question, to think through before any
+    change. What decides it today: enemy health and damage per chapter (`ChapterDifficulty`, `.ai/difficulty-curve.md`),
+    the pace clock's spawn curve and the 140 cap (`.ai/run-pacing.md`), and the harness's swarm-pressure verdict
+    ("siege" and "overrun": pressure 0.9 held a minute, `--stop-overrun`). When the player lags, kills slow, the swarm
+    reaches the cap and simply waits - slow walkers that a kiting wizard outpaces. Options to weigh: (a) Eric's own -
+    faster, frailer enemies across the board, so a strong build mows them and a weak one is caught (the genre's feel);
+    (b) pressure that grows with time regardless of kills - speed or damage climbing on the pace clock, so lagging
+    lets the threat outgrow you; (c) the cap's swarm pushing harder (faster spawns at the ring, flankers) when the
+    player is behind; (d) elites and wardens on the clock, not on kills. Measure each with a deliberately lagging bot
+    (low `--upgrade-chance`, or skipped picks) against the normal one, on the Forest and the Circle, and pick what makes
+    the lagging run die and the normal run live. Ties into item 77 (the balance pass).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
