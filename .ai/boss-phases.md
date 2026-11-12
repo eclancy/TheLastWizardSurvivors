@@ -1,7 +1,9 @@
 # Boss phases
 
 **Status (2026-11-11):** Eric, on reading it: *"These look great"*. Elderbark's phases approved as written; the
-other bosses confirmed one at a time as each is built (`.ai/in-flight.md`, "Week of 2026-11-16: the plan").
+other bosses confirmed one at a time as each is built (`.ai/in-flight.md`, "Week of 2026-11-16: the plan"). The three
+questions at the end are answered (Eric, 2026-11-11: "Yes, no, show cracks"): the beat leaves the swarm and spells
+running; no single hit skips a phase; a breakable part shows cracks on its art, never a bar of its own.
 
 > Designed 2026-11-11 for Eric's review, **one boss at a time**. Nothing here is built. It is in-flight item 134, and it
 > folds in Elderbark's items (99, 115, 116, 117, 123), the Hayward's (129, 130, 131, 133) and 132 (every boss shows its

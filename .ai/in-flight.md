@@ -23,7 +23,9 @@ under it. In order:
 2. **Elderbark, the first boss-phase build** (134 with 99/115/116/117/123/132): his three approved phases, and with them
    the shared pieces every later boss reuses - the phase-transition beat, damage-state sprites, animated wind-ups
    instead of ground shapes, a falling hazard (the sap), capped adds (the saplings), and the player's rooted state.
-   Answer the design doc's three open questions before starting.
+   The design doc's three questions are answered (Eric, 2026-11-11: *"Yes, no, show cracks"*): the transformation beat
+   leaves the swarm and the player's spells running; no single hit can skip a phase (damage past a threshold waits
+   for the beat); a breakable part shows only cracks on its art, no bar of its own.
 3. **The Hayward** (129 eight facings, 130 ranged pressure, 131 the shield breaks, 133 wind-ups on his body; his block
    in `.ai/boss-phases.md`): the breakable part, built once for later bosses.
 4. **The shoreline, together** (103 land over water, 106 no lone-cell ponds, 107 terrain never overlaps, 110 a rocky,
@@ -35,7 +37,7 @@ under it. In order:
 7. **Sound:** 120 Magic Missile's sound remade, 121 the mix (Chain Lightning softer, Cinderbreath louder).
 8. **Screens and words:** 118 the level-up screen uses the phone's height, 111 no line under the Powers titles, 128
    Ascension and Apotheosis announced like achievements, 102 Aegis Ward's icon redrawn symmetrical, 126 softer
-   highlights on dark creatures.
+   highlights on dark creatures, 135 Medea's mantle reads as cloth, not hair.
 9. **Story:** 125 a captive wizard speaks a hint at their prison; 63 the historical gallery (needs a design first).
 10. **The far shore:** 64 plan it as a DLC (plan only), then 78 its five remaining gods - the largest piece; start
     only once the above are in, one god per worktree.
@@ -125,6 +127,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 132 | Every boss shows damage on its sprite (damaged states) | boss art | L |
 | 133 | The Hayward's wind-ups shown in his sprite's animation, not ground shapes (with 116, 129) | boss art | M |
 | 134 | Boss phases for every boss (design in `.ai/boss-phases.md`, reviewed one boss at a time) | design, then bosses | L |
+| 135 | Medea's dark mantle reads as hair: make it plainly red cloth | character art | S |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
 
@@ -1615,8 +1618,16 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     123 (Elderbark) and 129-133 (the Hayward), and 132 (damage on the sprite).
     **Written 2026-11-11 (`.ai/boss-phases.md`, c40ab78b); Eric: *"These look great"*** - Elderbark's three phases
     approved as proposed (old growth, the bark splits at 66%, he takes root at 33%); the other bosses' blocks to confirm
-    as each comes up for building, and the doc's three open questions (does the beat leave the swarm and spells running;
-    can a hit skip a phase; does a breakable part show its own bar) to answer before the first one is built.
+    as each comes up for building. The doc's three questions answered (Eric, 2026-11-11: *"Yes, no, show cracks"*): the
+    beat leaves the swarm and spells running; no hit skips a phase; a breakable part shows cracks only, no bar.
+135. **Medea's mantle reads as hair wrapped round her front** (Eric, 2026-11-11: *"Does Medea's hair wrap around her
+    front? Or is that supposed to be a piece of clothing? It's the same color as her hair"*). It is her mantle
+    (`tools/art/roster.py` `medea()`, ~3733: "the mantle's front ... drawn over the far shoulder and down across her in
+    one diagonal fall to the near hip"), in madder "gone almost black" (the red row's dark end, RD3/RD2/RD4) - beside
+    hair "as black as stone's deep end", so at 48 px the two near-blacks read as one. Make the mantle read as cloth:
+    lift it to a clearer madder red a step or two up the red row (still dark, but plainly red against black hair), give
+    its edge a lit hem or a thin border, and keep the hair the darkest mass. Re-run the generator and look at her at
+    1x and 2x on the character select and in a run; the freeing reel's art (`tools/art/freed.py`) may draw her too.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
