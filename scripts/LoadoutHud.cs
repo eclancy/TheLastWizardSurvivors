@@ -68,7 +68,7 @@ public partial class LoadoutHud : BoxContainer
 	private const int MaxSlots = Player.MaxSpellSlots + Player.BlankFolioExtraSlots;
 
 	// Landscape. Left-aligned with the health bar (Node2DGame.ConfigurePlayerHealthHud, x 7); top
-	// under the boss bar's slot (Node2DGame.ConfigureBossHud: 44 + 34), which overlaps the XP bar.
+	// under the XP bar. The boss bar sits under this row (HudBand.PlayerHudFloor, in-flight 114).
 	private const float EdgeLeft = 7f;
 	private const float LandscapeTop = 84f;
 	private const float LandscapeWidth = MaxSlots * SlotSize + (MaxSlots - 1) * SlotGap;

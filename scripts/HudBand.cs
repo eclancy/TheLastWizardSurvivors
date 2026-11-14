@@ -29,9 +29,13 @@ using TheOneHeMissed.scripts;
 // rather than the second jumping the row.
 //
 // NOT IN IT: the run timer. Its Body-sized digits in a padded panel make it 8-52, not the 8-36 it was laid
-// out as, so the boss bar resting at 44 and the banner at 42 overlap the foot of its box (its padding, not its
-// digits). Counting it would put the bar at 58, and a PC's spell column starts at 84 under the bar's slot -
-// the bar would land on the spells for the whole fight. The rows rest under the timer as they were drawn.
+// out as, so the banner resting at 42 overlaps the foot of its box (its padding, not its digits).
+//
+// THE BOSS BAR IS UNDER THE PLAYER'S HUD (in-flight 114, Eric 2026-11-10: "Boss health should be under all of
+// the player UI"). It hung from the timer at 44, then 56 once it touched the health bar, and still sat between
+// the player's own pieces: level with his XP bar, over his spells on a PC. Its row now has a floor of its own,
+// PlayerHudFloor - the foot of the spell row and the element tags, measured each layout, plus Gap - so it sits
+// below the health bar, the XP bar, the spells and the tags on both canvases, and the rows under it follow it.
 //
 // Rows register as they are made (Add) - after SafeArea has inset them, so where they stand then is their
 // resting place - and drop out when they are freed. Laid out every frame, late (ProcessPriority, after every
@@ -43,7 +47,7 @@ public partial class HudBand : Node
 	/// <summary>The band's rows, in the order they stack, top to bottom.</summary>
 	public enum Row
 	{
-		/// <summary>The boss's health (Node2DGame.ConfigureBossHud), or the sent bosses' bars side by side.</summary>
+		/// <summary>The boss's health (Node2DGame.ConfigureBossHud), or the sent bosses' bars side by side. Floored under the player's HUD.</summary>
 		BossBar,
 		/// <summary>A chapter's own line (ChapterRules.CreateObjective): the Court's rooms found, the Last Bridge's strip.</summary>
 		ChapterLine,
@@ -154,7 +158,8 @@ public partial class HudBand : Node
 				GapAfter = e.Control is Label ? 0f : Gap,
 				Left = rect.Position.X,
 				Right = rect.End.X,
-				Floor = e.Row == Row.Banner && BannerFloor != null ? BannerFloor() : 0f,
+				Floor = e.Row == Row.Banner && BannerFloor != null ? BannerFloor()
+					: e.Row == Row.BossBar ? PlayerHudFloor() : 0f,
 			};
 		}
 
@@ -241,11 +246,38 @@ public partial class HudBand : Node
 	}
 
 	/// <summary>
+	/// Where the boss bar may start: under the lowest of the player's own pieces, plus <see cref="Gap"/> (in-flight
+	/// 114). The spell row and the element tags are measured; the health bar (6-50) and the XP bar (54-69) are not,
+	/// because on both canvases they end above the spell row (84 on a PC, the band's floor on a phone). 0 when the
+	/// loadout is not up, so the bar rests where it was built.
+	/// </summary>
+	public float PlayerHudFloor()
+	{
+		if (Loadout == null || !IsInstanceValid(Loadout))
+			return 0f;
+		float foot = 0f;
+		if (Loadout.IsVisibleInTree())
+			foot = Loadout.GetGlobalRect().End.Y;
+		if (Loadout.TagRow is Control tags && tags.IsVisibleInTree())
+			foot = Mathf.Max(foot, tags.GetGlobalRect().End.Y);
+		return foot > 0f ? foot + Gap : 0f;
+	}
+
+	/// <summary>
 	/// For _UiShot: every showing row and fixed rect as measured on screen now, and the first pair that meets,
-	/// or null when none does. Rows are measured by their boxes, which the band sets to what it reserved.
+	/// or null when none does. Rows are measured by their boxes, which the band sets to what it reserved. A boss
+	/// bar above the foot of the player's HUD (PlayerHudFloor, in-flight 114) is reported as a meeting too.
 	/// </summary>
 	public (string Rows, string? Overlap) Audit()
 	{
+		float playerFoot = PlayerHudFloor() - Gap;
+		foreach (Entry e in entries)
+		{
+			if (e.Row == Row.BossBar && IsInstanceValid(e.Control) && IsShowing(e.Control)
+				&& e.Control.GetGlobalRect().Position.Y < playerFoot)
+				return ($"BossBar {e.Control.Name} y {e.Control.GetGlobalRect().Position.Y:0}, player's HUD ends at {playerFoot:0}",
+					$"BossBar {e.Control.Name} and the player's HUD (it must sit under his spells and tags)");
+		}
 		var named = new List<(string Name, Rect2 Rect, bool Fixed)>();
 		foreach (Entry e in entries)
 		{
@@ -290,29 +322,37 @@ public partial class HudBand : Node
 		{
 			float mid = width * 0.5f;
 			var fixedRects = new List<Rect2>();
+			// The foot of the player's HUD, which the boss bar must sit under (PlayerHudFloor, in-flight 114).
+			float playerFoot;
 			if (narrow)
 			{
 				// The tags: twelve chips, five a line in a 214-wide block left of the pause button, three lines;
 				// and the spell row on the band's floor (LoadoutHud.Place).
 				fixedRects.Add(new Rect2(width - insetRight - 70f - 214f, 8f + insetTop, 214f, 3f * 26f));
 				fixedRects.Add(new Rect2(7f + insetLeft, TouchControls.DefaultHudBandHeight - 4f - 34f + insetTop, width - 14f - insetLeft - insetRight, 34f));
+				playerFoot = TouchControls.DefaultHudBandHeight - 4f + insetTop;
 			}
 			else
 			{
 				fixedRects.Add(new Rect2(width - 7f - 560f, 8f, 560f, 26f));
+				// The spell row at 84, one 34-unit slot tall (LoadoutHud.LandscapeTop, SlotSize). Not a fixed rect:
+				// no centred row reaches it, and a full-width line's box would.
+				playerFoot = 84f + 34f;
 			}
 
 			// Every row up at once, at the size its tallest content gives it: a two-line win line in the title face,
 			// a two-line banner and tip. The bar and the banner are boxes, the rest lines of text.
 			Slot[] rows =
 			{
-				new() { Showing = true, RestTop = 44f + insetTop, Height = 34f, GapAfter = Gap, Left = 24f + insetLeft, Right = width - 24f - insetRight },
+				new() { Showing = true, RestTop = 124f + insetTop, Height = 34f, GapAfter = Gap, Left = 24f + insetLeft, Right = width - 24f - insetRight, Floor = playerFoot + Gap },
 				new() { Showing = true, RestTop = 84f + insetTop, Height = 26f, Left = insetLeft, Right = width - insetRight },
 				new() { Showing = true, RestTop = 84f + insetTop, Height = 80f, Left = insetLeft, Right = width - insetRight },
 				new() { Showing = true, RestTop = 42f + insetTop, Height = 62f, GapAfter = Gap, Left = mid - 260f, Right = mid + 260f },
 				new() { Showing = true, RestTop = 82f + insetTop, Height = 55f, Left = mid - 320f, Right = mid + 320f },
 			};
 			Stack(rows, fixedRects.ToArray());
+			if (rows[(int)Row.BossBar].Top < playerFoot)
+				warnings.Add($"HUD band ({name}): the boss bar ({rows[(int)Row.BossBar].Top:0}) is above the foot of the player's HUD ({playerFoot:0}).");
 
 			for (int a = 0; a < rows.Length; a++)
 			{

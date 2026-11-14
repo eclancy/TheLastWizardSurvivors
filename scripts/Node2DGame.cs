@@ -6264,12 +6264,14 @@ public partial class Node2DGame : Node2D
 			AnchorLeft = 0f,
 			AnchorRight = 1f,
 			OffsetLeft = 24f,
-			// 56, not 44: the bar spans the whole width, and at 44 its left end sat on the player's
-			// health bar, whose box ends at y 50 (Eric, 2026-11-06: "Boss health bar touches player
-			// health bar"). 50 plus the band's own Gap. HudBand steps everything under it down with it.
-			OffsetTop = 56f,
+			// Under all of the player's HUD (in-flight 114, Eric 2026-11-10: "Boss health should be under all of
+			// the player UI"): a PC's spell row ends at 118, plus the band's Gap. It was 44, on the health bar,
+			// then 56, level with the XP bar and over the spells. This is only where it rests: the band floors
+			// it under the spells and tags as they really stand (HudBand.PlayerHudFloor), which on a phone is
+			// under the spell row across the band's floor, and steps everything under it down with it.
+			OffsetTop = 124f,
 			OffsetRight = -24f,
-			OffsetBottom = 56f + 34f
+			OffsetBottom = 124f + 34f
 		};
 		uiOverlay.AddChild(bossHudRoot);
 		SafeArea.ApplyTo(bossHudRoot);

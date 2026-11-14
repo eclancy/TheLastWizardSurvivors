@@ -148,7 +148,8 @@ public abstract partial class ChapterRules : Node
 	public virtual Vector2? WayfinderSite(ExplorePlacer placer, float footprint) => null;
 
 	/// <summary>
-	/// The objective line's resting place, under the boss bar's slot (44-78), where a side event's line rests too.
+	/// The objective line's resting place, under the run timer, where a side event's line rests too; a boss bar (under the
+	/// player's HUD since in-flight 114) steps both down under it.
 	/// The band under the timer (HudBand) stacks them: this line first, an event's under it, a tip under both.
 	/// </summary>
 	public const float ObjectiveTop = 84f;

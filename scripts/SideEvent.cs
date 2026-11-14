@@ -226,7 +226,7 @@ public abstract partial class SideEvent : Node2D
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 				AnchorLeft = 0f,
 				AnchorRight = 1f,
-				// Resting under the boss bar's slot (44-78). It is a row of the band under the timer (HudBand,
+				// Resting under the run timer (a boss bar steps it down, in-flight 114). It is a row of the band under the timer (HudBand,
 				// below), which puts it under a chapter's own line when there is one (ChapterRules.CreateObjective:
 				// the Court's rooms found, .ai/chapter-wizards.md 4.10) and keeps a new player's tip under it - the
 				// tip used to rest in this very place and was printed through it.

@@ -385,9 +385,9 @@ public partial class BridgeRules : ChapterRules
 	/// <summary>The Constable, once he has come (he says so as he reads the gate). Read for the camera's lean.</summary>
 	public BridgeConstableBoss Constable { get; set; }
 
-	// The HUD over the top of the view - the boss bar (44-78) and the strip under it, down to ObjectiveBottom -
-	// and a little air, in canvas px.
-	private const float HudBandCanvas = ObjectiveBottom + 16f;
+	// The HUD over the top of the view - the boss bar, now under the player's spells (124-158, in-flight 114), and
+	// the strip under it, a line as tall as ObjectiveTop-ObjectiveBottom - and a little air, in canvas px.
+	private const float HudBandCanvas = 124f + 34f + HudBand.Gap + (ObjectiveBottom - ObjectiveTop) + 16f;
 	// The lean never takes the player further than this share of the view's half-height off its centre.
 	private const float MaxLeanShare = 0.6f;
 
