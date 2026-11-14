@@ -691,62 +691,88 @@ def aegis_ward():
     lit edge, ending in gold rivets at the rim; and over the shield's head the ward it raises - a thin arc of the
     light's edge stop with a spark at its crown and either shoulder. An occlusion seam holds it on any page.
     It was a flat steel plate with three discs on it.
+
+    MIRRORED (in-flight 102, Eric 2026-11-10: the redrawn icon "is irregular and asymmetrical"). The shield was laid on
+    x 16 and its ward on 15.5, its rim drawn edge by edge and its rivets set by hand, so one side came out a pixel
+    wider and the straps off true. Now the shape is drawn once, the near (key) half, and mirrored about the cell's
+    middle - column x and column 31 - x - with every tone stepped a stop down on the far side (FAR), so the light
+    still comes from the upper left and the two faces meet in a ridge down the middle. Only the light that is not
+    shape goes on after the mirror: the dome's hot spot and glint, the crown's spark, the upright strap's lit and
+    shaded halves, the rivets.
     """
     c = raster.Canvas(CELL, CELL, None)
     l = E("light")
     steel = bl.MATERIALS["steel"]   # hi, lit, base, shade, deep
     gold = bl.MATERIALS["gold"]
-    cx, cy = 16, 15
+    ax = 15.5                       # the axis: column x mirrors to column 31 - x
+    cy = 15
 
-    # The ward it raises: an arc over the shield's head, the light's edge stop, sparks at its crown and shoulders.
+    # THE NEAR HALF, drawn whole and then mirrored. The ward it raises: an arc over the shield's head in the light's
+    # edge stop, a spark at the key shoulder.
     r = 14.6
     for d in range(200, 341):
         a = math.radians(d)
-        c.set(int(round(15.5 + math.cos(a) * r)), int(round(16.0 + math.sin(a) * r)), l[3])
-    for d, tone in ((270, l[0]), (225, l[1]), (315, l[2])):
-        a = math.radians(d)
-        x, y = int(round(15.5 + math.cos(a) * r)), int(round(16.0 + math.sin(a) * r))
-        c.set(x, y, tone)
-        if tone == l[0]:
-            for (dx, dy) in ((-1, 0), (1, 0), (0, -1)):
-                c.set(x + dx, y + dy, l[2])
+        c.set(int(round(ax + math.cos(a) * r)), int(round(16.0 + math.sin(a) * r)), l[3])
+    a = math.radians(225)
+    c.set(int(round(ax + math.cos(a) * r)), int(round(16.0 + math.sin(a) * r)), l[1])
 
     # The shield: a heater, its seam of occlusion first so it stands off the arc and any page.
-    body = [(16, 5), (26, 8), (25.5, 18), (16, 29), (6.5, 18), (6, 8)]
-    seam = [(16, 3.6), (27.4, 7.0), (27.0, 18.6), (16, 30.6), (5.0, 18.6), (4.6, 7.0)]
+    body = [(ax, 5), (25.5, 8), (25.0, 18), (ax, 29), (6.0, 18), (5.5, 8)]
+    seam = [(ax, 3.6), (26.9, 7.0), (26.5, 18.6), (ax, 30.6), (4.5, 18.6), (4.1, 7.0)]
     c.poly(seam, OCC)
     c.poly_shade(body, [steel[0], steel[1], steel[2], steel[3]], gamma=0.85)
-    # The rim: dark all round, then lit along the edges the key reaches and shaded along the far ones.
+    # The rim: dark all round, then lit along the near edges (the mirror shades the far ones).
     for i in range(len(body)):
         (x0, y0), (x1, y1) = body[i], body[(i + 1) % len(body)]
         c.line(int(round(x0)), int(round(y0)), int(round(x1)), int(round(y1)), steel[4])
-    c.line(16, 6, 7, 8, steel[0])
+    c.line(15, 6, 7, 8, steel[0])
     c.line(7, 9, 7, 17, steel[1])
-    c.line(25, 9, 24, 18, steel[3])
-    c.line(23, 20, 17, 27, steel[3])
     c.line(9, 20, 15, 27, steel[2])
+    # The strap across, a shade band under a lit edge.
+    c.hline(8, 15, cy + 1, steel[3])
+    c.hline(8, 15, cy, steel[1])
+    # The boss's dark collar and the dome of light seated in it (centred on the axis, so even as drawn).
+    c.disc(ax, cy, 5.6, 5.6, steel[4])
+    c.disc(ax, cy, 4.7, 4.7, l[3])
 
-    # The straps that hold the boss: across and down, each a shade band with a lit edge, gold rivets at the rim.
-    c.hline(8, 24, cy + 1, steel[3])
-    c.hline(8, 24, cy, steel[1])
-    c.vline(cx, cy + 6, 26, steel[3])
-    c.vline(cx - 1, cy + 6, 26, steel[1])
-    for (x, y) in ((8, cy), (24, cy), (cx - 1, 26), (11, 9), (21, 9)):
-        c.set(x, y, gold[1])
-        c.set(x + 1, y + 1, gold[3])
+    # THE MIRROR: the far half is the near half turned over, a stop darker (FAR).
+    far = {}
+    for ramp, steps in ((steel, (2, 3, 3, 4, 4)), (l, tuple(min(i + 1, len(l) - 1) for i in range(len(l)))),
+                        (gold, tuple(min(i + 1, len(gold) - 1) for i in range(len(gold))))):
+        for i, j in enumerate(steps):
+            far.setdefault(raster.rgb(ramp[i]), raster.rgb(ramp[j]))
+    for y in range(CELL):
+        for x in range(CELL // 2):
+            px = c.get(x, y)
+            c.px[CELL - 1 - x, y] = far.get(px, px)
+
+    # THE LIGHT, which is not shape. The crown's spark, two pixels wide on the axis.
+    top = int(round(16.0 - r))
+    for x in (15, 16):
+        c.set(x, top, l[0])
+        c.set(x, top - 1, l[2])
+    c.set(14, top, l[2])
+    c.set(17, top, l[2])
+    # The upright strap, two pixels on the axis: lit on the key side, shaded on the far.
+    c.vline(15, cy + 6, 26, steel[1])
+    c.vline(16, cy + 6, 26, steel[3])
+    # Gold rivets where the straps meet the rim and at the shield's shoulders, each with its shadow under it and a
+    # glint on the near ones.
+    for (x, y) in ((8, cy), (23, cy), (11, 9), (20, 9), (15, 26), (16, 26)):
+        c.set(x, y, gold[1] if x < 16 else gold[2])
+        c.set(x, y + 1, gold[3])
     c.set(8, cy - 1, gold[0])
     c.set(11, 8, gold[0])
-
-    # The boss: a dark collar, then the dome of light, hot to the key's side, a white glint up its shoulder.
-    c.disc(cx, cy, 5.6, 5.6, steel[4])
-    c.disc(cx, cy, 4.7, 4.7, l[3])
-    c.disc(cx - 0.4, cy - 0.4, 3.6, 3.6, l[2])
-    c.disc(cx - 0.8, cy - 0.8, 2.3, 2.3, l[1])
-    c.set(cx - 2, cy - 2, l[0])
-    c.set(cx - 1, cy - 2, l[0])
-    c.set(cx - 2, cy - 1, l[0])
-    c.set(cx + 2, cy + 3, steel[3])
-    c.set(cx + 3, cy + 2, steel[3])
+    c.set(23, cy - 1, gold[2])
+    c.set(20, 8, gold[2])
+    # The dome, hot to the key's side, a white glint up its shoulder, its far foot in shade.
+    c.disc(ax - 0.4, cy - 0.4, 3.6, 3.6, l[2])
+    c.disc(ax - 0.8, cy - 0.8, 2.3, 2.3, l[1])
+    c.set(13, cy - 2, l[0])
+    c.set(14, cy - 2, l[0])
+    c.set(13, cy - 1, l[0])
+    c.set(17, cy + 3, steel[3])
+    c.set(18, cy + 2, steel[3])
     return c
 
 
