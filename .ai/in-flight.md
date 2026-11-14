@@ -13,6 +13,11 @@
 
 ## Week of 2026-11-16: the plan
 
+**Started early, 2026-11-13 (beffd306..94c0f8af, not released):** 105, 104, 114, 111, 136, 140, 122, 124, 137, 135, 102
+built and validated (build per item, the full validator clean). Not played. Two leads from the builder: the Broken
+Circle's "ribcages" may ALSO be the Shepherd (`heath_shepherd`), whose attack or hurt frame shows a white ribcage - ask
+Eric; and the lowered boss bar (114) is now covered by an achievement popup while one shows - move the popup.
+
 Eric, 2026-11-11: *"We were supposed to be planning for next week. Let's finish the work we are doing and then make
 notes for next week."* 0.24.0 is out (a story reset, epoch 5); everything below is open, numbered as in the list
 under it. In order:
@@ -108,19 +113,19 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 99 | Elderbark's slam and roots much bigger in area (not the other bosses) | boss tuning | done |
 | 100 | Thorn Vine's shove always away from the player (today along the swing, sometimes toward him) | spell | done |
 | 101 | The Pinfold's guards stay by the gate, glow and are marked; the latch lights once they fall | event | done |
-| 102 | Aegis Ward's new icon is lopsided: redraw it symmetrical | icon art | S |
+| 102 | Aegis Ward's new icon is lopsided: redraw it symmetrical | icon art | done |
 | 103 | Land still flaps over the water's edge: find where, then make the drawing match the water | terrain | S-M |
-| 104 | Exploders vanish on detonating: play a death animation | enemy | S |
-| 105 | Level-up cards stay dimmed after the arming pause ends | UI bug | S |
+| 104 | Exploders vanish on detonating: play a death animation | enemy | done |
+| 105 | Level-up cards stay dimmed after the arming pause ends | UI bug | done |
 | 106 | Water always a proper body, never a lone-cell circle | terrain | S-M |
 | 107 | Terrain features never stamp on top of each other (decided the same in every chunk) | terrain | M |
 | 108 | Baba Yaga's hut bolts only once you are close (she ran before the phone could see her) | puzzle | S |
 | 109 | Her bone yard is bigger | puzzle + art | S |
 | 110 | Water's edge rocky and irregular, not a smooth bowl's rim (with 103 and 106) | terrain art | M |
-| 111 | No description line under the Powers page titles | UI | trivial |
+| 111 | No description line under the Powers page titles | UI | done |
 | 112 | Damage shown as a number where a percentage belongs (which screen: to confirm) | UI text | S |
 | 113 | Enemies can wade into water (slowed, as he is); water stops being a refuge | enemies + terrain | M |
-| 114 | The boss's health bar below all of the player's HUD | HUD | S |
+| 114 | The boss's health bar below all of the player's HUD | HUD | done |
 | 115 | Elderbark's slam and roots bigger again | boss tuning | S |
 | 116 | Telegraphed attacks animated (Elderbark's roots grow then spike), not flashing shapes | VFX + art | L |
 | 117 | Every Elderbark attack that lands roots the player briefly, so he catches up | boss + player | S-M |
@@ -128,9 +133,9 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 119 | Codex button still off the header (check on the real phone first) | UI | S |
 | 120 | Magic Missile's sound remade, soft and varied | audio | S |
 | 121 | Sound mix: Chain Lightning softer, Cinderbreath louder, continuous sounds rebalanced | audio | S-M |
-| 122 | Lancet aims at the lowest health share, bosses and elites first | spell | S |
+| 122 | Lancet aims at the lowest health share, bosses and elites first | spell | done |
 | 123 | Elderbark calls up small forest creatures during his fight | boss + art | M |
-| 124 | The Archmage is healed while Overlooked keeps him alive | character | S |
+| 124 | The Archmage is healed while Overlooked keeps him alive | character | done |
 | 125 | A held wizard speaks a hint when you find their site | events + text | M |
 | 126 | Less contrast on dark creatures' highlights | art | S-M |
 | 127 | Cinderbreath grows a little with level; rebalance around it | spell | S |
@@ -141,12 +146,12 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 132 | Every boss shows damage on its sprite (damaged states) | boss art | L |
 | 133 | The Hayward's wind-ups shown in his sprite's animation, not ground shapes (with 116, 129) | boss art | M |
 | 134 | Boss phases for every boss (design in `.ai/boss-phases.md`, reviewed one boss at a time) | design, then bosses | L |
-| 135 | Medea's dark mantle reads as hair: make it plainly red cloth | character art | S |
-| 136 | Gloam Veil's card in plain words ("Blocks one hit; walk to recharge.") | text | trivial |
-| 137 | Remove the Broken Circle's bleached dead trees (they read as ribcages) | world art | S |
+| 135 | Medea's dark mantle reads as hair: make it plainly red cloth | character art | done |
+| 136 | Gloam Veil's card in plain words ("Blocks one hit; walk to recharge.") | text | done |
+| 137 | Remove the Broken Circle's bleached dead trees (they read as ribcages) | world art | done |
 | 138 | Every enemy recognizable: build each chapter's own ranged enemy (the Hexer stands in almost everywhere), then audit all | enemies + art | L |
 | 139 | Falling behind on levels should be lethal, not slow: faster/frailer enemies or time-driven pressure (think it through) | design + balance | M |
-| 140 | Merlin's quest says what to do (reach each lit stone in time, six in a row); check the other captives' lines | text | S |
+| 140 | Merlin's quest says what to do (reach each lit stone in time, six in a row); check the other captives' lines | text | done |
 | 141 | Level-up cards and the strip show a spell's latest (mutation) icon | UI | S |
 | 142 | A wizard's Apotheosis name hidden on the character card until unlocked | UI | S |
 | 143 | A freed wizard's name revealed on the achievements page | UI | S |
