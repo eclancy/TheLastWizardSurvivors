@@ -1253,6 +1253,9 @@ public static class SpellEvolutionCatalog
 	// deepen each half once (Night's Cloth's Darkness, Tailwind's Wind). Every number is one the
 	// script reads: damage through the lash, knockback through GetKnockbackBonusAtLevel, the walk
 	// through GetRangeAtLevel (Tailwind's RangeBonus shortens it), and the behaviours by id.
+	// THE CARDS IN PLAIN WORDS (in-flight 136, Eric 2026-11-11: "gloam veil description is confusing. be direct"):
+	// veil, weave, tear, gust and lash each stood for a plain thing, so the cards say block, recharge, break, push
+	// and damage. The code keeps its own words.
 	private static void SetupGloamVeilEvolutions(SpellData spell)
 	{
 		// Level 4 (3 choices)
@@ -1263,12 +1266,12 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Night's Cloth",
 			// It paid a hybrid's price for its tag in the WALK (+50, the veil's cooldown decides nothing), until
 			// the price went on 2026-11-10 (in-flight 97).
-			Description = "While the veil is torn, shots that would find you die in the gloom at your shoulder.",
+			Description = "While it is broken, enemy shots that reach you are destroyed before they hit.",
 			MilestoneLevel = 4,
 			VisualTag = "NightsCloth",
 			ModulateColor = new Color(0.55f, 0.35f, 0.8f),
 			SynergyTag = "Darkness / Guard",
-			SynergyDescription = "Deepens Darkness. Torn is not defenceless."
+			SynergyDescription = "Deepens Darkness. Still guarded while it recharges."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
@@ -1278,27 +1281,27 @@ public static class SpellEvolutionCatalog
 			DisplayName = "Tailwind",
 			// -90 of the 350 walk at level 4. It netted -40 while a hybrid's tag was charged 50 of walk
 			// (in-flight 97 took the price away on 2026-11-10).
-			Description = "The tear's gust throws much harder, and the walk re-weaves the veil about 25% sooner.",
+			Description = "When it breaks, it pushes enemies much farther, and it recharges after about 25% less walking.",
 			MilestoneLevel = 4,
 			KnockbackBonus = 140f,
 			RangeBonus = -90f,
 			VisualTag = "Tailwind",
 			ModulateColor = new Color(0.7f, 0.95f, 0.85f),
 			SynergyTag = "Wind / Recovery",
-			SynergyDescription = "Deepens Wind. The veil comes back with the stride."
+			SynergyDescription = "Deepens Wind. Recharges with less walking."
 		});
 
 		spell.Level4Options.Add(new SpellEvolutionOption
 		{
 			Id = GloamVeil.RazorHemId,
 			DisplayName = "Razor Hem",
-			Description = "The tear's lash cuts 60% deeper.",
+			Description = "When it breaks, its push deals 60% more damage.",
 			MilestoneLevel = 4,
 			DamageMultiplier = 1.6f,
 			VisualTag = "RazorHem",
 			ModulateColor = new Color(0.8f, 0.75f, 0.9f),
 			SynergyTag = "Edge / Lash",
-			SynergyDescription = "A veil that costs the pack to tear."
+			SynergyDescription = "Breaking it hurts the enemies near you."
 		});
 
 		// Level 8 (2 choices)
@@ -1306,26 +1309,26 @@ public static class SpellEvolutionCatalog
 		{
 			Id = GloamVeil.SecondSkinId,
 			DisplayName = "Second Skin",
-			Description = "The veil is woven double: it swallows two hits before it is bare. +30% lash.",
+			Description = "Blocks two hits before it needs recharging. Its push deals 30% more damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = 1.3f,
 			VisualTag = "SecondSkin",
 			ModulateColor = new Color(0.5f, 0.45f, 0.7f),
 			SynergyTag = "Darkness / Depth",
-			SynergyDescription = "Ascension: two veils, walked back one by one."
+			SynergyDescription = "Ascension: two blocks, recharged one at a time."
 		});
 
 		spell.Level8Options.Add(new SpellEvolutionOption
 		{
 			Id = GloamVeil.HourOfGloamId,
 			DisplayName = "Hour of Gloam",
-			Description = "The tear dims the world: everything the gust touches is weakened for a while, and the lash cuts twice as deep.",
+			Description = "When it breaks, the enemies it pushes deal 30% less damage for 4 seconds, and its push deals double damage.",
 			MilestoneLevel = 8,
 			DamageMultiplier = 2.0f,
 			VisualTag = "HourOfGloam",
 			ModulateColor = new Color(0.45f, 0.3f, 0.6f),
 			SynergyTag = "Darkness / Weaken",
-			SynergyDescription = "Ascension: what tears the veil fights the duller for it."
+			SynergyDescription = "Ascension: enemies near the break hit weaker."
 		});
 	}
 

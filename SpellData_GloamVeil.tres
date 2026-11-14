@@ -34,7 +34,7 @@ RangeBonus = -60.0
 
 [resource]
 script = ExtResource("1")
-Tagline = "Veils one hit; walk to re-weave."
+Tagline = "Blocks one hit; walk to recharge."
 Id = "gloam_veil"
 Name = "Gloam Veil"
 CurrentLevel = 1
@@ -44,7 +44,7 @@ BaseCooldown = 6.0
 BaseProjectileCount = 1
 BaseRange = 440.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_gloam_lvl2"), SubResource("Resource_gloam_lvl4"), SubResource("Resource_gloam_lvl6"), SubResource("Resource_gloam_lvl8")])
-Description = "Weaves a veil that swallows the next hit whole. The tear gusts the pack away and carries you free; walking weaves it back."
+Description = "Blocks the next hit completely. When it breaks, it pushes nearby enemies away and gives you a burst of speed. Walk to recharge it."
 Icon = ExtResource("3_icon")
 ElementWeights = {
 "Darkness": 1,
