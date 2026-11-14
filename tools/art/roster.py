@@ -3745,8 +3745,8 @@ def medea(phase=None):
     one curve in the cast's outlines, and the break in hers below the mantle.
 
     The rescued wear no pigment: a long peplos of lichen's middle, the sea-green of the water at Colchis, belted
-    high and folded over to the hip; a mantle from the red row's dark end, madder gone almost black, drawn over
-    the back of her head and falling behind her to the ground; a thin bronze diadem with one small disc on it, the
+    high and folded over to the hip; a mantle of dark madder, drawn over the back of her head and falling behind
+    her to the ground; a thin bronze diadem with one small disc on it, the
     Sun's, over hair as black as stone's deep end; a bundle of dried herbs tied at her girdle.
     """
     mid, lit, dark = ROBES["medea"]
@@ -3754,15 +3754,19 @@ def medea(phase=None):
     CX = 24
 
     # THE MANTLE, behind everything: over the crown, down behind the far shoulder, falling to the ground at her
-    # back - the long dark edge of her outline on the far side.
+    # back - the long dark edge of her outline on the far side. A STOP UP THE RED ROW (in-flight 135, Eric
+    # 2026-11-11: "Does Medea's hair wrap around her front? Or is that supposed to be a piece of clothing? It's the
+    # same color as her hair"): it was the row's shade over its deep, madder gone almost black, and beside her black
+    # hair the two near-blacks read as one mass at 48 px. Now the row's base over its shade, lit in its lit stop -
+    # still dark, plainly red - and the hair keeps the darkest mass on her to itself.
     mass(g, [(4, 21, 26), (6, 19, 28), (9, 17, 22), (14, 15, 22), (22, 13, 21), (32, 12, 20), (40, 11, 19),
-             (46, 11, 19)], RD3, RD2, RD4)
-    fold(g, [(18, 12), (16, 22), (15, 34), (14, 45)], RD4, RD2)
-    fold(g, [(20, 16), (18, 30), (17, 45)], RD4, RD2)
-    fold(g, [(13, 30), (12, 44)], RD4, None)
-    g.set(13, 41, RD1)                                              # a worn edge catching the key light
-    g.set(12, 36, RD2)
-    tatters(g, [(46, 11, 13), (46, 15, 16), (46, 18, 19)], RD3, RD2, RD4)
+             (46, 11, 19)], RD2, RD1, RD3)
+    fold(g, [(18, 12), (16, 22), (15, 34), (14, 45)], RD3, RD1)
+    fold(g, [(20, 16), (18, 30), (17, 45)], RD3, RD1)
+    fold(g, [(13, 30), (12, 44)], RD3, None)
+    g.set(13, 41, RD0)                                              # a worn edge catching the key light
+    g.set(12, 36, RD1)
+    tatters(g, [(46, 11, 13), (46, 15, 16), (46, 18, 19)], RD2, RD1, RD3)
 
     # THE PEPLOS: long, belted high, the overfold to the hip, to the ground.
     mass(g, [(15, 20, 28), (19, 19, 29), (24, 20, 29), (29, 19, 31), (36, 18, 32), (42, 17, 33), (46, 17, 33)],
@@ -3791,15 +3795,18 @@ def medea(phase=None):
     g.set(27, 27, "g")
     # THE MANTLE'S FRONT: drawn over the far shoulder and down across her in one diagonal fall to the near hip, the
     # way a himation is worn - so the dark red is plainly cloth, and the column of the peplos is broken across.
-    mass(g, [(15, 19, 22), (19, 19, 24), (23, 19, 27), (27, 19, 30), (30, 21, 31), (32, 26, 31)], RD3, RD2, RD4, rim=False)
-    # Its folds, falling the way the drape hangs, and its lower edge: a lit lip, and its shadow on the peplos.
-    fold(g, [(20, 17), (23, 27)], RD4, RD2)
-    fold(g, [(21, 21), (26, 30)], RD4, RD1)
-    fold(g, [(20, 25), (23, 30)], RD4, None)
+    # The same stop up the row as the back (in-flight 135): base over shade, so the fall across her is red cloth and
+    # not a lock of her hair.
+    mass(g, [(15, 19, 22), (19, 19, 24), (23, 19, 27), (27, 19, 30), (30, 21, 31), (32, 26, 31)], RD2, RD1, RD3, rim=False)
+    # Its folds, falling the way the drape hangs, and its lower edge: a lit hem - the row's highlight on the key side,
+    # its lit stop beyond - and its shadow on the peplos.
+    fold(g, [(20, 17), (23, 27)], RD3, RD1)
+    fold(g, [(21, 21), (26, 30)], RD3, RD0)
+    fold(g, [(20, 25), (23, 30)], RD3, None)
     for (ex, ey) in ((19, 28), (20, 29), (21, 30), (22, 31), (23, 31), (24, 32), (25, 32), (26, 33), (27, 33), (28, 33),
                      (29, 33), (30, 33)):
         if g.get(ex, ey) not in (".", "W"):
-            g.set(ex, ey, RD1 if ex < 24 else RD2)
+            g.set(ex, ey, RD0 if ex < 24 else RD1)
         if g.get(ex, ey + 1) not in (".", "W"):
             g.set(ex, ey + 1, LC4)
     # The pin that holds it on her shoulder: bronze.
