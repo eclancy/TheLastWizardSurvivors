@@ -54,6 +54,11 @@ public static partial class RegressionChecks
 			n = Lancet.Order(new[] { 0f, 0f, 0f }, new[] { 900f, 100f, 400f }, 1, into);
 			if (n != 1 || into[0] != 1)
 				warnings.Add("Lancet: with nothing hurt it did not go for the nearest.");
+			// Bosses first (in-flight 122): an unhurt elite far off goes before a nearly dead skeleton beside him, and of two
+			// elites the more hurt.
+			n = Lancet.Order(new[] { 0.9f, 0f, 0.4f }, new[] { 10f, 900f, 950f }, 3, into, new[] { false, true, true });
+			if (n != 3 || into[0] != 2 || into[1] != 1 || into[2] != 0)
+				warnings.Add($"Lancet: an elite at 0% and 40% lost and a skeleton at 90% ordered {string.Join(",", into.Take(n))}; the big go first, the more hurt of them first.");
 			n = Lancet.Order(new[] { 0.3f, 0.6f }, new[] { 10f, 20f }, 3, into);
 			if (n != 2 || into[0] == into[1])
 				warnings.Add("Lancet: a volley larger than the crowd ordered the same body twice; each needle of the walk is one body.");

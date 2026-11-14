@@ -64,7 +64,7 @@ CooldownBonus = -0.05
 
 [resource]
 script = ExtResource("1")
-Tagline = "A needle for the most wounded."
+Tagline = "Bosses first, then the most hurt."
 Id = "lancet"
 Name = "Lancet"
 CurrentLevel = 1
@@ -74,7 +74,7 @@ BaseCooldown = 0.85
 BaseProjectileCount = 1
 BaseRange = 300.0
 LevelUpgrades = Array[ExtResource("2")]([SubResource("Resource_lancet_lvl2"), SubResource("Resource_lancet_lvl3"), SubResource("Resource_lancet_lvl4"), SubResource("Resource_lancet_lvl5"), SubResource("Resource_lancet_lvl6"), SubResource("Resource_lancet_lvl7"), SubResource("Resource_lancet_lvl8")])
-Description = "A thin steel needle flies at the most wounded enemy in reach, or the nearest when none is hurt. It strikes harder the more health its target has lost, up to double, and an ordinary enemy under 10% health dies outright."
+Description = "A thin steel needle flies at the enemy in reach with the lowest share of its health left - always a boss or elite first, if one is in reach - or the nearest when none is hurt. It strikes harder the more health its target has lost, up to double, and an ordinary enemy under 10% health dies outright."
 Icon = ExtResource("3_icon")
 TargetingMode = 10
 DamageShape = 1

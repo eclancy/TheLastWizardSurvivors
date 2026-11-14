@@ -13,6 +13,11 @@ namespace TheOneHeMissed.scripts;
 // So with nothing hurt in reach it is a nearest-enemy spell, and the moment anything else in the loadout wounds the crowd it
 // goes where the wounds are. Hunter's Mark marks the STRONGEST in reach; this is the other end of the same line.
 //
+// BOSSES FIRST (in-flight 122, Eric 2026-11-11: "Lancet should target the thing whose health percentage is lowest, and focus
+// bosses of any kind over the horde"). Any big body in reach - a boss, a miniboss, an elite (IsBig: IsMiniBoss, or a
+// BossEnemy whatever it says) - goes before every ordinary one, however hurt the ordinary one is; among the big, and among
+// the rest, the lowest share of health left goes first, as above. A boss's needles still only take the wound bonus.
+//
 // THE CHOICE IS ONE WALK. A cast walks EnemyRegistry.Snapshot once (Rank): every body in reach is weighed and the best
 // MaxRank kept in fixed arrays by insertion, so a body worse than the last kept costs one compare and nothing is allocated
 // (.ai/performance.md). The cast's needles take the top of that list, one body each - each extra needle goes to the next
@@ -144,6 +149,7 @@ public partial class Lancet : Node2D
 	private readonly Fx[] fx = new Fx[MaxFx];
 	// The last cast's walk: the best MaxRank bodies in reach, most wounded first.
 	private readonly Enemy[] rank = new Enemy[MaxRank];
+	private readonly bool[] rankBig = new bool[MaxRank];
 	private readonly float[] rankWound = new float[MaxRank];
 	private readonly float[] rankDistance = new float[MaxRank];
 	// What this cast's needles are already carrying to each body on the list, so a volley larger than the crowd is never
@@ -200,6 +206,16 @@ public partial class Lancet : Node2D
 		woundA > woundB + WoundTie || (MathF.Abs(woundA - woundB) <= WoundTie && distanceA < distanceB);
 
 	/// <summary>
+	/// <see cref="Before(float, float, float, float)"/> with the bosses first (in-flight 122): a big body (<see cref="IsBig"/>)
+	/// goes before any ordinary one, and two of a kind by their wounds.
+	/// </summary>
+	public static bool Before(bool bigA, float woundA, float distanceA, bool bigB, float woundB, float distanceB) =>
+		bigA != bigB ? bigA : Before(woundA, distanceA, woundB, distanceB);
+
+	/// <summary>A boss, a miniboss or an elite: what Lancet takes before the horde.</summary>
+	public static bool IsBig(Enemy enemy) => enemy.IsMiniBoss || enemy is BossEnemy;
+
+	/// <summary>
 	/// Throws up to <paramref name="count"/> needles from the wizard at the most wounded in reach, one body each. When the
 	/// crowd in reach is thinner than the volley the rest go round the list again - but only at a body the needles already
 	/// sent at it could leave standing, most wounded first, so a lone boss takes every needle and a dying skeleton one. Returns
@@ -248,8 +264,8 @@ public partial class Lancet : Node2D
 		return thrown;
 	}
 
-	// THE ONE WALK: every body in reach weighed by the share of health it has lost, the best MaxRank kept, most wounded first
-	// (Before). Dying, untargetable and held bodies are passed over: a needle at any of them would strike nothing.
+	// THE ONE WALK: every body in reach weighed by the share of health it has lost, the best MaxRank kept, the big first and
+	// then the most wounded (Before). Dying, untargetable and held bodies are passed over: a needle at any of them would strike nothing.
 	private void Rank(Vector2 me, float within)
 	{
 		rankCount = 0;
@@ -262,17 +278,20 @@ public partial class Lancet : Node2D
 			if (d > withinSquared)
 				continue;
 			float wound = 1f - enemy.HealthFraction;
-			if (rankCount == MaxRank && !Before(wound, d, rankWound[MaxRank - 1], rankDistance[MaxRank - 1]))
+			bool big = IsBig(enemy);
+			if (rankCount == MaxRank && !Before(big, wound, d, rankBig[MaxRank - 1], rankWound[MaxRank - 1], rankDistance[MaxRank - 1]))
 				continue;
 			int at = Math.Min(rankCount, MaxRank - 1);
-			while (at > 0 && Before(wound, d, rankWound[at - 1], rankDistance[at - 1]))
+			while (at > 0 && Before(big, wound, d, rankBig[at - 1], rankWound[at - 1], rankDistance[at - 1]))
 			{
 				rank[at] = rank[at - 1];
+				rankBig[at] = rankBig[at - 1];
 				rankWound[at] = rankWound[at - 1];
 				rankDistance[at] = rankDistance[at - 1];
 				at--;
 			}
 			rank[at] = enemy;
+			rankBig[at] = big;
 			rankWound[at] = wound;
 			rankDistance[at] = d;
 			if (rankCount < MaxRank)
@@ -285,8 +304,9 @@ public partial class Lancet : Node2D
 	/// The ordering a cast's walk keeps, applied to plain numbers for RegressionChecks: the indices of
 	/// <paramref name="wounds"/> and <paramref name="distances"/> a cast of <paramref name="count"/> needles would throw at,
 	/// in throwing order, written to <paramref name="into"/>. Returns how many it wrote (never more than there are bodies).
+	/// <paramref name="bigs"/> marks the bosses, minibosses and elites (null: none is).
 	/// </summary>
-	public static int Order(float[] wounds, float[] distances, int count, int[] into)
+	public static int Order(float[] wounds, float[] distances, int count, int[] into, bool[] bigs = null)
 	{
 		int n = Math.Min(wounds.Length, distances.Length);
 		int taken = 0;
@@ -298,7 +318,7 @@ public partial class Lancet : Node2D
 			{
 				if (used[i])
 					continue;
-				if (best < 0 || Before(wounds[i], distances[i], wounds[best], distances[best]))
+				if (best < 0 || Before(bigs != null && bigs[i], wounds[i], distances[i], bigs != null && bigs[best], wounds[best], distances[best]))
 					best = i;
 			}
 			used[best] = true;
