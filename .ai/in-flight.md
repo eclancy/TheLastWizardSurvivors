@@ -45,7 +45,7 @@ under it. In order:
    140 Merlin's quest line says what to do (and the other captives' lines checked).
    Also from 2026-11-13: 141 latest icons on cards, 142 Apotheosis names hidden until unlocked, 143 freed wizards named
    on achievements, 146/154/155 plainer cards (Threaded Needle, the voice in the rock, the Familiar's forms), 152
-   Gale Blade vs Cyclone Slash icons, 148 arcane orb options, 153 the Sunken Cave's scenery, 157 the map's arrows, 158 no Skip on level-ups.
+   Gale Blade vs Cyclone Slash icons, 148 arcane orb options, 153 the Sunken Cave's scenery, 157 the map's arrows, 158 no Skip on level-ups, 159 Stormguard's card and a directness sweep of every card.
 9. **Enemies that read as something** (138): each chapter's own ranged enemy in place of the Hexer stand-in,
    chapter by chapter, then every role still on a stand-in.
 10. **Spell slots matter** (item 9a, Eric 2026-11-04, asked again 2026-11-11): two slot effects exist - the Gimmel Ring
@@ -165,6 +165,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 156 | The crow fetches chests and items instead of catching bolts | familiar | M |
 | 157 | World map: no left/right arrow where nothing is opened that way | UI | trivial |
 | 158 | Level-up screen: no Skip, only Reroll and Ban | UI | trivial |
+| 159 | Stormguard's card said directly, then a sweep of every card for metaphor over meaning | text | S-M |
 | 9a | Spells and relics that play off a spell's slot, and a way to rearrange slots (two exist; the family is open) | design + items | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
@@ -1755,6 +1756,14 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     leaving Reroll and Ban; a hand with nothing worth taking already deals Marginalia and the Arcane Energy card (98).
     Check pad focus and the phone layout of the row, and any harness or probe that presses Skip (`_BalanceHarness`,
     `_LevelUpProbe`).
+159. **Stormguard's card, and every card, said directly** (Eric, 2026-11-13: *"Stormguard description is not clear. Be direct
+    with descriptions"*). Today (`SpellData_Stormguard.tres`): tagline *"Blows you take bring the storm."*, description
+    *"Gathers a storm overhead. The blows you take bring it down: a thunderclap that throws the pack back and soaks it in
+    slowing rain."* Proposed: tagline *"When you're hit, strikes back."* and description *"Charges over time. When you
+    are hit while it is charged, it blasts nearby enemies away and slows them. Then it charges again."* Then **sweep every
+    player-facing card** (spells, branches, boons, relics, sets, quests) for the same habit - a metaphor where a plain
+    statement belongs (Gloam Veil 136, Merlin 140, Threaded Needle 146 and the voice in the rock 154 are the same
+    complaint) - and rewrite each to say what it does, with percentages and close/far (the player-facing-numbers rule).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
