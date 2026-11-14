@@ -523,27 +523,49 @@ public partial class LevelUpMenu : CanvasLayer
 		if (dim == null && panel == null)
 			return;
 
-		var tween = CreateTween();
-		tween.SetParallel(true);
 		if (dim != null)
 		{
 			dim.Modulate = new Color(1f, 1f, 1f, 0f);
-			tween.TweenProperty(dim, "modulate:a", 1f, 0.16f);
+			CreateTween().TweenProperty(dim, "modulate:a", 1f, 0.16f);
 		}
 		if (panel != null)
 		{
 			// Most of the way in at once, the rest as the arming pause ends (InputGuardSeconds): the
 			// cards are readable from the start and look ready only when they are.
 			panel.Modulate = new Color(1f, 1f, 1f, 0f);
-			tween.TweenProperty(panel, "modulate:a", ArmingAlpha, 0.16f).SetDelay(0.05f);
-			tween.Chain().TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.35f));
+			panelFade?.Kill();
+			panelFade = CreateTween();
+			panelFade.TweenProperty(panel, "modulate:a", ArmingAlpha, 0.16f).SetDelay(0.05f);
+			panelFade.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.35f));
+			brightenOnArm = true;
 		}
 	}
 
 	private const float ArmingAlpha = 0.72f;
 
+	// In-flight 105 (Eric, 2026-11-10: "The darker icons remain on the level up cards even after they're
+	// selectable"). The brightening was only ever the tail of a tween, timed to land as the pause ends, and a
+	// tween is not the arming clock: a second one on the same panel (a card swap), a paused or slowed process
+	// or a long first frame could leave the cards at ArmingAlpha with the screen already taking presses. The
+	// tween still draws the rise; _Process is what guarantees it, by snapping the panel to full the frame
+	// IsArmed turns true, on every path that dims it (the first open, a mutation or an Apotheosis swap).
+	private Tween panelFade;
+	private bool brightenOnArm;
+
+	public override void _Process(double delta)
+	{
+		if (!brightenOnArm || !IsArmed)
+			return;
+		brightenOnArm = false;
+		panelFade?.Kill();
+		panelFade = null;
+		if (GetNodeOrNull<CanvasItem>("Panel") is CanvasItem panel)
+			panel.Modulate = new Color(panel.Modulate, 1f);
+	}
+
 	// The same pause again when a choice swaps the cards for new ones under the pointer - a mutation
-	// or an Apotheosis card opening its paths - or a double click picks a path unread.
+	// or an Apotheosis card opening its paths - or a double click picks a path unread. The first
+	// open's tween is killed rather than left to race this one for the same alpha.
 	private void RearmForNewChoices()
 	{
 		Disarm();
@@ -551,8 +573,10 @@ public partial class LevelUpMenu : CanvasLayer
 		if (panel == null)
 			return;
 		panel.Modulate = new Color(1f, 1f, 1f, ArmingAlpha);
-		var tween = CreateTween();
-		tween.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.14f));
+		panelFade?.Kill();
+		panelFade = CreateTween();
+		panelFade.TweenProperty(panel, "modulate:a", 1f, 0.14f).SetDelay(Mathf.Max(0f, ArmingSeconds - 0.14f));
+		brightenOnArm = true;
 	}
 
 	private void ApplyMenuSkin()
