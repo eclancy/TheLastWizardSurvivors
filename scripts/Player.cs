@@ -724,6 +724,15 @@ public partial class Player : CharacterBody2D
 	public const float OverlookedOpacity = 0.45f;
 	private bool characterOverlooked = false;
 	private bool overlookedSpent = false;
+	// MENDED WHILE OVERLOOKED (in-flight 124, Eric 2026-11-11: "When the Archmage uses his passive to not die, he should be
+	// healed in the meantime so he's not instantly killed when he comes back"). Through the grace he is healed back up to
+	// this share of his max health, a point at a time through Heal (so the healing ledger sees it, as "OverlookedMend"),
+	// the last point a second before the grace ends. Once a run, as Overlooked is: 17 HP at most at 50 max HP, and
+	// nothing if he stood above a third when the blow came (.ai/difficulty-curve.md, the healing budget).
+	public const float OverlookedMendShare = 1f / 3f;
+	private int overlookedMendLeft;
+	private float overlookedMendInterval;
+	private float overlookedMendClock;
 
 	/// <summary>Run seconds at which Overlooked turned a killing blow aside, or -1 while it has not. For the harness.</summary>
 	public float OverlookedAtSeconds { get; private set; } = -1f;
@@ -2967,12 +2976,32 @@ public partial class Player : CharacterBody2D
 	{
 		if (invincibilityTimeRemaining > 0f)
 			invincibilityTimeRemaining = Mathf.Max(0f, invincibilityTimeRemaining - delta);
+		if (overlookedMendLeft > 0)
+			OverlookedMend(delta);
 		if (whiteTimeRemaining <= 0f)
 			return;
 
 		whiteTimeRemaining = Mathf.Max(0f, whiteTimeRemaining - delta);
 		if (whiteTimeRemaining <= 0f)
 			SetInvincibilityVisual(false);
+	}
+
+	// Overlooked's mend (in-flight 124): one point every OverlookedMendInterval through the grace. Its own method so the
+	// healing ledger (Heal's caller name) names it.
+	private void OverlookedMend(float delta)
+	{
+		if (IsDead)
+		{
+			overlookedMendLeft = 0;
+			return;
+		}
+		overlookedMendClock += delta;
+		while (overlookedMendLeft > 0 && overlookedMendClock >= overlookedMendInterval)
+		{
+			overlookedMendClock -= overlookedMendInterval;
+			overlookedMendLeft--;
+			Heal(1);
+		}
 	}
 
 	// Renders the character flat white for the duration so the invincible state is obvious.
@@ -3143,8 +3172,8 @@ public partial class Player : CharacterBody2D
 			mitigated -= SpendShield(mitigated);
 		// OVERLOOKED (The Archmage's passive, .ai/protagonist.md): once a run, the blow that would end him misses. After
 		// armour and the shield, so it answers only a blow that would really kill; before any HP leaves, so he keeps the
-		// little he had - it heals nothing (.ai/difficulty-curve.md, the healing budget). Before an extra life, which is
-		// kept for later. The DamageTaken signal has already gone out: he was struck at, as a dodge is not.
+		// little he had, and is then mended up to a third through the grace (OverlookedMend, in-flight 124). Before an
+		// extra life, which is kept for later. The DamageTaken signal has already gone out: he was struck at, as a dodge is not.
 		if (characterOverlooked && !overlookedSpent && mitigated > 0 && mitigated >= CurrentHP)
 		{
 			overlookedSpent = true;
@@ -3152,7 +3181,10 @@ public partial class Player : CharacterBody2D
 			PlayBlurDodgeEffect();
 			SfxPlayer.Global(SfxCatalog.PlayerDodge, 0.05f);
 			GrantInvincibility(OverlookedGraceSeconds, opacity: OverlookedOpacity);
-			GD.Print($"Overlooked: a blow of {mitigated} against {CurrentHP} HP missed at {OverlookedAtSeconds:0.0} s.");
+			overlookedMendLeft = Math.Max(0, Mathf.CeilToInt(MaxHP * OverlookedMendShare) - CurrentHP);
+			overlookedMendInterval = overlookedMendLeft > 0 ? (OverlookedGraceSeconds - 1f) / overlookedMendLeft : 0f;
+			overlookedMendClock = 0f;
+			GD.Print($"Overlooked: a blow of {mitigated} against {CurrentHP} HP missed at {OverlookedAtSeconds:0.0} s; mending {overlookedMendLeft}.");
 			return;
 		}
 		GameStats.RecordHpLost(Math.Min(mitigated, CurrentHP));
