@@ -35,12 +35,17 @@ under it. In order:
    pressure on the clock) - it changes what the pass measures; then 77 the balance pass on every spell (now that attunement is gone - measure first), folding in
    122 Lancet aims at the lowest health share and bosses first, 127 Cinderbreath grows with level, and 124 the Archmage
    healed while Overlooked holds.
+   With it: 145 Canticle's cadence rework (and 144 its sound), 149 the Sibyl's walls, 150 the Split Lens without a
+   damage cost, 151 Wind Shear, 147 the Great Hound, 156 the crow fetches instead of catching bolts.
 7. **Sound:** 120 Magic Missile's sound remade, 121 the mix (Chain Lightning softer, Cinderbreath louder).
 8. **Screens and words:** 118 the level-up screen uses the phone's height, 111 no line under the Powers titles, 128
    Ascension and Apotheosis announced like achievements, 102 Aegis Ward's icon redrawn symmetrical, 126 softer
    highlights on dark creatures, 135 Medea's mantle reads as cloth, not hair, 136 Gloam Veil's card said directly.
    137 remove the Broken Circle's bleached dead trees (the "ribcages").
    140 Merlin's quest line says what to do (and the other captives' lines checked).
+   Also from 2026-11-13: 141 latest icons on cards, 142 Apotheosis names hidden until unlocked, 143 freed wizards named
+   on achievements, 146/154/155 plainer cards (Threaded Needle, the voice in the rock, the Familiar's forms), 152
+   Gale Blade vs Cyclone Slash icons, 148 arcane orb options, 153 the Sunken Cave's scenery.
 9. **Enemies that read as something** (138): each chapter's own ranged enemy in place of the Hexer stand-in,
    chapter by chapter, then every role still on a stand-in.
 10. **Spell slots matter** (item 9a, Eric 2026-11-04, asked again 2026-11-11): two slot effects exist - the Gimmel Ring
@@ -142,6 +147,22 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 138 | Every enemy recognizable: build each chapter's own ranged enemy (the Hexer stands in almost everywhere), then audit all | enemies + art | L |
 | 139 | Falling behind on levels should be lethal, not slow: faster/frailer enemies or time-driven pressure (think it through) | design + balance | M |
 | 140 | Merlin's quest says what to do (reach each lit stone in time, six in a row); check the other captives' lines | text | S |
+| 141 | Level-up cards and the strip show a spell's latest (mutation) icon | UI | S |
+| 142 | A wizard's Apotheosis name hidden on the character card until unlocked | UI | S |
+| 143 | A freed wizard's name revealed on the achievements page | UI | S |
+| 144 | Canticle's sound in time with its strike, and softer | audio | S |
+| 145 | Canticle's cadence collapses with a second spell: rework | spell | M |
+| 146 | Threaded Needle's card said plainly | text | trivial |
+| 147 | The Great Hound mutation is any wizard's hound, not Laelaps | familiar | S |
+| 148 | Three or four options for the arcane orb's art (confirm which orb) | art | S |
+| 149 | The Sibyl's singing walls larger and solid | spell | S |
+| 150 | The Split Lens adds a projectile without cutting damage | item | trivial |
+| 151 | Wind Shear made worth taking | spell | S |
+| 152 | Gale Blade's and Cyclone Slash's icons made distinct | icon art | S |
+| 153 | The Sunken Cave: no trees; the odd upright sticks replaced with cave scenery | world art | S-M |
+| 154 | "Free the voice in the rock" said plainly | text | trivial |
+| 155 | The Familiar's form choice: one simple strategy line each | text | trivial |
+| 156 | The crow fetches chests and items instead of catching bolts | familiar | M |
 | 9a | Spells and relics that play off a spell's slot, and a way to rearrange slots (two exist; the family is open) | design + items | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
@@ -1694,6 +1715,36 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     (his epithet, "the keeper of the circle"). While there, read the other captives' quest lines the same way and
     make any that do not say what to do as direct (the Prisoners table in `QuestLog.cs`, the event hints in
     `UnlockCatalog`).
+141. **Level-up cards show a spell's latest icon** (Eric, 2026-11-13: *"Icons in level ups should use the latest icon, like if you pick a mutation it should use the mutation icon"*). A spell that has taken a level-4/8 branch (or its Apotheosis) should wear that branch's icon on its level-up card, the
+    loadout strip and the pause screen, not its base icon (`LevelUpMenu`, the evolution icons in
+    `assets/bonelight/ui/evolutions/`).
+142. **A wizard's Apotheosis name stays hidden until unlocked** (Eric, 2026-11-13: *"Don't show wizard's apotheosis name on their card until after it is unlocked"*). The character select names each wizard's final form; show it sealed (no name) until the save has unlocked it
+    (`CharacterSelection`, `ApotheosisCatalog`, `Teachings`).
+143. **A freed wizard's name appears on the achievements page** (Eric, 2026-11-13: *"Once you free a wizard, reveal their name on the achievements"*). Achievements that name a locked wizard by epithet should switch to the real name once the save has freed them
+    (`AchievementsPage`, `QuestLog.Prisoners` epithets).
+144. **Canticle's sound: in time with its strike, and less annoying** (Eric, 2026-11-13: *"Canticle sound doesn't line up with the attack often. The sound is also very annoying"*). Make the chord sound on the frame the burst lands (it waits for the music's beat, `ArcaneExplosion` ~383-399), and
+    remake its notes softer (`tools/audio/sfx.py`, the loudness table).
+145. **Canticle's cadence collapses once a second spell is held - rework** (Eric, 2026-11-13: *"Canticle needs to be reworked - as a starting spell it attacks often enough, but as soon as you get your first spell, it immediately massively slows down"*). Its chord gathers a note from casts and waits for `chordSize` notes (`ArcaneExplosion.AddNote`, `MaxNotes`); with
+    more spells held the chord's size or its wait grows and the bursts thin out. Rework so its rate holds or rises as
+    spells are added (e.g. a fixed chord size, or every cast a note), measured with the harness at 1, 2 and 4 spells.
+146. **Threaded Needle's card said plainly** (Eric, 2026-11-13: *"Threaded needle description confusing"*). Find the card (`SpellEvolutionCatalog`, likely Lancet's or a needle spell's branch) and say what it does directly.
+147. **The Great Hound mutation is not only Laelaps** (Eric, 2026-11-13: *"Great hound mutation should not just be laelaps"*). The Familiar's hound branch reads as Laelaps (his name or look); make it a hound any wizard's familiar becomes, and
+    keep Laelaps's own look his (`Familiar`, its evolution block, `tools/art`).
+148. **A few options for the arcane orb's art** (Eric, 2026-11-13: *"Give me a few other options for arcane orb art"*). Draw three or four alternative looks for the arcane orb (Merlin's Orb of Ages, or whichever spell Eric means -
+    confirm) as a comparison sheet for him to pick from, from its generator.
+149. **The Sibyl's singing walls larger and solid** (Eric, 2026-11-13: *"Sibyls singing walls should be larger, and a proper wall you cannot walk through"*). Find the walls (the Sibyl's spell or form), grow them, and make them block like a wall - the swarm AND the player -
+    on the right collision layer (CLAUDE.md, collision layers).
+150. **The extra-projectile item no longer cuts damage** (Eric, 2026-11-13: *"The item that gives bonus projectiles doesn't need to reduce the damage as well"*). The Split Lens (`ChestItemCatalog.CrackedPrism`, +1 projectile, with a damage cost charged in
+    `Player.GetSpellDamageMultiplier`): remove the damage cost and reword its card.
+151. **Wind Shear is underwhelming** (Eric, 2026-11-13: *"Wind sheer is underwhelming"*). Find it (a spell's branch or a boon) and make it worth taking - measure against its siblings with the harness.
+152. **Gale Blade's and Cyclone Slash's icons look alike** (Eric, 2026-11-13: *"Gale blade and cyclone smash icons look similar"*). Redraw one so the two differ at 32 px (`tools/art/spell_icons*.py`).
+153. **The Sunken Cave: no trees, and its odd sticks replaced** (Eric, 2026-11-13: *"Sunken cave should not have trees. It also has sticks facing straight up, with a smaller stick facing right? Not sure what it is, replace with better scenery"*). Remove trees from the Cave's foliage (`Foliage.*` for the Cave, or its decor), find the upright-stick piece, and
+    replace both with cave scenery (stalagmites, crystals, pools, bones of the drowned) in the Cave's palette.
+154. **"Free the voice in the rock" said plainly** (Eric, 2026-11-13: *"Free the voice in the rock description is very confusing"*). Find the line (a Sunken Cave event or quest) and say what the player must do, as item 140 does for Merlin.
+155. **The Familiar's form choice says each form's strategy simply** (Eric, 2026-11-13: *"Familiar when selecting the familiar type, remove "only litter mates adds two pups", a second Crow joins, etc. Keep it simple to their unique strategy"*). Each form's line says only its one way of fighting (the hound bites, the cat purrs/heals, the crow fetches - see
+    156), without branch details (`Familiar`, the form-choice cards).
+156. **The crow fetches chests and items instead of catching bolts** (Eric, 2026-11-13: *"Familiar - crow should not catch projectiles, but bring you chests and items"*). Replace the crow's bolt-catching with fetching: it flies to chests, orbs and items and carries them to the wizard
+    (`Familiar.cs`, the crow's behaviour; its cards and Ma Liang's ink crow follow).
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
