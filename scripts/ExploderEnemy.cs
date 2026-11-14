@@ -28,7 +28,7 @@ public partial class ExploderEnemy : Enemy
 
 	[Export] public Color BlastWarningColor { get; set; } = new Color(0.95f, 0.35f, 0.35f);
 
-	/// <summary>Seconds the spent blast ring lingers before the body is freed.</summary>
+	/// <summary>Seconds the spent blast ring lingers. The body is freed once this and its death strip are both done.</summary>
 	[Export] public float BlastLingerSeconds { get; set; } = 0.3f;
 
 	private GroundSlamAttack blast;
@@ -62,11 +62,13 @@ public partial class ExploderEnemy : Enemy
 			// The body is inert but still on screen: age the ring out by hand, because base
 			// _PhysicsProcess - which is what normally drives QueueRedraw - is skipped below.
 			lingerRemaining -= (float)delta;
+			spentSeconds += (float)delta;
 			blast.Tick((float)delta, false);
 			// Enemy's own step, which ticks the icon, is skipped below: the burst still has to flash.
 			TickAttackIcon((float)delta);
 			RedrawTells();
-			if (lingerRemaining <= 0f)
+			bool bodyDone = TickSpentBody();
+			if (lingerRemaining <= 0f && bodyDone)
 				QueueFree();
 			return;
 		}
@@ -123,6 +125,75 @@ public partial class ExploderEnemy : Enemy
 		Velocity = Vector2.Zero;
 		CollisionLayer = 0;
 		CollisionMask = 0;
+		BeginSpentBody();
+	}
+
+	// THE BODY AFTER THE BLAST (in-flight 104, Eric 2026-11-10: "there are enemies that blow themselves up. They
+	// should have an animation to show them dying, however they go about doing that"). It used to stand inert in
+	// its walk pose until the ring aged out and then vanish. Now it plays its sheet's death strip - every exploder
+	// sheet carries a six-frame one (the Grave Bloat and all twelve chapter bodies, 2026-11-13) - and is freed only
+	// when both the strip and the ring are done. A sheet without a strip (or with a looping one, which would never
+	// end) bursts instead: its own art swelling and fading in BurstSeconds.
+	//
+	// The strip is stepped by hand rather than played. Play would raise AnimationFinished, and Enemy's one-shot
+	// handler puts any body that is not dying back on its walk - which a detonated exploder is not (its rewards are
+	// withheld, so it never runs StartDeath), so the corpse would stand up again for the frames until its free.
+	private static readonly StringName DeathStrip = "death";
+	private const float BurstSeconds = 0.28f;
+	private const float BurstSwell = 0.6f;
+	private float spentSeconds;
+	private float stripSeconds;
+	private Vector2 burstRestScale = Vector2.One;
+
+	private void BeginSpentBody()
+	{
+		spentSeconds = 0f;
+		stripSeconds = 0f;
+		AnimatedSprite2D body = BodySprite;
+		if (body == null)
+			return;
+		SpriteFrames frames = body.SpriteFrames;
+		if (frames != null && frames.HasAnimation(DeathStrip) && !frames.GetAnimationLoop(DeathStrip)
+			&& frames.GetFrameCount(DeathStrip) > 0 && frames.GetAnimationSpeed(DeathStrip) > 0)
+		{
+			double units = 0;
+			for (int i = 0; i < frames.GetFrameCount(DeathStrip); i++)
+				units += frames.GetFrameDuration(DeathStrip, i);
+			stripSeconds = (float)(units / frames.GetAnimationSpeed(DeathStrip));
+			body.Stop();
+			body.Animation = DeathStrip;
+			body.Frame = 0;
+			return;
+		}
+		burstRestScale = body.Scale;
+	}
+
+	// True once the body has finished showing its end (the strip's last frame reached, or the burst faded out).
+	private bool TickSpentBody()
+	{
+		AnimatedSprite2D body = BodySprite;
+		if (body == null)
+			return true;
+		if (stripSeconds > 0f)
+		{
+			SpriteFrames frames = body.SpriteFrames;
+			int count = frames.GetFrameCount(DeathStrip);
+			double elapsedUnits = spentSeconds * frames.GetAnimationSpeed(DeathStrip);
+			int frame = 0;
+			double reached = 0;
+			while (frame < count - 1 && reached + frames.GetFrameDuration(DeathStrip, frame) <= elapsedUnits)
+			{
+				reached += frames.GetFrameDuration(DeathStrip, frame);
+				frame++;
+			}
+			if (body.Frame != frame)
+				body.Frame = frame;
+			return spentSeconds >= stripSeconds;
+		}
+		float k = Mathf.Clamp(spentSeconds / BurstSeconds, 0f, 1f);
+		body.Scale = burstRestScale * (1f + BurstSwell * k);
+		body.Modulate = new Color(body.Modulate, 1f - k);
+		return k >= 1f;
 	}
 
 	public override void ResetForRespawn(Vector2 newPos, int newHealth)
@@ -131,6 +202,8 @@ public partial class ExploderEnemy : Enemy
 		blast = BuildBlast();
 		detonated = false;
 		lingerRemaining = 0f;
+		spentSeconds = 0f;
+		stripSeconds = 0f;
 	}
 
 	// The blast's reach is a dashed ring on the floor, under every body (Enemy.DrawGroundTells); the fuse
