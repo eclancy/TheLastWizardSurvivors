@@ -148,26 +148,28 @@ public partial class MainMenu
 	// on a page holding Bound Pages alone; Survival and Fortune, and Level-ups and the Boons, were each two short
 	// sections. Merged in those pairs, every section still turns two cards a page (AddShopSectionSteps), so a page
 	// fits the phone exactly as before - only the half-empty pages between sections are gone.
-	private static readonly (string Title, string Note, string[] Ids, bool WithBoons)[] UpgradeSections =
+	//
+	// NO NOTE UNDER A TITLE (in-flight 111, Eric 2026-11-10: "Remove the page descriptions under the power up page
+	// titles"). Each section carried a line under its heading; the title alone says what the page is.
+	private static readonly (string Title, string[] Ids, bool WithBoons)[] UpgradeSections =
 	{
 		// Bound Pages first (.ai/slow-start.md 4): a new player can afford the first page after his second run, and
 		// it is likely worth more than any Power it displaces, so the shop teaches itself with its first buy.
-		("Power", "Room for more spells, and every spell harder and more often.",
+		("Power",
 			new[] { SpellBook.ShopUpgradeId, "damage", "attack_speed", "area", "duration", "crit_chance" }, false),
-		("Survival", "Staying alive, and what each run gives back.",
+		("Survival",
 			new[] { "vitality", "recovery", "extra_lives", "movespeed", "magnet", "growth", "greed", "luck" }, false),
 		// The Reliquary Shelf sits here rather than under Survival: a boon slot is one more thing a
 		// level-up can offer, the same lever as a reroll or a ban. The boons for sale
 		// (UnlockCatalog.PurchasableBoons) follow them, the last cards of Powers whether or not any is left to
 		// buy: decision 5 put them there, and cards that moved to the top while something in them was for sale
 		// would move the selection with them the moment the last was bought.
-		("Level-ups & boons", "More say over what each level-up offers, and new boons for it to offer.",
+		("Level-ups & boons",
 			new[] { "rerolls", "bans", GlobalStatsManager.BoonSlotsUpgradeId, GlobalStatsManager.CurationUpgradeId, ConjunctionLadder.KindredDrawId }, true),
 	};
 
 	// Only if no section takes the boons (UpgradeSections' WithBoons): never a lost shelf.
 	private const string BoonSectionTitle = "Boons";
-	private const string BoonSectionNote = "Each is bought once, and from then on your level-ups can offer it.";
 
 	// The heading the panel wears (the scene's still says Arcane Upgrades) and the line under it, which
 	// names both kinds of thing on the shelf now that the boons are on it. No "level-ups" in it: on a
@@ -424,7 +426,7 @@ public partial class MainMenu
 			placed.Add(ConjunctionLadder.KindredDrawId);
 		var boons = upgradeDefinitions.Values.Where(d => d.IsBoon).ToList();
 		bool boonsShelved = false;
-		foreach ((string title, string note, string[] ids, bool withBoons) in UpgradeSections)
+		foreach ((string title, string[] ids, bool withBoons) in UpgradeSections)
 		{
 			var defs = ids.Where(upgradeDefinitions.ContainsKey).Where(id => !placed.Contains(id)).Select(id => upgradeDefinitions[id]).ToList();
 			placed.UnionWith(defs.Select(d => d.Id));
@@ -434,19 +436,18 @@ public partial class MainMenu
 				boonsShelved = true;
 			}
 			if (defs.Count > 0)
-				foreach (int step in AddShopSectionSteps(title, note, defs, narrow)) yield return step;
+				foreach (int step in AddShopSectionSteps(title, defs, narrow)) yield return step;
 		}
 		var stray = upgradeDefinitions.Values.Where(d => !d.IsBoon && !placed.Contains(d.Id)).ToList();
 		if (stray.Count > 0)
 		{
 			GD.PushWarning($"MainMenu: Arcane Upgrades has no section for {string.Join(", ", stray.Select(d => d.Id))}; listed under More (MainMenu.Shop.cs, UpgradeSections).");
-			foreach (int step in AddShopSectionSteps("More", string.Empty, stray, narrow)) yield return step;
+			foreach (int step in AddShopSectionSteps("More", stray, narrow)) yield return step;
 		}
 
 		if (!boonsShelved && boons.Count > 0)
 		{
-			// This page is cached, so its note must also remain true after a purchase or progress reset.
-			foreach (int step in AddShopSectionSteps(BoonSectionTitle, BoonSectionNote, boons, narrow)) yield return step;
+			foreach (int step in AddShopSectionSteps(BoonSectionTitle, boons, narrow)) yield return step;
 		}
 
 		RefreshUpgradeControls();
@@ -461,7 +462,7 @@ public partial class MainMenu
 
 	private int ShopCardsPerPage(bool narrow) => narrow && GetViewportRect().Size.Y >= ThreeCardPageMinHeight ? 3 : 2;
 
-	private IEnumerable<int> AddShopSectionSteps(string title, string note, List<UpgradeDefinition> defs, bool narrow)
+	private IEnumerable<int> AddShopSectionSteps(string title, List<UpgradeDefinition> defs, bool narrow)
 	{
 		shopCategory.AddItem(title);
 		int boonCount = defs.Count(d => d.IsBoon);
@@ -491,12 +492,6 @@ public partial class MainMenu
 			// The tally CodexRows put in the heading row, filled in by RefreshUpgradeControls.
 			if (section.GetChild(0) is HBoxContainer head && head.GetChildCount() > 1 && head.GetChild(1) is Label tally)
 				shopTallies.Add((tally, defs.Select(d => d.Id).ToArray(), tallyWord));
-			if (!string.IsNullOrEmpty(note))
-			{
-				Label line = CodexRows.MakeText(note, ResponsiveLayout.TextRole.Label, CodexRows.Stone.InkSoft);
-				section.AddChild(line);
-				section.MoveChild(line, 2);
-			}
 		}
 	}
 
