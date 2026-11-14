@@ -105,12 +105,16 @@ public static partial class Foliage
 					Count = 900, ClumpSize = 4, Clump = ClumpBase.Bush, RadiusMin = 0.6f, RadiusMax = 0.9f, Separation = 0.7f,
 					Loners = 0.06f, MinSpacing = 36f, Habitat = new Woodland.Habitat(0.04f, 1f, 0.5f),
 				},
-				// 3. Thorns the wind has cut flat, one dead, on the flanks and now and then alone on the moor: the
-				// shared dead trees (250 px) were the tallest thing on the heath, and a moor's sightlines are long.
+				// 3. Thorns the wind has cut flat, on the flanks and now and then alone on the moor: the shared dead
+				// trees (250 px) were the tallest thing on the heath, and a moor's sightlines are long. LIVING ONLY (in-flight
+				// 137, Eric 2026-11-11: "there appear to be vertical ribcages in the stone circle map. remove them", then
+				// "the ribcages look like white trees with no leaves perhaps?"): the dead thorn, a quarter of the set,
+				// bleached and bare, read as an upright ribcage, so it is gone and the count with it - the living thorns
+				// are as many as they were.
 				new FoliageSet
 				{
-					Grounded = new[] { "windthorn-1", "windthorn-2", "windthorn-1", "windthorn-bare-1" }, Manifest = Manifest,
-					Count = 300, ClumpSize = 2, Clump = ClumpBase.Tree, RadiusMin = 0.4f, RadiusMax = 0.6f, Separation = 0.8f,
+					Grounded = new[] { "windthorn-1", "windthorn-2", "windthorn-1" }, Manifest = Manifest,
+					Count = 225, ClumpSize = 2, Clump = ClumpBase.Tree, RadiusMin = 0.4f, RadiusMax = 0.6f, Separation = 0.8f,
 					Loners = 0.3f, MinSpacing = MatureTreeSpacing, Habitat = new Woodland.Habitat(0.03f, 1f, 0.3f),
 				},
 				// 4. Granite lying about - unchanged.
