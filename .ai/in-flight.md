@@ -162,7 +162,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 153 | The Sunken Cave: no trees; the odd upright sticks replaced with cave scenery | world art | S-M |
 | 154 | "Free the voice in the rock" said plainly | text | trivial |
 | 155 | The Familiar's form choice: one simple strategy line each | text | trivial |
-| 156 | The crow fetches chests and items instead of catching bolts | familiar | M |
+| 156 | Familiar roles: hound guards close and catches bolts, crow hunts ranged enemies and fetches items, cat debuffs and buffs | familiar | M |
 | 157 | World map: no left/right arrow where nothing is opened that way | UI | trivial |
 | 158 | Level-up screen: no Skip, only Reroll and Ban | UI | trivial |
 | 159 | Stormguard's card said directly, then a sweep of every card for metaphor over meaning | text | S-M |
@@ -1750,6 +1750,11 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     156), without branch details (`Familiar`, the form-choice cards).
 156. **The crow fetches chests and items instead of catching bolts** (Eric, 2026-11-13: *"Familiar - crow should not catch projectiles, but bring you chests and items"*). Replace the crow's bolt-catching with fetching: it flies to chests, orbs and items and carries them to the wizard
     (`Familiar.cs`, the crow's behaviour; its cards and Ma Liang's ink crow follow).
+    **Eric's wording for 155/156 (2026-11-13):** *"For familiar, dog should focus on how it fights near you and catches
+    ranged attacks, Crow should point out that it focuses ranged enemies and brings you items and chests, and cat should
+    describe how it debuffs enemies and buffs you"*. So the bolt-catching moves to the HOUND (it guards you up close and
+    catches ranged attacks), the CROW hunts the ranged enemies and fetches items and chests, and the CAT weakens enemies
+    and strengthens you. Each form's choice card says exactly that, in one or two plain lines.
 157. **The world map's arrows only where there is somewhere to go** (Eric, 2026-11-13: *"Don't show right arrow if there's
     no map to the right unlocked (same for left)"*). Hide the stage select's right arrow when no opened stop lies further
     along, and the left when none lies back (`WorldMap.cs` / `WorldMapCompass`), keeping pad focus and touch working.
