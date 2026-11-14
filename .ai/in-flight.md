@@ -45,7 +45,7 @@ under it. In order:
    140 Merlin's quest line says what to do (and the other captives' lines checked).
    Also from 2026-11-13: 141 latest icons on cards, 142 Apotheosis names hidden until unlocked, 143 freed wizards named
    on achievements, 146/154/155 plainer cards (Threaded Needle, the voice in the rock, the Familiar's forms), 152
-   Gale Blade vs Cyclone Slash icons, 148 arcane orb options, 153 the Sunken Cave's scenery, 157 the map's arrows, 158 no Skip on level-ups, 159 Stormguard's card and a directness sweep of every card, 160 a ban keeps the choice open.
+   Gale Blade vs Cyclone Slash icons, 148 arcane orb options, 153 the Sunken Cave's scenery, 157 the map's arrows, 158 no Skip on level-ups, 159 Stormguard's card and a directness sweep of every card, 160 a ban keeps the choice open, 161 no green enemy bolts.
 9. **Enemies that read as something** (138): each chapter's own ranged enemy in place of the Hexer stand-in,
    chapter by chapter, then every role still on a stand-in.
 10. **Spell slots matter** (item 9a, Eric 2026-11-04, asked again 2026-11-11): two slot effects exist - the Gimmel Ring
@@ -167,6 +167,7 @@ Collected, not built; he decides when it becomes a release. Each line points at 
 | 158 | Level-up screen: no Skip, only Reroll and Ban | UI | trivial |
 | 159 | Stormguard's card said directly, then a sweep of every card for metaphor over meaning | text | S-M |
 | 160 | A ban strikes the card and deals another; the level-up or chest stays open | level-up + chests | S |
+| 161 | Enemy bolts never green (they read as XP orbs) | art | S |
 | 9a | Spells and relics that play off a spell's slot, and a way to rearrange slots (two exist; the family is open) | design + items | M |
 
 **Built 2026-11-10, on `main-ff86ni` (2a05416f, eee41dbd, 64e7ecb4), not released:** 66 (First Blood pays Lancet; Shrike removed), 67, 68, 72 (pens only in the Forest: one guaranteed in the ring of chunks round the start, then `LandmarkChance` 0.04, never in neighbouring chunks), 79 + 82 (the hut runs round the fence for its yard's gap and kneels within 28 px of the middle), 80, 84 (twelve openers on deeds done as their wizard, sealed until freed - `ValidateWizardOpeners`), 85, 87 (Wings +10% move speed). Build 0 errors, validator clean, a 3-minute bot run threw nothing. **None played in Godot yet.** Open for Eric: (decided 2026-11-10, Eric: *"100 energy is fine"*) the three events and the Cave boss pay 100 Arcane Energy once now that their spell moved; still open: the three secret-vault deeds name the chapter, not the secret. **The next release is a story reset** (Eric, 2026-11-10: *"assume we will just reset progress after this update"*): raise `SaveData.CurrentProgressEpoch` to 4 in its own commit right before `release.sh`, as 0.22.0 did.
@@ -1772,6 +1773,11 @@ walked; the Laelaps/Ascension unlock texts; the grove hint's verb.
     the same slot (or leave the hand one shorter if nothing is left), and keep the screen open so the player still picks.
     The ban still spends one of the run's bans. Check the bot's and probes' expectations (`_BalanceHarness`,
     `_LevelUpProbe`).
+161. **Enemy bolts are never green - they read as XP** (Eric, 2026-11-13: *"Enemy bolts should not be green, they look like
+    xp"*). Find every enemy projectile drawn green (`EnemyProjectile`, each ranged enemy's bolt colour, the Poison-element
+    ones above all) and give them a colour family the pickups never use - the XP orbs and health flasks keep theirs
+    (`.ai/art-direction.md`: the player's pigments vs. the dead's). A threat should read as a threat at a glance in a
+    swarm, on both canvases.
 67. **The Canticle's notes draw under the wizard** (Eric, 2026-11-09: *"Canticle song notes should render on a layer
     above the player"*). Cause: the chord's quavers (`ArcaneExplosion.EnsureMoteCanvas`, the `ChordMotes` canvas) are on
     `DrawLayers.Air` (6), and since 2026-11-01 the wizard's body is on `Foremost` (10), over every spell. Fix: put that
