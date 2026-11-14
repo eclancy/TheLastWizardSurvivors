@@ -437,7 +437,7 @@ public static class UnlockCatalog
 			outsideCampaignGate: true, sealedUntilFreed: true),
 		// Restore the wards where the wizards met to free their keeper. Retain his existing optional
 		// campaign-gate status so changing the source cannot close an existing player's road.
-		FromEvent("merlin", UnlockKind.Character, "the_moot", "Restore the shattered wards of the Broken Circle.",
+		FromEvent("merlin", UnlockKind.Character, "the_moot", "Bound in the Broken Circle: reach each lit stone before its rune fades, six in a row.",
 			secretUntilStage: "stage_10", outsideCampaignGate: true),
 		// THE ONE HE KEPT (.ai/endgame-castle.md decision 11). Nimue, the Lady of the Lake, kept by the dark wizard beside
 		// him to the end, and freed when he falls: the Throne's own deed, Taken Back, pays her (AchievementDefinitions). A
@@ -474,7 +474,7 @@ public static class UnlockCatalog
 			Source = UnlockSource.Achievement,
 			SourceId = AchievementDefinitions.EventDeedPrefix + "the_moot",
 			SiteId = "the_moot",
-			LockedHint = "One wizard's own: restore the shattered wards of the Broken Circle.",
+			LockedHint = "One wizard's own: in the Broken Circle, reach each lit stone before its rune fades, six in a row.",
 			ExclusiveTo = "merlin",
 		},
 	};

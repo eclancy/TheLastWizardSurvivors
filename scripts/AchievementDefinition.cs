@@ -366,6 +366,9 @@ public static partial class AchievementDefinitions
 	/// The Cursed Dungeon's deed is "The Open Cell", not the doc's "Tituba Freed": a rescued wizard's name
 	/// is his reward and stays hidden while he is locked (.ai/side-events.md, "Secret wizards"), and the
 	/// deed is listed from the day the Dungeon opens.
+	/// A deed's description is the quest log's step, so it says what to DO, not what the place is (in-flight 140, Eric
+	/// 2026-11-11: "Merlin's quest description is too vague"). The moot, the thaw, the scale and the anvil said the
+	/// outcome ("restore the wards", "thaw the wizard") and left the ask to be found; they now say the ask.
 	/// </summary>
 	private static readonly (string Site, string Name, string Description, string Reward)[] SideEventWords =
 	{
@@ -375,17 +378,17 @@ public static partial class AchievementDefinitions
 		("the_grove", "The Grove Held", "Hold the corrupted grove in the Enchanted Forest until it grows back.", $"{OpenerMovedArcane} Arcane Energy"),
 		("walking_hut", "The Hut Herded Home", "Drive the walking hut of the Enchanted Forest into the bone-fenced yard.", "Frees Baba Yaga"),
 		("the_well", "The Last Coin", "Keep the last clean well in the Fallow Fields from being fouled.", "Unlocks Wishing Coin"),
-		("tithe_scale", "The Scale Held Level", "Fill both pans of the Tithe-Reeve's scale in the Fallow Fields and hold its beam level.", "Frees Medea"),
-		("the_moot", "The Circle Relit", "Restore the shattered council wards of the Broken Circle to free their keeper.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
+		("tithe_scale", "The Scale Held Level", "In the Fallow Fields, fight on both sides of the Tithe-Reeve's scale until both pans fill, then hold its beam level.", "Frees Medea"),
+		("the_moot", "The Circle Relit", "In the Broken Circle, reach each lit stone before its rune fades - six in a row - to free the keeper bound at its centre.", "Frees Merlin, unlocks Orb of Ages and Gilded Mote"),
 		("gaolers_key", "The Open Cell", "Slip the Gaoler's key past his lantern-bearers to the locked cell in the Cursed Dungeon.", "Frees Tituba"),
 		("bog_lanterns", "The Lanterns Out", "Snuff the lanterns of the Blighted Swamp and face what tends them.", $"{OpenerMovedArcane} Arcane Energy"),
 		("gibbet_cage", "The Ferry Reached", "Lower the gibbet's cage in the Blighted Swamp and bring the man in it to the ferry landing alive.", "Frees Paracelsus"),
 		("five_pointed_seal", "The Seal Broken", "Turn the four guardian stones to face the seal in the Mystic Ruins.", "Frees Abe no Seimei"),
 		("nine_mouths", "The True Mouth", "Find the one mouth of nine her voice comes out of first, in the Sunken Cave.", "Frees The Cumaean Sibyl"),
-		("the_thaw", "Out of the Ice", "Thaw the wizard out of the ice in the Frozen Waste.", "Frees Väinämöinen"),
+		("the_thaw", "Out of the Ice", "On the Frozen Waste's lake, listen to the ice sing, then step on its strings in the same order to thaw the wizard out.", "Frees Väinämöinen"),
 		("caravan_master", "The Caravan Stopped", "Catch the caravan master on the Scorched Sands road.", $"{OpenerMovedArcane} Arcane Energy"),
 		("tomb_beacons", "The Sun Let In", "Turn the bronze mirrors on the Scorched Sands until the sunlight reaches the disc over the dry tomb's door.", "Frees Imhotep"),
-		("great_anvil", "The Chains Struck", "Bring the forge's own hammers down on the four chains in the Emberdeep.", "Frees Wayland the Smith"),
+		("great_anvil", "The Chains Struck", "In the Emberdeep, stand by each of the four chain stakes as a forge hammer winds up, then step clear and let it break the chain.", "Frees Wayland the Smith"),
 		("the_barge", "The Way Lit", "Light the dead lamps along the Last Bridge ahead of the barge below until it comes in to its landing.", "Frees Morgan le Fay"),
 		("seers_voice", "The Last Reading", "Follow the voice reading room to room through the Court until you find the reader.", "Frees Nostradamus"),
 		("dotted_door", "The Door Inked In", "Ink every line of the door sketched in the Court's Gallery, in one stroke.", "Frees Ma Liang"),
